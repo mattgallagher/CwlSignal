@@ -85,8 +85,8 @@ public func callingFunctionIdentifier(skipCount skipCount: UInt = 0) -> String {
 	return AddressInfo(address: address).symbol
 }
 
-/// When applied to the output of callStackReturnAddresses, produces identical output to the execinfo function "backtrace_symbols" or NSThread.callStackSymbols()
-/// - parameter addresses: an array of memory addresses, generally as produced by `callStackReturnAddresses()`
+/// When applied to the output of callStackReturnAddresses, produces identical output to the execinfo function "backtrace_symbols" or NSThread.callStackSymbols
+/// - parameter addresses: an array of memory addresses, generally as produced by `callStackReturnAddresses`
 /// - returns: an array of formatted, symbolicated stack frame descriptions.
 public func symbolsForCallStackAddresses(addresses: [UInt]) -> [String] {
 	return addresses.enumerate().map { (index: Int, address: UInt) -> String in
