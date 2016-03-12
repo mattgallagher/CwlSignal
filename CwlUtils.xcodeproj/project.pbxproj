@@ -23,6 +23,10 @@
 		C93E18661C81EFD40009A053 /* CwlAddressInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = C93E18641C81EFD40009A053 /* CwlAddressInfo.swift */; };
 		C93E18681C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */; };
 		C93E18691C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */; };
+		C9C9AAEF1C8E7FB60019A126 /* CwlSysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */; };
+		C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */; };
+		C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */; };
+		C9C9AAF31C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +60,8 @@
 		C93E185F1C81BE120009A053 /* CwlFrameAddress.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CwlFrameAddress.h; sourceTree = "<group>"; };
 		C93E18641C81EFD40009A053 /* CwlAddressInfo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlAddressInfo.swift; sourceTree = "<group>"; };
 		C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlAddressInfoTests.swift; sourceTree = "<group>"; };
+		C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSysctl.swift; sourceTree = "<group>"; };
+		C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSysctlTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +126,7 @@
 				C93E185E1C81BE120009A053 /* CwlFrameAddress.c */,
 				C93E185F1C81BE120009A053 /* CwlFrameAddress.h */,
 				C93E184E1C81794B0009A053 /* CwlStackFrame.swift */,
+				C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */,
 			);
 			path = CwlUtils;
 			sourceTree = "<group>";
@@ -128,8 +135,9 @@
 			isa = PBXGroup;
 			children = (
 				C93E185D1C8179C40009A053 /* Supporting Files */,
-				C93E18591C8179B40009A053 /* CwlStackFrameTests.swift */,
 				C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */,
+				C93E18591C8179B40009A053 /* CwlStackFrameTests.swift */,
+				C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */,
 			);
 			path = CwlUtilsTests;
 			sourceTree = "<group>";
@@ -328,6 +336,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C93E18651C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
+				C9C9AAEF1C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
 				C93E18601C81BE120009A053 /* CwlFrameAddress.c in Sources */,
 				C93E18501C81794B0009A053 /* CwlStackFrame.swift in Sources */,
 			);
@@ -339,6 +348,7 @@
 			files = (
 				C93E185B1C8179B80009A053 /* CwlStackFrameTests.swift in Sources */,
 				C93E18681C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */,
+				C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -347,6 +357,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C93E18661C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
+				C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
 				C93E18511C8179530009A053 /* CwlStackFrame.swift in Sources */,
 				C93E18611C81BE120009A053 /* CwlFrameAddress.c in Sources */,
 			);
@@ -358,6 +369,7 @@
 			files = (
 				C93E185C1C8179B90009A053 /* CwlStackFrameTests.swift in Sources */,
 				C93E18691C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */,
+				C9C9AAF31C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
