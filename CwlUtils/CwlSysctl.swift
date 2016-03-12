@@ -133,6 +133,9 @@ public struct Sysctl {
 	#endif
 	}
 	
+	/// e.g. "8" or "2"
+	public static var activeCPUs: Int64 { return try! sysctlInt(CTL_HW, HW_AVAILCPU) }
+
 	/// e.g. "15.3.0" or "15.0.0"
 	public static var osRelease: String { return try! sysctlString(CTL_KERN, KERN_OSRELEASE) }
 

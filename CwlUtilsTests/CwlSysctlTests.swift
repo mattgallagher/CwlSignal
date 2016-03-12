@@ -51,6 +51,9 @@ class SysctlTests: XCTestCase {
 		let version = Sysctl.version
 		XCTAssert(version.hasPrefix("Darwin Kernel Version"))
 		
+		let activeCPUs = Sysctl.activeCPUs
+		XCTAssert(activeCPUs > 0)
+		
 	#if arch(x86_64)
 		let cpuFreq = Sysctl.cpuFreq
 		XCTAssert(cpuFreq > 1_000_000_000)
