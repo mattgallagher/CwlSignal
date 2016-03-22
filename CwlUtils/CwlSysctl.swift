@@ -116,7 +116,7 @@ public struct Sysctl {
 	/// e.g. "x86_64" or "N71mAP"
 	/// NOTE: this is *corrected* on iOS devices to fetch hw.model
 	public static var machine: String {
-	#if os(iOS)
+	#if os(iOS) && !arch(x86_64) && !arch(i386)
 		return try! sysctlString(CTL_HW, HW_MODEL)
 	#else
 		return try! sysctlString(CTL_HW, HW_MACHINE)
@@ -126,7 +126,7 @@ public struct Sysctl {
 	/// e.g. "MacPro4,1" or "iPhone8,1"
 	/// NOTE: this is *corrected* on iOS devices to fetch hw.machine
 	public static var model: String {
-	#if os(iOS)
+	#if os(iOS) && !arch(x86_64) && !arch(i386)
 		return try! sysctlString(CTL_HW, HW_MACHINE)
 	#else
 		return try! sysctlString(CTL_HW, HW_MODEL)
