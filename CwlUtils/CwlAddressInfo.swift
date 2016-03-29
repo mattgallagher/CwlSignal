@@ -71,7 +71,11 @@ public struct AddressInfo {
 	/// - returns: a formatted string matching that used by NSThread.callStackSymbols
 	public func formattedDescriptionForIndex(index: Int) -> String {
 		return self.image.nulTerminatedUTF8.withUnsafeBufferPointer { (imageBuffer: UnsafeBufferPointer<UTF8.CodeUnit>) -> String in
+		#if arch(x86_64) || arch(arm64)
 			return String(format: "%-4ld%-35s 0x%016llx %@ + %ld", index, imageBuffer.baseAddress, self.address, self.symbol, self.offset)
+		#else
+			return String(format: "%-4d%-35s 0x%08lx %@ + %d", index, imageBuffer.baseAddress, self.address, self.symbol, self.offset)
+		#endif
 		}
 	}
 }
