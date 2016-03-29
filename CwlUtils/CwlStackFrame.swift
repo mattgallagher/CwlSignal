@@ -94,8 +94,12 @@ public func callStackReturnAddresses(skip skip: UInt = 0, maximumAddresses: Int 
 // These values come from:
 // http://www.opensource.apple.com/source/Libc/Libc-997.90.3/gen/thread_stack_pcs.c
 #if arch(x86_64)
-let ISALIGNED_MASK: UInt = 0xf
+	let ISALIGNED_MASK: UInt = 0xf
 	let ISALIGNED_RESULT: UInt = 0
+	let FP_LINK_OFFSET = 1
+#elseif arch(i386)
+	let ISALIGNED_MASK: UInt = 0xf
+	let ISALIGNED_RESULT: UInt = 8
 	let FP_LINK_OFFSET = 1
 #elseif arch(arm) || arch(arm64)
 	let ISALIGNED_MASK: UInt = 0x1
