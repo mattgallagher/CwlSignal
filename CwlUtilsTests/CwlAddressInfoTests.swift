@@ -31,8 +31,8 @@ class AddressInfoTests: XCTestCase {
 		XCTAssert(name.hasSuffix("16AddressInfoTests29testCallingFunctionIdentifierfS0_FT_T_") || name.hasSuffix("16AddressInfoTests29testCallingFunctionIdentifierfT_T_"))
 	}
 
-    func testSymbolsForCallStackAddresses() {
-        var b = NSThread.callStackSymbols() as [String]
+	func testSymbolsForCallStackAddresses() {
+		var b = NSThread.callStackSymbols() as [String]
 		b.removeAtIndex(0)
 		var a = symbolsForCallStackAddresses(callStackReturnAddresses())
 		a.removeAtIndex(0)
@@ -49,5 +49,5 @@ class AddressInfoTests: XCTestCase {
 		}
 		
 		waitForExpectationsWithTimeout(1e2, handler: nil)
-    }
+	}
 }

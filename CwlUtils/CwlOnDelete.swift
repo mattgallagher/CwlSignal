@@ -20,7 +20,7 @@
 
 import Swift
 
-public class OnDelete {
+public final class OnDelete {
 	var block: (() -> Void)?
 	public init(_ b: () -> Void) {
 		block = b

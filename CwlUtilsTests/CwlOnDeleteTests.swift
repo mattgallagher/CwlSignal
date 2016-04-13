@@ -23,14 +23,14 @@ import XCTest
 import CwlUtils
 
 class OnDeleteTests: XCTestCase {
-    func testOnDelete() {
+	func testOnDelete() {
 		var x = false
 		do {
 			let o = OnDelete {x = true}
 			XCTAssert(x == false)
 			withExtendedLifetime(o) { () in }
 		}
-        XCTAssert(x == true)
+		XCTAssert(x == true)
 
 		var y = false
 		do {
@@ -38,6 +38,6 @@ class OnDeleteTests: XCTestCase {
 			XCTAssert(y == false)
 			o.cancel()
 		}
-        XCTAssert(y == false)
-    }
+		XCTAssert(y == false)
+	}
 }

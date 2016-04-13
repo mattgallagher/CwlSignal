@@ -23,7 +23,7 @@ import XCTest
 import CwlUtils
 
 class SysctlTests: XCTestCase {
-    func testSysctl() {
+	func testSysctl() {
 		let hostName = Sysctl.hostName
 		XCTAssert(hostName != "")
 
@@ -62,5 +62,5 @@ class SysctlTests: XCTestCase {
 		let memSize = Sysctl.memSize
 		XCTAssert(memSize > 1_000_000_000)
 	#endif
-    }
+	}
 }
