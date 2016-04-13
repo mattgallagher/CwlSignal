@@ -5,6 +5,7 @@ A collection of utilities written as part of articles on [Cocoa with Love](http:
 ## Related articles
 
 * [Better stack traces in Swift](http://cocoawithlove.com/blog/2016/02/28/stack-traces-in-swift.html)
+* [Gathering system information in Swift with sysctl](http://www.cocoawithlove.com/blog/2016/03/08/swift-wrapper-for-sysctl.html)
 
 ## Usage
 
