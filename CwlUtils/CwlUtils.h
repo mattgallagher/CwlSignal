@@ -26,4 +26,4 @@ FOUNDATION_EXPORT double CwlUtilsVersionNumber;
 //! Project version string for CwlUtils.
 FOUNDATION_EXPORT const unsigned char CwlUtilsVersionString[];
 
-#import <CwlUtils/CwlFrameAddress.h>
+#import "CwlFrameAddress.h"
