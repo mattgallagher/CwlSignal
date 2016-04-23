@@ -27,7 +27,7 @@ import MobileCoreServices
 
 public extension ErrorType {
 	/// Return an NSError with the same properties as this error but with an `UnanticipatedErrorRecoveryAttempter` attached.
-	public func withUnanticipatedErrorRecoveryAttempter(file: String = #file, line: Int = #line) -> NSError {
+	public func withUnanticipatedErrorRecoveryAttempter(file file: String = #file, line: Int = #line) -> NSError {
 		// We want to preserve the "userInfo" dictionary, so we avoid "self as NSError" if we can (since it creates a new NSError that doesn't preserve the userInfo). Instead, we cast *via* NSObject.
 		let e = ((self as? NSObject) as? NSError) ?? (self as NSError)
 		var userInfo: [NSObject: AnyObject] = e.userInfo
@@ -53,11 +53,11 @@ public extension ErrorType {
 }
 
 /// A convenience wrapper that applies `withUnanticipatedErrorRecoveryAttempter` to any error thrown by the wrapped function
-public func rethrowUnanticipated<T>(@noescape f: () throws -> T) throws -> T {
+public func rethrowUnanticipated<T>(file file: String = #file, line: Int = #line, @noescape f: () throws -> T) throws -> T {
 	do {
 		return try f()
 	} catch {
-		throw error.withUnanticipatedErrorRecoveryAttempter()
+		throw error.withUnanticipatedErrorRecoveryAttempter(file: file, line: line)
 	}
 }
 
