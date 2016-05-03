@@ -27,6 +27,10 @@
 		C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */; };
 		C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */; };
 		C9C9AAF31C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */; };
+		C9E055451CD8B42D001658AB /* CwlScalarScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */; };
+		C9E055461CD8B42D001658AB /* CwlScalarScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */; };
+		C9E055481CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */; };
+		C9E055491CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */; };
 		C9E6C5931CBE0467007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C5911CBE045F007B3F24 /* CwlUnanticipatedErrorTests.swift */; };
 		C9E6C5941CBE0468007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C5911CBE045F007B3F24 /* CwlUnanticipatedErrorTests.swift */; };
 		C9E6C5951CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C58F1CBE0455007B3F24 /* CwlUnanticipatedError.swift */; };
@@ -119,6 +123,8 @@
 		C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlAddressInfoTests.swift; sourceTree = "<group>"; };
 		C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSysctl.swift; sourceTree = "<group>"; };
 		C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSysctlTests.swift; sourceTree = "<group>"; };
+		C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlScalarScanner.swift; sourceTree = "<group>"; };
+		C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlScalarScannerTests.swift; sourceTree = "<group>"; };
 		C9E6C58F1CBE0455007B3F24 /* CwlUnanticipatedError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlUnanticipatedError.swift; sourceTree = "<group>"; };
 		C9E6C5911CBE045F007B3F24 /* CwlUnanticipatedErrorTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlUnanticipatedErrorTests.swift; sourceTree = "<group>"; };
 		C9E6C6091CBF6D03007B3F24 /* CwlUtils_OSXHarness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CwlUtils_OSXHarness.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -241,6 +247,7 @@
 				C93E185E1C81BE120009A053 /* CwlFrameAddress.c */,
 				C93E185F1C81BE120009A053 /* CwlFrameAddress.h */,
 				C9F3E3361CAA254A006728F7 /* CwlOnDelete.swift */,
+				C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */,
 				C93E184E1C81794B0009A053 /* CwlStackFrame.swift */,
 				C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */,
 				C9E6C58F1CBE0455007B3F24 /* CwlUnanticipatedError.swift */,
@@ -254,6 +261,7 @@
 				C93E185D1C8179C40009A053 /* Supporting Files */,
 				C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */,
 				C9F3E33F1CAA269C006728F7 /* CwlOnDeleteTests.swift */,
+				C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */,
 				C93E18591C8179B40009A053 /* CwlStackFrameTests.swift */,
 				C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */,
 				C9E6C5911CBE045F007B3F24 /* CwlUnanticipatedErrorTests.swift */,
@@ -620,6 +628,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9E055451CD8B42D001658AB /* CwlScalarScanner.swift in Sources */,
 				C9F3E3371CAA254A006728F7 /* CwlOnDelete.swift in Sources */,
 				C9E6C5951CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */,
 				C93E18651C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
@@ -636,6 +645,7 @@
 				C93E185B1C8179B80009A053 /* CwlStackFrameTests.swift in Sources */,
 				C9F3E3401CAA269C006728F7 /* CwlOnDeleteTests.swift in Sources */,
 				C93E18681C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */,
+				C9E055481CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
 				C9E6C5931CBE0467007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */,
 			);
@@ -645,6 +655,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9E055461CD8B42D001658AB /* CwlScalarScanner.swift in Sources */,
 				C9F3E3381CAA254A006728F7 /* CwlOnDelete.swift in Sources */,
 				C9E6C5961CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */,
 				C93E18661C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
@@ -661,6 +672,7 @@
 				C93E185C1C8179B90009A053 /* CwlStackFrameTests.swift in Sources */,
 				C9F3E3411CAA269C006728F7 /* CwlOnDeleteTests.swift in Sources */,
 				C93E18691C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */,
+				C9E055491CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C9C9AAF31C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
 				C9E6C5941CBE0468007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */,
 			);
