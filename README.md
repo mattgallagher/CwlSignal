@@ -6,6 +6,8 @@ A collection of utilities written as part of articles on [Cocoa with Love](http:
 
 * [Better stack traces in Swift](http://cocoawithlove.com/blog/2016/02/28/stack-traces-in-swift.html)
 * [Gathering system information in Swift with sysctl](http://www.cocoawithlove.com/blog/2016/03/08/swift-wrapper-for-sysctl.html)
+* [Presenting unanticipated errors to users](http://www.cocoawithlove.com/blog/2016/04/14/error-recovery-attempter.html)
+* [Swift name demangling: C++ vs Swift for parsing](http://www.cocoawithlove.com/blog/2016/05/01/swift-name-demangling.html)
 
 ## Usage
 
