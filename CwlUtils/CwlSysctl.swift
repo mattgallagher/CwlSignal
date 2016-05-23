@@ -54,10 +54,8 @@ public func sysctlNameToLevels(name: String) throws -> [Int32] {
 	var levelsBufferSize = Int(CTL_MAXNAME)
 	var levelsBuffer = Array<Int32>(count: levelsBufferSize, repeatedValue: 0)
 	try levelsBuffer.withUnsafeMutableBufferPointer { (inout lbp: UnsafeMutableBufferPointer<Int32>) throws in
-		let nameBuffer = Array(name.utf8)
-		try nameBuffer.withUnsafeBufferPointer { (nbp: UnsafeBufferPointer<UInt8>) throws in
-			let result = Darwin.sysctlnametomib(UnsafePointer<Int8>(nbp.baseAddress), lbp.baseAddress, &levelsBufferSize)
-			if result != 0 {
+		try name.withCString { (nbp: UnsafePointer<Int8>) throws in
+			guard sysctlnametomib(nbp, lbp.baseAddress, &levelsBufferSize) == 0 else {
 				throw POSIXError(rawValue: errno) ?? SysctlError.Unknown
 			}
 		}
