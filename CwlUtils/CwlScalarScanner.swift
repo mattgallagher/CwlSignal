@@ -1,5 +1,5 @@
 //
-//  CwlDemangle.swift
+//  CwlScalarScanner.swift
 //  CwlUtils
 //
 //  Created by Matt Gallagher on 2016/01/05.
