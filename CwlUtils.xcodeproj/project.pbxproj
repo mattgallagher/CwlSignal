@@ -27,8 +27,6 @@
 		C93E18691C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */; };
 		C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */; };
 		C977AA5E1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */; };
-		C997CCC01CF2851600FAEA26 /* CwlRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B6655E1CEAD9080006B927 /* CwlRandom.swift */; };
-		C997CCC11CF2851700FAEA26 /* CwlRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B6655E1CEAD9080006B927 /* CwlRandom.swift */; };
 		C9C9AAEF1C8E7FB60019A126 /* CwlSysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */; };
 		C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */; };
 		C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */; };
@@ -57,6 +55,8 @@
 		C9F3E3381CAA254A006728F7 /* CwlOnDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F3E3361CAA254A006728F7 /* CwlOnDelete.swift */; };
 		C9F3E3401CAA269C006728F7 /* CwlOnDeleteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F3E33F1CAA269C006728F7 /* CwlOnDeleteTests.swift */; };
 		C9F3E3411CAA269C006728F7 /* CwlOnDeleteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F3E33F1CAA269C006728F7 /* CwlOnDeleteTests.swift */; };
+		C9FB03061CF4289C00AD7E79 /* CwlRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B6655E1CEAD9080006B927 /* CwlRandom.swift */; };
+		C9FB03071CF4289D00AD7E79 /* CwlRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B6655E1CEAD9080006B927 /* CwlRandom.swift */; };
 		C9FD68981CF022530087ACC6 /* xoroshiro128plus.c in Sources */ = {isa = PBXBuildFile; fileRef = C9FD68971CF022530087ACC6 /* xoroshiro128plus.c */; };
 		C9FD68991CF022530087ACC6 /* xoroshiro128plus.c in Sources */ = {isa = PBXBuildFile; fileRef = C9FD68971CF022530087ACC6 /* xoroshiro128plus.c */; };
 /* End PBXBuildFile section */
@@ -647,6 +647,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C9E055451CD8B42D001658AB /* CwlScalarScanner.swift in Sources */,
+				C9FB03071CF4289D00AD7E79 /* CwlRandom.swift in Sources */,
 				C9F3E3371CAA254A006728F7 /* CwlOnDelete.swift in Sources */,
 				C9E6C5951CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */,
 				C93E18651C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
@@ -667,7 +668,6 @@
 				C9E055481CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
 				C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
-				C997CCC11CF2851700FAEA26 /* CwlRandom.swift in Sources */,
 				C9FD68981CF022530087ACC6 /* xoroshiro128plus.c in Sources */,
 				C9E6C5931CBE0467007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */,
 			);
@@ -678,6 +678,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C9E055461CD8B42D001658AB /* CwlScalarScanner.swift in Sources */,
+				C9FB03061CF4289C00AD7E79 /* CwlRandom.swift in Sources */,
 				C9F3E3381CAA254A006728F7 /* CwlOnDelete.swift in Sources */,
 				C9E6C5961CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */,
 				C93E18661C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
@@ -698,7 +699,6 @@
 				C9E055491CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C977AA5E1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
 				C9C9AAF31C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
-				C997CCC01CF2851600FAEA26 /* CwlRandom.swift in Sources */,
 				C9FD68991CF022530087ACC6 /* xoroshiro128plus.c in Sources */,
 				C9E6C5941CBE0468007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */,
 			);
