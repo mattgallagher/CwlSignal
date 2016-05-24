@@ -123,7 +123,7 @@ public struct DevRandom: RandomGenerator {
 	class FileDescriptor {
 		let value: CInt
 		init() {
-			value = open("/dev/random", O_RDONLY)
+			value = open("/dev/urandom", O_RDONLY)
 			precondition(value >= 0)
 		}
 		deinit {
