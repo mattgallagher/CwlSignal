@@ -280,8 +280,7 @@
 				C93E18591C8179B40009A053 /* CwlStackFrameTests.swift */,
 				C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */,
 				C9E6C5911CBE045F007B3F24 /* CwlUnanticipatedErrorTests.swift */,
-				C93B5BB41CED95A5002D91D1 /* mt19937-64.c */,
-				C9FD68971CF022530087ACC6 /* xoroshiro128plus.c */,
+				C9FB03081CF42A9D00AD7E79 /* Reference Random Generators */,
 			);
 			path = CwlUtilsTests;
 			sourceTree = "<group>";
@@ -344,6 +343,15 @@
 				C9F1BABE1CC5024300A255E9 /* Info.plist */,
 			);
 			path = CwlUtils_iOSHarnessUITests;
+			sourceTree = "<group>";
+		};
+		C9FB03081CF42A9D00AD7E79 /* Reference Random Generators */ = {
+			isa = PBXGroup;
+			children = (
+				C93B5BB41CED95A5002D91D1 /* mt19937-64.c */,
+				C9FD68971CF022530087ACC6 /* xoroshiro128plus.c */,
+			);
+			name = "Reference Random Generators";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
