@@ -22,7 +22,7 @@ import Foundation
 import XCTest
 import CwlUtils
 
-#if TEST_ADDITIONAL_SYNC_FUNCTIONS
+#if PERFORMANCE_TESTS
 extension PThreadMutex {
 	private func sync<R>(@noescape f: () throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
@@ -38,12 +38,8 @@ private func sync<R>(mutex: PThreadMutex, @noescape f: () throws -> R) rethrows 
 #endif
 
 class PthreadTests: XCTestCase {
-#if TEST_ADDITIONAL_SYNC_FUNCTIONS
-#if DEBUG
-	static let iterations = 1_000_000
-#else
+#if PERFORMANCE_TESTS
 	static let iterations = 10_000_000
-#endif
 	
 	func testPThreadSync2Performance() {
 		let mutex = PThreadMutex()

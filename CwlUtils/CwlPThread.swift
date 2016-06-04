@@ -87,7 +87,7 @@ extension PThreadMutex {
 	}
 }
 
-#if TEST_ADDITIONAL_SYNC_FUNCTIONS
+#if PERFORMANCE_TESTS
 extension PThreadMutex {
 	public func sync_2<T>(inout param: T, @noescape f: (inout T) throws -> Void) rethrows -> Void {
 		pthread_mutex_lock(&unsafeMutex)
