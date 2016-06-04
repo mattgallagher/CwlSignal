@@ -24,13 +24,13 @@ import CwlUtils
 
 #if TEST_ADDITIONAL_SYNC_FUNCTIONS
 extension PThreadMutex {
-	private func sync<Result>(@noescape f: () throws -> Result) rethrows -> Result {
+	private func sync<R>(@noescape f: () throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
 	}
 }
-private func sync<Result>(mutex: PThreadMutex, @noescape f: () throws -> Result) rethrows -> Result {
+private func sync<R>(mutex: PThreadMutex, @noescape f: () throws -> R) rethrows -> R {
 	pthread_mutex_lock(&mutex.unsafeMutex)
 	defer { pthread_mutex_unlock(&mutex.unsafeMutex) }
 	return try f()

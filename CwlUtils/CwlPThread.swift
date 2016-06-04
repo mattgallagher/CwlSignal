@@ -55,7 +55,7 @@ public final class PThreadMutex {
 	/* RECOMMENDATION: Don't use the `slowsync` function if you care about performance. Instead, copy this extension into your file and call it:
 
 extension PThreadMutex {
-	private func sync<Result>(@noescape f: () throws -> Result) rethrows -> Result {
+	private func sync<R>(@noescape f: () throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
@@ -63,7 +63,7 @@ extension PThreadMutex {
 }
 
 	*/
-	public func slowsync<Result>(@noescape f: () throws -> Result) rethrows -> Result {
+	public func slowsync<R>(@noescape f: () throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
@@ -72,7 +72,7 @@ extension PThreadMutex {
 	/* RECOMMENDATION: Don't use the `trySlowsync` function if you care about performance. Instead, copy this extension into your file and call it:
 
 extension PThreadMutex {
-	private func trySync<Result>(@noescape f: () throws -> Result) rethrows -> Result? {
+	private func trySync<R>(@noescape f: () throws -> R) rethrows -> R? {
 		guard pthread_mutex_trylock(&unsafeMutex) == 0 else { return nil }
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
@@ -80,7 +80,7 @@ extension PThreadMutex {
 }
 
 	*/
-	public func trySlowsync<Result>(@noescape f: () throws -> Result) rethrows -> Result? {
+	public func trySlowsync<R>(@noescape f: () throws -> R) rethrows -> R? {
 		guard pthread_mutex_trylock(&unsafeMutex) == 0 else { return nil }
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
