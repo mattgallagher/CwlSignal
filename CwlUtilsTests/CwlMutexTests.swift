@@ -1,5 +1,5 @@
 //
-//  CwlPthreadTests.swift
+//  CwlMutexTests.swift
 //  CwlUtils
 //
 //  Created by Matt Gallagher on 2015/02/03.
@@ -24,7 +24,7 @@ import CwlUtils
 
 #if PERFORMANCE_TESTS
 extension PThreadMutex {
-	private func sync<R>(@noescape f: () throws -> R) rethrows -> R {
+	private func fastsync<R>(@noescape f: () throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
@@ -35,9 +35,19 @@ private func sync<R>(mutex: PThreadMutex, @noescape f: () throws -> R) rethrows 
 	defer { pthread_mutex_unlock(&mutex.unsafeMutex) }
 	return try f()
 }
+private struct DispatchSemaphore {
+	let s = dispatch_semaphore_create(1)
+	init() {}
+	func sync<R>(@noescape f: () throws -> R) rethrows -> R {
+		_ = dispatch_semaphore_wait(s, DISPATCH_TIME_FOREVER)
+		defer { _ = dispatch_semaphore_signal(s) }
+		return try f()
+	}
+}
+
 #endif
 
-class PthreadTests: XCTestCase {
+class MutexTests: XCTestCase {
 #if PERFORMANCE_TESTS
 	static let iterations = 10_000_000
 	
@@ -45,12 +55,38 @@ class PthreadTests: XCTestCase {
 		let mutex = PThreadMutex()
 		measureBlock { () -> Void in
 			var total = 0
-			for _ in 0..<PthreadTests.iterations {
+			for _ in 0..<MutexTests.iterations {
 				mutex.sync_2(&total) { t in
 					t += 1
 				}
 			}
-			XCTAssert(total == PthreadTests.iterations)
+			XCTAssert(total == MutexTests.iterations)
+		}
+	}
+		
+	func testDispatchSemaphoreSlowPerformance() {
+		let s = CwlUtils.DispatchSemaphore()
+		measureBlock { () -> Void in
+			var total = 0
+			for _ in 0..<MutexTests.iterations {
+				s.sync {
+					total += 1
+				}
+			}
+			XCTAssert(total == MutexTests.iterations)
+		}
+	}
+		
+	func testDispatchSemaphorePerformance() {
+		let s = DispatchSemaphore()
+		measureBlock { () -> Void in
+			var total = 0
+			for _ in 0..<MutexTests.iterations {
+				s.sync {
+					total += 1
+				}
+			}
+			XCTAssert(total == MutexTests.iterations)
 		}
 	}
 		
@@ -58,12 +94,12 @@ class PthreadTests: XCTestCase {
 		let mutex = PThreadMutex()
 		measureBlock { () -> Void in
 			var total = 0
-			for _ in 0..<PthreadTests.iterations {
+			for _ in 0..<MutexTests.iterations {
 				sync(mutex) {
 					total += 1
 				}
 			}
-			XCTAssert(total == PthreadTests.iterations)
+			XCTAssert(total == MutexTests.iterations)
 		}
 	}
 		
@@ -71,12 +107,12 @@ class PthreadTests: XCTestCase {
 		let mutex = PThreadMutex()
 		measureBlock { () -> Void in
 			var total = 0
-			for _ in 0..<PthreadTests.iterations {
-				mutex.slowsync {
+			for _ in 0..<MutexTests.iterations {
+				mutex.sync {
 					total += 1
 				}
 			}
-			XCTAssert(total == PthreadTests.iterations)
+			XCTAssert(total == MutexTests.iterations)
 		}
 	}
 		
@@ -84,12 +120,12 @@ class PthreadTests: XCTestCase {
 		let mutex = PThreadMutex()
 		measureBlock { () -> Void in
 			var total = 0
-			for _ in 0..<PthreadTests.iterations {
+			for _ in 0..<MutexTests.iterations {
 				total = mutex.sync_3(&total) { t in
 					return t + 1
 				}
 			}
-			XCTAssert(total == PthreadTests.iterations)
+			XCTAssert(total == MutexTests.iterations)
 		}
 	}
 		
@@ -97,12 +133,12 @@ class PthreadTests: XCTestCase {
 		let mutex = PThreadMutex()
 		measureBlock { () -> Void in
 			var total = 0
-			for var i in 0..<PthreadTests.iterations {
+			for var i in 0..<MutexTests.iterations {
 				mutex.sync_4(&i, &total) { (inout i: Int, inout t: Int) in
 					t = i + 1
 				}
 			}
-			XCTAssert(total == PthreadTests.iterations)
+			XCTAssert(total == MutexTests.iterations)
 		}
 	}
 		
@@ -110,12 +146,12 @@ class PthreadTests: XCTestCase {
 		let mutex = NSObject()
 		measureBlock { () -> Void in
 			var total = 0
-			for _ in 0..<PthreadTests.iterations {
+			for _ in 0..<MutexTests.iterations {
 				objc_sync_enter(mutex)
 				total += 1
 				objc_sync_exit(mutex)
 			}
-			XCTAssert(total == PthreadTests.iterations)
+			XCTAssert(total == MutexTests.iterations)
 		}
 	}
 		
@@ -123,12 +159,12 @@ class PthreadTests: XCTestCase {
 		let mutex = PThreadMutex()
 		measureBlock { () -> Void in
 			var total = 0
-			for _ in 0..<PthreadTests.iterations {
-				mutex.sync { t in
+			for _ in 0..<MutexTests.iterations {
+				mutex.fastsync { t in
 					total += 1
 				}
 			}
-			XCTAssert(total == PthreadTests.iterations)
+			XCTAssert(total == MutexTests.iterations)
 		}
 	}
 		
@@ -136,12 +172,12 @@ class PthreadTests: XCTestCase {
 		let mutex = PThreadMutex()
 		measureBlock { () -> Void in
 			var total = 0
-			for _ in 0..<PthreadTests.iterations {
+			for _ in 0..<MutexTests.iterations {
 				pthread_mutex_lock(&mutex.unsafeMutex)
 				total += 1
 				pthread_mutex_unlock(&mutex.unsafeMutex)
 			}
-			XCTAssert(total == PthreadTests.iterations)
+			XCTAssert(total == MutexTests.iterations)
 		}
 	}
 		
@@ -149,12 +185,12 @@ class PthreadTests: XCTestCase {
 		let queue = dispatch_queue_create(nil, DISPATCH_QUEUE_SERIAL)
 		measureBlock { () -> Void in
 			var total = 0
-			for _ in 0..<PthreadTests.iterations {
+			for _ in 0..<MutexTests.iterations {
 				dispatch_sync(queue) {
 					total += 1
 				}
 			}
-			XCTAssert(total == PthreadTests.iterations)
+			XCTAssert(total == MutexTests.iterations)
 		}
 	}
 	
@@ -162,12 +198,12 @@ class PthreadTests: XCTestCase {
 		var lock = OS_SPINLOCK_INIT
 		measureBlock { () -> Void in
 			var total = 0
-			for _ in 0..<PthreadTests.iterations {
+			for _ in 0..<MutexTests.iterations {
 				OSSpinLockLock(&lock)
 				total += 1
 				OSSpinLockUnlock(&lock)
 			}
-			XCTAssert(total == PthreadTests.iterations)
+			XCTAssert(total == MutexTests.iterations)
 		}
 	}
 #endif
@@ -176,9 +212,9 @@ class PthreadTests: XCTestCase {
 		let mutex1 = PThreadMutex()
 		
 		let e1 = expectationWithDescription("Block1 not invoked")
-		mutex1.slowsync {
+		mutex1.sync {
 			e1.fulfill()
-			let reenter: Void? = mutex1.trySlowsync() {
+			let reenter: Void? = mutex1.trySync() {
 				XCTFail()
 			}
 			XCTAssert(reenter == nil)
@@ -188,18 +224,18 @@ class PthreadTests: XCTestCase {
 
 		let e2 = expectationWithDescription("Block2 not invoked")
 		let e3 = expectationWithDescription("Block3 not invoked")
-		mutex2.slowsync {
+		mutex2.sync {
 			e2.fulfill()
-			let reenter: Void? = mutex2.trySlowsync() {
+			let reenter: Void? = mutex2.trySync() {
 				e3.fulfill()
 			}
 			XCTAssert(reenter != nil)
 		}
 		
 		let e4 = expectationWithDescription("Block4 not invoked")
-		let r = mutex1.slowsync { n -> Int in
+		let r = mutex1.sync { n -> Int in
 			e4.fulfill()
-			let reenter: Void? = mutex1.trySlowsync() {
+			let reenter: Void? = mutex1.trySync() {
 				XCTFail()
 			}
 			XCTAssert(reenter == nil)
