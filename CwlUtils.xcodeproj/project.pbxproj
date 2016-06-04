@@ -43,6 +43,10 @@
 		C9E6C60E1CBF6D03007B3F24 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C9E6C60D1CBF6D03007B3F24 /* Assets.xcassets */; };
 		C9E6C6111CBF6D03007B3F24 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = C9E6C60F1CBF6D03007B3F24 /* MainMenu.xib */; };
 		C9E6C61C1CBF6D03007B3F24 /* CwlUtils_OSXHarnessUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C61B1CBF6D03007B3F24 /* CwlUtils_OSXHarnessUITests.swift */; };
+		C9F193C71D0296E400EAC5BE /* CwlPThreadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F193C61D0296E400EAC5BE /* CwlPThreadTests.swift */; };
+		C9F193C81D0296E400EAC5BE /* CwlPThreadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F193C61D0296E400EAC5BE /* CwlPThreadTests.swift */; };
+		C9F193CD1D02970200EAC5BE /* CwlPThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F193CC1D02970200EAC5BE /* CwlPThread.swift */; };
+		C9F193CE1D02970200EAC5BE /* CwlPThread.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F193CC1D02970200EAC5BE /* CwlPThread.swift */; };
 		C9F1BAA81CC5024300A255E9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F1BAA71CC5024300A255E9 /* AppDelegate.swift */; };
 		C9F1BAAA1CC5024300A255E9 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F1BAA91CC5024300A255E9 /* ViewController.swift */; };
 		C9F1BAAD1CC5024300A255E9 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C9F1BAAB1CC5024300A255E9 /* Main.storyboard */; };
@@ -147,6 +151,8 @@
 		C9E6C6171CBF6D03007B3F24 /* CwlUtils_OSXHarnessUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlUtils_OSXHarnessUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9E6C61B1CBF6D03007B3F24 /* CwlUtils_OSXHarnessUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlUtils_OSXHarnessUITests.swift; sourceTree = "<group>"; };
 		C9E6C61D1CBF6D03007B3F24 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C9F193C61D0296E400EAC5BE /* CwlPThreadTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlPThreadTests.swift; sourceTree = "<group>"; };
+		C9F193CC1D02970200EAC5BE /* CwlPThread.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlPThread.swift; sourceTree = "<group>"; };
 		C9F1BAA51CC5024300A255E9 /* CwlUtils_iOSHarness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CwlUtils_iOSHarness.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9F1BAA71CC5024300A255E9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C9F1BAA91CC5024300A255E9 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -260,6 +266,7 @@
 				C93E185E1C81BE120009A053 /* CwlFrameAddress.c */,
 				C93E185F1C81BE120009A053 /* CwlFrameAddress.h */,
 				C9F3E3361CAA254A006728F7 /* CwlOnDelete.swift */,
+				C9F193CC1D02970200EAC5BE /* CwlPThread.swift */,
 				C9B6655E1CEAD9080006B927 /* CwlRandom.swift */,
 				C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */,
 				C93E184E1C81794B0009A053 /* CwlStackFrame.swift */,
@@ -275,6 +282,7 @@
 				C93E185D1C8179C40009A053 /* Supporting Files */,
 				C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */,
 				C9F3E33F1CAA269C006728F7 /* CwlOnDeleteTests.swift */,
+				C9F193C61D0296E400EAC5BE /* CwlPThreadTests.swift */,
 				C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */,
 				C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */,
 				C93E18591C8179B40009A053 /* CwlStackFrameTests.swift */,
@@ -662,6 +670,7 @@
 				C9C9AAEF1C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
 				C93E18601C81BE120009A053 /* CwlFrameAddress.c in Sources */,
 				C93E18501C81794B0009A053 /* CwlStackFrame.swift in Sources */,
+				C9F193CD1D02970200EAC5BE /* CwlPThread.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -672,6 +681,7 @@
 				C93E185B1C8179B80009A053 /* CwlStackFrameTests.swift in Sources */,
 				C9F3E3401CAA269C006728F7 /* CwlOnDeleteTests.swift in Sources */,
 				C93E18681C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */,
+				C9F193C71D0296E400EAC5BE /* CwlPThreadTests.swift in Sources */,
 				C93B5BB51CED95A5002D91D1 /* mt19937-64.c in Sources */,
 				C9E055481CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
@@ -693,6 +703,7 @@
 				C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
 				C93E18511C8179530009A053 /* CwlStackFrame.swift in Sources */,
 				C93E18611C81BE120009A053 /* CwlFrameAddress.c in Sources */,
+				C9F193CE1D02970200EAC5BE /* CwlPThread.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -703,6 +714,7 @@
 				C93E185C1C8179B90009A053 /* CwlStackFrameTests.swift in Sources */,
 				C9F3E3411CAA269C006728F7 /* CwlOnDeleteTests.swift in Sources */,
 				C93E18691C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */,
+				C9F193C81D0296E400EAC5BE /* CwlPThreadTests.swift in Sources */,
 				C93B5BB61CED95A5002D91D1 /* mt19937-64.c in Sources */,
 				C9E055491CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C977AA5E1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
