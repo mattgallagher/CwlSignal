@@ -63,7 +63,7 @@ extension PThreadMutex {
 }
 
 	*/
-	public func slowsync<R>(@noescape f: () throws -> R) rethrows -> R {
+	public func slowsync<R>(_ f: @noescape () throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
@@ -80,26 +80,26 @@ extension PThreadMutex {
 }
 
 	*/
-	public func trySlowsync<R>(@noescape f: () throws -> R) rethrows -> R? {
+	public func trySlowsync<R>(_ f: @noescape () throws -> R) rethrows -> R? {
 		guard pthread_mutex_trylock(&unsafeMutex) == 0 else { return nil }
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
 	}
 }
 
-#if TEST_ADDITIONAL_SYNC_FUNCTIONS
+#if PERFORMANCE_TESTS
 extension PThreadMutex {
-	public func sync_2<T>(inout param: T, @noescape f: (inout T) throws -> Void) rethrows -> Void {
+	public func sync_2<T>(_ param: inout T, f: @noescape (inout T) throws -> Void) rethrows -> Void {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		try f(&param)
 	}
-	public func sync_3<T, R>(inout param: T, @noescape f: (inout T) throws -> R) rethrows -> R {
+	public func sync_3<T, R>(_ param: inout T, f: @noescape (inout T) throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f(&param)
 	}
-	public func sync_4<T, U>(inout param1: T, inout _ param2: U, @noescape f: (inout T, inout U) throws -> Void) rethrows -> Void {
+	public func sync_4<T, U>(_ param1: inout T, _ param2: inout U, f: @noescape (inout T, inout U) throws -> Void) rethrows -> Void {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f(&param1, &param2)

@@ -38,7 +38,7 @@ public struct AddressInfo {
 	
 	/// -returns: the "image" (shared object pathname) for the instruction
 	public var image: String {
-		if info.dli_fname != nil, let fname = String.fromCString(info.dli_fname), _ = fname.rangeOfString("/", options: NSStringCompareOptions.BackwardsSearch, range: nil, locale: nil) {
+		if let dli_fname = info.dli_fname, fname = String(validatingUTF8: dli_fname), _ = fname.range(of: "/", options: NSStringCompareOptions.backwardsSearch, range: nil, locale: nil) {
 			return (fname as NSString).lastPathComponent
 		} else {
 			return "???"
@@ -47,23 +47,23 @@ public struct AddressInfo {
 	
 	/// - returns: the symbol nearest the address
 	public var symbol: String {
-		if let sname = String.fromCString(info.dli_sname) {
+		if let dli_sname = info.dli_sname, sname = String(validatingUTF8: dli_sname) {
 			return sname
-		} else if let _ = String.fromCString(info.dli_fname) {
+		} else if let dli_fname = info.dli_fname, _ = String(validatingUTF8: dli_fname) {
 			return self.image
 		} else {
-			return String(format: "0x%1x", info.dli_saddr)
+			return String(format: "0x%1x", UInt(bitPattern: info.dli_saddr))
 		}
 	}
 	
 	/// - returns: the address' offset relative to the nearest symbol
 	public var offset: Int {
-		if let _ = String.fromCString(info.dli_sname) {
-			return info.dli_saddr.distanceTo(UnsafeMutablePointer<Void>(bitPattern: address))
-		} else if let _ = String.fromCString(info.dli_fname) {
-			return info.dli_fbase.distanceTo(UnsafeMutablePointer<Void>(bitPattern: address))
+		if let dli_sname = info.dli_sname, _ = String(validatingUTF8: dli_sname) {
+			return Int(address - (UInt(bitPattern: info.dli_saddr) ?? 0))
+		} else if let _ = String(validatingUTF8: info.dli_fname) {
+			return Int(address - (UInt(bitPattern: info.dli_fbase) ?? 0))
 		} else {
-			return info.dli_saddr.distanceTo(UnsafeMutablePointer<Void>(bitPattern: address))
+			return Int(address - (UInt(bitPattern: info.dli_saddr) ?? 0))
 		}
 	}
 	
@@ -72,9 +72,9 @@ public struct AddressInfo {
 	public func formattedDescriptionForIndex(index: Int) -> String {
 		return self.image.nulTerminatedUTF8.withUnsafeBufferPointer { (imageBuffer: UnsafeBufferPointer<UTF8.CodeUnit>) -> String in
 		#if arch(x86_64) || arch(arm64)
-			return String(format: "%-4ld%-35s 0x%016llx %@ + %ld", index, imageBuffer.baseAddress, self.address, self.symbol, self.offset)
+			return String(format: "%-4ld%-35s 0x%016llx %@ + %ld", index, UInt(bitPattern: imageBuffer.baseAddress), self.address, self.symbol, self.offset)
 		#else
-			return String(format: "%-4d%-35s 0x%08lx %@ + %d", index, imageBuffer.baseAddress, self.address, self.symbol, self.offset)
+			return String(format: "%-4d%-35s 0x%08lx %@ + %d", index, UInt(bitPattern: imageBuffer.baseAddress), self.address, self.symbol, self.offset)
 		#endif
 		}
 	}
@@ -85,7 +85,7 @@ public struct AddressInfo {
 /// - parameter skipCount: the number of stack frames to skip over before analyzing
 /// - returns: the `dladdr` identifier for the specified frame, if one exists
 @inline(never)
-public func callingFunctionIdentifier(skipCount skipCount: UInt = 0) -> String {
+public func callingFunctionIdentifier(skipCount: UInt = 0) -> String {
 	let address = callStackReturnAddresses(skip: skipCount + 1, maximumAddresses: 1).first ?? 0
 	return AddressInfo(address: address).symbol
 }
@@ -93,8 +93,8 @@ public func callingFunctionIdentifier(skipCount skipCount: UInt = 0) -> String {
 /// When applied to the output of callStackReturnAddresses, produces identical output to the execinfo function "backtrace_symbols" or NSThread.callStackSymbols
 /// - parameter addresses: an array of memory addresses, generally as produced by `callStackReturnAddresses`
 /// - returns: an array of formatted, symbolicated stack frame descriptions.
-public func symbolsForCallStackAddresses(addresses: [UInt]) -> [String] {
-	return addresses.enumerate().map { (index: Int, address: UInt) -> String in
-		return AddressInfo(address: address).formattedDescriptionForIndex(index)
+public func symbolsForCallStack(addresses: [UInt]) -> [String] {
+	return addresses.enumerated().map { (index: Int, address: UInt) -> String in
+		return AddressInfo(address: address).formattedDescriptionForIndex(index: index)
 	}
 }

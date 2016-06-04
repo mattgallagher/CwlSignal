@@ -25,13 +25,13 @@ import CwlUtils
 class StackFrameTests: XCTestCase {
 	func testCallStackReturnAddresses() {
 		var a = callStackReturnAddresses()
-		a.removeAtIndex(0)
+		a.remove(at: 0)
 		var b = NSThread.callStackReturnAddresses() as! [UInt]
-		b.removeAtIndex(0)
+		b.remove(at: 0)
 		XCTAssert(a == b)
 
 		a = callStackReturnAddresses(skip: 2)
-		b.removeAtIndex(0)
+		b.remove(at: 0)
 		XCTAssert(a == b)
 
 		a = callStackReturnAddresses(skip: 2, maximumAddresses: 10)
@@ -39,7 +39,7 @@ class StackFrameTests: XCTestCase {
 	}
 
 	func testNSThreadCallStackReturnAddressesPerformance() {
-		measureBlock {
+		measure {
 			var traces = [[NSNumber]]()
 			for _ in 0..<1000 {
 				traces.append(NSThread.callStackReturnAddresses())
@@ -48,7 +48,7 @@ class StackFrameTests: XCTestCase {
 	}
 
 	func testCallStackReturnAddressesPerformance() {
-		measureBlock {
+		measure {
 			var traces = [[UInt]]()
 			for _ in 0..<1000 {
 				traces.append(callStackReturnAddresses())

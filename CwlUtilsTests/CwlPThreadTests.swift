@@ -22,15 +22,15 @@ import Foundation
 import XCTest
 import CwlUtils
 
-#if TEST_ADDITIONAL_SYNC_FUNCTIONS
+#if PERFORMANCE_TESTS
 extension PThreadMutex {
-	private func sync<R>(@noescape f: () throws -> R) rethrows -> R {
+	private func sync<R>(_ f: @noescape () throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
 	}
 }
-private func sync<R>(mutex: PThreadMutex, @noescape f: () throws -> R) rethrows -> R {
+private func sync<R>(_ mutex: PThreadMutex, f: @noescape () throws -> R) rethrows -> R {
 	pthread_mutex_lock(&mutex.unsafeMutex)
 	defer { pthread_mutex_unlock(&mutex.unsafeMutex) }
 	return try f()
@@ -38,19 +38,15 @@ private func sync<R>(mutex: PThreadMutex, @noescape f: () throws -> R) rethrows 
 #endif
 
 class PthreadTests: XCTestCase {
-#if TEST_ADDITIONAL_SYNC_FUNCTIONS
-#if DEBUG
-	static let iterations = 1_000_000
-#else
+#if PERFORMANCE_TESTS
 	static let iterations = 10_000_000
-#endif
 	
 	func testPThreadSync2Performance() {
 		let mutex = PThreadMutex()
-		measureBlock { () -> Void in
+		measure { () -> Void in
 			var total = 0
 			for _ in 0..<PthreadTests.iterations {
-				mutex.sync_2(&total) { t in
+				mutex.sync_2(&total) { (t: inout Int) -> Void in
 					t += 1
 				}
 			}
@@ -60,7 +56,7 @@ class PthreadTests: XCTestCase {
 		
 	func testPThreadFreePerformance() {
 		let mutex = PThreadMutex()
-		measureBlock { () -> Void in
+		measure { () -> Void in
 			var total = 0
 			for _ in 0..<PthreadTests.iterations {
 				sync(mutex) {
@@ -73,7 +69,7 @@ class PthreadTests: XCTestCase {
 		
 	func testPThreadSlowSyncPerformance() {
 		let mutex = PThreadMutex()
-		measureBlock { () -> Void in
+		measure { () -> Void in
 			var total = 0
 			for _ in 0..<PthreadTests.iterations {
 				mutex.slowsync {
@@ -86,7 +82,7 @@ class PthreadTests: XCTestCase {
 		
 	func testPThreadSync3Performance() {
 		let mutex = PThreadMutex()
-		measureBlock { () -> Void in
+		measure { () -> Void in
 			var total = 0
 			for _ in 0..<PthreadTests.iterations {
 				total = mutex.sync_3(&total) { t in
@@ -99,10 +95,10 @@ class PthreadTests: XCTestCase {
 		
 	func testPThreadSync4Performance() {
 		let mutex = PThreadMutex()
-		measureBlock { () -> Void in
+		measure { () -> Void in
 			var total = 0
 			for var i in 0..<PthreadTests.iterations {
-				mutex.sync_4(&i, &total) { (inout i: Int, inout t: Int) in
+				mutex.sync_4(&i, &total) { (i: inout Int, t: inout Int) in
 					t = i + 1
 				}
 			}
@@ -112,7 +108,7 @@ class PthreadTests: XCTestCase {
 		
 	func testObjcSyncPerformance() {
 		let mutex = NSObject()
-		measureBlock { () -> Void in
+		measure { () -> Void in
 			var total = 0
 			for _ in 0..<PthreadTests.iterations {
 				objc_sync_enter(mutex)
@@ -125,7 +121,7 @@ class PthreadTests: XCTestCase {
 		
 	func testPThreadCopiedPerformance() {
 		let mutex = PThreadMutex()
-		measureBlock { () -> Void in
+		measure { () -> Void in
 			var total = 0
 			for _ in 0..<PthreadTests.iterations {
 				mutex.sync { t in
@@ -138,7 +134,7 @@ class PthreadTests: XCTestCase {
 		
 	func testPThreadInlinePerformance() {
 		let mutex = PThreadMutex()
-		measureBlock { () -> Void in
+		measure { () -> Void in
 			var total = 0
 			for _ in 0..<PthreadTests.iterations {
 				pthread_mutex_lock(&mutex.unsafeMutex)
@@ -150,8 +146,8 @@ class PthreadTests: XCTestCase {
 	}
 		
 	func testDispatchSyncPerformance() {
-		let queue = dispatch_queue_create(nil, DISPATCH_QUEUE_SERIAL)
-		measureBlock { () -> Void in
+		let queue = dispatch_queue_create(nil, DISPATCH_QUEUE_SERIAL)!
+		measure { () -> Void in
 			var total = 0
 			for _ in 0..<PthreadTests.iterations {
 				dispatch_sync(queue) {
@@ -164,7 +160,7 @@ class PthreadTests: XCTestCase {
 	
 	func testSpinLockPerformance() {
 		var lock = OS_SPINLOCK_INIT
-		measureBlock { () -> Void in
+		measure { () -> Void in
 			var total = 0
 			for _ in 0..<PthreadTests.iterations {
 				OSSpinLockLock(&lock)
@@ -179,7 +175,7 @@ class PthreadTests: XCTestCase {
 	func testPthreadMutex() {
 		let mutex1 = PThreadMutex()
 		
-		let e1 = expectationWithDescription("Block1 not invoked")
+		let e1 = expectation(withDescription: "Block1 not invoked")
 		mutex1.slowsync {
 			e1.fulfill()
 			let reenter: Void? = mutex1.trySlowsync() {
@@ -190,8 +186,8 @@ class PthreadTests: XCTestCase {
 		
 		let mutex2 = PThreadMutex(type: .Recursive)
 
-		let e2 = expectationWithDescription("Block2 not invoked")
-		let e3 = expectationWithDescription("Block3 not invoked")
+		let e2 = expectation(withDescription: "Block2 not invoked")
+		let e3 = expectation(withDescription: "Block3 not invoked")
 		mutex2.slowsync {
 			e2.fulfill()
 			let reenter: Void? = mutex2.trySlowsync() {
@@ -200,7 +196,7 @@ class PthreadTests: XCTestCase {
 			XCTAssert(reenter != nil)
 		}
 		
-		let e4 = expectationWithDescription("Block4 not invoked")
+		let e4 = expectation(withDescription: "Block4 not invoked")
 		let r = mutex1.slowsync { n -> Int in
 			e4.fulfill()
 			let reenter: Void? = mutex1.trySlowsync() {
@@ -211,6 +207,6 @@ class PthreadTests: XCTestCase {
 		}
 		XCTAssert(r == 13)
 		
-		waitForExpectationsWithTimeout(0, handler: nil)
+		waitForExpectations(withTimeout: 0, handler: nil)
 	}
 }

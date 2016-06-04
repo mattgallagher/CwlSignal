@@ -51,12 +51,12 @@ public protocol RandomGenerator {
 extension RandomGenerator {
 	public mutating func random64() -> UInt64 {
 		var bits: UInt64 = 0
-		randomize(&bits, size: sizeof(UInt64))
+		randomize(buffer: &bits, size: sizeof(UInt64))
 		return bits
 	}
 	public mutating func random32() -> UInt32 {
 		var bits: UInt32 = 0
-		randomize(&bits, size: sizeof(UInt32))
+		randomize(buffer: &bits, size: sizeof(UInt32))
 		return bits
 	}
 	public mutating func random64(max: UInt64) -> UInt64 {
@@ -74,13 +74,13 @@ extension RandomGenerator {
 		return result
 	}
 	public mutating func randomHalfOpen() -> Double {
-		return halfOpenDoubleFrom64(random64())
+		return halfOpenDoubleFrom64(bits: random64())
 	}
 	public mutating func randomClosed() -> Double {
-		return closedDoubleFrom64(random64())
+		return closedDoubleFrom64(bits: random64())
 	}
 	public mutating func randomOpen() -> Double {
-		return openDoubleFrom64(random64())
+		return openDoubleFrom64(bits: random64())
 	}
 }
 
@@ -144,7 +144,7 @@ public struct DevRandom: RandomGenerator {
 	}
 	public static func randomize(buffer: UnsafeMutablePointer<Void>, size: Int) {
 		var r = DevRandom()
-		r.randomize(buffer, size: size)
+		r.randomize(buffer: buffer, size: size)
 	}
 }
 
@@ -175,7 +175,7 @@ public struct WellRng512: RandomWordGenerator {
 	var index: Int
 
 	public init() {
-		DevRandom.randomize(&state, size: sizeof(UInt32) * 16)
+		DevRandom.randomize(buffer: &state, size: sizeof(UInt32) * 16)
 		index = 0
 	}
 	
@@ -230,19 +230,19 @@ public struct Lfsr258: RandomWordGenerator {
 	public init() {
 		var r = DevRandom()
 		repeat {
-			r.randomize(&state.0, size: sizeof(UInt64))
+			r.randomize(buffer: &state.0, size: sizeof(UInt64))
 		} while state.0 < Lfsr258.k.0
 		repeat {
-			r.randomize(&state.1, size: sizeof(UInt64))
+			r.randomize(buffer: &state.1, size: sizeof(UInt64))
 		} while state.1 < Lfsr258.k.1
 		repeat {
-			r.randomize(&state.2, size: sizeof(UInt64))
+			r.randomize(buffer: &state.2, size: sizeof(UInt64))
 		} while state.2 < Lfsr258.k.2
 		repeat {
-			r.randomize(&state.3, size: sizeof(UInt64))
+			r.randomize(buffer: &state.3, size: sizeof(UInt64))
 		} while state.3 < Lfsr258.k.3
 		repeat {
-			r.randomize(&state.4, size: sizeof(UInt64))
+			r.randomize(buffer: &state.4, size: sizeof(UInt64))
 		} while state.4 < Lfsr258.k.4
 	}
 	
@@ -285,13 +285,13 @@ public struct Lfsr176: RandomWordGenerator {
 	public init() {
 		var r = DevRandom()
 		repeat {
-			r.randomize(&state.0, size: sizeof(UInt64))
+			r.randomize(buffer: &state.0, size: sizeof(UInt64))
 		} while state.0 < Lfsr176.k.0
 		repeat {
-			r.randomize(&state.1, size: sizeof(UInt64))
+			r.randomize(buffer: &state.1, size: sizeof(UInt64))
 		} while state.1 < Lfsr176.k.1
 		repeat {
-			r.randomize(&state.2, size: sizeof(UInt64))
+			r.randomize(buffer: &state.2, size: sizeof(UInt64))
 		} while state.2 < Lfsr176.k.2
 	}
 	
@@ -324,7 +324,7 @@ public struct Xoroshiro: RandomWordGenerator {
 	var state: StateType = (0, 0)
 
 	public init() {
-		DevRandom.randomize(&state, size: sizeofValue(state))
+		DevRandom.randomize(buffer: &state, size: sizeofValue(state))
 	}
 	
 	public init(seed: StateType) {
@@ -375,7 +375,7 @@ public struct JRand48: RandomWordGenerator {
 
 	public init() {
 		state = (0,0,0)
-		DevRandom.randomize(&state, size: sizeofValue(state))
+		DevRandom.randomize(buffer: &state, size: sizeofValue(state))
 	}
 
 	public init(seed: (UInt16, UInt16, UInt16)) {
@@ -392,7 +392,7 @@ public struct JRand48: RandomWordGenerator {
 
 	public mutating func randomWord() -> UInt32 {
 		return withUnsafeMutablePointer(&state) { s -> UInt32 in
-			return UInt32(littleEndian: unsafeBitCast(jrand48(UnsafeMutablePointer<UInt16>(s)).littleEndian, (UInt32, UInt32).self).0)
+			return UInt32(littleEndian: unsafeBitCast(jrand48(UnsafeMutablePointer<UInt16>(s)).littleEndian, to: (UInt32, UInt32).self).0)
 		}
 	}
 }
@@ -461,15 +461,15 @@ public struct MersenneTwister: RandomWordGenerator {
 	private var index: Int
 	private static let stateCount: Int = 312
 	
-	private mutating func withState(f: UnsafeMutablePointer<UInt64> -> Void) {
+	private mutating func withState(f: (UnsafeMutablePointer<UInt64>) -> Void) {
 		withUnsafeMutablePointer(&state_internal) { ptr in
 			f(UnsafeMutablePointer<UInt64>(ptr))
 		}
 	}
 
-	private mutating func stateAtIndex(i: Int) -> UInt64 {
+	private mutating func state(at: Int) -> UInt64 {
 		return withUnsafePointer(&state_internal) { ptr -> UInt64 in
-			return UnsafePointer<UInt64>(ptr)[i]
+			return UnsafePointer<UInt64>(ptr)[at]
 		}
 	}
 
@@ -520,7 +520,7 @@ public struct MersenneTwister: RandomWordGenerator {
 			twist()
 		}
 		
-		var result = stateAtIndex(index)
+		var result = state(at: index)
 		result ^= (result >> 29) & 0x5555555555555555
 		result ^= (result << 17) & 0x71D67FFFEDA60000
 		result ^= (result << 37) & 0xFFF7EEE000000000

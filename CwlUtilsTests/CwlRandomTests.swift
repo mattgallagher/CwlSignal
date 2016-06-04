@@ -22,7 +22,7 @@ import Foundation
 import XCTest
 import CwlUtils
 
-#if !DEBUG
+#if PERFORMANCE_TESTS
 let PerformanceIterations = 100_000_000
 #endif
 let VerificationIterations = 1000
@@ -37,8 +37,8 @@ class RandomTests: XCTestCase {
 
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}
@@ -55,8 +55,8 @@ class RandomTests: XCTestCase {
 
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}
@@ -73,8 +73,8 @@ class RandomTests: XCTestCase {
 
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}
@@ -91,8 +91,8 @@ class RandomTests: XCTestCase {
 
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}
@@ -109,8 +109,8 @@ class RandomTests: XCTestCase {
 
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}
@@ -127,8 +127,8 @@ class RandomTests: XCTestCase {
 
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}
@@ -139,8 +139,8 @@ class RandomTests: XCTestCase {
 	func testConstantNonRandom() {
 		var generator = ConstantNonRandom()
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}
@@ -157,8 +157,8 @@ class RandomTests: XCTestCase {
 
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}
@@ -181,8 +181,8 @@ class RandomTests: XCTestCase {
 
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}
@@ -199,8 +199,8 @@ class RandomTests: XCTestCase {
 
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}
@@ -223,8 +223,8 @@ class RandomTests: XCTestCase {
 
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
 
-	#if !DEBUG
-		measureBlock { () -> Void in
+	#if PERFORMANCE_TESTS
+		measure { () -> Void in
 			for _ in 0..<PerformanceIterations {
 				_ = generator.random64()
 			}

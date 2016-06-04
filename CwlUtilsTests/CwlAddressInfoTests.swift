@@ -33,12 +33,12 @@ class AddressInfoTests: XCTestCase {
 
 	func testSymbolsForCallStackAddresses() {
 		var b = NSThread.callStackSymbols() as [String]
-		b.removeAtIndex(0)
-		var a = symbolsForCallStackAddresses(callStackReturnAddresses())
-		a.removeAtIndex(0)
+		b.remove(at: 0)
+		var a = symbolsForCallStack(addresses: callStackReturnAddresses())
+		a.remove(at: 0)
 		XCTAssert(a == b)
 		
-		let ex = expectationWithDescription("Hello")
+		let ex = expectation(withDescription: "Hello")
 		
 		dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
 			dispatch_async(dispatch_get_main_queue()) {
@@ -48,6 +48,6 @@ class AddressInfoTests: XCTestCase {
 			}
 		}
 		
-		waitForExpectationsWithTimeout(1e2, handler: nil)
+		waitForExpectations(withTimeout: 1e2, handler: nil)
 	}
 }

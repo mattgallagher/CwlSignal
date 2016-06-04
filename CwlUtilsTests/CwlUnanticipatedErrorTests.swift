@@ -22,7 +22,7 @@ import Foundation
 import XCTest
 import CwlUtils
 
-enum TestCode: Int, ErrorType {
+enum TestCode: Int, ErrorProtocol {
 	case ZeroValue = 0
 	case OneValue = 1
 	case TestValue = 2
@@ -50,18 +50,18 @@ class UnanticipatedErrorTests: XCTestCase {
 
 		let attempter = userInfo[NSRecoveryAttempterErrorKey] as? NSObject
 		let backup = pasteboardBackup()
-		attempter?.attemptRecoveryFromError(e as NSError, optionIndex: 1)
+		attempter?.attemptRecovery(fromError: e as NSError, optionIndex: 1)
 		let clipboardString = pasteboardString()
 
 		// The following (ugly) compile-time conditional is a best effort at testing for the simulator (no actual simulator macro is provided)
 	#if !os(iOS) || (!arch(i386) && !arch(x86_64))
-		XCTAssert(clipboardString?.rangeOfString(e.localizedRecoverySuggestion!) != nil)
+		XCTAssert(clipboardString?.range(of: e.localizedRecoverySuggestion!) != nil)
 	#else
 		// Logic tests in the simulator don't appear to have access to a real UIPasteboard so we expect a failure here
-		XCTAssertFalse(clipboardString?.rangeOfString(e.localizedRecoverySuggestion!) != nil, "Simulator pasteboard expected to fail")
+		XCTAssertFalse(clipboardString?.range(of: e.localizedRecoverySuggestion!) != nil, "Simulator pasteboard expected to fail")
 	#endif
 
-		restorePasteboard(backup)
+		restorePasteboard(items: backup)
 	}
 }
 
@@ -82,10 +82,10 @@ func pasteboardString() -> String? {
 #else
 
 func pasteboardBackup() -> [NSPasteboardItem] {
-	return NSPasteboard.generalPasteboard().pasteboardItems?.map { item in
+	return NSPasteboard.general().pasteboardItems?.map { item in
 		let backupItem = NSPasteboardItem()
 		for type in item.types {
-			if let data = item.dataForType(type)?.copy() as? NSData {
+			if let data = item.data(forType: type)?.copy() as? NSData {
 				backupItem.setData(data, forType:type)
 			}
 		}
@@ -94,12 +94,12 @@ func pasteboardBackup() -> [NSPasteboardItem] {
 }
 
 func restorePasteboard(items: [NSPasteboardItem]) {
-	NSPasteboard.generalPasteboard().clearContents()
-	NSPasteboard.generalPasteboard().writeObjects(items)
+	NSPasteboard.general().clearContents()
+	NSPasteboard.general().writeObjects(items)
 }
 
 func pasteboardString() -> String? {
-	return NSPasteboard.generalPasteboard().stringForType(NSPasteboardTypeString)
+	return NSPasteboard.general().string(forType: NSPasteboardTypeString)
 }
 
 #endif
