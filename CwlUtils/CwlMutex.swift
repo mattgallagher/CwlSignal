@@ -20,18 +20,6 @@
 
 import Foundation
 
-/// A basic scoped mutex wrapper around a `dispatch_semaphore_t`.
-/// For maximum performance, it is recommended that you copy this entire type into the same compilation unit as your code that uses it to ensure inlining.
-public struct DispatchSemaphore {
-	let s = dispatch_semaphore_create(1)
-	public init() {}
-	public func sync<R>(@noescape f: () throws -> R) rethrows -> R {
-		_ = dispatch_semaphore_wait(s, DISPATCH_TIME_FOREVER)
-		defer { _ = dispatch_semaphore_signal(s) }
-		return try f()
-	}
-}
-
 /// A basic wrapper around the "NORMAL" and "RECURSIVE" pthread mutex types. This type is a "class" type to take advantage of the "deinit" method.
 public final class PThreadMutex {
 	// Non-recursive "PTHREAD_MUTEX_NORMAL" and recursive "PTHREAD_MUTEX_RECURSIVE" mutex types.
@@ -40,6 +28,7 @@ public final class PThreadMutex {
 		case Recursive
 	}
 
+	/// Exposed as an "unsafe" public property so non-scoped patterns can be implemented, if required.
 	public var unsafeMutex = pthread_mutex_t()
 	
 	/// Default constructs as ".Normal" or ".Recursive" on request.
@@ -63,13 +52,35 @@ public final class PThreadMutex {
 		pthread_mutex_destroy(&unsafeMutex)
 	}
 	
-	public func sync<R>(@noescape f: () throws -> R) rethrows -> R {
+	/* RECOMMENDATION: Don't use the `slowsync` function if you care about performance. Instead, copy this extension into your file and call it:
+
+extension PThreadMutex {
+	private func sync<R>(@noescape f: () throws -> R) rethrows -> R {
+		pthread_mutex_lock(&unsafeMutex)
+		defer { pthread_mutex_unlock(&unsafeMutex) }
+		return try f()
+	}
+}
+
+	*/
+	public func slowsync<R>(@noescape f: () throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
 	}
 	
-	public func trySync<R>(@noescape f: () throws -> R) rethrows -> R? {
+	/* RECOMMENDATION: Don't use the `trySlowsync` function if you care about performance. Instead, copy this extension into your file and call it:
+
+extension PThreadMutex {
+	private func trySync<R>(@noescape f: () throws -> R) rethrows -> R? {
+		guard pthread_mutex_trylock(&unsafeMutex) == 0 else { return nil }
+		defer { pthread_mutex_unlock(&unsafeMutex) }
+		return try f()
+	}
+}
+
+	*/
+	public func trySlowsync<R>(@noescape f: () throws -> R) rethrows -> R? {
 		guard pthread_mutex_trylock(&unsafeMutex) == 0 else { return nil }
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
@@ -77,6 +88,19 @@ public final class PThreadMutex {
 }
 
 #if PERFORMANCE_TESTS
+
+/// A basic scoped mutex wrapper around a `dispatch_semaphore_t`.
+/// For maximum performance, it is recommended that you copy this entire type into the same compilation unit as your code that uses it to ensure inlining.
+public struct DispatchSemaphore {
+	let s = dispatch_semaphore_create(1)
+	public init() {}
+	public func sync<R>(@noescape f: () throws -> R) rethrows -> R {
+		_ = dispatch_semaphore_wait(s, DISPATCH_TIME_FOREVER)
+		defer { _ = dispatch_semaphore_signal(s) }
+		return try f()
+	}
+}
+
 extension PThreadMutex {
 	public func sync_2<T>(inout param: T, @noescape f: (inout T) throws -> Void) rethrows -> Void {
 		pthread_mutex_lock(&unsafeMutex)
