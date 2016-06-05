@@ -23,7 +23,7 @@ import XCTest
 import CwlUtils
 
 #if PERFORMANCE_TESTS
-let PerformanceIterations = 100_000_000
+let PerformanceIterations = 10_000_000
 #endif
 let VerificationIterations = 1000
 

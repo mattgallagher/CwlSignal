@@ -60,7 +60,7 @@ public struct AddressInfo {
 	public var offset: Int {
 		if let dli_sname = info.dli_sname, _ = String(validatingUTF8: dli_sname) {
 			return Int(address - (UInt(bitPattern: info.dli_saddr) ?? 0))
-		} else if let _ = String(validatingUTF8: info.dli_fname) {
+		} else if let dli_fname = info.dli_fname, _ = String(validatingUTF8: dli_fname) {
 			return Int(address - (UInt(bitPattern: info.dli_fbase) ?? 0))
 		} else {
 			return Int(address - (UInt(bitPattern: info.dli_saddr) ?? 0))
