@@ -34,8 +34,23 @@ class RandomTests: XCTestCase {
 		let b = generator.random64()
 		let c = generator.random64()
 		let d = generator.random64()
-
+		
 		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
+		
+		let e = generator.random32()
+		XCTAssert(e.dynamicType == UInt32.self)
+
+		let f = generator.random64(max: 1)
+		XCTAssert(f < 2)
+
+		let g = generator.random32(max: 1)
+		XCTAssert(g < 2)
+
+		// More rigorous testing on these would be nice but for now, at least run them
+		_ = generator.random64(max: UInt64.max)
+		_ = generator.randomHalfOpen()
+		_ = generator.randomClosed()
+		_ = generator.randomOpen()
 
 	#if PERFORMANCE_TESTS
 		measure { () -> Void in
@@ -273,4 +288,5 @@ public struct xoroshiro128plus: RandomWordGenerator {
 		return xoroshiro_next(&state)
 	}
 }
+
 

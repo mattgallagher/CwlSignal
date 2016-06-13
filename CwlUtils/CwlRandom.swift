@@ -33,10 +33,10 @@ public protocol RandomGenerator {
 	mutating func random32() -> UInt32
 
 	// Generates a uniform distribution with a maximum value no more than `max`
-	mutating func random64(max: UInt64) -> UInt64
+	mutating func random64(max max: UInt64) -> UInt64
 
 	// Generates a uniform distribution with a maximum value no more than `max`
-	mutating func random32(max: UInt32) -> UInt32
+	mutating func random32(max max: UInt32) -> UInt32
 
 	/// Generates a double with a random 52 bit significand on the half open range [0, 1)
 	mutating func randomHalfOpen() -> Double
@@ -59,7 +59,7 @@ extension RandomGenerator {
 		randomize(buffer: &bits, size: sizeof(UInt32))
 		return bits
 	}
-	public mutating func random64(max: UInt64) -> UInt64 {
+	public mutating func random64(max max: UInt64) -> UInt64 {
 		switch max {
 		case UInt64.max: return random64()
 		case 0: return 0
@@ -71,7 +71,7 @@ extension RandomGenerator {
 			return result % (max + 1)
 		}
 	}
-	public mutating func random32(max: UInt32) -> UInt32 {
+	public mutating func random32(max max: UInt32) -> UInt32 {
 		switch max {
 		case UInt32.max: return random32()
 		case 0: return 0
