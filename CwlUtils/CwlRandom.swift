@@ -60,18 +60,28 @@ extension RandomGenerator {
 		return bits
 	}
 	public mutating func random64(max: UInt64) -> UInt64 {
-		var result: UInt64
-		repeat {
-			result = random64()
-		} while result > max
-		return result
+		switch max {
+		case UInt64.max: return random64()
+		case 0: return 0
+		default:
+			var result: UInt64
+			repeat {
+				result = random64()
+			} while result < UInt64.max % (max + 1)
+			return result % (max + 1)
+		}
 	}
 	public mutating func random32(max: UInt32) -> UInt32 {
-		var result: UInt32
-		repeat {
-			result = random32()
-		} while result > max
-		return result
+		switch max {
+		case UInt32.max: return random32()
+		case 0: return 0
+		default:
+			var result: UInt32
+			repeat {
+				result = random32()
+			} while result < UInt32.max % (max + 1)
+			return result % (max + 1)
+		}
 	}
 	public mutating func randomHalfOpen() -> Double {
 		return halfOpenDoubleFrom64(bits: random64())
