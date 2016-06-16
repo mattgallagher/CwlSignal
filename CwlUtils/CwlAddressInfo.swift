@@ -38,7 +38,7 @@ public struct AddressInfo {
 	
 	/// -returns: the "image" (shared object pathname) for the instruction
 	public var image: String {
-		if let dli_fname = info.dli_fname, fname = String(validatingUTF8: dli_fname), _ = fname.range(of: "/", options: NSStringCompareOptions.backwardsSearch, range: nil, locale: nil) {
+		if let dli_fname = info.dli_fname, fname = String(validatingUTF8: dli_fname), _ = fname.range(of: "/", options: .backwardsSearch, range: nil, locale: nil) {
 			return (fname as NSString).lastPathComponent
 		} else {
 			return "???"
@@ -69,7 +69,7 @@ public struct AddressInfo {
 	
 	/// - parameter index: the stack frame index
 	/// - returns: a formatted string matching that used by NSThread.callStackSymbols
-	public func formattedDescriptionForIndex(index: Int) -> String {
+	public func formattedDescription(index: Int) -> String {
 		return self.image.nulTerminatedUTF8.withUnsafeBufferPointer { (imageBuffer: UnsafeBufferPointer<UTF8.CodeUnit>) -> String in
 		#if arch(x86_64) || arch(arm64)
 			return String(format: "%-4ld%-35s 0x%016llx %@ + %ld", index, UInt(bitPattern: imageBuffer.baseAddress), self.address, self.symbol, self.offset)
@@ -95,6 +95,6 @@ public func callingFunctionIdentifier(skipCount: UInt = 0) -> String {
 /// - returns: an array of formatted, symbolicated stack frame descriptions.
 public func symbolsForCallStack(addresses: [UInt]) -> [String] {
 	return addresses.enumerated().map { (index: Int, address: UInt) -> String in
-		return AddressInfo(address: address).formattedDescriptionForIndex(index: index)
+		return AddressInfo(address: address).formattedDescription(index: index)
 	}
 }

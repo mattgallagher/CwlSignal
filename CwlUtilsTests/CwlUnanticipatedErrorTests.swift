@@ -23,17 +23,17 @@ import XCTest
 import CwlUtils
 
 enum TestCode: Int, ErrorProtocol {
-	case ZeroValue = 0
-	case OneValue = 1
-	case TestValue = 2
+	case zeroValue = 0
+	case oneValue = 1
+	case testValue = 2
 }
 
 class UnanticipatedErrorTests: XCTestCase {
 	func testUnanticipatedError() {
-		let e = TestCode.TestValue.withUnanticipatedErrorRecoveryAttempter()
+		let e = TestCode.testValue.withUnanticipatedErrorRecoveryAttempter()
 		
 		// NOTE: error codes equal raw values only if the raw values are zero based with no gaps
-		XCTAssert(e.code == TestCode.TestValue.rawValue)
+		XCTAssert(e.code == TestCode.testValue.rawValue)
 		
 		let userInfo = e.userInfo
 		if let callStackSymbols = userInfo[UnanticipatedErrorRecoveryAttempter.ReturnAddressesKey] as? [UInt] {
@@ -67,16 +67,16 @@ class UnanticipatedErrorTests: XCTestCase {
 
 #if os(iOS)
 
-func pasteboardBackup() -> [Dictionary<String, NSObject>] {
-	return ((UIPasteboard.generalPasteboard().items as NSArray).copy() as? [Dictionary<String, NSObject>]) ?? Array<Dictionary<String, NSObject>>()
+func pasteboardBackup() -> [Dictionary<String, AnyObject>] {
+	return ((UIPasteboard.general().items as NSArray).copy() as? [Dictionary<String, AnyObject>]) ?? Array<Dictionary<String, AnyObject>>()
 }
 
-func restorePasteboard(items: [Dictionary<String, NSObject>]) {
-	UIPasteboard.generalPasteboard().items = items
+func restorePasteboard(items: [Dictionary<String, AnyObject>]) {
+	UIPasteboard.general().items = items
 }
 
 func pasteboardString() -> String? {
-	return UIPasteboard.generalPasteboard().string
+	return UIPasteboard.general().string
 }
 
 #else
@@ -85,7 +85,7 @@ func pasteboardBackup() -> [NSPasteboardItem] {
 	return NSPasteboard.general().pasteboardItems?.map { item in
 		let backupItem = NSPasteboardItem()
 		for type in item.types {
-			if let data = item.data(forType: type)?.copy() as? NSData {
+			if let data = item.data(forType: type) {
 				backupItem.setData(data, forType:type)
 			}
 		}

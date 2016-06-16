@@ -32,22 +32,10 @@ class AddressInfoTests: XCTestCase {
 	}
 
 	func testSymbolsForCallStackAddresses() {
-		var b = NSThread.callStackSymbols() as [String]
+		var b = Thread.callStackSymbols() as [String]
 		b.remove(at: 0)
 		var a = symbolsForCallStack(addresses: callStackReturnAddresses())
 		a.remove(at: 0)
 		XCTAssert(a == b)
-		
-		let ex = expectation(withDescription: "Hello")
-		
-		dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
-			dispatch_async(dispatch_get_main_queue()) {
-				dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
-					ex.fulfill()
-				}
-			}
-		}
-		
-		waitForExpectations(withTimeout: 1e2, handler: nil)
 	}
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0720"
+   LastUpgradeVersion = "0800"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C93E18121C8166470009A053"
-               BuildableName = "CwlUtils.framework"
-               BlueprintName = "CwlUtils_OSX"
+               BlueprintIdentifier = "C9E6C6081CBF6D03007B3F24"
+               BuildableName = "CwlUtils_macOSHarness.app"
+               BlueprintName = "CwlUtils_macOSHarness"
                ReferencedContainer = "container:CwlUtils.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -32,9 +32,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C93E181C1C8166470009A053"
-               BuildableName = "CwlUtils_OSXTests.xctest"
-               BlueprintName = "CwlUtils_OSXTests"
+               BlueprintIdentifier = "C9E6C6161CBF6D03007B3F24"
+               BuildableName = "CwlUtils_macOSHarnessUITests.xctest"
+               BlueprintName = "CwlUtils_macOSHarnessUITests"
                ReferencedContainer = "container:CwlUtils.xcodeproj">
             </BuildableReference>
          </TestableReference>
@@ -42,9 +42,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C93E18121C8166470009A053"
-            BuildableName = "CwlUtils.framework"
-            BlueprintName = "CwlUtils_OSX"
+            BlueprintIdentifier = "C9E6C6081CBF6D03007B3F24"
+            BuildableName = "CwlUtils_macOSHarness.app"
+            BlueprintName = "CwlUtils_macOSHarness"
             ReferencedContainer = "container:CwlUtils.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -61,15 +61,16 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <MacroExpansion>
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C93E18121C8166470009A053"
-            BuildableName = "CwlUtils.framework"
-            BlueprintName = "CwlUtils_OSX"
+            BlueprintIdentifier = "C9E6C6081CBF6D03007B3F24"
+            BuildableName = "CwlUtils_macOSHarness.app"
+            BlueprintName = "CwlUtils_macOSHarness"
             ReferencedContainer = "container:CwlUtils.xcodeproj">
          </BuildableReference>
-      </MacroExpansion>
+      </BuildableProductRunnable>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
@@ -79,15 +80,16 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <MacroExpansion>
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C93E18121C8166470009A053"
-            BuildableName = "CwlUtils.framework"
-            BlueprintName = "CwlUtils_OSX"
+            BlueprintIdentifier = "C9E6C6081CBF6D03007B3F24"
+            BuildableName = "CwlUtils_macOSHarness.app"
+            BlueprintName = "CwlUtils_macOSHarness"
             ReferencedContainer = "container:CwlUtils.xcodeproj">
          </BuildableReference>
-      </MacroExpansion>
+      </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

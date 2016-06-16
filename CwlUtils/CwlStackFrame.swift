@@ -118,8 +118,12 @@ extension UInt {
 /// - returns: a closed interval containing the memory address range for the current stack
 private func currentStackBounds() -> ClosedRange<UInt> {
 	let currentThread = pthread_self()
-	let end = UInt(bitPattern: pthread_get_stackaddr_np(currentThread))
-	let start = end - UInt(bitPattern: pthread_get_stacksize_np(currentThread))
+
+	// Workaround for Swift 3 preview 1 bug... unless we assign to optional first, the UInt(bitPattern:) will return 0
+	let ctp: UnsafeMutablePointer<Void>? = pthread_get_stackaddr_np(currentThread)
+
+	let end = UInt(bitPattern: ctp)
+	let start = end - UInt(pthread_get_stacksize_np(currentThread))
 	return ClosedRange(uncheckedBounds: (start, end))
 }
 

@@ -38,7 +38,7 @@ class ScalarScannerTests: XCTestCase {
 			try sc.match(string: "xy")
 			try sc.match(string: "za")
 			XCTFail()
-		} catch ScalarScannerError.MatchFailed(let wanted, let at) {
+		} catch ScalarScannerError.matchFailed(let wanted, let at) {
 			XCTAssert(wanted == "za")
 			XCTAssert(at == 2)
 		} catch {
@@ -52,7 +52,7 @@ class ScalarScannerTests: XCTestCase {
 			try sc.match(string: "x")
 			try sc.match(string: "y")
 			XCTFail()
-		} catch ScalarScannerError.MatchFailed(let wanted, let at) {
+		} catch ScalarScannerError.matchFailed(let wanted, let at) {
 			XCTAssert(wanted == "y")
 			XCTAssert(at == 1)
 		} catch {
@@ -66,7 +66,7 @@ class ScalarScannerTests: XCTestCase {
 			_ = try sc.readUntil(scalar: "y")
 			_ = try sc.readUntil(scalar: "a")
 			XCTFail()
-		} catch ScalarScannerError.SearchFailed(let wanted, let after) {
+		} catch ScalarScannerError.searchFailed(let wanted, let after) {
 			XCTAssert(wanted == "a")
 			XCTAssert(after == 1)
 		} catch {
@@ -93,7 +93,7 @@ class ScalarScannerTests: XCTestCase {
 			try sc.skip(count: 1)
 			try sc.skip(count: 3)
 			XCTFail()
-		} catch ScalarScannerError.EndedPrematurely(let count, let at) {
+		} catch ScalarScannerError.endedPrematurely(let count, let at) {
 			XCTAssert(count == 3)
 			XCTAssert(at == 1)
 		} catch {
@@ -109,7 +109,7 @@ class ScalarScannerTests: XCTestCase {
 			try sc.backtrack(count: 2)
 			try sc.backtrack(count: 1)
 			XCTFail()
-		} catch ScalarScannerError.EndedPrematurely(let count, let at) {
+		} catch ScalarScannerError.endedPrematurely(let count, let at) {
 			XCTAssert(count == -1)
 			XCTAssert(at == 0)
 		} catch {
@@ -145,7 +145,7 @@ class ScalarScannerTests: XCTestCase {
 			try sc.match(string: "xyz")
 			_ = try sc.requirePeek()
 			XCTFail()
-		} catch ScalarScannerError.EndedPrematurely(let count, let at) {
+		} catch ScalarScannerError.endedPrematurely(let count, let at) {
 			XCTAssert(count == 1)
 			XCTAssert(at == 3)
 		} catch {
@@ -167,7 +167,7 @@ class ScalarScannerTests: XCTestCase {
 			try sc.match(string: "yz")
 			_ = try sc.readScalar()
 			XCTFail()
-		} catch ScalarScannerError.EndedPrematurely(let count, let at) {
+		} catch ScalarScannerError.endedPrematurely(let count, let at) {
 			XCTAssert(count == 1)
 			XCTAssert(at == 3)
 		} catch {
@@ -181,7 +181,7 @@ class ScalarScannerTests: XCTestCase {
 			XCTAssert(try sc.readInt() == 123)
 			_ = try sc.readInt()
 			XCTFail()
-		} catch ScalarScannerError.ExpectedInt(let at) {
+		} catch ScalarScannerError.expectedInt(let at) {
 			XCTAssert(at == 3)
 		} catch {
 			XCTFail()
@@ -194,7 +194,7 @@ class ScalarScannerTests: XCTestCase {
 			XCTAssert(try sc.readScalars(count: 2) == "xy")
 			_ = try sc.readScalars(count: 2)
 			XCTFail()
-		} catch ScalarScannerError.EndedPrematurely(let count, let at) {
+		} catch ScalarScannerError.endedPrematurely(let count, let at) {
 			XCTAssert(count == 2)
 			XCTAssert(at == 2)
 		} catch {
@@ -208,7 +208,7 @@ class ScalarScannerTests: XCTestCase {
 		_ = sc.conditional(scalar: "x")
 		let e2 = sc.unexpectedError()
 		switch (e1, e2) {
-		case (ScalarScannerError.Unexpected(0), ScalarScannerError.Unexpected(1)): break
+		case (ScalarScannerError.unexpected(0), ScalarScannerError.unexpected(1)): break
 		default: XCTFail()
 		}
 	}

@@ -87,10 +87,10 @@ public class UnanticipatedErrorRecoveryAttempter: NSObject {
 		let callStackSymbols = (userInfo[UnanticipatedErrorRecoveryAttempter.ReturnAddressesKey] as? [UInt]).map { symbolsForCallStack(addresses: $0).joined(separator: "\n") } ?? NSLocalizedString("(Call stack unavailable)",  comment: "")
 		let localizedDescription = error.localizedDescription
 		let localizedRecoverySuggestion = error.localizedRecoverySuggestion ?? ""
-		let applicationName = (NSBundle.main().infoDictionary?[kCFBundleNameKey as String] as? String) ?? NSProcessInfo.processInfo().processName
-		let applicationVersion = (NSBundle.main().infoDictionary?[kCFBundleVersionKey as String] as? String) ?? NSLocalizedString("(App version unavailable)",  comment: "")
-		let locales = NSLocale.preferredLanguages().joined(separator: ", ")
-		let machineInfo = "\(Sysctl.machine)/\(Sysctl.model), \(NSProcessInfo.processInfo().operatingSystemVersionString)"
+		let applicationName = (Bundle.main().infoDictionary?[kCFBundleNameKey as String] as? String) ?? ProcessInfo.processInfo().processName
+		let applicationVersion = (Bundle.main().infoDictionary?[kCFBundleVersionKey as String] as? String) ?? NSLocalizedString("(App version unavailable)",  comment: "")
+		let locales = Locale.preferredLanguages().joined(separator: ", ")
+		let machineInfo = "\(Sysctl.machine)/\(Sysctl.model), \(ProcessInfo.processInfo().operatingSystemVersionString)"
 		
 		// Remove already handled keys from the userInfo. Anything not yet handled will be output as part of the diagnostic information.
 		userInfo.removeValue(forKey: NSLocalizedRecoverySuggestionErrorKey)
@@ -113,7 +113,7 @@ public class UnanticipatedErrorRecoveryAttempter: NSObject {
 			NSPasteboard.general().clearContents()
 			NSPasteboard.general().setString(extendedInformation(fromError: error), forType:NSPasteboardTypeString)
 		#elseif os(iOS)
-			UIPasteboard.general().string = extendedErrorInformation(error: error)
+			UIPasteboard.general().string = extendedInformation(fromError: error)
 		#endif
 			return true
 		default:

@@ -23,19 +23,19 @@ import Swift
 /// A type for representing the different possible failure conditions when using ScalarScanner
 public enum ScalarScannerError: ErrorProtocol {
 	/// The scalar at the specified index doesn't match the expected grammar
-	case Unexpected(at: Int)
+	case unexpected(at: Int)
 	
 	/// Expected `wanted` at offset `at`
-	case MatchFailed(wanted: String, at: Int)
+	case matchFailed(wanted: String, at: Int)
 	
 	/// Expected numerals at offset `at`
-	case ExpectedInt(at: Int)
+	case expectedInt(at: Int)
 	
 	/// Attempted to read `count` scalars from position `at` but hit the end of the sequence
-	case EndedPrematurely(count: Int, at: Int)
+	case endedPrematurely(count: Int, at: Int)
 	
 	/// Unable to find search patter `wanted` at or after `after` in the sequence
-	case SearchFailed(wanted: String, after: Int)
+	case searchFailed(wanted: String, after: Int)
 }
 
 /// A structure for traversing a `String.UnicodeScalarView`. A `context` field is provided but is not used by the scanner (it is entirely for storage by the scanner's user).
@@ -71,7 +71,7 @@ public struct ScalarScanner<C: Collection, T where C.Iterator.Element == Unicode
 	public mutating func match(string: String) throws {
 		index = try string.unicodeScalars.reduce(index) { i, scalar in
 			if i == self.scalars.endIndex || scalar != self.scalars[i] {
-				throw ScalarScannerError.MatchFailed(wanted: string, at: absoluteIndex)
+				throw ScalarScannerError.matchFailed(wanted: string, at: absoluteIndex)
 			}
 			return self.scalars.index(after: i)
 		}
@@ -80,7 +80,7 @@ public struct ScalarScanner<C: Collection, T where C.Iterator.Element == Unicode
 	/// Throw if the scalars at the current `index` don't match the scalars in `value`. Advance the `index` to the end of the match.
 	public mutating func match(scalar: UnicodeScalar) throws {
 		if index == scalars.endIndex || scalars[index] != scalar {
-			throw ScalarScannerError.MatchFailed(wanted: String(scalar), at: absoluteIndex)
+			throw ScalarScannerError.matchFailed(wanted: String(scalar), at: absoluteIndex)
 		}
 		index = self.scalars.index(after: index)
 	}
@@ -99,7 +99,7 @@ public struct ScalarScanner<C: Collection, T where C.Iterator.Element == Unicode
 			}
 		}
 		if i == scalars.endIndex {
-			throw ScalarScannerError.SearchFailed(wanted: String(scalar), after: absoluteIndex)
+			throw ScalarScannerError.searchFailed(wanted: String(scalar), after: absoluteIndex)
 		}
 		index = i
 		return string
@@ -137,7 +137,7 @@ public struct ScalarScanner<C: Collection, T where C.Iterator.Element == Unicode
 			c -= 1
 		}
 		if c > 0 {
-			throw ScalarScannerError.EndedPrematurely(count: count, at: absoluteIndex)
+			throw ScalarScannerError.endedPrematurely(count: count, at: absoluteIndex)
 		} else {
 			index = i
 		}
@@ -152,7 +152,7 @@ public struct ScalarScanner<C: Collection, T where C.Iterator.Element == Unicode
 			c -= 1
 		}
 		if c > 0 {
-			throw ScalarScannerError.EndedPrematurely(count: -count, at: absoluteIndex)
+			throw ScalarScannerError.endedPrematurely(count: -count, at: absoluteIndex)
 		} else {
 			index = i
 		}
@@ -193,7 +193,7 @@ public struct ScalarScanner<C: Collection, T where C.Iterator.Element == Unicode
 	/// If the `index` is at the end, throw, otherwise, return the next scalar at the current `index` without advancing `index`.
 	public func requirePeek() throws -> UnicodeScalar {
 		if index == scalars.endIndex {
-			throw ScalarScannerError.EndedPrematurely(count: 1, at: absoluteIndex)
+			throw ScalarScannerError.endedPrematurely(count: 1, at: absoluteIndex)
 		}
 		return scalars[index]
 	}
@@ -215,7 +215,7 @@ public struct ScalarScanner<C: Collection, T where C.Iterator.Element == Unicode
 	/// If the `index` is at the end, throw, otherwise, return the next scalar at the current `index`, advancing `index` by one.
 	public mutating func readScalar() throws -> UnicodeScalar {
 		if index == scalars.endIndex {
-			throw ScalarScannerError.EndedPrematurely(count: 1, at: absoluteIndex)
+			throw ScalarScannerError.endedPrematurely(count: 1, at: absoluteIndex)
 		}
 		let result = scalars[index]
 		index = self.scalars.index(after: index)
@@ -231,7 +231,7 @@ public struct ScalarScanner<C: Collection, T where C.Iterator.Element == Unicode
 			i = self.scalars.index(after: i)
 		}
 		if i == index {
-			throw ScalarScannerError.ExpectedInt(at: absoluteIndex)
+			throw ScalarScannerError.expectedInt(at: absoluteIndex)
 		}
 		index = i
 		return result
@@ -244,7 +244,7 @@ public struct ScalarScanner<C: Collection, T where C.Iterator.Element == Unicode
 		var i = index
 		for _ in 0..<count {
 			if i == scalars.endIndex {
-				throw ScalarScannerError.EndedPrematurely(count: count, at: absoluteIndex)
+				throw ScalarScannerError.endedPrematurely(count: count, at: absoluteIndex)
 			}
 			result.append(scalars[i])
 			i = self.scalars.index(after: i)
@@ -255,6 +255,6 @@ public struct ScalarScanner<C: Collection, T where C.Iterator.Element == Unicode
 
 	/// Returns a throwable error capturing the current scanner progress point.
 	public func unexpectedError() -> ScalarScannerError {
-		return ScalarScannerError.Unexpected(at: absoluteIndex)
+		return ScalarScannerError.unexpected(at: absoluteIndex)
 	}
 }

@@ -33,10 +33,10 @@ public protocol RandomGenerator {
 	mutating func random32() -> UInt32
 
 	// Generates a uniform distribution with a maximum value no more than `max`
-	mutating func random64(max max: UInt64) -> UInt64
+	mutating func random64(max: UInt64) -> UInt64
 
 	// Generates a uniform distribution with a maximum value no more than `max`
-	mutating func random32(max max: UInt32) -> UInt32
+	mutating func random32(max: UInt32) -> UInt32
 
 	/// Generates a double with a random 52 bit significand on the half open range [0, 1)
 	mutating func randomHalfOpen() -> Double
@@ -59,7 +59,7 @@ extension RandomGenerator {
 		randomize(buffer: &bits, size: sizeof(UInt32))
 		return bits
 	}
-	public mutating func random64(max max: UInt64) -> UInt64 {
+	public mutating func random64(max: UInt64) -> UInt64 {
 		switch max {
 		case UInt64.max: return random64()
 		case 0: return 0
@@ -71,7 +71,7 @@ extension RandomGenerator {
 			return result % (max + 1)
 		}
 	}
-	public mutating func random32(max max: UInt32) -> UInt32 {
+	public mutating func random32(max: UInt32) -> UInt32 {
 		switch max {
 		case UInt32.max: return random32()
 		case 0: return 0
@@ -379,34 +379,6 @@ public struct ConstantNonRandom: RandomWordGenerator {
 	}
 }
 
-public struct JRand48: RandomWordGenerator {
-	public typealias WordType = UInt32
-	var state: (UInt16, UInt16, UInt16)
-
-	public init() {
-		state = (0,0,0)
-		DevRandom.randomize(buffer: &state, size: sizeofValue(state))
-	}
-
-	public init(seed: (UInt16, UInt16, UInt16)) {
-		self.state = seed
-	}
-
-	public mutating func random64() -> UInt64 {
-		return (UInt64(randomWord()) << 32) | UInt64(randomWord())
-	}
-
-	public mutating func random32() -> UInt32 {
-		return randomWord()
-	}
-
-	public mutating func randomWord() -> UInt32 {
-		return withUnsafeMutablePointer(&state) { s -> UInt32 in
-			return UInt32(littleEndian: unsafeBitCast(jrand48(UnsafeMutablePointer<UInt16>(s)).littleEndian, to: (UInt32, UInt32).self).0)
-		}
-	}
-}
-
 public struct MersenneTwister: RandomWordGenerator {
 	public typealias WordType = UInt64
 	
@@ -471,7 +443,7 @@ public struct MersenneTwister: RandomWordGenerator {
 	private var index: Int
 	private static let stateCount: Int = 312
 	
-	private mutating func withState(f: (UnsafeMutablePointer<UInt64>) -> Void) {
+	private mutating func withState(f: @noescape (UnsafeMutablePointer<UInt64>) -> Void) {
 		withUnsafeMutablePointer(&state_internal) { ptr in
 			f(UnsafeMutablePointer<UInt64>(ptr))
 		}
@@ -501,8 +473,11 @@ public struct MersenneTwister: RandomWordGenerator {
 		return random64()
 	}
 	
-	private mutating func twist() {
-		withState { state in
+	public mutating func random64() -> UInt64 {
+		if index == MersenneTwister.stateCount {
+			// Really dirty leaking of unsafe pointer outside its closure to ensure inlining in Swift 3 preview 1
+			let state = withUnsafeMutablePointer(&state_internal) { UnsafeMutablePointer<UInt64>($0) }
+
 			let n = MersenneTwister.stateCount
 			let m = n / 2
 			let a: UInt64 = 0xB5026F5AA96619E9
@@ -521,13 +496,8 @@ public struct MersenneTwister: RandomWordGenerator {
 			state[m &- 1] = state[n &- 1] ^ (x3 >> 1) ^ ((stateM & 1) &* a)
 			let x4 = (state[n &- 1] & upperMask) | (state[0] & lowerMask)
 			state[n &- 1] = state[m &- 1] ^ (x4 >> 1) ^ ((state[0] & 1) &* a)
-		}
-		index = 0
-	}
-	
-	public mutating func random64() -> UInt64 {
-		if index == MersenneTwister.stateCount {
-			twist()
+			
+			index = 0
 		}
 		
 		var result = state(at: index)

@@ -21,9 +21,9 @@
 import Foundation
 
 public enum SysctlError: ErrorProtocol {
-	case Unknown
-	case MalformedUTF8
-	case InvalidSize
+	case unknown
+	case malformedUTF8
+	case invalidSize
 }
 
 /// Wrapper around `sysctl` that preflights and allocates an [Int8] for the result and throws a Swift error if anything goes wrong.
@@ -33,7 +33,7 @@ public func sysctl(levels: [Int32]) throws -> [Int8] {
 		var requiredSize = 0
 		let preFlightResult = Darwin.sysctl(UnsafeMutablePointer<Int32>(levelsPointer.baseAddress), UInt32(levels.count), nil, &requiredSize, nil, 0)
 		if preFlightResult != 0 {
-			throw POSIXError(rawValue: errno) ?? SysctlError.Unknown
+			throw POSIXError(rawValue: errno) ?? SysctlError.unknown
 		}
 		
 		// Run the actual request with an appropriately sized array buffer
@@ -42,7 +42,7 @@ public func sysctl(levels: [Int32]) throws -> [Int8] {
 			return Darwin.sysctl(UnsafeMutablePointer<Int32>(levelsPointer.baseAddress), UInt32(levels.count), UnsafeMutablePointer<Void>(dataBuffer.baseAddress), &requiredSize, nil, 0)
 		}
 		if result != 0 {
-			throw POSIXError(rawValue: errno) ?? SysctlError.Unknown
+			throw POSIXError(rawValue: errno) ?? SysctlError.unknown
 		}
 		
 		return data
@@ -56,7 +56,7 @@ public func sysctlLevels(fromName: String) throws -> [Int32] {
 	try levelsBuffer.withUnsafeMutableBufferPointer { (lbp: inout UnsafeMutableBufferPointer<Int32>) throws in
 		try fromName.withCString { (nbp: UnsafePointer<Int8>) throws in
 			guard sysctlnametomib(nbp, lbp.baseAddress, &levelsBufferSize) == 0 else {
-				throw POSIXError(rawValue: errno) ?? SysctlError.Unknown
+				throw POSIXError(rawValue: errno) ?? SysctlError.unknown
 			}
 		}
 	}
@@ -72,7 +72,7 @@ private func intFromSysctl(levels: [Int32]) throws -> Int64 {
 	switch buffer.count {
 	case 4: return buffer.withUnsafeBufferPointer() { $0.baseAddress.map { Int64(UnsafePointer<Int32>($0).pointee) } ?? 0 }
 	case 8: return buffer.withUnsafeBufferPointer() {  $0.baseAddress.map { Int64(UnsafePointer<Int64>($0).pointee) } ?? 0 }
-	default: throw SysctlError.InvalidSize
+	default: throw SysctlError.invalidSize
 	}
 }
 
@@ -82,7 +82,7 @@ private func stringFromSysctl(levels: [Int32]) throws -> String {
 		dataPointer.baseAddress.flatMap { String(validatingUTF8: $0) }
 	}
 	guard let s = optionalString else {
-		throw SysctlError.MalformedUTF8
+		throw SysctlError.malformedUTF8
 	}
 	return s
 }
