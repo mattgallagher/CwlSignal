@@ -26,7 +26,7 @@ class StackFrameTests: XCTestCase {
 	func testCallStackReturnAddresses() {
 		var a = callStackReturnAddresses()
 		a.remove(at: 0)
-		var b = Thread.callStackReturnAddresses() as! [UInt]
+		var b = Thread.callStackReturnAddresses.map { UInt(bitPattern: Int($0.int64Value)) }
 		b.remove(at: 0)
 		XCTAssert(a == b)
 
@@ -42,7 +42,7 @@ class StackFrameTests: XCTestCase {
 		measure {
 			var traces = [[NSNumber]]()
 			for _ in 0..<1000 {
-				traces.append(Thread.callStackReturnAddresses())
+				traces.append(Thread.callStackReturnAddresses)
 			}
 		}
 	}

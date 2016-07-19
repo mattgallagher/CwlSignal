@@ -136,14 +136,13 @@
 		C93E18641C81EFD40009A053 /* CwlAddressInfo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlAddressInfo.swift; sourceTree = "<group>"; };
 		C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlAddressInfoTests.swift; sourceTree = "<group>"; };
 		C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlRandomTests.swift; sourceTree = "<group>"; };
-		C9968C6F1D12BA6400C16234 /* CwlUtils_macOS.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = CwlUtils_macOS.playground; sourceTree = "<group>"; };
 		C9AC2C881D1287FE0034650A /* CwlRandomPerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlRandomPerformanceTests.swift; sourceTree = "<group>"; };
 		C9AC2C8E1D128B560034650A /* CwlMutexPerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlMutexPerformanceTests.swift; sourceTree = "<group>"; };
 		C9B6655E1CEAD9080006B927 /* CwlRandom.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlRandom.swift; sourceTree = "<group>"; };
-		C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSysctl.swift; sourceTree = "<group>"; };
+		C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 3; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = CwlSysctl.swift; sourceTree = "<group>"; tabWidth = 3; usesTabs = 1; };
 		C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSysctlTests.swift; sourceTree = "<group>"; };
 		C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlScalarScanner.swift; sourceTree = "<group>"; };
-		C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlScalarScannerTests.swift; sourceTree = "<group>"; };
+		C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; lineEnding = 2; path = CwlScalarScannerTests.swift; sourceTree = "<group>"; };
 		C9E6C58F1CBE0455007B3F24 /* CwlUnanticipatedError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlUnanticipatedError.swift; sourceTree = "<group>"; };
 		C9E6C5911CBE045F007B3F24 /* CwlUnanticipatedErrorTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlUnanticipatedErrorTests.swift; sourceTree = "<group>"; };
 		C9E6C6091CBF6D03007B3F24 /* CwlUtils_macOSHarness.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CwlUtils_macOSHarness.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -236,7 +235,6 @@
 		C93E18091C8166470009A053 = {
 			isa = PBXGroup;
 			children = (
-				C9968C6F1D12BA6400C16234 /* CwlUtils_macOS.playground */,
 				C93E18151C8166470009A053 /* CwlUtils */,
 				C93E18211C8166470009A053 /* CwlUtilsTests */,
 				C9E6C60A1CBF6D03007B3F24 /* CwlUtils_macOSHarness */,

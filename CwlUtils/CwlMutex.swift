@@ -107,9 +107,11 @@ public final class PThreadMutex: RawMutex {
 	public func unbalancedLock() {
 		pthread_mutex_lock(&unsafeMutex)
 	}
+	
 	public func unbalancedTryLock() -> Bool {
 		return pthread_mutex_trylock(&unsafeMutex) == 0
 	}
+	
 	public func unbalancedUnlock() {
 		pthread_mutex_unlock(&unsafeMutex)
 	}
@@ -130,9 +132,11 @@ public final class UnfairLock: RawMutex {
 	public func unbalancedLock() {
 		os_unfair_lock_lock(&unsafeMutex)
 	}
+	
 	public func unbalancedTryLock() -> Bool {
 		return os_unfair_lock_trylock(&unsafeMutex)
 	}
+	
 	public func unbalancedUnlock() {
 		os_unfair_lock_unlock(&unsafeMutex)
 	}

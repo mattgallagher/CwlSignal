@@ -38,7 +38,7 @@ public struct AddressInfo {
 	
 	/// -returns: the "image" (shared object pathname) for the instruction
 	public var image: String {
-		if let dli_fname = info.dli_fname, fname = String(validatingUTF8: dli_fname), _ = fname.range(of: "/", options: .backwardsSearch, range: nil, locale: nil) {
+		if let dli_fname = info.dli_fname, fname = String(validatingUTF8: dli_fname), _ = fname.range(of: "/", options: .backwards, range: nil, locale: nil) {
 			return (fname as NSString).lastPathComponent
 		} else {
 			return "???"
@@ -71,11 +71,11 @@ public struct AddressInfo {
 	/// - returns: a formatted string matching that used by NSThread.callStackSymbols
 	public func formattedDescription(index: Int) -> String {
 		return self.image.nulTerminatedUTF8.withUnsafeBufferPointer { (imageBuffer: UnsafeBufferPointer<UTF8.CodeUnit>) -> String in
-		#if arch(x86_64) || arch(arm64)
-			return String(format: "%-4ld%-35s 0x%016llx %@ + %ld", index, UInt(bitPattern: imageBuffer.baseAddress), self.address, self.symbol, self.offset)
-		#else
-			return String(format: "%-4d%-35s 0x%08lx %@ + %d", index, UInt(bitPattern: imageBuffer.baseAddress), self.address, self.symbol, self.offset)
-		#endif
+			#if arch(x86_64) || arch(arm64)
+				return String(format: "%-4ld%-35s 0x%016llx %@ + %ld", index, UInt(bitPattern: imageBuffer.baseAddress), self.address, self.symbol, self.offset)
+			#else
+				return String(format: "%-4d%-35s 0x%08lx %@ + %d", index, UInt(bitPattern: imageBuffer.baseAddress), self.address, self.symbol, self.offset)
+			#endif
 		}
 	}
 }

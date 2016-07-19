@@ -80,7 +80,7 @@ class MutexPerformanceTests: XCTestCase {
 			XCTAssert(total == iterations)
 		}
 	}
-		
+	
 	func testPThreadSlowSyncPerformance() {
 		let mutex = PThreadMutex()
 		measure { () -> Void in
@@ -106,7 +106,7 @@ class MutexPerformanceTests: XCTestCase {
 			XCTAssert(total == iterations)
 		}
 	}
-		
+	
 	func testPThreadSync4Performance() {
 		let mutex = PThreadMutex()
 		measure { () -> Void in
@@ -133,7 +133,7 @@ class MutexPerformanceTests: XCTestCase {
 			XCTAssert(total == iterations)
 		}
 	}
-		
+	
 	func testPThreadCopiedPerformance() {
 		let mutex = PThreadMutex()
 		measure { () -> Void in
@@ -146,7 +146,7 @@ class MutexPerformanceTests: XCTestCase {
 			XCTAssert(total == iterations)
 		}
 	}
-		
+	
 	func testPThreadInlinePerformance() {
 		let mutex = PThreadMutex()
 		measure { () -> Void in
@@ -159,7 +159,7 @@ class MutexPerformanceTests: XCTestCase {
 			XCTAssert(total == iterations)
 		}
 	}
-		
+	
 	func testDispatchSyncPerformance() {
 		let queue = DispatchQueue(label: "", attributes: .serial)
 		measure { () -> Void in

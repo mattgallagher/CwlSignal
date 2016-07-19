@@ -32,7 +32,7 @@ class AddressInfoTests: XCTestCase {
 	}
 
 	func testSymbolsForCallStackAddresses() {
-		var b = Thread.callStackSymbols() as [String]
+		var b = Thread.callStackSymbols
 		b.remove(at: 0)
 		var a = symbolsForCallStack(addresses: callStackReturnAddresses())
 		a.remove(at: 0)

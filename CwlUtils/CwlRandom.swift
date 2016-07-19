@@ -51,14 +51,16 @@ public protocol RandomGenerator {
 extension RandomGenerator {
 	public mutating func random64() -> UInt64 {
 		var bits: UInt64 = 0
-		randomize(buffer: &bits, size: sizeof(UInt64))
+		randomize(buffer: &bits, size: sizeof(UInt64.self))
 		return bits
 	}
+	
 	public mutating func random32() -> UInt32 {
 		var bits: UInt32 = 0
-		randomize(buffer: &bits, size: sizeof(UInt32))
+		randomize(buffer: &bits, size: sizeof(UInt32.self))
 		return bits
 	}
+	
 	public mutating func random64(max: UInt64) -> UInt64 {
 		switch max {
 		case UInt64.max: return random64()
@@ -71,6 +73,7 @@ extension RandomGenerator {
 			return result % (max + 1)
 		}
 	}
+	
 	public mutating func random32(max: UInt32) -> UInt32 {
 		switch max {
 		case UInt32.max: return random32()
@@ -83,12 +86,15 @@ extension RandomGenerator {
 			return result % (max + 1)
 		}
 	}
+	
 	public mutating func randomHalfOpen() -> Double {
 		return halfOpenDoubleFrom64(bits: random64())
 	}
+	
 	public mutating func randomClosed() -> Double {
 		return closedDoubleFrom64(bits: random64())
 	}
+	
 	public mutating func randomOpen() -> Double {
 		return openDoubleFrom64(bits: random64())
 	}
@@ -97,9 +103,11 @@ extension RandomGenerator {
 public func halfOpenDoubleFrom64(bits: UInt64) -> Double {
 	return Double(bits & 0x001f_ffff_ffff_ffff) * (1.0 / 9007199254740992.0)
 }
+
 public func closedDoubleFrom64(bits: UInt64) -> Double {
 	return Double(bits & 0x001f_ffff_ffff_ffff) * (1.0 / 9007199254740991.0)
 }
+
 public func openDoubleFrom64(bits: UInt64) -> Double {
 	return (Double(bits & 0x000f_ffff_ffff_ffff) + 0.5) * (1.0 / 9007199254740991.0)
 }
@@ -112,10 +120,10 @@ public protocol RandomWordGenerator: RandomGenerator {
 extension RandomWordGenerator {
 	public mutating func randomize(buffer: UnsafeMutablePointer<Void>, size: Int) {
 		let b = UnsafeMutablePointer<WordType>(buffer)
-		for i in 0..<(size / sizeof(WordType)) {
+		for i in 0..<(size / sizeof(WordType.self)) {
 			b[i] = randomWord()
 		}
-		let remainder = size % sizeof(WordType)
+		let remainder = size % sizeof(WordType.self)
 		if remainder > 0 {
 			var final = randomWord()
 			let b2 = UnsafeMutablePointer<UInt8>(buffer)
@@ -140,18 +148,22 @@ public struct DevRandom: RandomGenerator {
 			close(value)
 		}
 	}
+	
 	let fd: FileDescriptor
 	public init() {
 		fd = FileDescriptor()
 	}
+	
 	public mutating func randomize(buffer: UnsafeMutablePointer<Void>, size: Int) {
 		let result = read(fd.value, buffer, size)
 		precondition(result == size)
 	}
+	
 	public static func random64() -> UInt64 {
 		var r = DevRandom()
 		return r.random64()
 	}
+	
 	public static func randomize(buffer: UnsafeMutablePointer<Void>, size: Int) {
 		var r = DevRandom()
 		r.randomize(buffer: buffer, size: size)
@@ -161,6 +173,7 @@ public struct DevRandom: RandomGenerator {
 public struct Arc4Random: RandomGenerator {
 	public init() {
 	}
+	
 	public mutating func randomize(buffer: UnsafeMutablePointer<Void>, size: Int) {
 		arc4random_buf(buffer, size)
 	}
@@ -168,7 +181,7 @@ public struct Arc4Random: RandomGenerator {
 	public mutating func random64() -> UInt64 {
 		// Generating 2x32-bit appears to be faster than using arc4random_buf on a 64-bit value
 		var value: UInt64 = 0
-		arc4random_buf(&value, sizeof(UInt64))
+		arc4random_buf(&value, sizeof(UInt64.self))
 		return value
 	}
 
@@ -179,13 +192,13 @@ public struct Arc4Random: RandomGenerator {
 
 public struct WellRng512: RandomWordGenerator {
 	public typealias WordType = UInt32
-	public typealias StateType = (UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32 ,UInt32, UInt32, UInt32, UInt32, UInt32, UInt32)
+	public typealias StateType = (UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32)
 
 	var state: StateType = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	var index: Int
 
 	public init() {
-		DevRandom.randomize(buffer: &state, size: sizeof(UInt32) * 16)
+		DevRandom.randomize(buffer: &state, size: sizeof(UInt32.self) * 16)
 		index = 0
 	}
 	
@@ -240,19 +253,19 @@ public struct Lfsr258: RandomWordGenerator {
 	public init() {
 		var r = DevRandom()
 		repeat {
-			r.randomize(buffer: &state.0, size: sizeof(UInt64))
+			r.randomize(buffer: &state.0, size: sizeof(UInt64.self))
 		} while state.0 < Lfsr258.k.0
 		repeat {
-			r.randomize(buffer: &state.1, size: sizeof(UInt64))
+			r.randomize(buffer: &state.1, size: sizeof(UInt64.self))
 		} while state.1 < Lfsr258.k.1
 		repeat {
-			r.randomize(buffer: &state.2, size: sizeof(UInt64))
+			r.randomize(buffer: &state.2, size: sizeof(UInt64.self))
 		} while state.2 < Lfsr258.k.2
 		repeat {
-			r.randomize(buffer: &state.3, size: sizeof(UInt64))
+			r.randomize(buffer: &state.3, size: sizeof(UInt64.self))
 		} while state.3 < Lfsr258.k.3
 		repeat {
-			r.randomize(buffer: &state.4, size: sizeof(UInt64))
+			r.randomize(buffer: &state.4, size: sizeof(UInt64.self))
 		} while state.4 < Lfsr258.k.4
 	}
 	
@@ -295,13 +308,13 @@ public struct Lfsr176: RandomWordGenerator {
 	public init() {
 		var r = DevRandom()
 		repeat {
-			r.randomize(buffer: &state.0, size: sizeof(UInt64))
+			r.randomize(buffer: &state.0, size: sizeof(UInt64.self))
 		} while state.0 < Lfsr176.k.0
 		repeat {
-			r.randomize(buffer: &state.1, size: sizeof(UInt64))
+			r.randomize(buffer: &state.1, size: sizeof(UInt64.self))
 		} while state.1 < Lfsr176.k.1
 		repeat {
-			r.randomize(buffer: &state.2, size: sizeof(UInt64))
+			r.randomize(buffer: &state.2, size: sizeof(UInt64.self))
 		} while state.2 < Lfsr176.k.2
 	}
 	

@@ -24,17 +24,15 @@ import CwlUtils
 
 class ScalarScannerTests: XCTestCase {
 	func testConstruction() {
-		var sc1 = ScalarScanner(scalars: ["a", "b", "c"], context: 1)
+		var sc1 = ScalarScanner(scalars: ["a", "b", "c"])
+		var sc2 = ScalarScanner(scalars: "xyz".unicodeScalars)
 		XCTAssert(sc1.remainder() == "abc")
-		XCTAssert(sc1.context == 1)
-
-		var sc2 = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
 		XCTAssert(sc2.remainder() == "xyz")
 	}
 
 	func testMatchString() {
 		do {
-			var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+			var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 			try sc.match(string: "xy")
 			try sc.match(string: "za")
 			XCTFail()
@@ -48,9 +46,9 @@ class ScalarScannerTests: XCTestCase {
 
 	func testMatchScalar() {
 		do {
-			var sc = ScalarScanner(scalars: "x".unicodeScalars, context: ())
-			try sc.match(string: "x")
-			try sc.match(string: "y")
+			var sc = ScalarScanner(scalars: "x".unicodeScalars)
+			try sc.match(scalar: "x")
+			try sc.match(scalar: "y")
 			XCTFail()
 		} catch ScalarScannerError.matchFailed(let wanted, let at) {
 			XCTAssert(wanted == "y")
@@ -60,10 +58,11 @@ class ScalarScannerTests: XCTestCase {
 		}
 	}
 
-	func testReadUntil() {
+	func testReadUntilScalar() {
 		do {
-			var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
-			_ = try sc.readUntil(scalar: "y")
+			var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
+			let s1 = try sc.readUntil(scalar: "y")
+			XCTAssert(s1 == "x")
 			_ = try sc.readUntil(scalar: "a")
 			XCTFail()
 		} catch ScalarScannerError.searchFailed(let wanted, let after) {
@@ -74,22 +73,68 @@ class ScalarScannerTests: XCTestCase {
 		}
 	}
 
+	func testReadUntilString() {
+		do {
+			var sc = ScalarScanner(scalars: "uvwxyz".unicodeScalars)
+			let s1 = try sc.readUntil(string: "wx")
+			let s2 = try sc.readUntil(string: "y")
+			XCTAssert(s1 == "uv")
+			XCTAssert(s2 == "wx")
+			_ = try sc.readUntil(string: "za")
+			XCTFail()
+		} catch ScalarScannerError.searchFailed(let wanted, let after) {
+			XCTAssert(wanted == "za")
+			XCTAssert(after == 4)
+		} catch {
+			XCTFail()
+		}
+	}
+
+	func testSkipUntilScalar() {
+		do {
+			var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
+			try sc.skipUntil(scalar: "y")
+			try sc.skipUntil(scalar: "a")
+			XCTFail()
+		} catch ScalarScannerError.searchFailed(let wanted, let after) {
+			XCTAssert(wanted == "a")
+			XCTAssert(after == 1)
+		} catch {
+			XCTFail()
+		}
+	}
+
+	func testSkipUntilString() {
+		do {
+			var sc = ScalarScanner(scalars: "uvwxyz".unicodeScalars)
+			try sc.skipUntil(string: "wx")
+			try sc.skipUntil(string: "y")
+			try sc.skipUntil(string: "za")
+			XCTFail()
+		} catch ScalarScannerError.searchFailed(let wanted, let after) {
+			XCTAssert(wanted == "za")
+			XCTAssert(after == 4)
+		} catch {
+			XCTFail()
+		}
+	}
+
 	func testReadWhileTrue() {
-		var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
-		let value = sc.readWhile { $0 < "z"}
+		var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
+		let value = sc.readWhile { $0 < "z" }
 		XCTAssert(value == "xy")
 		XCTAssert(sc.remainder() == "z")
 	}
 
 	func testSkipWhileTrue() {
-		var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
-		sc.skipWhile { $0 < "z"}
+		var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
+		sc.skipWhile { $0 < "z" }
 		XCTAssert(sc.remainder() == "z")
 	}
 
 	func testSkip() {
 		do {
-			var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+			var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 			try sc.skip(count: 1)
 			try sc.skip(count: 3)
 			XCTFail()
@@ -103,7 +148,7 @@ class ScalarScannerTests: XCTestCase {
 
 	func testBacktrack() {
 		do {
-			var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+			var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 			try sc.match(string: "xyz")
 			try sc.backtrack()
 			try sc.backtrack(count: 2)
@@ -118,21 +163,21 @@ class ScalarScannerTests: XCTestCase {
 	}
 
 	func testRemainder() {
-		var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+		var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 		XCTAssert((try? sc.match(string: "x")) != nil)
 		XCTAssert(sc.remainder() == "yz")
 		XCTAssert(sc.remainder() == "")
 	}
 
 	func testConditionalString() {
-		var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+		var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 		XCTAssert(sc.conditional(string: "xy"))
 		XCTAssert(!sc.conditional(string: "ab"))
 		XCTAssert(sc.remainder() == "z")
 	}
 
 	func testConditionalScalar() {
-		var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+		var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 		XCTAssert(sc.conditional(scalar: "x"))
 		XCTAssert(!sc.conditional(scalar: "a"))
 		XCTAssert(sc.remainder() == "yz")
@@ -140,7 +185,7 @@ class ScalarScannerTests: XCTestCase {
 
 	func testRequirePeek() {
 		do {
-			var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+			var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 			XCTAssert(try sc.requirePeek() == "x")
 			try sc.match(string: "xyz")
 			_ = try sc.requirePeek()
@@ -154,7 +199,7 @@ class ScalarScannerTests: XCTestCase {
 	}
 
 	func testPeek() {
-		var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+		var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 		XCTAssert(sc.peek() == "x")
 		XCTAssert((try? sc.match(string: "xyz")) != nil)
 		XCTAssert(sc.peek() == nil)
@@ -162,7 +207,7 @@ class ScalarScannerTests: XCTestCase {
 
 	func testReadScalar() {
 		do {
-			var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+			var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 			XCTAssert(try sc.readScalar() == "x")
 			try sc.match(string: "yz")
 			_ = try sc.readScalar()
@@ -177,7 +222,7 @@ class ScalarScannerTests: XCTestCase {
 
 	func testReadInt() {
 		do {
-			var sc = ScalarScanner(scalars: "123abc".unicodeScalars, context: ())
+			var sc = ScalarScanner(scalars: "123abc".unicodeScalars)
 			XCTAssert(try sc.readInt() == 123)
 			_ = try sc.readInt()
 			XCTFail()
@@ -190,7 +235,7 @@ class ScalarScannerTests: XCTestCase {
 
 	func testReadScalars() {
 		do {
-			var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+			var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 			XCTAssert(try sc.readScalars(count: 2) == "xy")
 			_ = try sc.readScalars(count: 2)
 			XCTFail()
@@ -203,7 +248,7 @@ class ScalarScannerTests: XCTestCase {
 	}
 
 	func testUnexpectedError() {
-		var sc = ScalarScanner(scalars: "xyz".unicodeScalars, context: ())
+		var sc = ScalarScanner(scalars: "xyz".unicodeScalars)
 		let e1 = sc.unexpectedError()
 		_ = sc.conditional(scalar: "x")
 		let e2 = sc.unexpectedError()

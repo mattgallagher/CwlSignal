@@ -28,11 +28,12 @@ class SysctlTests: XCTestCase {
 		XCTAssert(hostName != "")
 
 		let machine = Sysctl.machine
-	#if arch(x86_64)
-		XCTAssert(machine == "x86_64")
-	#else
-		XCTAssert(machine != "")
-	#endif
+		
+		#if arch(x86_64)
+			XCTAssert(machine == "x86_64")
+		#else
+			XCTAssert(machine != "")
+		#endif
 
 		let model = Sysctl.model
 		XCTAssert(model != "")
@@ -55,12 +56,12 @@ class SysctlTests: XCTestCase {
 		let activeCPUs = Sysctl.activeCPUs
 		XCTAssert(activeCPUs > 0)
 		
-	#if os(OSX)
-		let cpuFreq = Sysctl.cpuFreq
-		XCTAssert(cpuFreq > 1_000_000_000)
-		
-		let memSize = Sysctl.memSize
-		XCTAssert(memSize > 1_000_000_000)
-	#endif
+		#if os(OSX)
+			let cpuFreq = Sysctl.cpuFreq
+			XCTAssert(cpuFreq > 1_000_000_000)
+			
+			let memSize = Sysctl.memSize
+			XCTAssert(memSize > 1_000_000_000)
+		#endif
 	}
 }
