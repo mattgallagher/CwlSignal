@@ -20,17 +20,6 @@
 
 import Foundation
 
-extension DispatchQueue {
-	// Similar to `sync` but returning a value from inside the mutex.
-	public func access<T>(block: () throws -> T) rethrows -> T {
-		var t: T?
-		try sync {
-			try t = block()
-		}
-		return t!
-	}
-}
-
 public extension DispatchSource {
 	// An overload of timer that immediately sets the handler and schedules the timer
 	public class func timer(interval: DispatchTimeInterval, queue: DispatchQueue, handler: () -> Void) -> DispatchSourceTimer {

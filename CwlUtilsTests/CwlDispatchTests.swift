@@ -31,13 +31,6 @@ class DispatchTests: XCTestCase {
 		queue.setSpecific(key: key, value: value)
 	}
 	
-	func testAccess() {
-		let result = queue.access {
-			return DispatchQueue.getSpecific(key: self.key)
-		}
-		XCTAssert(result == value)
-	}
-	
 	func testSynchronousTimer() {
 		let ex = expectation(description: "")
 		var timer: DispatchSourceTimer? = nil
@@ -58,6 +51,7 @@ class DispatchTests: XCTestCase {
 		var outerMutexComplete = false
 		queue.sync {
 			timer = DispatchSource.timer(interval: .milliseconds(1), parameter: 1) { p in
+				XCTAssert(!outerMutexComplete)
 				self.queue.sync {
 					XCTAssert(outerMutexComplete)
 					XCTAssert(p == 1)
@@ -66,12 +60,14 @@ class DispatchTests: XCTestCase {
 			}
 			Thread.sleep(forTimeInterval: 0.1)
 			timer?.scheduleOneshot(interval: .milliseconds(1), parameter: 2) { p in
+				XCTAssert(outerMutexComplete)
 				self.queue.sync {
 					XCTAssert(outerMutexComplete)
 					XCTAssert(p == 2)
 					ex2.fulfill()
 				}
 			}
+			Thread.sleep(forTimeInterval: 0.1)
 			outerMutexComplete = true
 		}
 		waitForExpectations(timeout: 1e2, handler: nil)
