@@ -38,7 +38,7 @@ public struct AddressInfo {
 	
 	/// -returns: the "image" (shared object pathname) for the instruction
 	public var image: String {
-		if let dli_fname = info.dli_fname, fname = String(validatingUTF8: dli_fname), _ = fname.range(of: "/", options: .backwards, range: nil, locale: nil) {
+		if let dli_fname = info.dli_fname, let fname = String(validatingUTF8: dli_fname), let _ = fname.range(of: "/", options: .backwards, range: nil, locale: nil) {
 			return (fname as NSString).lastPathComponent
 		} else {
 			return "???"
@@ -47,9 +47,9 @@ public struct AddressInfo {
 	
 	/// - returns: the symbol nearest the address
 	public var symbol: String {
-		if let dli_sname = info.dli_sname, sname = String(validatingUTF8: dli_sname) {
+		if let dli_sname = info.dli_sname, let sname = String(validatingUTF8: dli_sname) {
 			return sname
-		} else if let dli_fname = info.dli_fname, _ = String(validatingUTF8: dli_fname) {
+		} else if let dli_fname = info.dli_fname, let _ = String(validatingUTF8: dli_fname) {
 			return self.image
 		} else {
 			return String(format: "0x%1x", UInt(bitPattern: info.dli_saddr))
@@ -58,9 +58,9 @@ public struct AddressInfo {
 	
 	/// - returns: the address' offset relative to the nearest symbol
 	public var offset: Int {
-		if let dli_sname = info.dli_sname, _ = String(validatingUTF8: dli_sname) {
+		if let dli_sname = info.dli_sname, let _ = String(validatingUTF8: dli_sname) {
 			return Int(address - (UInt(bitPattern: info.dli_saddr) ?? 0))
-		} else if let dli_fname = info.dli_fname, _ = String(validatingUTF8: dli_fname) {
+		} else if let dli_fname = info.dli_fname, let _ = String(validatingUTF8: dli_fname) {
 			return Int(address - (UInt(bitPattern: info.dli_fbase) ?? 0))
 		} else {
 			return Int(address - (UInt(bitPattern: info.dli_saddr) ?? 0))

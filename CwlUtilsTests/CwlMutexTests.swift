@@ -26,7 +26,7 @@ class PthreadTests: XCTestCase {
 	func testPthreadMutex() {
 		let mutex1 = PThreadMutex()
 		
-		let e1 = expectation(withDescription: "Block1 not invoked")
+		let e1 = expectation(description: "Block1 not invoked")
 		mutex1.sync {
 			e1.fulfill()
 			let reenter: Void? = mutex1.trySync() {
@@ -37,8 +37,8 @@ class PthreadTests: XCTestCase {
 		
 		let mutex2 = PThreadMutex(type: .recursive)
 
-		let e2 = expectation(withDescription: "Block2 not invoked")
-		let e3 = expectation(withDescription: "Block3 not invoked")
+		let e2 = expectation(description: "Block2 not invoked")
+		let e3 = expectation(description: "Block3 not invoked")
 		mutex2.sync {
 			e2.fulfill()
 			let reenter: Void? = mutex2.trySync() {
@@ -47,7 +47,7 @@ class PthreadTests: XCTestCase {
 			XCTAssert(reenter != nil)
 		}
 		
-		let e4 = expectation(withDescription: "Block4 not invoked")
+		let e4 = expectation(description: "Block4 not invoked")
 		let r = mutex1.sync { n -> Int in
 			e4.fulfill()
 			let reenter: Void? = mutex1.trySync() {
@@ -58,6 +58,6 @@ class PthreadTests: XCTestCase {
 		}
 		XCTAssert(r == 13)
 		
-		waitForExpectations(withTimeout: 0, handler: nil)
+		waitForExpectations(timeout: 0, handler: nil)
 	}
 }

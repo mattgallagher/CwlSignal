@@ -134,7 +134,7 @@ public class UnanticipatedErrorRecoveryAttempter: NSObject {
 		public func presentError(error: NSError, _ completion: (() -> Void)? = nil) {
 			let alert = UIAlertController(title: error.localizedDescription, message: error.localizedRecoverySuggestion ?? error.localizedFailureReason, preferredStyle: UIAlertControllerStyle.alert)
 
-			if let ro = error.localizedRecoveryOptions, ra = error.recoveryAttempter as? UnanticipatedErrorRecoveryAttempter {
+			if let ro = error.localizedRecoveryOptions, let ra = error.recoveryAttempter as? UnanticipatedErrorRecoveryAttempter {
 				for (index, option) in ro.enumerated() {
 					alert.addAction(UIAlertAction(title: option, style: UIAlertActionStyle.default, handler: { (action: UIAlertAction?) -> Void in
 						_ = ra.attemptRecovery(fromError: error, optionIndex: index)

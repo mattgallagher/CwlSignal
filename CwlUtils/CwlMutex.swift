@@ -24,6 +24,7 @@ import Foundation
 public protocol ScopedMutex {
 	/// Perform work inside the mutex
 	func sync<R>(execute work: @noescape () throws -> R) rethrows -> R
+	func trySync<R>(execute work: @noescape () throws -> R) rethrows -> R?
 }
 
 /// A more specific kind of mutex that assume an underlying primitive and unbalanced lock/trylock/unlock operators
@@ -36,9 +37,8 @@ public protocol RawMutex: ScopedMutex {
 	func unbalancedLock()
 	func unbalancedTryLock() -> Bool
 	func unbalancedUnlock()
-
-	func trySync<R>(execute work: @noescape () throws -> R) rethrows -> R?
 }
+
 
 extension RawMutex {
 	/** RECOMMENDATION: until Swift can inline between modules or at least optimize @noescape closures to the stack, if this file is linked into another compilation unit (i.e. part of the CwlUtils.framework) it might be a good idea to copy and paste the relevant `fastsync` implementation code into your file (or module and delete `private` if whole module optimization is enabled) and use it instead, allowing the function to be inlined.
@@ -64,6 +64,7 @@ extension PThreadMutex {
 		defer { unbalancedUnlock() }
 		return try work()
 	}
+
 	public func trySync<R>(execute work: @noescape () throws -> R) rethrows -> R? {
 		guard unbalancedTryLock() else { return nil }
 		defer { unbalancedUnlock() }
