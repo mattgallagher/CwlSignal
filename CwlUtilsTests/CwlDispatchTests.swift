@@ -32,10 +32,18 @@ class DispatchTests: XCTestCase {
 	}
 	
 	func testSynchronousTimer() {
+		do {
+			// Ensure falling out of scope cancels the timer
+			_ = DispatchSource.timer(interval: .milliseconds(10), queue: queue) {
+				XCTFail()
+			}
+		}
+
 		let ex = expectation(description: "")
 		var timer: DispatchSourceTimer? = nil
 		queue.sync {
 			timer = DispatchSource.timer(interval: .milliseconds(50), queue: queue) {
+				// Ensure test occurs on the appropriate queue
 				XCTAssert(DispatchQueue.getSpecific(key: self.key) == self.value)
 				ex.fulfill()
 			}
@@ -45,10 +53,19 @@ class DispatchTests: XCTestCase {
 	}
 	
 	func testParametricTimer() {
+		do {
+			// Ensure falling out of scope cancels the timer
+			_ = DispatchSource.timer(interval: .milliseconds(10), parameter: 0) { p in
+				XCTFail()
+			}
+		}
+
 		let ex1 = expectation(description: "")
 		let ex2 = expectation(description: "")
 		var timer: DispatchSourceTimer? = nil
 		var outerMutexComplete = false
+
+		// Test rescheduling a timer during the callback for an earlier scheduling
 		queue.sync {
 			timer = DispatchSource.timer(interval: .milliseconds(1), parameter: 1) { p in
 				XCTAssert(!outerMutexComplete)
