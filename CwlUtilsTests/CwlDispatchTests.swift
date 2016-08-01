@@ -31,10 +31,10 @@ class DispatchTests: XCTestCase {
 		queue.setSpecific(key: key, value: value)
 	}
 	
-	func testSynchronousTimer() {
+	func testSynchronousSingleTimer() {
 		do {
 			// Ensure falling out of scope cancels the timer
-			_ = DispatchSource.timer(interval: .milliseconds(10), queue: queue) {
+			_ = DispatchSource.singleTimer(interval: .milliseconds(10), queue: queue) {
 				XCTFail()
 			}
 		}
@@ -42,7 +42,7 @@ class DispatchTests: XCTestCase {
 		let ex = expectation(description: "")
 		var timer: DispatchSourceTimer? = nil
 		queue.sync {
-			timer = DispatchSource.timer(interval: .milliseconds(50), queue: queue) {
+			timer = DispatchSource.singleTimer(interval: .milliseconds(50), queue: queue) {
 				// Ensure test occurs on the appropriate queue
 				XCTAssert(DispatchQueue.getSpecific(key: self.key) == self.value)
 				ex.fulfill()
@@ -52,10 +52,36 @@ class DispatchTests: XCTestCase {
 		withExtendedLifetime(timer) {}
 	}
 	
-	func testParametricTimer() {
+	func testSynchronousPeriodicTimer() {
 		do {
 			// Ensure falling out of scope cancels the timer
-			_ = DispatchSource.timer(interval: .milliseconds(10), parameter: 0) { p in
+			_ = DispatchSource.periodicTimer(interval: .milliseconds(10), queue: queue) {
+				XCTFail()
+			}
+		}
+
+		let ex = expectation(description: "")
+		var timer: DispatchSourceTimer? = nil
+		var fireCount = 0
+		queue.sync {
+			timer = DispatchSource.periodicTimer(interval: .milliseconds(50), queue: queue) {
+				// Ensure test occurs on the appropriate queue
+				XCTAssert(DispatchQueue.getSpecific(key: self.key) == self.value)
+				
+				fireCount += 1
+				if fireCount == 3 {
+					ex.fulfill()
+				}
+			}
+		}
+		waitForExpectations(timeout: 1e2, handler: nil)
+		withExtendedLifetime(timer) {}
+	}
+	
+	func testParametricSingleTimer() {
+		do {
+			// Ensure falling out of scope cancels the timer
+			_ = DispatchSource.singleTimer(interval: .milliseconds(10), parameter: 0) { p in
 				XCTFail()
 			}
 		}
@@ -67,7 +93,7 @@ class DispatchTests: XCTestCase {
 
 		// Test rescheduling a timer during the callback for an earlier scheduling
 		queue.sync {
-			timer = DispatchSource.timer(interval: .milliseconds(1), parameter: 1) { p in
+			timer = DispatchSource.singleTimer(interval: .milliseconds(1), parameter: 1) { p in
 				XCTAssert(!outerMutexComplete)
 				self.queue.sync {
 					XCTAssert(outerMutexComplete)
@@ -82,6 +108,50 @@ class DispatchTests: XCTestCase {
 					XCTAssert(outerMutexComplete)
 					XCTAssert(p == 2)
 					ex2.fulfill()
+				}
+			}
+			Thread.sleep(forTimeInterval: 0.1)
+			outerMutexComplete = true
+		}
+		waitForExpectations(timeout: 1e2, handler: nil)
+		withExtendedLifetime(timer) {}
+	}
+	
+	func testParametricPeriodicTimer() {
+		do {
+			// Ensure falling out of scope cancels the timer
+			_ = DispatchSource.periodicTimer(interval: .milliseconds(10), parameter: 0) { p in
+				XCTFail()
+			}
+		}
+
+		let ex1 = expectation(description: "")
+		let ex2 = expectation(description: "")
+		var timer: DispatchSourceTimer? = nil
+		var outerMutexComplete = false
+		var fireCount = 0
+
+		// Test rescheduling a timer during the callback for an earlier scheduling
+		queue.sync {
+			timer = DispatchSource.periodicTimer(interval: .milliseconds(1), parameter: 1) { p in
+				XCTAssert(!outerMutexComplete)
+				self.queue.sync {
+					XCTAssert(outerMutexComplete)
+					XCTAssert(p == 1)
+					ex1.fulfill()
+				}
+			}
+			Thread.sleep(forTimeInterval: 0.1)
+			timer?.scheduleRepeating(interval: .milliseconds(1), parameter: 2) { p in
+				XCTAssert(outerMutexComplete)
+				self.queue.sync {
+					XCTAssert(outerMutexComplete)
+					XCTAssert(p == 2)
+
+					fireCount += 1
+					if fireCount == 3 {
+						ex2.fulfill()
+					}
 				}
 			}
 			Thread.sleep(forTimeInterval: 0.1)
