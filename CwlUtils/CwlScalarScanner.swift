@@ -21,7 +21,7 @@
 import Swift
 
 /// A type for representing the different possible failure conditions when using ScalarScanner
-public enum ScalarScannerError: ErrorProtocol {
+public enum ScalarScannerError: Error {
 	/// The scalar at the specified index doesn't match the expected grammar
 	case unexpected(at: Int)
 	
@@ -39,7 +39,7 @@ public enum ScalarScannerError: ErrorProtocol {
 }
 
 /// A structure for traversing a `String.UnicodeScalarView`. A `context` field is provided but is not used by the scanner (it is entirely for storage by the scanner's user).
-public struct ScalarScanner<C: Collection where C.Iterator.Element == UnicodeScalar, C.Index: Comparable> {
+public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeScalar, C.Index: Comparable {
 	/// The underlying storage
 	public let scalars: C
 	

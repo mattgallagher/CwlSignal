@@ -25,11 +25,11 @@
 	import MobileCoreServices
 #endif
 
-public extension ErrorProtocol {
+public extension Error {
 	/// Return an NSError with the same properties as this error but with an `UnanticipatedErrorRecoveryAttempter` attached.
 	public func withUnanticipatedErrorRecoveryAttempter(file: String = #file, line: Int = #line) -> NSError {
 		// We want to preserve the "userInfo" dictionary, so we avoid "self as NSError" if we can (since it creates a new NSError that doesn't preserve the userInfo). Instead, we cast *via* NSObject.
-		let e = ((self as? NSObject) as? NSError) ?? (self as NSError)
+		let e = self as NSError
 		var userInfo: [NSObject: AnyObject] = e.userInfo
 		
 		// Move any existing NSLocalizedRecoverySuggestionErrorKey to a new key (we want to replace it but don't want to lose potentially useful information)
@@ -75,7 +75,7 @@ public class UnanticipatedErrorRecoveryAttempter: NSObject {
 	}
 	
 	/// There are two possible `attemptRecoveryFromError` methods. This one just feeds into the other.
-	public override func attemptRecovery(fromError error: NSError, optionIndex: Int, delegate: AnyObject?, didRecoverSelector: Selector?, contextInfo: UnsafeMutablePointer<Void>?) -> Void {
+	public override func attemptRecovery(fromError error: Error, optionIndex: Int, delegate: AnyObject?, didRecoverSelector: Selector?, contextInfo: UnsafeMutablePointer<Void>?) -> Void {
 		_ = self.attemptRecovery(fromError: error, optionIndex: optionIndex)
 	}
 	
@@ -103,7 +103,7 @@ public class UnanticipatedErrorRecoveryAttempter: NSObject {
 	}
 	
 	/// When a button is tapped, either close the dialog or copy the error details as appropriate.
-	public override func attemptRecovery(fromError error: NSError, optionIndex: Int) -> Bool {
+	public override func attemptRecovery(fromError error: Error, optionIndex: Int) -> Bool {
 		// The "Copy details" button is index 1 in the buttons array.
 		let copyDetailsButtonIndex = 1
 		

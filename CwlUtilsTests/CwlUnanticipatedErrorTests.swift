@@ -22,7 +22,7 @@ import Foundation
 import XCTest
 import CwlUtils
 
-enum TestCode: Int, ErrorProtocol {
+enum TestCode: Int, Error {
 	case zeroValue = 0
 	case oneValue = 1
 	case testValue = 2

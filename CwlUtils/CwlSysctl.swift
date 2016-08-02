@@ -20,10 +20,11 @@
 
 import Foundation
 
-public enum SysctlError: ErrorProtocol {
+public enum SysctlError: Error {
 	case unknown
 	case malformedUTF8
 	case invalidSize
+	case posixError(POSIXErrorCode)
 }
 
 /// Wrapper around `sysctl` that preflights and allocates an [Int8] for the result and throws a Swift error if anything goes wrong.
@@ -33,7 +34,7 @@ public func sysctl(levels: [Int32]) throws -> [Int8] {
 		var requiredSize = 0
 		let preFlightResult = Darwin.sysctl(UnsafeMutablePointer<Int32>(levelsPointer.baseAddress), UInt32(levels.count), nil, &requiredSize, nil, 0)
 		if preFlightResult != 0 {
-			throw POSIXError(rawValue: errno) ?? SysctlError.unknown
+			throw POSIXErrorCode(rawValue: errno).map { SysctlError.posixError($0) } ?? SysctlError.unknown
 		}
 		
 		// Run the actual request with an appropriately sized array buffer
@@ -42,7 +43,7 @@ public func sysctl(levels: [Int32]) throws -> [Int8] {
 			return Darwin.sysctl(UnsafeMutablePointer<Int32>(levelsPointer.baseAddress), UInt32(levels.count), UnsafeMutablePointer<Void>(dataBuffer.baseAddress), &requiredSize, nil, 0)
 		}
 		if result != 0 {
-			throw POSIXError(rawValue: errno) ?? SysctlError.unknown
+			throw POSIXErrorCode(rawValue: errno).map { SysctlError.posixError($0) } ?? SysctlError.unknown
 		}
 		
 		return data
@@ -56,7 +57,7 @@ public func sysctlLevels(fromName: String) throws -> [Int32] {
 	try levelsBuffer.withUnsafeMutableBufferPointer { (lbp: inout UnsafeMutableBufferPointer<Int32>) throws in
 		try fromName.withCString { (nbp: UnsafePointer<Int8>) throws in
 			guard sysctlnametomib(nbp, lbp.baseAddress, &levelsBufferSize) == 0 else {
-				throw POSIXError(rawValue: errno) ?? SysctlError.unknown
+				throw POSIXErrorCode(rawValue: errno).map { SysctlError.posixError($0) } ?? SysctlError.unknown
 			}
 		}
 	}

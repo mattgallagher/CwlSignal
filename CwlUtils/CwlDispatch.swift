@@ -23,7 +23,7 @@ import Foundation
 public extension DispatchSource {
 	// An overload of timer that immediately sets the handler and schedules the timer
 	public class func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue, handler: () -> Void) -> DispatchSourceTimer {
-		let result = DispatchSource.timer(queue: queue)
+		let result = DispatchSource.makeTimerSource(queue: queue)
 		result.setEventHandler(handler: handler)
 		result.scheduleOneshot(deadline: DispatchTime.now() + interval, leeway: leeway)
 		result.resume()
@@ -32,7 +32,7 @@ public extension DispatchSource {
 	
 	// An overload of timer that always uses the default global queue (because it is intended to enter the appropriate mutex as a separate step) and passes a user-supplied Int to the handler function to allow ignoring callbacks if cancelled or rescheduled before mutex acquisition.
 	public class func singleTimer<T>(interval: DispatchTimeInterval, parameter: T, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: (T) -> Void) -> DispatchSourceTimer {
-		let result = DispatchSource.timer(queue: queue)
+		let result = DispatchSource.makeTimerSource(queue: queue)
 		result.scheduleOneshot(interval: interval, leeway: leeway, parameter: parameter, handler: handler)
 		result.resume()
 		return result
@@ -40,7 +40,7 @@ public extension DispatchSource {
 
 	// An overload of timer that immediately sets the handler and schedules the timer
 	public class func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue, handler: () -> Void) -> DispatchSourceTimer {
-		let result = DispatchSource.timer(queue: queue)
+		let result = DispatchSource.makeTimerSource(queue: queue)
 		result.setEventHandler(handler: handler)
 		result.scheduleRepeating(deadline: DispatchTime.now() + interval, interval: interval, leeway: leeway)
 		result.resume()
@@ -49,7 +49,7 @@ public extension DispatchSource {
 	
 	// An overload of timer that always uses the default global queue (because it is intended to enter the appropriate mutex as a separate step) and passes a user-supplied Int to the handler function to allow ignoring callbacks if cancelled or rescheduled before mutex acquisition.
 	public class func periodicTimer<T>(interval: DispatchTimeInterval, parameter: T, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: (T) -> Void) -> DispatchSourceTimer {
-		let result = DispatchSource.timer(queue: queue)
+		let result = DispatchSource.makeTimerSource(queue: queue)
 		result.scheduleRepeating(interval: interval, leeway: leeway, parameter: parameter, handler: handler)
 		result.resume()
 		return result
