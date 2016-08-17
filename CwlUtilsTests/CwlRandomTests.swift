@@ -36,14 +36,14 @@ class RandomTests: XCTestCase {
 		}
 		
 		let e = generator.random32()
-		XCTAssert(e.dynamicType == UInt32.self)
-
+		XCTAssert(type(of: e) == UInt32.self)
+		
 		let f = generator.random64(max: 1)
 		XCTAssert(f < 2)
-
+		
 		let g = generator.random32(max: 1)
 		XCTAssert(g < 2)
-
+		
 		// More rigorous testing on these would be nice but for now, at least run them
 		_ = generator.random64(max: UInt64.max)
 		_ = generator.randomHalfOpen()
@@ -55,36 +55,36 @@ class RandomTests: XCTestCase {
 		var generator = DevRandom()
 		genericTest(generator: &generator)
 	}
-
+	
 	func testArc4Random() {
 		var generator = Arc4Random()
 		genericTest(generator: &generator)
 	}
-
+	
 	func testWellRng512() {
 		var generator = WellRng512()
 		genericTest(generator: &generator)
 	}
-
+	
 	func testLfsr258() {
 		var generator = Lfsr258()
 		genericTest(generator: &generator)
 	}
-
+	
 	func testLfsr176() {
 		var generator = Lfsr176()
 		genericTest(generator: &generator)
 	}
-
+	
 	func testConstantNonRandom() {
 		var generator = ConstantNonRandom()
 		genericTest(generator: &generator, testUnique: false)
 	}
-
+	
 	func testXoroshiro() {
 		var generator = Xoroshiro()
 		genericTest(generator: &generator)
-
+		
 		// Test Xoroshiro against the reference implementation to verify output
 		var g1 = Xoroshiro(seed: (12345678, 87654321))
 		var g2 = xoroshiro128plus(seed: (12345678, 87654321))
@@ -92,16 +92,16 @@ class RandomTests: XCTestCase {
 			XCTAssert(g1.random64() == g2.random64())
 		}
 	}
-
+	
 	func testXoroshiro128plus() {
 		var generator = xoroshiro128plus()
 		genericTest(generator: &generator)
 	}
-
+	
 	func testMersenneTwister() {
 		var generator = MersenneTwister()
 		genericTest(generator: &generator)
-
+		
 		// Test MersenneTwister against the reference implementation to verify output
 		var g1 = MersenneTwister(seed: 12345678)
 		var g2 = MT19937_64(seed: 12345678)
@@ -109,7 +109,7 @@ class RandomTests: XCTestCase {
 			XCTAssert(g1.random64() == g2.random64())
 		}
 	}
-
+	
 	func testMT19937_64() {
 		var generator = MT19937_64()
 		genericTest(generator: &generator)
@@ -124,19 +124,19 @@ class RandomTests: XCTestCase {
 private struct MT19937_64: RandomWordGenerator {
 	typealias WordType = UInt64
 	var state = mt19937_64()
-
+	
 	init() {
 		init_genrand64(&state, DevRandom.random64())
 	}
-
+	
 	init(seed: UInt64) {
 		init_genrand64(&state, seed)
 	}
-
+	
 	mutating func random64() -> UInt64 {
 		return genrand64_int64(&state)
 	}
-
+	
 	mutating func randomWord() -> UInt64 {
 		return genrand64_int64(&state)
 	}
@@ -145,18 +145,18 @@ private struct MT19937_64: RandomWordGenerator {
 private struct xoroshiro128plus: RandomWordGenerator {
 	typealias WordType = UInt64
 	var state = xoroshiro_state(s: (DevRandom.random64(), DevRandom.random64()))
-
+	
 	init() {
 	}
-
+	
 	init(seed: (UInt64, UInt64)) {
 		self.state.s = seed
 	}
-
+	
 	mutating func random64() -> UInt64 {
 		return xoroshiro_next(&state)
 	}
-
+	
 	mutating func randomWord() -> UInt64 {
 		return xoroshiro_next(&state)
 	}

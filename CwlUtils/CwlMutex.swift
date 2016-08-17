@@ -23,8 +23,8 @@ import Foundation
 /// A basic mutex protocol that requires nothing more than "performing work inside the mutex".
 public protocol ScopedMutex {
 	/// Perform work inside the mutex
-	func sync<R>(execute work: @noescape () throws -> R) rethrows -> R
-	func trySync<R>(execute work: @noescape () throws -> R) rethrows -> R?
+	func sync<R>(execute work: () throws -> R) rethrows -> R
+	func trySync<R>(execute work: () throws -> R) rethrows -> R?
 }
 
 /// A more specific kind of mutex that assume an underlying primitive and unbalanced lock/trylock/unlock operators
@@ -39,19 +39,18 @@ public protocol RawMutex: ScopedMutex {
 	func unbalancedUnlock()
 }
 
-
 extension RawMutex {
 	/** RECOMMENDATION: until Swift can inline between modules or at least optimize @noescape closures to the stack, if this file is linked into another compilation unit (i.e. part of the CwlUtils.framework) it might be a good idea to copy and paste the relevant `fastsync` implementation code into your file (or module and delete `private` if whole module optimization is enabled) and use it instead, allowing the function to be inlined.
 ~~~
-extension UnfairLock {
-	private func fastsync<R>(execute work: @noescape () throws -> R) rethrows -> R {
+private extension UnfairLock {
+	func fastsync<R>(execute work: @noescape () throws -> R) rethrows -> R {
 		os_unfair_lock_lock(&unsafeLock)
 		defer { os_unfair_lock_unlock(&unsafeLock) }
 		return try work()
 	}
 }
-extension PThreadMutex {
-	private func fastsync<R>(execute work: @noescape () throws -> R) rethrows -> R {
+private extension PThreadMutex {
+	func fastsync<R>(execute work: @noescape () throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try work()
@@ -59,13 +58,12 @@ extension PThreadMutex {
 }
 ~~~
 	*/
-	public func sync<R>(execute work: @noescape () throws -> R) rethrows -> R {
+	public func sync<R>(execute work: () throws -> R) rethrows -> R {
 		unbalancedLock()
 		defer { unbalancedUnlock() }
 		return try work()
 	}
-
-	public func trySync<R>(execute work: @noescape () throws -> R) rethrows -> R? {
+	public func trySync<R>(execute work: () throws -> R) rethrows -> R? {
 		guard unbalancedTryLock() else { return nil }
 		defer { unbalancedUnlock() }
 		return try work()

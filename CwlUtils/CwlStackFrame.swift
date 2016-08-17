@@ -29,7 +29,7 @@ public struct StackFrame {
 	/// - returns: the return address for the stack frame identified by `address`
 	public var returnAddress: UInt { get {
 		guard address != 0 else { return 0 }
-		return UnsafeMutablePointer<UInt>(bitPattern: address)?.advanced(by: FP_LINK_OFFSET).pointee ?? 0
+		return UnsafeMutablePointer<UInt>(bitPattern: address)!.advanced(by: FP_LINK_OFFSET).pointee
 	} }
 
 	/// Preferred constructor gives the "current" StackFrame (where "current" refers to the frame that invokes this function). Also returns the `stackBounds` for use in subsequent calls to `next`.
@@ -39,7 +39,7 @@ public struct StackFrame {
 		let stackBounds = currentStackBounds()
 		let frame = StackFrame(address: frame_address())
 		
-		if !stackBounds.contains(frame.address) || !isAligned(address: frame.address) {
+		if !stackBounds.contains(frame.address) || !isAligned(frame.address) {
 			return (StackFrame(address: 0), stackBounds: stackBounds);
 		}
 		
@@ -50,12 +50,12 @@ public struct StackFrame {
 	/// - returns: a `StackFrame` representing the stack frame after self, if it exists and is valid.
 	public func next(inBounds stackBounds: ClosedRange<UInt>) -> StackFrame {
 		guard address != 0 else { return self }
-		let nextFrameAddress = UnsafeMutablePointer<UInt>(bitPattern: address)?.pointee ?? 0
-		if !stackBounds.contains(nextFrameAddress) || !isAligned(address: nextFrameAddress) || nextFrameAddress <= address {
+		let nextFrameAddress = UnsafeMutablePointer<UInt>(bitPattern: address)?.pointee
+		if !stackBounds.contains(nextFrameAddress!) || !isAligned(nextFrameAddress!) || (nextFrameAddress ?? 0) <= address {
 			return StackFrame(address: 0)
 		}
 		
-		return StackFrame(address: nextFrameAddress)
+		return StackFrame(address: nextFrameAddress!)
 	}
 }
 
@@ -107,30 +107,18 @@ public func callStackReturnAddresses(skip: UInt = 0, maximumAddresses: Int = Int
 	let FP_LINK_OFFSET = 1
 #endif
 
-extension UInt {
-	/// If SE-0016 goes well, this won't be needed in future.
-	init<T>(bitPattern: UnsafeMutablePointer<T>) {
-		self.init(bitPattern: UnsafeMutablePointer<T>(bitPattern: 0)?.distance(to: bitPattern) ?? 0)
-	}
-}
-
 /// Use the pthread functions to get the bounds of the current stack as a closed interval.
 /// - returns: a closed interval containing the memory address range for the current stack
 private func currentStackBounds() -> ClosedRange<UInt> {
 	let currentThread = pthread_self()
-
-	// Workaround for Swift 3 preview 1 bug... unless we assign to optional first, the UInt(bitPattern:) will return 0
-	let ctp: UnsafeMutablePointer<Void>? = pthread_get_stackaddr_np(currentThread)
-
-	let end = UInt(bitPattern: ctp)
-	let start = end - UInt(pthread_get_stacksize_np(currentThread))
-	return ClosedRange(uncheckedBounds: (start, end))
+	let t = UInt(bitPattern: pthread_get_stackaddr_np(currentThread))
+	return ((t - UInt(bitPattern: pthread_get_stacksize_np(currentThread))) ... t)
 }
 
 /// We traverse the stack using "downstack links". To avoid problems with these links, we ensure that frame pointers are "aligned" (valid stack frames are 16 byte aligned on x86 and 2 byte aligned on ARM).
 /// - parameter address: the address to analyze
 /// - returns: true if `address` is aligned according to stack rules for the current architecture
-private func isAligned(address: UInt) -> Bool {
+private func isAligned(_ address: UInt) -> Bool {
 	return (address & ISALIGNED_MASK) == ISALIGNED_RESULT
 }
 

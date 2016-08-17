@@ -31,7 +31,7 @@ class OnDeleteTests: XCTestCase {
 			withExtendedLifetime(o) { () in }
 		}
 		XCTAssert(x == true)
-
+		
 		var y = false
 		do {
 			let o = OnDelete { y = true }

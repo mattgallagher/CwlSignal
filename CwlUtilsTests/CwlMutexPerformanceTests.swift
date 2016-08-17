@@ -10,14 +10,14 @@ import Foundation
 import CwlUtils
 import XCTest
 
-extension PThreadMutex {
-	private func fastsync<R>(f: @noescape () throws -> R) rethrows -> R {
+private extension PThreadMutex {
+	func fastsync<R>(f: () throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f()
 	}
 }
-private func fastsync<R>(_ mutex: PThreadMutex, f: @noescape () throws -> R) rethrows -> R {
+private func fastsync<R>(_ mutex: PThreadMutex, f: () throws -> R) rethrows -> R {
 	pthread_mutex_lock(&mutex.unsafeMutex)
 	defer { pthread_mutex_unlock(&mutex.unsafeMutex) }
 	return try f()
@@ -26,7 +26,7 @@ private func fastsync<R>(_ mutex: PThreadMutex, f: @noescape () throws -> R) ret
 public struct DispatchSemaphoreWrapper {
 	let s = DispatchSemaphore(value: 1)
 	init() {}
-	func sync<R>(f: @noescape () throws -> R) rethrows -> R {
+	func sync<R>(f: () throws -> R) rethrows -> R {
 		_ = s.wait(timeout: DispatchTime.distantFuture)
 		defer { s.signal() }
 		return try f()
@@ -34,17 +34,17 @@ public struct DispatchSemaphoreWrapper {
 }
 
 extension PThreadMutex {
-	public func sync_2<T>(_ param: inout T, f: @noescape (inout T) throws -> Void) rethrows -> Void {
+	public func sync_2<T>(_ param: inout T, f: (inout T) throws -> Void) rethrows -> Void {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		try f(&param)
 	}
-	public func sync_3<T, R>(_ param: inout T, f: @noescape (inout T) throws -> R) rethrows -> R {
+	public func sync_3<T, R>(_ param: inout T, f: (inout T) throws -> R) rethrows -> R {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f(&param)
 	}
-	public func sync_4<T, U>(_ param1: inout T, _ param2: inout U, f: @noescape (inout T, inout U) throws -> Void) rethrows -> Void {
+	public func sync_4<T, U>(_ param1: inout T, _ param2: inout U, f: (inout T, inout U) throws -> Void) rethrows -> Void {
 		pthread_mutex_lock(&unsafeMutex)
 		defer { pthread_mutex_unlock(&unsafeMutex) }
 		return try f(&param1, &param2)
@@ -161,7 +161,7 @@ class MutexPerformanceTests: XCTestCase {
 	}
 	
 	func testDispatchSyncPerformance() {
-		let queue = DispatchQueue(label: "", attributes: .serial)
+		let queue = DispatchQueue(label: "")
 		measure { () -> Void in
 			var total = 0
 			for _ in 0..<iterations {

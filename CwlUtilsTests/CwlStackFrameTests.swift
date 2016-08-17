@@ -26,18 +26,18 @@ class StackFrameTests: XCTestCase {
 	func testCallStackReturnAddresses() {
 		var a = callStackReturnAddresses()
 		a.remove(at: 0)
-		var b = Thread.callStackReturnAddresses.map { UInt(bitPattern: Int($0.int64Value)) }
+		var b = Thread.callStackReturnAddresses.map { UInt($0) }
 		b.remove(at: 0)
 		XCTAssert(a == b)
-
+		
 		a = callStackReturnAddresses(skip: 2)
 		b.remove(at: 0)
 		XCTAssert(a == b)
-
+		
 		a = callStackReturnAddresses(skip: 2, maximumAddresses: 10)
 		XCTAssert(a == Array(b[0..<10]))
 	}
-
+	
 	func testNSThreadCallStackReturnAddressesPerformance() {
 		measure {
 			var traces = [[NSNumber]]()
@@ -46,7 +46,7 @@ class StackFrameTests: XCTestCase {
 			}
 		}
 	}
-
+	
 	func testCallStackReturnAddressesPerformance() {
 		measure {
 			var traces = [[UInt]]()

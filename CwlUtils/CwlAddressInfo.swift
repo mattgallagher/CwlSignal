@@ -32,7 +32,7 @@ public struct AddressInfo {
 		self.address = address
 
 		var i = dl_info()
-		dladdr(UnsafePointer<Void>(bitPattern: address), &i)
+		dladdr(UnsafeRawPointer(bitPattern: address), &i)
 		self.info = i
 	}
 	
@@ -59,18 +59,18 @@ public struct AddressInfo {
 	/// - returns: the address' offset relative to the nearest symbol
 	public var offset: Int {
 		if let dli_sname = info.dli_sname, let _ = String(validatingUTF8: dli_sname) {
-			return Int(address - (UInt(bitPattern: info.dli_saddr) ?? 0))
+			return Int(address - UInt(bitPattern: info.dli_saddr))
 		} else if let dli_fname = info.dli_fname, let _ = String(validatingUTF8: dli_fname) {
-			return Int(address - (UInt(bitPattern: info.dli_fbase) ?? 0))
+			return Int(address - UInt(bitPattern: info.dli_fbase))
 		} else {
-			return Int(address - (UInt(bitPattern: info.dli_saddr) ?? 0))
+			return Int(address - UInt(bitPattern: info.dli_saddr))
 		}
 	}
 	
 	/// - parameter index: the stack frame index
 	/// - returns: a formatted string matching that used by NSThread.callStackSymbols
 	public func formattedDescription(index: Int) -> String {
-		return self.image.nulTerminatedUTF8.withUnsafeBufferPointer { (imageBuffer: UnsafeBufferPointer<UTF8.CodeUnit>) -> String in
+		return self.image.utf8CString.withUnsafeBufferPointer { (imageBuffer: UnsafeBufferPointer<CChar>) -> String in
 			#if arch(x86_64) || arch(arm64)
 				return String(format: "%-4ld%-35s 0x%016llx %@ + %ld", index, UInt(bitPattern: imageBuffer.baseAddress), self.address, self.symbol, self.offset)
 			#else

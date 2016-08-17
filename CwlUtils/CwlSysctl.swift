@@ -32,7 +32,7 @@ public func sysctl(levels: [Int32]) throws -> [Int8] {
 	return try levels.withUnsafeBufferPointer() { levelsPointer throws -> [Int8] in
 		// Preflight the request to get the required data size
 		var requiredSize = 0
-		let preFlightResult = Darwin.sysctl(UnsafeMutablePointer<Int32>(levelsPointer.baseAddress), UInt32(levels.count), nil, &requiredSize, nil, 0)
+		let preFlightResult = Darwin.sysctl(UnsafeMutablePointer<Int32>(mutating: levelsPointer.baseAddress), UInt32(levels.count), nil, &requiredSize, nil, 0)
 		if preFlightResult != 0 {
 			throw POSIXErrorCode(rawValue: errno).map { SysctlError.posixError($0) } ?? SysctlError.unknown
 		}
@@ -40,7 +40,7 @@ public func sysctl(levels: [Int32]) throws -> [Int8] {
 		// Run the actual request with an appropriately sized array buffer
 		let data = Array<Int8>(repeating: 0, count: requiredSize)
 		let result = data.withUnsafeBufferPointer() { dataBuffer -> Int32 in
-			return Darwin.sysctl(UnsafeMutablePointer<Int32>(levelsPointer.baseAddress), UInt32(levels.count), UnsafeMutablePointer<Void>(dataBuffer.baseAddress), &requiredSize, nil, 0)
+			return Darwin.sysctl(UnsafeMutablePointer<Int32>(mutating: levelsPointer.baseAddress), UInt32(levels.count), UnsafeMutableRawPointer(mutating: dataBuffer.baseAddress), &requiredSize, nil, 0)
 		}
 		if result != 0 {
 			throw POSIXErrorCode(rawValue: errno).map { SysctlError.posixError($0) } ?? SysctlError.unknown
@@ -71,8 +71,8 @@ public func sysctlLevels(fromName: String) throws -> [Int32] {
 private func intFromSysctl(levels: [Int32]) throws -> Int64 {
 	let buffer = try sysctl(levels: levels)
 	switch buffer.count {
-	case 4: return buffer.withUnsafeBufferPointer() { $0.baseAddress.map { Int64(UnsafePointer<Int32>($0).pointee) } ?? 0 }
-	case 8: return buffer.withUnsafeBufferPointer() { $0.baseAddress.map { Int64(UnsafePointer<Int64>($0).pointee) } ?? 0 }
+	case 4: return buffer.withUnsafeBufferPointer() { $0.baseAddress.map { $0.withMemoryRebound(to: Int32.self, capacity: 1) { Int64($0.pointee) } } ?? 0 }
+	case 8: return buffer.withUnsafeBufferPointer() { $0.baseAddress.map {$0.withMemoryRebound(to: Int64.self, capacity: 1) { $0.pointee } } ?? 0 }
 	default: throw SysctlError.invalidSize
 	}
 }

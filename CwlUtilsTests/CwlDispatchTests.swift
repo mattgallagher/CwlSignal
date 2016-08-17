@@ -38,14 +38,14 @@ class DispatchTests: XCTestCase {
 				XCTFail()
 			}
 		}
-
+		
 		let ex = expectation(description: "")
 		var timer: DispatchSourceTimer? = nil
 		queue.sync {
 			timer = DispatchSource.singleTimer(interval: .milliseconds(50), queue: queue) {
 				// Ensure test occurs on the appropriate queue
 				XCTAssert(DispatchQueue.getSpecific(key: self.key) == self.value)
-				ex.fulfill()
+				ex.fulfillOnMain()
 			}
 		}
 		waitForExpectations(timeout: 1e2, handler: nil)
@@ -59,7 +59,7 @@ class DispatchTests: XCTestCase {
 				XCTFail()
 			}
 		}
-
+		
 		let ex = expectation(description: "")
 		var timer: DispatchSourceTimer? = nil
 		var fireCount = 0
@@ -70,7 +70,7 @@ class DispatchTests: XCTestCase {
 				
 				fireCount += 1
 				if fireCount == 3 {
-					ex.fulfill()
+					ex.fulfillOnMain()
 				}
 			}
 		}
@@ -85,12 +85,12 @@ class DispatchTests: XCTestCase {
 				XCTFail()
 			}
 		}
-
+		
 		let ex1 = expectation(description: "")
 		let ex2 = expectation(description: "")
 		var timer: DispatchSourceTimer? = nil
 		var outerMutexComplete = false
-
+		
 		// Test rescheduling a timer during the callback for an earlier scheduling
 		queue.sync {
 			timer = DispatchSource.singleTimer(interval: .milliseconds(1), parameter: 1) { p in
@@ -98,7 +98,7 @@ class DispatchTests: XCTestCase {
 				self.queue.sync {
 					XCTAssert(outerMutexComplete)
 					XCTAssert(p == 1)
-					ex1.fulfill()
+					ex1.fulfillOnMain()
 				}
 			}
 			Thread.sleep(forTimeInterval: 0.1)
@@ -107,7 +107,7 @@ class DispatchTests: XCTestCase {
 				self.queue.sync {
 					XCTAssert(outerMutexComplete)
 					XCTAssert(p == 2)
-					ex2.fulfill()
+					ex2.fulfillOnMain()
 				}
 			}
 			Thread.sleep(forTimeInterval: 0.1)
@@ -124,13 +124,13 @@ class DispatchTests: XCTestCase {
 				XCTFail()
 			}
 		}
-
+		
 		let ex1 = expectation(description: "")
 		let ex2 = expectation(description: "")
 		var timer: DispatchSourceTimer? = nil
 		var outerMutexComplete = false
 		var fireCount = 0
-
+		
 		// Test rescheduling a timer during the callback for an earlier scheduling
 		queue.sync {
 			timer = DispatchSource.periodicTimer(interval: .milliseconds(1), parameter: 1) { p in
@@ -138,7 +138,7 @@ class DispatchTests: XCTestCase {
 				self.queue.sync {
 					XCTAssert(outerMutexComplete)
 					XCTAssert(p == 1)
-					ex1.fulfill()
+					ex1.fulfillOnMain()
 				}
 			}
 			Thread.sleep(forTimeInterval: 0.1)
@@ -147,10 +147,10 @@ class DispatchTests: XCTestCase {
 				self.queue.sync {
 					XCTAssert(outerMutexComplete)
 					XCTAssert(p == 2)
-
+					
 					fireCount += 1
 					if fireCount == 3 {
-						ex2.fulfill()
+						ex2.fulfillOnMain()
 					}
 				}
 			}

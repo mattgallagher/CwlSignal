@@ -87,7 +87,7 @@ public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeSc
 		var result = ""
 		result.reserveCapacity(consumed - previousConsumed)
 		while i != index {
-			result.append(scalars[i])
+			result.unicodeScalars.append(scalars[i])
 			i = scalars.index(after: i)
 		}
 		
@@ -104,7 +104,7 @@ public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeSc
 		var result = ""
 		result.reserveCapacity(consumed - previousConsumed)
 		while i != index {
-			result.append(scalars[i])
+			result.unicodeScalars.append(scalars[i])
 			i = scalars.index(after: i)
 		}
 		
@@ -112,13 +112,13 @@ public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeSc
 	}
 	
 	/// Peeks at the scalar at the current `index`, testing it with function `f`. If `f` returns `true`, the scalar is appended to a `String` and the `index` increased. The `String` is returned at the end.
-	public mutating func readWhile(testTrue: @noescape (UnicodeScalar) -> Bool) -> String {
+	public mutating func readWhile(testTrue: (UnicodeScalar) -> Bool) -> String {
 		var string = ""
 		while index != scalars.endIndex {
 			if !testTrue(scalars[index]) {
 				break
 			}
-			string.append(scalars[index])
+			string.unicodeScalars.append(scalars[index])
 			index = self.scalars.index(after: index)
 			consumed += 1
 		}
@@ -126,7 +126,7 @@ public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeSc
 	}
 	
 	/// Repeatedly peeks at the scalar at the current `index`, testing it with function `f`. If `f` returns `true`, the `index` increased. If `false`, the function returns.
-	public mutating func skipWhile(testTrue: @noescape (UnicodeScalar) -> Bool) {
+	public mutating func skipWhile(testTrue: (UnicodeScalar) -> Bool) {
 		while index != scalars.endIndex {
 			if !testTrue(scalars[index]) {
 				return
@@ -236,7 +236,7 @@ public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeSc
 	public mutating func remainder() -> String {
 		var string: String = ""
 		while index != scalars.endIndex {
-			string.append(scalars[index])
+			string.unicodeScalars.append(scalars[index])
 			index = scalars.index(after: index)
 			consumed += 1
 		}
@@ -330,7 +330,7 @@ public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeSc
 			if i == scalars.endIndex {
 				throw ScalarScannerError.endedPrematurely(count: count, at: consumed)
 			}
-			result.append(scalars[i])
+			result.unicodeScalars.append(scalars[i])
 			i = self.scalars.index(after: i)
 		}
 		index = i

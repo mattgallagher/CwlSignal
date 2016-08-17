@@ -26,7 +26,7 @@ class SysctlTests: XCTestCase {
 	func testSysctl() {
 		let hostName = Sysctl.hostName
 		XCTAssert(hostName != "")
-
+		
 		let machine = Sysctl.machine
 		
 		#if arch(x86_64)
@@ -34,22 +34,22 @@ class SysctlTests: XCTestCase {
 		#else
 			XCTAssert(machine != "")
 		#endif
-
+		
 		let model = Sysctl.model
 		XCTAssert(model != "")
-
+		
 		let osRelease = Sysctl.osRelease
 		XCTAssert(osRelease != "")
-
+		
 		let osRev = Sysctl.osRev
 		XCTAssert(osRev != 0)
-
+		
 		let osType = Sysctl.osType
 		XCTAssert(osType == "Darwin")
-
+		
 		let osVersion = Sysctl.osVersion
 		XCTAssert(osVersion != "")
-
+		
 		let version = Sysctl.version
 		XCTAssert(version.hasPrefix("Darwin Kernel Version"))
 		

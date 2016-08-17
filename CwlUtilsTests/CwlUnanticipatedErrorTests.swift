@@ -41,61 +41,65 @@ class UnanticipatedErrorTests: XCTestCase {
 		} else {
 			XCTFail("Call stack symbols not present")
 		}
-
+		
 		XCTAssertNotNil(userInfo[NSLocalizedRecoverySuggestionErrorKey])
 		XCTAssertNotNil(userInfo[NSLocalizedRecoveryOptionsErrorKey])
 		XCTAssertNotNil(userInfo[NSRecoveryAttempterErrorKey])
 		
-		XCTAssert(userInfo[NSLocalizedRecoveryOptionsErrorKey]?.count == 2, "Wrong number of options")
-
+		XCTAssert((userInfo[NSLocalizedRecoveryOptionsErrorKey] as? [Any])?.count == 2, "Wrong number of options")
+		
 		let attempter = userInfo[NSRecoveryAttempterErrorKey] as? NSObject
 		let backup = pasteboardBackup()
 		attempter?.attemptRecovery(fromError: e as NSError, optionIndex: 1)
 		let clipboardString = pasteboardString()
-
+		
 		// The following (ugly) compile-time conditional is a best effort at testing for the simulator (no actual simulator macro is provided)
 		#if !os(iOS) || (!arch(i386) && !arch(x86_64))
 			XCTAssert(clipboardString?.range(of: e.localizedRecoverySuggestion!) != nil)
 		#else
-			// This seems to work in the simulator in Xcode 8 but fails in the simulator prior to that.
-			XCTAssert(clipboardString?.range(of: e.localizedRecoverySuggestion!) != nil, "Simulator pasteboard expected to fail")
+			// Logic tests in the simulator don't appear to have access to a real UIPasteboard so we expect a failure here
+			XCTAssertFalse(clipboardString?.rangeOfString(e.localizedRecoverySuggestion!) != nil, "Simulator pasteboard expected to fail")
 		#endif
-
-		restorePasteboard(items: backup)
+		
+		restorePasteboard(backup)
 	}
 }
 
 #if os(iOS)
-	func pasteboardBackup() -> [Dictionary<String, AnyObject>] {
-		return ((UIPasteboard.general().items as NSArray).copy() as? [Dictionary<String, AnyObject>]) ?? Array<Dictionary<String, AnyObject>>()
+	
+	func pasteboardBackup() -> [Dictionary<String, NSObject>] {
+		return ((UIPasteboard.generalPasteboard().items as NSArray).copy() as? [Dictionary<String, NSObject>]) ?? Array<Dictionary<String, NSObject>>()
 	}
-
-	func restorePasteboard(items: [Dictionary<String, AnyObject>]) {
-		UIPasteboard.general().items = items
+	
+	func restorePasteboard(items: [Dictionary<String, NSObject>]) {
+		UIPasteboard.generalPasteboard().items = items
 	}
-
+	
 	func pasteboardString() -> String? {
-		return UIPasteboard.general().string
+		return UIPasteboard.generalPasteboard().string
 	}
+	
 #else
+	
 	func pasteboardBackup() -> [NSPasteboardItem] {
 		return NSPasteboard.general().pasteboardItems?.map { item in
 			let backupItem = NSPasteboardItem()
 			for type in item.types {
-				if let data = item.data(forType: type) {
+				if let data = (item.data(forType: type) as NSData?)?.copy() as? Data {
 					backupItem.setData(data, forType: type)
 				}
 			}
 			return backupItem
 		} ?? []
 	}
-
-	func restorePasteboard(items: [NSPasteboardItem]) {
+	
+	func restorePasteboard(_ items: [NSPasteboardItem]) {
 		NSPasteboard.general().clearContents()
 		NSPasteboard.general().writeObjects(items)
 	}
-
+	
 	func pasteboardString() -> String? {
 		return NSPasteboard.general().string(forType: NSPasteboardTypeString)
 	}
+	
 #endif

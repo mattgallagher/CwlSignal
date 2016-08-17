@@ -22,19 +22,19 @@ import Swift
 
 public final class OnDelete {
 	var block: (() -> Void)?
-
-	public init(_ b: () -> Void) {
+	
+	public init(_ b: @escaping () -> Void) {
 		block = b
 	}
-
+	
 	public func cancel() {
 		block = nil
 	}
-
+	
 	public var isCancelled: Bool {
 		return block == nil
 	}
-
+	
 	deinit {
 		block?()
 	}
