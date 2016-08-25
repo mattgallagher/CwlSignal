@@ -1,15 +1,17 @@
 # CwlUtils
 
-A collection of utilities written as part of articles on [Cocoa with Love](http://cocoawithlove.com)
+A collection of utilities written as part of articles on [Cocoa with Love](https://cocoawithlove.com)
 
 ## Related articles
 
-* [Better stack traces in Swift](http://cocoawithlove.com/blog/2016/02/28/stack-traces-in-swift.html)
-* [Gathering system information in Swift with sysctl](http://www.cocoawithlove.com/blog/2016/03/08/swift-wrapper-for-sysctl.html)
-* [Presenting unanticipated errors to users](http://www.cocoawithlove.com/blog/2016/04/14/error-recovery-attempter.html)
-* [Swift name demangling: C++ vs Swift for parsing](http://www.cocoawithlove.com/blog/2016/05/01/swift-name-demangling.html)
-* [Random number generators in Swift](http://www.cocoawithlove.com/blog/2016/05/19/random-numbers.html)
-* [Mutexes and closure capture in Swift](http://www.cocoawithlove.com/blog/2016/06/02/threads-and-mutexes.html)
+* [Better stack traces in Swift](https://cocoawithlove.com/blog/2016/02/28/stack-traces-in-swift.html)
+* [Gathering system information in Swift with sysctl](https://www.cocoawithlove.com/blog/2016/03/08/swift-wrapper-for-sysctl.html)
+* [Presenting unanticipated errors to users](https://www.cocoawithlove.com/blog/2016/04/14/error-recovery-attempter.html)
+* [Swift name demangling: C++ vs Swift for parsing](https://www.cocoawithlove.com/blog/2016/05/01/swift-name-demangling.html)
+* [Random number generators in Swift](https://www.cocoawithlove.com/blog/2016/05/19/random-numbers.html)
+* [Mutexes and closure capture in Swift](https://www.cocoawithlove.com/blog/2016/06/02/threads-and-mutexes.html)
+* [Design patterns for safe timer usage](https://www.cocoawithlove.com/blog/2016/07/30/timer-problems.html)
+* [Values and errors, part 1: 'Result' in Swift](https://www.cocoawithlove.com/blog/2016/08/21/result-types-part-one.html)
 
 ## Usage
 
