@@ -1,6 +1,6 @@
 # CwlUtils
 
-A collection of utilities written as part of articles on [Cocoa with Love](http://cocoawithlove.com)
+A collection of utilities written as part of articles on [Cocoa with Love](https://cocoawithlove.com)
 
 ## Related articles
 
@@ -11,6 +11,7 @@ A collection of utilities written as part of articles on [Cocoa with Love](http:
 * [Random number generators in Swift](https://www.cocoawithlove.com/blog/2016/05/19/random-numbers.html)
 * [Mutexes and closure capture in Swift](https://www.cocoawithlove.com/blog/2016/06/02/threads-and-mutexes.html)
 * [Design patterns for safe timer usage](https://www.cocoawithlove.com/blog/2016/07/30/timer-problems.html)
+* [Values and errors, part 1: 'Result' in Swift](https://www.cocoawithlove.com/blog/2016/08/21/result-types-part-one.html)
 
 ## Usage
 
