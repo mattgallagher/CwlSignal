@@ -9,10 +9,6 @@
 /* Begin PBXBuildFile section */
 		C907A9681D637488002249D1 /* XCTestExpectationFulfillOnMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C907A9671D637488002249D1 /* XCTestExpectationFulfillOnMain.swift */; };
 		C907A9691D637488002249D1 /* XCTestExpectationFulfillOnMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C907A9671D637488002249D1 /* XCTestExpectationFulfillOnMain.swift */; };
-		C907A96A1D6374B3002249D1 /* CwlMutexPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9AC2C8E1D128B560034650A /* CwlMutexPerformanceTests.swift */; };
-		C907A96B1D6374B3002249D1 /* CwlRandomPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9AC2C881D1287FE0034650A /* CwlRandomPerformanceTests.swift */; };
-		C907A96C1D6374B4002249D1 /* CwlMutexPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9AC2C8E1D128B560034650A /* CwlMutexPerformanceTests.swift */; };
-		C907A96D1D6374B4002249D1 /* CwlRandomPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9AC2C881D1287FE0034650A /* CwlRandomPerformanceTests.swift */; };
 		C93B5BB51CED95A5002D91D1 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C93B5BB41CED95A5002D91D1 /* mt19937-64.c */; };
 		C93B5BB61CED95A5002D91D1 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C93B5BB41CED95A5002D91D1 /* mt19937-64.c */; };
 		C93E18171C8166470009A053 /* CwlUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = C93E18161C8166470009A053 /* CwlUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -38,6 +34,10 @@
 		C9716DED1D4CDF9E00E90C18 /* CwlDispatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9716DEB1D4CDF9E00E90C18 /* CwlDispatchTests.swift */; };
 		C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */; };
 		C977AA5E1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */; };
+		C9B3EF9A1D6F14B80058AE5E /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF991D6F14B80058AE5E /* CwlResult.swift */; };
+		C9B3EF9B1D6F14B80058AE5E /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF991D6F14B80058AE5E /* CwlResult.swift */; };
+		C9B3EF9D1D6F14F40058AE5E /* CwlResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF9C1D6F14F40058AE5E /* CwlResultTests.swift */; };
+		C9B3EF9E1D6F14F40058AE5E /* CwlResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF9C1D6F14F40058AE5E /* CwlResultTests.swift */; };
 		C9C9AAEF1C8E7FB60019A126 /* CwlSysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */; };
 		C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */; };
 		C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */; };
@@ -151,6 +151,8 @@
 		C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlRandomTests.swift; sourceTree = "<group>"; };
 		C9AC2C881D1287FE0034650A /* CwlRandomPerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlRandomPerformanceTests.swift; sourceTree = "<group>"; };
 		C9AC2C8E1D128B560034650A /* CwlMutexPerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlMutexPerformanceTests.swift; sourceTree = "<group>"; };
+		C9B3EF991D6F14B80058AE5E /* CwlResult.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlResult.swift; sourceTree = "<group>"; };
+		C9B3EF9C1D6F14F40058AE5E /* CwlResultTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlResultTests.swift; sourceTree = "<group>"; };
 		C9B6655E1CEAD9080006B927 /* CwlRandom.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlRandom.swift; sourceTree = "<group>"; };
 		C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 3; lastKnownFileType = sourcecode.swift; lineEnding = 0; path = CwlSysctl.swift; sourceTree = "<group>"; tabWidth = 3; usesTabs = 1; };
 		C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSysctlTests.swift; sourceTree = "<group>"; };
@@ -284,6 +286,7 @@
 				C9F193CC1D02970200EAC5BE /* CwlMutex.swift */,
 				C9F3E3361CAA254A006728F7 /* CwlOnDelete.swift */,
 				C9B6655E1CEAD9080006B927 /* CwlRandom.swift */,
+				C9B3EF991D6F14B80058AE5E /* CwlResult.swift */,
 				C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */,
 				C93E184E1C81794B0009A053 /* CwlStackFrame.swift */,
 				C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */,
@@ -301,6 +304,7 @@
 				C9F193C61D0296E400EAC5BE /* CwlMutexTests.swift */,
 				C9F3E33F1CAA269C006728F7 /* CwlOnDeleteTests.swift */,
 				C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */,
+				C9B3EF9C1D6F14F40058AE5E /* CwlResultTests.swift */,
 				C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */,
 				C93E18591C8179B40009A053 /* CwlStackFrameTests.swift */,
 				C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */,
@@ -699,6 +703,7 @@
 				C93E18601C81BE120009A053 /* CwlFrameAddress.c in Sources */,
 				C93E18501C81794B0009A053 /* CwlStackFrame.swift in Sources */,
 				C9F193CD1D02970200EAC5BE /* CwlMutex.swift in Sources */,
+				C9B3EF9A1D6F14B80058AE5E /* CwlResult.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -707,12 +712,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				C93E185B1C8179B80009A053 /* CwlStackFrameTests.swift in Sources */,
-				C907A96B1D6374B3002249D1 /* CwlRandomPerformanceTests.swift in Sources */,
 				C9F3E3401CAA269C006728F7 /* CwlOnDeleteTests.swift in Sources */,
 				C93E18681C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */,
 				C966C6A41D11340200C9F477 /* CwlRandom.swift in Sources */,
 				C9F193C71D0296E400EAC5BE /* CwlMutexTests.swift in Sources */,
 				C93B5BB51CED95A5002D91D1 /* mt19937-64.c in Sources */,
+				C9B3EF9D1D6F14F40058AE5E /* CwlResultTests.swift in Sources */,
 				C9E055481CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
 				C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
@@ -720,7 +725,6 @@
 				C9716DEC1D4CDF9E00E90C18 /* CwlDispatchTests.swift in Sources */,
 				C9E6C5931CBE0467007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */,
 				C907A9681D637488002249D1 /* XCTestExpectationFulfillOnMain.swift in Sources */,
-				C907A96A1D6374B3002249D1 /* CwlMutexPerformanceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -738,6 +742,7 @@
 				C93E18511C8179530009A053 /* CwlStackFrame.swift in Sources */,
 				C93E18611C81BE120009A053 /* CwlFrameAddress.c in Sources */,
 				C9F193CE1D02970200EAC5BE /* CwlMutex.swift in Sources */,
+				C9B3EF9B1D6F14B80058AE5E /* CwlResult.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -748,16 +753,15 @@
 				C93E185C1C8179B90009A053 /* CwlStackFrameTests.swift in Sources */,
 				C9F3E3411CAA269C006728F7 /* CwlOnDeleteTests.swift in Sources */,
 				C93E18691C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */,
+				C9B3EF9E1D6F14F40058AE5E /* CwlResultTests.swift in Sources */,
 				C9716DED1D4CDF9E00E90C18 /* CwlDispatchTests.swift in Sources */,
 				C9F193C81D0296E400EAC5BE /* CwlMutexTests.swift in Sources */,
 				C93B5BB61CED95A5002D91D1 /* mt19937-64.c in Sources */,
 				C9E055491CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
-				C907A96C1D6374B4002249D1 /* CwlMutexPerformanceTests.swift in Sources */,
 				C977AA5E1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
 				C9C9AAF31C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
 				C9FD68991CF022530087ACC6 /* xoroshiro128plus.c in Sources */,
 				C907A9691D637488002249D1 /* XCTestExpectationFulfillOnMain.swift in Sources */,
-				C907A96D1D6374B4002249D1 /* CwlRandomPerformanceTests.swift in Sources */,
 				C9E6C5941CBE0468007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
