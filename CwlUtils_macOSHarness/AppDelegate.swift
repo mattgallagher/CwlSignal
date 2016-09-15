@@ -22,13 +22,7 @@ import Cocoa
 import CwlUtils
 
 func showAlert(error: NSError) {
- #if os(OSX)
-	  NSAlert(error: error).runModal()
- #else
-	  let alert = UIAlertController(title: error.localizedDescription, message: error.localizedFailureReason, preferredStyle: UIAlertControllerStyle.Alert)
-	  alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: UIAlertActionStyle.Default, handler: nil))
-	  viewController.presentViewController(alert, animated: true, completion: nil)
- #endif
+	NSAlert(error: error).runModal()
 }
 
 @NSApplicationMain
@@ -48,7 +42,7 @@ class AppDelegate: NSResponder, NSApplicationDelegate {
 	
 	func someProcessingTask1(path: String) {
 		do {
-			let data = try NSData(contentsOfFile: path, options: .dataReadingMappedIfSafe)
+			let data = try NSData(contentsOfFile: path, options: .mappedIfSafe)
 			process(data: data)
 		} catch let error as NSError {
 			showAlert(error: error)
@@ -61,7 +55,7 @@ class AppDelegate: NSResponder, NSApplicationDelegate {
 
 	func someProcessingTask2(path: String) throws {
 		try rethrowUnanticipated {
-			let data = try NSData(contentsOfFile: path, options: .dataReadingMappedIfSafe)
+			let data = try NSData(contentsOfFile: path, options: .mappedIfSafe)
 			process(data: data)
 		}
 	}

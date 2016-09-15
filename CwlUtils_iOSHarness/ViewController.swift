@@ -22,13 +22,9 @@ import UIKit
 import CwlUtils
 
 func showAlert(error: NSError) {
- #if os(OSX)
-	  NSAlert(error: error).runModal()
- #else
-	  let alert = UIAlertController(title: error.localizedDescription, message: error.localizedFailureReason, preferredStyle: UIAlertControllerStyle.alert)
-	  alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: UIAlertActionStyle.default, handler: nil))
-	  UIApplication.shared().windows[0].rootViewController!.present(alert, animated: true, completion: nil)
- #endif
+	let alert = UIAlertController(title: error.localizedDescription, message: error.localizedFailureReason, preferredStyle: UIAlertControllerStyle.alert)
+	alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: UIAlertActionStyle.default, handler: nil))
+	UIApplication.shared.windows[0].rootViewController!.present(alert, animated: true, completion: nil)
 }
 
 class ViewController: UIViewController {
@@ -47,7 +43,7 @@ class ViewController: UIViewController {
 
 	func someProcessingTask1(path: String) {
 		do {
-			let data = try NSData(contentsOfFile: path, options: .dataReadingMappedIfSafe)
+			let data = try NSData(contentsOfFile: path, options: .mappedIfSafe)
 			process(data: data)
 		} catch let error as NSError {
 			showAlert(error: error)
@@ -60,7 +56,7 @@ class ViewController: UIViewController {
 
 	func someProcessingTask2(path: String) throws {
 		try rethrowUnanticipated {
-			let data = try NSData(contentsOfFile: path, options: .dataReadingMappedIfSafe)
+			let data = try NSData(contentsOfFile: path, options: .mappedIfSafe)
 			process(data: data)
 		}
 	}
@@ -69,7 +65,7 @@ class ViewController: UIViewController {
 		do {
 			try someProcessingTask2(path: "/invalid/path")
 		} catch {
-			presentError(error: error as NSError)
+			presentError(error as NSError)
 		}
 	}
 }

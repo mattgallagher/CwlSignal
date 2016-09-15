@@ -191,55 +191,6 @@ public struct Arc4Random: RandomGenerator {
 	}
 }
 
-public struct WellRng512: RandomWordGenerator {
-	public typealias WordType = UInt32
-	public typealias StateType = (UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32, UInt32)
-
-	var state: StateType = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-	var index: Int
-
-	public init() {
-		DevRandom.randomize(buffer: &state, size: MemoryLayout<StateType>.size)
-		index = 0
-	}
-	
-	public init(seed: StateType) {
-		self.state = seed
-		index = 0
-	}
-	
-	public mutating func random64() -> UInt64 {
-		return (UInt64(randomWord()) << 32) | UInt64(randomWord())
-	}
-
-	public mutating func random32() -> UInt32 {
-		return randomWord()
-	}
-
-	public mutating func randomWord() -> UInt32 {
-		return withUnsafeMutablePointer(to: &state) { tuple -> UInt32 in tuple.withMemoryRebound(to: UInt32.self, capacity: MemoryLayout<StateType>.size / MemoryLayout<UInt32>.size) { state -> UInt32 in
-			
-			// The following code is by Chris Lomont from:
-			//   http://www.lomont.org/Math/Papers/2008/Lomont_PRNG_2008.pdf
-			// He writes:
-			//   Here is WELL512 C/C++ code written by the author and placed in the public domain.
-			//   However, if you use it, I’d appreciate a reference or at least an email with thanks!
-			var a = state[index];
-			var c = state[(index + 13) & 15];
-			let b = a ^ c ^ (a << 16) ^ (c << 15);
-			c = state[(index + 9) & 15];
-			c ^= c >> 11;
-			a = b ^ c;
-			state[index] = a
-			let d = a ^ ((a << 5) & 0xDA442D24);
-			index = (index + 15) & 15;
-			a = state[index];
-			state[index] = a ^ b ^ d ^ (a << 2) ^ (b << 18) ^ (c << 28);
-			return state[index];
-		} }
-	}
-}
-
 public struct Lfsr258: RandomWordGenerator {
 	public typealias WordType = UInt64
 	public typealias StateType = (UInt64, UInt64, UInt64, UInt64, UInt64)
@@ -456,34 +407,25 @@ public struct MersenneTwister: RandomWordGenerator {
 	private var index: Int
 	private static let stateCount: Int = 312
 	
-	private mutating func withState(f: (UnsafeMutablePointer<UInt64>) -> Void) {
-		withUnsafeMutablePointer(to: &state_internal) { $0.withMemoryRebound(to: UInt64.self, capacity: MersenneTwister.stateCount) { ptr in
-			f(ptr)
-		} }
-	}
-
-	private mutating func state(at: Int) -> UInt64 {
-		return withUnsafePointer(to: &state_internal) { $0.withMemoryRebound(to: UInt64.self, capacity: MersenneTwister.stateCount) { ptr in
-			return ptr[at]
-		} }
-	}
-
 	public init() {
 		self.init(seed: DevRandom.random64())
 	}
 	
 	public init(seed: UInt64) {
 		index = MersenneTwister.stateCount
-		withState { state in
+		withUnsafeMutablePointer(to: &state_internal) { $0.withMemoryRebound(to: UInt64.self, capacity: MersenneTwister.stateCount) { state in
 			state[0] = seed
 			for i in 1..<MersenneTwister.stateCount {
 				state[i] = 6364136223846793005 &* (state[i &- 1] ^ (state[i &- 1] >> 62)) &+ UInt64(i)
 			}
-		}
+		} }
 	}
 
 	public mutating func randomWord() -> UInt64 {
 		return random64()
+	}
+	
+	private mutating func twist() {
 	}
 	
 	public mutating func random64() -> UInt64 {
@@ -513,13 +455,16 @@ public struct MersenneTwister: RandomWordGenerator {
 			index = 0
 		}
 		
-		var result = state(at: index)
+		var result = withUnsafePointer(to: &state_internal) { $0.withMemoryRebound(to: UInt64.self, capacity: MersenneTwister.stateCount) { ptr in
+			return ptr[index]
+		} }
+		index = index &+ 1
+
 		result ^= (result >> 29) & 0x5555555555555555
 		result ^= (result << 17) & 0x71D67FFFEDA60000
 		result ^= (result << 37) & 0xFFF7EEE000000000
 		result ^= result >> 43
 
-		index = index &+ 1
 		return result
 	}
 }

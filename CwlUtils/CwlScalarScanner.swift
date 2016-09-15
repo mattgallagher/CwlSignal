@@ -112,10 +112,10 @@ public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeSc
 	}
 	
 	/// Peeks at the scalar at the current `index`, testing it with function `f`. If `f` returns `true`, the scalar is appended to a `String` and the `index` increased. The `String` is returned at the end.
-	public mutating func readWhile(testTrue: (UnicodeScalar) -> Bool) -> String {
+	public mutating func readWhile(true test: (UnicodeScalar) -> Bool) -> String {
 		var string = ""
 		while index != scalars.endIndex {
-			if !testTrue(scalars[index]) {
+			if !test(scalars[index]) {
 				break
 			}
 			string.unicodeScalars.append(scalars[index])
@@ -126,9 +126,9 @@ public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeSc
 	}
 	
 	/// Repeatedly peeks at the scalar at the current `index`, testing it with function `f`. If `f` returns `true`, the `index` increased. If `false`, the function returns.
-	public mutating func skipWhile(testTrue: (UnicodeScalar) -> Bool) {
+	public mutating func skipWhile(true test: (UnicodeScalar) -> Bool) {
 		while index != scalars.endIndex {
-			if !testTrue(scalars[index]) {
+			if !test(scalars[index]) {
 				return
 			}
 			index = self.scalars.index(after: index)

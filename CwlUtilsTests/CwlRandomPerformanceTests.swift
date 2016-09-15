@@ -38,18 +38,6 @@ class RandomPerformanceTests: XCTestCase {
 		}
 	}
 
-	func testWellRng512() {
-		var generator = WellRng512()
-
-		measure { () -> Void in
-			var sum: UInt64 = 0
-			for _ in 0..<PerformanceIterations {
-				sum = sum &+ generator.random64()
-			}
-			XCTAssert(sum != 0)
-		}
-	}
-
 	func testLfsr258() {
 		var generator = Lfsr258()
 

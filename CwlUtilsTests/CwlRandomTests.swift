@@ -61,11 +61,6 @@ class RandomTests: XCTestCase {
 		genericTest(generator: &generator)
 	}
 	
-	func testWellRng512() {
-		var generator = WellRng512()
-		genericTest(generator: &generator)
-	}
-	
 	func testLfsr258() {
 		var generator = Lfsr258()
 		genericTest(generator: &generator)

@@ -29,7 +29,6 @@
 		C93E18691C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */; };
 		C95416BB1D4B76AC00C30D49 /* CwlDispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95416BA1D4B76AC00C30D49 /* CwlDispatch.swift */; };
 		C95416BC1D4B76AC00C30D49 /* CwlDispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95416BA1D4B76AC00C30D49 /* CwlDispatch.swift */; };
-		C966C6A41D11340200C9F477 /* CwlRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B6655E1CEAD9080006B927 /* CwlRandom.swift */; };
 		C9716DEC1D4CDF9E00E90C18 /* CwlDispatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9716DEB1D4CDF9E00E90C18 /* CwlDispatchTests.swift */; };
 		C9716DED1D4CDF9E00E90C18 /* CwlDispatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9716DEB1D4CDF9E00E90C18 /* CwlDispatchTests.swift */; };
 		C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */; };
@@ -42,6 +41,8 @@
 		C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */; };
 		C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */; };
 		C9C9AAF31C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */; };
+		C9D2EAAA1D8AE71500D25919 /* CwlRandomPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9AC2C881D1287FE0034650A /* CwlRandomPerformanceTests.swift */; };
+		C9D2EAAC1D8AF09000D25919 /* CwlRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B6655E1CEAD9080006B927 /* CwlRandom.swift */; };
 		C9E055451CD8B42D001658AB /* CwlScalarScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */; };
 		C9E055461CD8B42D001658AB /* CwlScalarScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */; };
 		C9E055481CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */; };
@@ -712,12 +713,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				C93E185B1C8179B80009A053 /* CwlStackFrameTests.swift in Sources */,
+				C9D2EAAA1D8AE71500D25919 /* CwlRandomPerformanceTests.swift in Sources */,
 				C9F3E3401CAA269C006728F7 /* CwlOnDeleteTests.swift in Sources */,
 				C93E18681C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */,
-				C966C6A41D11340200C9F477 /* CwlRandom.swift in Sources */,
 				C9F193C71D0296E400EAC5BE /* CwlMutexTests.swift in Sources */,
 				C93B5BB51CED95A5002D91D1 /* mt19937-64.c in Sources */,
 				C9B3EF9D1D6F14F40058AE5E /* CwlResultTests.swift in Sources */,
+				C9D2EAAC1D8AF09000D25919 /* CwlRandom.swift in Sources */,
 				C9E055481CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
 				C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
