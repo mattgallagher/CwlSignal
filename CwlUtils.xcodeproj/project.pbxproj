@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C907A9681D637488002249D1 /* XCTestExpectationFulfillOnMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C907A9671D637488002249D1 /* XCTestExpectationFulfillOnMain.swift */; };
-		C907A9691D637488002249D1 /* XCTestExpectationFulfillOnMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = C907A9671D637488002249D1 /* XCTestExpectationFulfillOnMain.swift */; };
 		C93B5BB51CED95A5002D91D1 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C93B5BB41CED95A5002D91D1 /* mt19937-64.c */; };
 		C93B5BB61CED95A5002D91D1 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C93B5BB41CED95A5002D91D1 /* mt19937-64.c */; };
 		C93E18171C8166470009A053 /* CwlUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = C93E18161C8166470009A053 /* CwlUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -41,8 +39,7 @@
 		C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAEE1C8E7FB60019A126 /* CwlSysctl.swift */; };
 		C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */; };
 		C9C9AAF31C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */; };
-		C9D2EAAA1D8AE71500D25919 /* CwlRandomPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9AC2C881D1287FE0034650A /* CwlRandomPerformanceTests.swift */; };
-		C9D2EAAC1D8AF09000D25919 /* CwlRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B6655E1CEAD9080006B927 /* CwlRandom.swift */; };
+		C9D2EAAD1D8AFF7300D25919 /* CwlRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B6655E1CEAD9080006B927 /* CwlRandom.swift */; };
 		C9E055451CD8B42D001658AB /* CwlScalarScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */; };
 		C9E055461CD8B42D001658AB /* CwlScalarScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055441CD8B42D001658AB /* CwlScalarScanner.swift */; };
 		C9E055481CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */; };
@@ -131,7 +128,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		C907A9671D637488002249D1 /* XCTestExpectationFulfillOnMain.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = XCTestExpectationFulfillOnMain.swift; sourceTree = "<group>"; };
 		C93B5BB41CED95A5002D91D1 /* mt19937-64.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "mt19937-64.c"; sourceTree = "<group>"; };
 		C93B5BB71CED95C5002D91D1 /* CwlUtilsTests-BridgingHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "CwlUtilsTests-BridgingHeader.h"; sourceTree = "<group>"; };
 		C93E18131C8166470009A053 /* CwlUtils.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CwlUtils.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -310,7 +306,6 @@
 				C93E18591C8179B40009A053 /* CwlStackFrameTests.swift */,
 				C9C9AAF11C8E7FD00019A126 /* CwlSysctlTests.swift */,
 				C9E6C5911CBE045F007B3F24 /* CwlUnanticipatedErrorTests.swift */,
-				C907A9671D637488002249D1 /* XCTestExpectationFulfillOnMain.swift */,
 				C9AC2C8A1D1288600034650A /* PerformanceTests */,
 				C9FB03081CF42A9D00AD7E79 /* Reference Random Generators */,
 			);
@@ -698,6 +693,7 @@
 				C9E055451CD8B42D001658AB /* CwlScalarScanner.swift in Sources */,
 				C9F3E3371CAA254A006728F7 /* CwlOnDelete.swift in Sources */,
 				C95416BB1D4B76AC00C30D49 /* CwlDispatch.swift in Sources */,
+				C9D2EAAD1D8AFF7300D25919 /* CwlRandom.swift in Sources */,
 				C9E6C5951CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */,
 				C93E18651C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
 				C9C9AAEF1C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
@@ -713,20 +709,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				C93E185B1C8179B80009A053 /* CwlStackFrameTests.swift in Sources */,
-				C9D2EAAA1D8AE71500D25919 /* CwlRandomPerformanceTests.swift in Sources */,
 				C9F3E3401CAA269C006728F7 /* CwlOnDeleteTests.swift in Sources */,
 				C93E18681C82B6480009A053 /* CwlAddressInfoTests.swift in Sources */,
 				C9F193C71D0296E400EAC5BE /* CwlMutexTests.swift in Sources */,
 				C93B5BB51CED95A5002D91D1 /* mt19937-64.c in Sources */,
 				C9B3EF9D1D6F14F40058AE5E /* CwlResultTests.swift in Sources */,
-				C9D2EAAC1D8AF09000D25919 /* CwlRandom.swift in Sources */,
 				C9E055481CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
 				C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
 				C9FD68981CF022530087ACC6 /* xoroshiro128plus.c in Sources */,
 				C9716DEC1D4CDF9E00E90C18 /* CwlDispatchTests.swift in Sources */,
 				C9E6C5931CBE0467007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */,
-				C907A9681D637488002249D1 /* XCTestExpectationFulfillOnMain.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -763,7 +756,6 @@
 				C977AA5E1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
 				C9C9AAF31C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
 				C9FD68991CF022530087ACC6 /* xoroshiro128plus.c in Sources */,
-				C907A9691D637488002249D1 /* XCTestExpectationFulfillOnMain.swift in Sources */,
 				C9E6C5941CBE0468007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
