@@ -31,15 +31,15 @@ public extension DispatchSource {
 	}
 	
 	// An overload of timer that always uses the default global queue (because it is intended to enter the appropriate mutex as a separate step) and passes a user-supplied Int to the handler function to allow ignoring callbacks if cancelled or rescheduled before mutex acquisition.
-	public class func singleTimer<T>(interval: DispatchTimeInterval, parameter: T, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping (T) -> Void) -> DispatchSourceTimer {
+	public class func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping (T) -> Void) -> DispatchSourceTimer {
 		let result = DispatchSource.makeTimerSource(queue: queue)
-		result.scheduleOneshot(interval: interval, leeway: leeway, parameter: parameter, handler: handler)
+		result.scheduleOneshot(parameter: parameter, interval: interval, leeway: leeway, handler: handler)
 		result.resume()
 		return result
 	}
 
 	// An overload of timer that immediately sets the handler and schedules the timer
-	public class func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue, handler: @escaping () -> Void) -> DispatchSourceTimer {
+	public class func repeatingTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping () -> Void) -> DispatchSourceTimer {
 		let result = DispatchSource.makeTimerSource(queue: queue)
 		result.setEventHandler(handler: handler)
 		result.scheduleRepeating(deadline: DispatchTime.now() + interval, interval: interval, leeway: leeway)
@@ -48,24 +48,25 @@ public extension DispatchSource {
 	}
 	
 	// An overload of timer that always uses the default global queue (because it is intended to enter the appropriate mutex as a separate step) and passes a user-supplied Int to the handler function to allow ignoring callbacks if cancelled or rescheduled before mutex acquisition.
-	public class func periodicTimer<T>(interval: DispatchTimeInterval, parameter: T, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping (T) -> Void) -> DispatchSourceTimer {
+	public class func repeatingTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping (T) -> Void) -> DispatchSourceTimer {
 		let result = DispatchSource.makeTimerSource(queue: queue)
-		result.scheduleRepeating(interval: interval, leeway: leeway, parameter: parameter, handler: handler)
+		result.scheduleRepeating(parameter: parameter, interval: interval, leeway: leeway, handler: handler)
 		result.resume()
 		return result
 	}
 }
 
 public extension DispatchSourceTimer {
-	// An overload of scheduleOneshot that updates the handler function with a new user-supplied Int when it changes the expiry deadline
-	public func scheduleOneshot<T>(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), parameter: T, handler: @escaping (T) -> Void) {
+	// An overload of scheduleOneshot that updates the handler function with a new user-supplied parameter when it changes the expiry deadline
+	public func scheduleOneshot<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping (T) -> Void) {
 		suspend()
 		setEventHandler { handler(parameter) }
 		scheduleOneshot(deadline: DispatchTime.now() + interval, leeway: leeway)
 		resume()
 	}
-	// An overload of scheduleOneshot that updates the handler function with a new user-supplied Int when it changes the expiry deadline
-	public func scheduleRepeating<T>(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), parameter: T, handler: @escaping (T) -> Void) {
+	
+	// An overload of scheduleOneshot that updates the handler function with a new user-supplied parameter when it changes the expiry deadline
+	public func scheduleRepeating<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping (T) -> Void) {
 		suspend()
 		setEventHandler { handler(parameter) }
 		scheduleRepeating(deadline: DispatchTime.now() + interval, interval: interval, leeway: leeway)
@@ -73,8 +74,23 @@ public extension DispatchSourceTimer {
 	}
 }
 
+public extension DispatchTime {
+	public func since(_ previous: DispatchTime) -> DispatchTimeInterval {
+		return .nanoseconds(Int(uptimeNanoseconds - previous.uptimeNanoseconds))
+	}
+}
+
 public extension DispatchTimeInterval {
 	public static func fromSeconds(_ seconds: Double) -> DispatchTimeInterval {
 		return .nanoseconds(Int(seconds * Double(NSEC_PER_SEC)))
+	}
+
+	public func toSeconds() -> Double {
+		switch self {
+		case .seconds(let t): return Double(t)
+		case .milliseconds(let t): return 1e-3 * Double(t)
+		case .microseconds(let t): return 1e-6 * Double(t)
+		case .nanoseconds(let t): return 1e-9 * Double(t)
+		}
 	}
 }
