@@ -28,7 +28,7 @@ class PthreadTests: XCTestCase {
 		
 		let e1 = expectation(description: "Block1 not invoked")
 		mutex1.sync {
-			e1.fulfillOnMain()
+			e1.fulfill()
 			let reenter: Void? = mutex1.trySync() {
 				XCTFail()
 			}
@@ -40,16 +40,16 @@ class PthreadTests: XCTestCase {
 		let e2 = expectation(description: "Block2 not invoked")
 		let e3 = expectation(description: "Block3 not invoked")
 		mutex2.sync {
-			e2.fulfillOnMain()
+			e2.fulfill()
 			let reenter: Void? = mutex2.trySync() {
-				e3.fulfillOnMain()
+				e3.fulfill()
 			}
 			XCTAssert(reenter != nil)
 		}
 		
 		let e4 = expectation(description: "Block4 not invoked")
 		let r = mutex1.sync { n -> Int in
-			e4.fulfillOnMain()
+			e4.fulfill()
 			let reenter: Void? = mutex1.trySync() {
 				XCTFail()
 			}
@@ -61,3 +61,22 @@ class PthreadTests: XCTestCase {
 		waitForExpectations(timeout: 0, handler: nil)
 	}
 }
+
+extension PThreadMutex {
+	public func sync_2<T>(_ param: inout T, f: (inout T) throws -> Void) rethrows -> Void {
+		pthread_mutex_lock(&unsafeMutex)
+		defer { pthread_mutex_unlock(&unsafeMutex) }
+		try f(&param)
+	}
+	public func sync_3<T, R>(_ param: inout T, f: (inout T) throws -> R) rethrows -> R {
+		pthread_mutex_lock(&unsafeMutex)
+		defer { pthread_mutex_unlock(&unsafeMutex) }
+		return try f(&param)
+	}
+	public func sync_4<T, U>(_ param1: inout T, _ param2: inout U, f: (inout T, inout U) throws -> Void) rethrows -> Void {
+		pthread_mutex_lock(&unsafeMutex)
+		defer { pthread_mutex_unlock(&unsafeMutex) }
+		return try f(&param1, &param2)
+	}
+}
+

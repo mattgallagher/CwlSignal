@@ -33,25 +33,16 @@ public struct DispatchSemaphoreWrapper {
 	}
 }
 
-extension PThreadMutex {
-	public func sync_2<T>(_ param: inout T, f: (inout T) throws -> Void) rethrows -> Void {
-		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		try f(&param)
+let iterations = 10_000_000
+
+class TestClass {
+	var testVariable: Int = 0
+	init() {
 	}
-	public func sync_3<T, R>(_ param: inout T, f: (inout T) throws -> R) rethrows -> R {
-		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		return try f(&param)
-	}
-	public func sync_4<T, U>(_ param1: inout T, _ param2: inout U, f: (inout T, inout U) throws -> Void) rethrows -> Void {
-		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		return try f(&param1, &param2)
+	func increment() {
+		testVariable += 1
 	}
 }
-
-let iterations = 10_000_000
 
 class MutexPerformanceTests: XCTestCase {
 	
@@ -68,7 +59,18 @@ class MutexPerformanceTests: XCTestCase {
 		}
 	}
 	
-	func testPThreadFreePerformance() {
+	func testDispatchCurriedPerformance() {
+		let queue = DispatchQueue(label: "")
+		measure { () -> Void in
+			let test = TestClass()
+			for _ in 0..<iterations {
+				queue.sync(execute: test.increment)
+			}
+			XCTAssert(test.testVariable == iterations)
+		}
+	}
+	
+	func testFreeFunctionWrappingPThreadPerformance() {
 		let mutex = PThreadMutex()
 		measure { () -> Void in
 			var total = 0
@@ -81,7 +83,7 @@ class MutexPerformanceTests: XCTestCase {
 		}
 	}
 	
-	func testPThreadSlowSyncPerformance() {
+	func testPThreadSyncPerformance() {
 		let mutex = PThreadMutex()
 		measure { () -> Void in
 			var total = 0
