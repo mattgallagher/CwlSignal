@@ -20,27 +20,78 @@
 
 import Foundation
 
-/// A basic wrapper around the "NORMAL" and "RECURSIVE" pthread mutex types. This type is a "class" type to take advantage of the "deinit" method.
-public final class PThreadMutex {
+/// A basic mutex protocol that requires nothing more than "performing work inside the mutex".
+public protocol ScopedMutex {
+	/// Perform work inside the mutex
+	func sync<R>(execute work: () throws -> R) rethrows -> R
+	func trySync<R>(execute work: () throws -> R) rethrows -> R?
+}
+
+/// A more specific kind of mutex that assume an underlying primitive and unbalanced lock/trylock/unlock operators
+public protocol RawMutex: ScopedMutex {
+	associatedtype MutexPrimitive
+
+	/// The raw primitive is exposed as an "unsafe" public property for faster access in some cases
+	var unsafeMutex: MutexPrimitive { get set }
+
+	func unbalancedLock()
+	func unbalancedTryLock() -> Bool
+	func unbalancedUnlock()
+}
+
+extension RawMutex {
+	/** RECOMMENDATION: until Swift can inline between modules or at least optimize @noescape closures to the stack, if this file is linked into another compilation unit (i.e. part of the CwlUtils.framework) it might be a good idea to copy and paste the relevant `fastsync` implementation code into your file (or module and delete `private` if whole module optimization is enabled) and use it instead, allowing the function to be inlined.
+~~~
+private extension UnfairLock {
+	func fastsync<R>(execute work: @noescape () throws -> R) rethrows -> R {
+		os_unfair_lock_lock(&unsafeLock)
+		defer { os_unfair_lock_unlock(&unsafeLock) }
+		return try work()
+	}
+}
+private extension PThreadMutex {
+	func fastsync<R>(execute work: @noescape () throws -> R) rethrows -> R {
+		pthread_mutex_lock(&unsafeMutex)
+		defer { pthread_mutex_unlock(&unsafeMutex) }
+		return try work()
+	}
+}
+~~~
+	*/
+	public func sync<R>(execute work: () throws -> R) rethrows -> R {
+		unbalancedLock()
+		defer { unbalancedUnlock() }
+		return try work()
+	}
+	public func trySync<R>(execute work: () throws -> R) rethrows -> R? {
+		guard unbalancedTryLock() else { return nil }
+		defer { unbalancedUnlock() }
+		return try work()
+	}
+}
+
+/// A basic wrapper around the "NORMAL" and "RECURSIVE" `pthread_mutex_t` (a safe, general purpose FIFO mutex). This type is a "class" type to take advantage of the "deinit" method and prevent accidental copying of the `pthread_mutex_t`.
+public final class PThreadMutex: RawMutex {
+	public typealias MutexPrimitive = pthread_mutex_t
+
 	// Non-recursive "PTHREAD_MUTEX_NORMAL" and recursive "PTHREAD_MUTEX_RECURSIVE" mutex types.
 	public enum PThreadMutexType {
-		case Normal
-		case Recursive
+		case normal
+		case recursive
 	}
 
-	/// Exposed as an "unsafe" public property so non-scoped patterns can be implemented, if required.
 	public var unsafeMutex = pthread_mutex_t()
 	
 	/// Default constructs as ".Normal" or ".Recursive" on request.
-	public init(type: PThreadMutexType = .Normal) {
+	public init(type: PThreadMutexType = .normal) {
 		var attr = pthread_mutexattr_t()
 		guard pthread_mutexattr_init(&attr) == 0 else {
 			preconditionFailure()
 		}
 		switch type {
-		case .Normal:
+		case .normal:
 			pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_NORMAL)
-		case .Recursive:
+		case .recursive:
 			pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE)
 		}
 		guard pthread_mutex_init(&unsafeMutex, &attr) == 0 else {
@@ -52,71 +103,40 @@ public final class PThreadMutex {
 		pthread_mutex_destroy(&unsafeMutex)
 	}
 	
-	/* RECOMMENDATION: Don't use the `slowsync` function if you care about performance. Instead, copy this extension into your file and call it:
-
-extension PThreadMutex {
-	private func sync<R>(@noescape f: () throws -> R) rethrows -> R {
+	public func unbalancedLock() {
 		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		return try f()
-	}
-}
-
-	*/
-	public func slowsync<R>(@noescape f: () throws -> R) rethrows -> R {
-		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		return try f()
 	}
 	
-	/* RECOMMENDATION: Don't use the `trySlowsync` function if you care about performance. Instead, copy this extension into your file and call it:
-
-extension PThreadMutex {
-	private func trySync<R>(@noescape f: () throws -> R) rethrows -> R? {
-		guard pthread_mutex_trylock(&unsafeMutex) == 0 else { return nil }
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		return try f()
+	public func unbalancedTryLock() -> Bool {
+		return pthread_mutex_trylock(&unsafeMutex) == 0
+	}
+	
+	public func unbalancedUnlock() {
+		pthread_mutex_unlock(&unsafeMutex)
 	}
 }
 
-	*/
-	public func trySlowsync<R>(@noescape f: () throws -> R) rethrows -> R? {
-		guard pthread_mutex_trylock(&unsafeMutex) == 0 else { return nil }
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		return try f()
+/// A basic wrapper around `os_unfair_lock` (a non-FIFO, high performance lock that offers safety against priority inversion). This type is a "class" type to prevent accidental copying of the `os_unfair_lock`.
+/// NOTE: due to the behavior of the lock (non-FIFO) a single thread might drop and reacquire the lock without giving waiting threads a chance to resume (leading to potential starvation of waiters). For this reason, it is only recommended in situations where contention is expected to be rare or the interaction between contenders is otherwise known.
+@available(OSX 10.12, iOS 10, *)
+public final class UnfairLock: RawMutex {
+	public typealias MutexPrimitive = os_unfair_lock
+	
+	public init() {
+	}
+	
+	/// Exposed as an "unsafe" public property so non-scoped patterns can be implemented, if required.
+	public var unsafeMutex = os_unfair_lock()
+	
+	public func unbalancedLock() {
+		os_unfair_lock_lock(&unsafeMutex)
+	}
+	
+	public func unbalancedTryLock() -> Bool {
+		return os_unfair_lock_trylock(&unsafeMutex)
+	}
+	
+	public func unbalancedUnlock() {
+		os_unfair_lock_unlock(&unsafeMutex)
 	}
 }
-
-#if PERFORMANCE_TESTS
-
-/// A basic scoped mutex wrapper around a `dispatch_semaphore_t`.
-/// For maximum performance, it is recommended that you copy this entire type into the same compilation unit as your code that uses it to ensure inlining.
-public struct DispatchSemaphore {
-	let s = dispatch_semaphore_create(1)
-	public init() {}
-	public func sync<R>(@noescape f: () throws -> R) rethrows -> R {
-		_ = dispatch_semaphore_wait(s, DISPATCH_TIME_FOREVER)
-		defer { _ = dispatch_semaphore_signal(s) }
-		return try f()
-	}
-}
-
-extension PThreadMutex {
-	public func sync_2<T>(inout param: T, @noescape f: (inout T) throws -> Void) rethrows -> Void {
-		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		try f(&param)
-	}
-	public func sync_3<T, R>(inout param: T, @noescape f: (inout T) throws -> R) rethrows -> R {
-		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		return try f(&param)
-	}
-	public func sync_4<T, U>(inout param1: T, inout _ param2: U, @noescape f: (inout T, inout U) throws -> Void) rethrows -> Void {
-		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		return try f(&param1, &param2)
-	}
-}
-
-#endif

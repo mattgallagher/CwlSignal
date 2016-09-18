@@ -65,7 +65,7 @@
 
 struct mt19937_64 {
 	unsigned long long mt[NN];
-	int mti;
+	size_t mti;
 };
 
 /* initializes mt[NN] with a seed */
@@ -113,32 +113,38 @@ void init_by_array64(struct mt19937_64* context, unsigned long long init_key[],
 /* generates a random number on [0, 2^64-1]-interval */
 unsigned long long genrand64_int64(struct mt19937_64* context)
 {
-    int i;
+    size_t i;
+    size_t j;
     unsigned long long x;
-    static unsigned long long mag01[2]={0ULL, MATRIX_A};
 
-    if (context->mti >= NN) { /* generate NN words at one time */
+    if (context->mti >= NN) {/* generate NN words at one time */
+		size_t mid = NN / 2;
+		unsigned long long stateMid = context->mt[mid];
+		unsigned long long x;
+		unsigned long long y;
 
-        /* if init_genrand64() has not been called, */
-        /* a default initial seed is used     */
-        if (context->mti == NN+1) 
-            init_genrand64(context, 5489ULL);
+		/* NOTE: this "untwist" code is modified from the original to improve
+		 * performance, as described here:
+		 * http://www.cocoawithlove.com/blog/2016/05/19/random-numbers.html
+		 * These modifications are offered for use under the original icense at
+		 * the top of this file.
+		 */
+		for (i = 0, j = mid; i != mid - 1; i++, j++) {
+			x = (context->mt[i] & UM) | (context->mt[i + 1] & LM);
+			context->mt[i] = context->mt[i + mid] ^ (x >> 1) ^ ((context->mt[i + 1] & 1) * MATRIX_A);
+			y = (context->mt[j] & UM) | (context->mt[j + 1] & LM);
+			context->mt[j] = context->mt[j - mid] ^ (y >> 1) ^ ((context->mt[j + 1] & 1) * MATRIX_A);
+		}
+		x = (context->mt[mid - 1] & UM) | (stateMid & LM);
+		context->mt[mid - 1] = context->mt[NN - 1] ^ (x >> 1) ^ ((stateMid & 1) * MATRIX_A);
+		y = (context->mt[NN - 1] & UM) | (context->mt[0] & LM);
+		context->mt[NN - 1] = context->mt[mid - 1] ^ (y >> 1) ^ ((context->mt[0] & 1) * MATRIX_A);
 
-        for (i=0;i<NN-MM;i++) {
-            x = (context->mt[i]&UM)|(context->mt[i+1]&LM);
-            context->mt[i] = context->mt[i+MM] ^ (x>>1) ^ mag01[(int)(x&1ULL)];
-        }
-        for (;i<NN-1;i++) {
-            x = (context->mt[i]&UM)|(context->mt[i+1]&LM);
-            context->mt[i] = context->mt[i+(MM-NN)] ^ (x>>1) ^ mag01[(int)(x&1ULL)];
-        }
-        x = (context->mt[NN-1]&UM)|(context->mt[0]&LM);
-        context->mt[NN-1] = context->mt[MM-1] ^ (x>>1) ^ mag01[(int)(x&1ULL)];
-
-        context->mti = 0;
+		context->mti = 0;
     }
 	
-    x = context->mt[context->mti++];
+    x = context->mt[context->mti];
+    context->mti = context->mti + 1;
 
     x ^= (x >> 29) & 0x5555555555555555ULL;
     x ^= (x << 17) & 0x71D67FFFEDA60000ULL;

@@ -30,24 +30,12 @@ class AddressInfoTests: XCTestCase {
 		// The two options tested here are the pre-Swift 2.2 and the post-Swift 2.2 mangled names.
 		XCTAssert(name.hasSuffix("16AddressInfoTests29testCallingFunctionIdentifierfS0_FT_T_") || name.hasSuffix("16AddressInfoTests29testCallingFunctionIdentifierfT_T_"))
 	}
-
+	
 	func testSymbolsForCallStackAddresses() {
-		var b = NSThread.callStackSymbols() as [String]
-		b.removeAtIndex(0)
-		var a = symbolsForCallStackAddresses(callStackReturnAddresses())
-		a.removeAtIndex(0)
+		var b = Thread.callStackSymbols
+		b.remove(at: 0)
+		var a = symbolsForCallStack(addresses: callStackReturnAddresses())
+		a.remove(at: 0)
 		XCTAssert(a == b)
-		
-		let ex = expectationWithDescription("Hello")
-		
-		dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
-			dispatch_async(dispatch_get_main_queue()) {
-				dispatch_async(dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0)) {
-					ex.fulfill()
-				}
-			}
-		}
-		
-		waitForExpectationsWithTimeout(1e2, handler: nil)
 	}
 }

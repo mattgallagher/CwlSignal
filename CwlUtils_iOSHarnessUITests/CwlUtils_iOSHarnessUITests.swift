@@ -41,18 +41,18 @@ class CwlUtils_iOSHarnessUITests: XCTestCase {
 	
 	func testAlerts() {
 		let app = XCUIApplication()
-
-		let alertContents = app.alerts["The file “path” couldn’t be opened because there is no such file."].collectionViews
-
 		app.buttons["Trigger site handled error"].tap()
-		alertContents.buttons["OK"].tap()
 		
-		let unanticipatedButton = app.buttons["Trigger unanticipated error"]
+		let theFilePathCouldnTBeOpenedBecauseThereIsNoSuchFileAlert = app.alerts["The file “path” couldn’t be opened because there is no such file."]
+		let okButton = theFilePathCouldnTBeOpenedBecauseThereIsNoSuchFileAlert.buttons["OK"]
+		okButton.tap()
 		
-		unanticipatedButton.tap()
-		alertContents.buttons["OK"].tap()
-
-		unanticipatedButton.tap()
-		alertContents.buttons["Copy details"].tap()
+		let triggerUnanticipatedErrorButton = app.buttons["Trigger unanticipated error"]
+		triggerUnanticipatedErrorButton.tap()
+		okButton.tap()
+		
+		triggerUnanticipatedErrorButton.tap()
+		let copyDetailsButton = theFilePathCouldnTBeOpenedBecauseThereIsNoSuchFileAlert.buttons["Copy details"]
+		copyDetailsButton.tap()
 	}
 }

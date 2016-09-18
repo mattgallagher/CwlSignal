@@ -26,7 +26,7 @@ public enum Result<Value> {
 	case success(Value)
 	
 	/// Failure wraps an ErrorType
-	case failure(ErrorType)
+	case failure(Error)
 	
 	public init(_ capturing: () throws -> Value) {
 		do {
@@ -45,7 +45,7 @@ public enum Result<Value> {
 	}
 	
 	/// Convenience tester/getter for the error
-	public var error: ErrorType? {
+	public var error: Error? {
 		switch self {
 		case .success: return nil
 		case .failure(let e): return e
@@ -69,7 +69,7 @@ public enum Result<Value> {
 	}
 
 	/// Chains another Result to this one. In the event that this Result is a .Success, the provided transformer closure is used to generate another Result (wrapping a potentially new type). In the event that this Result is a .Failure, the next Result will have the same error as this one.
-	public func flatMap<U>(transform: (Value) -> Result<U>) -> Result<U> {
+	public func flatMap<U>(_ transform: (Value) -> Result<U>) -> Result<U> {
 		switch self {
 		case .success(let val): return transform(val)
 		case .failure(let e): return .failure(e)
@@ -77,7 +77,7 @@ public enum Result<Value> {
 	}
 
 	/// Chains another Result to this one. In the event that this Result is a .Success, the provided transformer closure is used to transform the value into another value (of a potentially new type) and a new Result is made from that value. In the event that this Result is a .Failure, the next Result will have the same error as this one.
-	public func map<U>(transform: (Value) throws -> U) -> Result<U> {
+	public func map<U>(_ transform: (Value) throws -> U) -> Result<U> {
 		switch self {
 		case .success(let val): return Result<U> { try transform(val) }
 		case .failure(let e): return .failure(e)

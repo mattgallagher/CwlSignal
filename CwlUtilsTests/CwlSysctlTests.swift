@@ -26,41 +26,42 @@ class SysctlTests: XCTestCase {
 	func testSysctl() {
 		let hostName = Sysctl.hostName
 		XCTAssert(hostName != "")
-
+		
 		let machine = Sysctl.machine
-	#if arch(x86_64)
-		XCTAssert(machine == "x86_64")
-	#else
-		XCTAssert(machine != "")
-	#endif
-
+		
+		#if arch(x86_64)
+			XCTAssert(machine == "x86_64")
+		#else
+			XCTAssert(machine != "")
+		#endif
+		
 		let model = Sysctl.model
 		XCTAssert(model != "")
-
+		
 		let osRelease = Sysctl.osRelease
 		XCTAssert(osRelease != "")
-
+		
 		let osRev = Sysctl.osRev
 		XCTAssert(osRev != 0)
-
+		
 		let osType = Sysctl.osType
 		XCTAssert(osType == "Darwin")
-
+		
 		let osVersion = Sysctl.osVersion
 		XCTAssert(osVersion != "")
-
+		
 		let version = Sysctl.version
 		XCTAssert(version.hasPrefix("Darwin Kernel Version"))
 		
 		let activeCPUs = Sysctl.activeCPUs
 		XCTAssert(activeCPUs > 0)
 		
-	#if os(OSX)
-		let cpuFreq = Sysctl.cpuFreq
-		XCTAssert(cpuFreq > 1_000_000_000)
-		
-		let memSize = Sysctl.memSize
-		XCTAssert(memSize > 1_000_000_000)
-	#endif
+		#if os(OSX)
+			let cpuFreq = Sysctl.cpuFreq
+			XCTAssert(cpuFreq > 1_000_000_000)
+			
+			let memSize = Sysctl.memSize
+			XCTAssert(memSize > 1_000_000_000)
+		#endif
 	}
 }

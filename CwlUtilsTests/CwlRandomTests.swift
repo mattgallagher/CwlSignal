@@ -22,271 +22,138 @@ import Foundation
 import XCTest
 import CwlUtils
 
-#if PERFORMANCE_TESTS
-let PerformanceIterations = 10_000_000
-#endif
 let VerificationIterations = 1000
 
 class RandomTests: XCTestCase {
-	func testDevRandom() {
-		var generator = DevRandom()
+	func genericTest<Generator: RandomGenerator>(generator: inout Generator, testUnique: Bool = true) {
 		let a = generator.random64()
 		let b = generator.random64()
 		let c = generator.random64()
 		let d = generator.random64()
 		
-		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
+		if testUnique {
+			XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
+		}
 		
 		let e = generator.random32()
-		XCTAssert(e.dynamicType == UInt32.self)
-
+		XCTAssert(type(of: e) == UInt32.self)
+		
 		let f = generator.random64(max: 1)
 		XCTAssert(f < 2)
-
+		
 		let g = generator.random32(max: 1)
 		XCTAssert(g < 2)
-
+		
 		// More rigorous testing on these would be nice but for now, at least run them
 		_ = generator.random64(max: UInt64.max)
 		_ = generator.randomHalfOpen()
 		_ = generator.randomClosed()
 		_ = generator.randomOpen()
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
 	}
-
+	
+	func testDevRandom() {
+		var generator = DevRandom()
+		genericTest(generator: &generator)
+	}
+	
 	func testArc4Random() {
 		var generator = Arc4Random()
-		let a = generator.random64()
-		let b = generator.random64()
-		let c = generator.random64()
-		let d = generator.random64()
-
-		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
+		genericTest(generator: &generator)
 	}
-
-	func testWellRng512() {
-		var generator = WellRng512()
-		let a = generator.random64()
-		let b = generator.random64()
-		let c = generator.random64()
-		let d = generator.random64()
-
-		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
-	}
-
+	
 	func testLfsr258() {
 		var generator = Lfsr258()
-		let a = generator.random64()
-		let b = generator.random64()
-		let c = generator.random64()
-		let d = generator.random64()
-
-		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
+		genericTest(generator: &generator)
 	}
-
+	
 	func testLfsr176() {
 		var generator = Lfsr176()
-		let a = generator.random64()
-		let b = generator.random64()
-		let c = generator.random64()
-		let d = generator.random64()
-
-		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
+		genericTest(generator: &generator)
 	}
-
-	func testJRand48() {
-		var generator = JRand48()
-		let a = generator.random64()
-		let b = generator.random64()
-		let c = generator.random64()
-		let d = generator.random64()
-
-		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
-	}
-
+	
 	func testConstantNonRandom() {
 		var generator = ConstantNonRandom()
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
+		genericTest(generator: &generator, testUnique: false)
 	}
-
+	
 	func testXoroshiro() {
 		var generator = Xoroshiro()
-		let a = generator.random64()
-		let b = generator.random64()
-		let c = generator.random64()
-		let d = generator.random64()
-
-		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
-
+		genericTest(generator: &generator)
+		
+		// Test Xoroshiro against the reference implementation to verify output
 		var g1 = Xoroshiro(seed: (12345678, 87654321))
 		var g2 = xoroshiro128plus(seed: (12345678, 87654321))
 		for _ in 0..<VerificationIterations {
 			XCTAssert(g1.random64() == g2.random64())
 		}
 	}
-
+	
 	func testXoroshiro128plus() {
 		var generator = xoroshiro128plus()
-		let a = generator.random64()
-		let b = generator.random64()
-		let c = generator.random64()
-		let d = generator.random64()
-
-		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
+		genericTest(generator: &generator)
 	}
-
+	
 	func testMersenneTwister() {
 		var generator = MersenneTwister()
-		let a = generator.random64()
-		let b = generator.random64()
-		let c = generator.random64()
-		let d = generator.random64()
-
-		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
-
+		genericTest(generator: &generator)
+		
+		// Test MersenneTwister against the reference implementation to verify output
 		var g1 = MersenneTwister(seed: 12345678)
 		var g2 = MT19937_64(seed: 12345678)
 		for _ in 0..<VerificationIterations {
 			XCTAssert(g1.random64() == g2.random64())
 		}
 	}
-
+	
 	func testMT19937_64() {
 		var generator = MT19937_64()
-		let a = generator.random64()
-		let b = generator.random64()
-		let c = generator.random64()
-		let d = generator.random64()
-
-		XCTAssert(a != b && a != c && a != d && b != c && b != d && c != d, "Technically, we *could* get a collision...")
-
-	#if PERFORMANCE_TESTS
-		measureBlock { () -> Void in
-			for _ in 0..<PerformanceIterations {
-				_ = generator.random64()
-			}
-		}
-	#endif
+		genericTest(generator: &generator)
 	}
 }
 
-public struct MT19937_64: RandomWordGenerator {
-	public typealias WordType = UInt64
-	var state = mt19937_64()
+//
+// NOTE: the following two implementations are duplicated in CwlRandomPerformanceTests.swift and in CwlRandomTests.swift file.
+// The reason for this duplication is that CwlRandomPerformanceTests.swift is normally excluded from the build, so CwlRandomTests.swift can't rely on it. But CwlRandomPerformanceTests.swift needs these structs included locally because they need to be inlined (to make the performance comparison fair) and whole module optimization is disabled for this testing bundle (to allow testing across module boundaries where desired).
+//
 
-	public init() {
+private struct MT19937_64: RandomWordGenerator {
+	typealias WordType = UInt64
+	var state = mt19937_64()
+	
+	init() {
 		init_genrand64(&state, DevRandom.random64())
 	}
-
-	public init(seed: UInt64) {
+	
+	init(seed: UInt64) {
 		init_genrand64(&state, seed)
 	}
-
-	public mutating func random64() -> UInt64 {
+	
+	mutating func random64() -> UInt64 {
 		return genrand64_int64(&state)
 	}
-
-	public mutating func randomWord() -> UInt64 {
+	
+	mutating func randomWord() -> UInt64 {
 		return genrand64_int64(&state)
 	}
 }
 
-public struct xoroshiro128plus: RandomWordGenerator {
-	public typealias WordType = UInt64
+private struct xoroshiro128plus: RandomWordGenerator {
+	typealias WordType = UInt64
 	var state = xoroshiro_state(s: (DevRandom.random64(), DevRandom.random64()))
-
-	public init() {
+	
+	init() {
 	}
-
-	public init(seed: (UInt64, UInt64)) {
+	
+	init(seed: (UInt64, UInt64)) {
 		self.state.s = seed
 	}
-
-	public mutating func random64() -> UInt64 {
+	
+	mutating func random64() -> UInt64 {
 		return xoroshiro_next(&state)
 	}
-
-	public mutating func randomWord() -> UInt64 {
+	
+	mutating func randomWord() -> UInt64 {
 		return xoroshiro_next(&state)
 	}
 }
-
 

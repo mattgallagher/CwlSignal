@@ -22,13 +22,7 @@ import Cocoa
 import CwlUtils
 
 func showAlert(error: NSError) {
- #if os(OSX)
-	  NSAlert(error: error).runModal()
- #else
-	  let alert = UIAlertController(title: error.localizedDescription, message: error.localizedFailureReason, preferredStyle: UIAlertControllerStyle.Alert)
-	  alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: UIAlertActionStyle.Default, handler: nil))
-	  viewController.presentViewController(alert, animated: true, completion: nil)
- #endif
+	NSAlert(error: error).runModal()
 }
 
 @NSApplicationMain
@@ -43,32 +37,32 @@ class AppDelegate: NSResponder, NSApplicationDelegate {
 		// Insert code here to tear down your application
 	}
 
-	func processData(data: NSData) {
+	func process(data: NSData) {
 	}
 	
 	func someProcessingTask1(path: String) {
 		do {
-			let data = try NSData(contentsOfFile: path, options: .DataReadingMappedIfSafe)
-			processData(data)
+			let data = try NSData(contentsOfFile: path, options: .mappedIfSafe)
+			process(data: data)
 		} catch let error as NSError {
-			showAlert(error)
+			showAlert(error: error)
 		}
 	}
 
-	@IBAction func someUserAction1(sender: AnyObject) {
-		someProcessingTask1("/invalid/path")
+	@IBAction func someUserAction1(_ sender: AnyObject) {
+		someProcessingTask1(path: "/invalid/path")
 	}
 
 	func someProcessingTask2(path: String) throws {
 		try rethrowUnanticipated {
-			let data = try NSData(contentsOfFile: path, options: .DataReadingMappedIfSafe)
-			processData(data)
+			let data = try NSData(contentsOfFile: path, options: .mappedIfSafe)
+			process(data: data)
 		}
 	}
 
-	@IBAction func someUserAction2(sender: AnyObject) {
+	@IBAction func someUserAction2(_ sender: AnyObject) {
 		do {
-			try someProcessingTask2("/invalid/path")
+			try someProcessingTask2(path: "/invalid/path")
 		} catch {
 			presentError(error as NSError)
 		}

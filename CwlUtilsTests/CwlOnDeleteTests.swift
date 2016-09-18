@@ -26,15 +26,15 @@ class OnDeleteTests: XCTestCase {
 	func testOnDelete() {
 		var x = false
 		do {
-			let o = OnDelete {x = true}
+			let o = OnDelete { x = true }
 			XCTAssert(x == false)
 			withExtendedLifetime(o) { () in }
 		}
 		XCTAssert(x == true)
-
+		
 		var y = false
 		do {
-			let o = OnDelete {y = true}
+			let o = OnDelete { y = true }
 			XCTAssert(y == false)
 			o.cancel()
 		}

@@ -22,7 +22,7 @@ import Foundation
 import XCTest
 import CwlUtils
 
-private enum TestError: ErrorType {
+private enum TestError: Error {
 	case zeroValue
 	case oneValue
 	case twoValue
@@ -122,7 +122,7 @@ class ResultTests: XCTestCase {
 	}
 	
 	func testUnwrap() {
-		var e: ErrorType?
+		var e: Error?
 		var i: Int?
 		do {
 			i = try Result<Int>.success(3).unwrap()
@@ -132,7 +132,7 @@ class ResultTests: XCTestCase {
 		XCTAssert(i != nil)
 		XCTAssert(e == nil)
 		
-		var f: ErrorType?
+		var f: Error?
 		var j: Int?
 		do {
 			j = try Result<Int>.failure(TestError.oneValue).unwrap()
