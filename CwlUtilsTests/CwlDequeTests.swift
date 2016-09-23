@@ -50,7 +50,7 @@ class DequeTests: XCTestCase {
 	func testFIFOPerformance() {
 		measure { () -> Void in
 			#if DEBUG
-				let outerCount = 1000
+				let outerCount = 100
 			#else
 				let outerCount = 100_000
 			#endif
@@ -74,7 +74,7 @@ class DequeTests: XCTestCase {
 	func testReferenceArrayPerformance() {
 		measure { () -> Void in
 			#if DEBUG
-				let outerCount = 1000
+				let outerCount = 100
 			#else
 				let outerCount = 100_000
 			#endif
