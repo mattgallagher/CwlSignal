@@ -48,8 +48,8 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	public var debugDescription: String {
 		var result = "\(type(of: self))(["
 		var iterator = makeIterator()
-		if let n = iterator.next() {
-			debugPrint(n, terminator: "", to: &result)
+		if let next = iterator.next() {
+			debugPrint(next, terminator: "", to: &result)
 			while let n = iterator.next() {
 				result += ", "
 				debugPrint(n, terminator: "", to: &result)
@@ -95,7 +95,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 			let done = b.withUnsafeMutablePointers { header, body -> Bool in
 				if header.pointee.capacity >= header.pointee.count + 1 {
 					var index = header.pointee.offset + header.pointee.count
-					if index > header.pointee.capacity {
+					if index >= header.pointee.capacity {
 						index -= header.pointee.capacity
 					}
 					body.advanced(by: index).initialize(to: newElement)
@@ -166,18 +166,30 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 		body.advanced(by: splitRange.high.startIndex).deinitialize(count: splitRange.high.count)
 	}
 
-	fileprivate static func moveInitialize(sourceRange: CountableRange<Int>, destinationRange: CountableRange<Int>, sourceHeader: UnsafeMutablePointer<DequeHeader>, destinationHeader: UnsafeMutablePointer<DequeHeader>, sourceBody: UnsafeMutablePointer<T>, destinationBody: UnsafeMutablePointer<T>) {
-		let sourceSplitRange = Deque.indices(forRange: sourceRange, header: sourceHeader)
-		let destinationSplitRange = Deque.indices(forRange: destinationRange, header: destinationHeader)
-		destinationBody.advanced(by: destinationSplitRange.low.startIndex).moveInitialize(from: sourceBody.advanced(by: sourceSplitRange.low.startIndex), count: sourceSplitRange.low.count)
-		destinationBody.advanced(by: destinationSplitRange.high.startIndex).moveInitialize(from: sourceBody.advanced(by: sourceSplitRange.high.startIndex), count: sourceSplitRange.high.count)
+	fileprivate static func moveInitialize(preMappedSourceRange: CountableRange<Int>, postMappedDestinationRange: CountableRange<Int>, sourceHeader: UnsafeMutablePointer<DequeHeader>, sourceBody: UnsafeMutablePointer<T>, destinationBody: UnsafeMutablePointer<T>) {
+		let sourceSplitRange = Deque.indices(forRange: preMappedSourceRange, header: sourceHeader)
+		
+		assert(sourceSplitRange.low.startIndex >= 0 && (sourceSplitRange.low.startIndex < sourceHeader.pointee.capacity || sourceSplitRange.low.startIndex == sourceSplitRange.low.endIndex))
+		assert(sourceSplitRange.low.endIndex >= 0 && sourceSplitRange.low.endIndex <= sourceHeader.pointee.capacity)
+
+		assert(sourceSplitRange.high.startIndex >= 0 && (sourceSplitRange.high.startIndex < sourceHeader.pointee.capacity || sourceSplitRange.high.startIndex == sourceSplitRange.high.endIndex))
+		assert(sourceSplitRange.high.endIndex >= 0 && sourceSplitRange.high.endIndex <= sourceHeader.pointee.capacity)
+
+		destinationBody.advanced(by: postMappedDestinationRange.startIndex).moveInitialize(from: sourceBody.advanced(by: sourceSplitRange.low.startIndex), count: sourceSplitRange.low.count)
+		destinationBody.advanced(by: postMappedDestinationRange.startIndex + sourceSplitRange.low.count).moveInitialize(from: sourceBody.advanced(by: sourceSplitRange.high.startIndex), count: sourceSplitRange.high.count)
 	}
 
-	fileprivate static func copyInitialize(sourceRange: CountableRange<Int>, destinationRange: CountableRange<Int>, sourceHeader: UnsafeMutablePointer<DequeHeader>, destinationHeader: UnsafeMutablePointer<DequeHeader>, sourceBody: UnsafeMutablePointer<T>, destinationBody: UnsafeMutablePointer<T>) {
-		let sourceSplitRange = Deque.indices(forRange: sourceRange, header: sourceHeader)
-		let destinationSplitRange = Deque.indices(forRange: destinationRange, header: destinationHeader)
-		destinationBody.advanced(by: destinationSplitRange.low.startIndex).initialize(from: sourceBody.advanced(by: sourceSplitRange.low.startIndex), count: sourceSplitRange.low.count)
-		destinationBody.advanced(by: destinationSplitRange.high.startIndex).initialize(from: sourceBody.advanced(by: sourceSplitRange.high.startIndex), count: sourceSplitRange.high.count)
+	fileprivate static func copyInitialize(preMappedSourceRange: CountableRange<Int>, postMappedDestinationRange: CountableRange<Int>, sourceHeader: UnsafeMutablePointer<DequeHeader>, sourceBody: UnsafeMutablePointer<T>, destinationBody: UnsafeMutablePointer<T>) {
+		let sourceSplitRange = Deque.indices(forRange: preMappedSourceRange, header: sourceHeader)
+
+		assert(sourceSplitRange.low.startIndex >= 0 && (sourceSplitRange.low.startIndex < sourceHeader.pointee.capacity || sourceSplitRange.low.startIndex == sourceSplitRange.low.endIndex))
+		assert(sourceSplitRange.low.endIndex >= 0 && sourceSplitRange.low.endIndex <= sourceHeader.pointee.capacity)
+
+		assert(sourceSplitRange.high.startIndex >= 0 && (sourceSplitRange.high.startIndex < sourceHeader.pointee.capacity || sourceSplitRange.high.startIndex == sourceSplitRange.high.endIndex))
+		assert(sourceSplitRange.high.endIndex >= 0 && sourceSplitRange.high.endIndex <= sourceHeader.pointee.capacity)
+
+		destinationBody.advanced(by: postMappedDestinationRange.startIndex).initialize(from: sourceBody.advanced(by: sourceSplitRange.low.startIndex), count: sourceSplitRange.low.count)
+		destinationBody.advanced(by: postMappedDestinationRange.startIndex + sourceSplitRange.low.count).initialize(from: sourceBody.advanced(by: sourceSplitRange.high.startIndex), count: sourceSplitRange.high.count)
 	}
 
 	fileprivate static func indices(forRange: CountableRange<Int>, header: UnsafeMutablePointer<DequeHeader>) -> (low: CountableRange<Int>, high: CountableRange<Int>) {
@@ -201,16 +213,28 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 				header.pointee.offset -= info.inserted - info.removed
 				if header.pointee.offset < 0 {
 					header.pointee.offset += header.pointee.capacity
-				} else if header.pointee.offset >= header.pointee.count {
+				} else if header.pointee.offset >= header.pointee.capacity {
 					header.pointee.offset -= header.pointee.capacity
 				}
 				let delta = oldOffset - header.pointee.offset
 				if info.start != 0 {
-					Deque.moveInitialize(sourceRange: delta..<(info.start + delta), destinationRange: 0..<info.start, sourceHeader: header, destinationHeader: header, sourceBody: body, destinationBody: body)
+					let destinationSplitIndices = Deque.indices(forRange: 0..<info.start, header: header)
+					let lowCount = destinationSplitIndices.low.count
+					Deque.moveInitialize(preMappedSourceRange: delta..<(delta + lowCount), postMappedDestinationRange: destinationSplitIndices.low, sourceHeader: header, sourceBody: body, destinationBody: body)
+					if lowCount != info.start {
+						Deque.moveInitialize(preMappedSourceRange: (delta + lowCount)..<(info.start + delta), postMappedDestinationRange: destinationSplitIndices.high, sourceHeader: header, sourceBody: body, destinationBody: body)
+					}
 				}
 			} else {
 				if (info.start + info.removed) != header.pointee.count {
-					Deque.moveInitialize(sourceRange: (info.start + info.removed)..<header.pointee.count, destinationRange: (info.start + info.inserted)..<(header.pointee.count - info.removed + info.inserted), sourceHeader: header, destinationHeader: header, sourceBody: body, destinationBody: body)
+					let start = info.start + info.inserted
+					let end = header.pointee.count - info.removed + info.inserted
+					let destinationSplitIndices = Deque.indices(forRange: start..<end, header: header)
+					let lowCount = destinationSplitIndices.low.count
+					Deque.moveInitialize(preMappedSourceRange: start..<(start + lowCount), postMappedDestinationRange: destinationSplitIndices.low, sourceHeader: header, sourceBody: body, destinationBody: body)
+					if lowCount != end - start {
+						Deque.moveInitialize(preMappedSourceRange: (start + lowCount)..<header.pointee.count, postMappedDestinationRange: destinationSplitIndices.high, sourceHeader: header, sourceBody: body, destinationBody: body)
+					}
 				}
 			}
 			header.pointee.count = header.pointee.count - info.removed + info.inserted
@@ -260,18 +284,18 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 				newBuffer.withUnsafeMutablePointers { newHeader, newBody in
 					if info.start != 0 {
 						if deletePrevious {
-							Deque.moveInitialize(sourceRange: 0..<info.start, destinationRange: 0..<info.start, sourceHeader: headerPtr, destinationHeader: newHeader, sourceBody: bodyPtr, destinationBody: newBody)
+							Deque.moveInitialize(preMappedSourceRange: 0..<info.start, postMappedDestinationRange: 0..<info.start, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
 						} else {
-							Deque.copyInitialize(sourceRange: 0..<info.start, destinationRange: 0..<info.start, sourceHeader: headerPtr, destinationHeader: newHeader, sourceBody: bodyPtr, destinationBody: newBody)
+							Deque.copyInitialize(preMappedSourceRange: 0..<info.start, postMappedDestinationRange: 0..<info.start, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
 						}
 					}
 					
 					let oldCount = header?.pointee.count ?? 0
 					if info.start + info.removed != oldCount {
 						if deletePrevious {
-							Deque.moveInitialize(sourceRange: (info.start + info.removed)..<oldCount, destinationRange: (info.start + info.inserted)..<info.newCount, sourceHeader: headerPtr, destinationHeader: newHeader, sourceBody: bodyPtr, destinationBody: newBody)
+							Deque.moveInitialize(preMappedSourceRange: (info.start + info.removed)..<oldCount, postMappedDestinationRange: (info.start + info.inserted)..<info.newCount, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
 						} else {
-							Deque.copyInitialize(sourceRange: (info.start + info.removed)..<oldCount, destinationRange: (info.start + info.inserted)..<info.newCount, sourceHeader: headerPtr, destinationHeader: newHeader, sourceBody: bodyPtr, destinationBody: newBody)
+							Deque.copyInitialize(preMappedSourceRange: (info.start + info.removed)..<oldCount, postMappedDestinationRange: (info.start + info.inserted)..<info.newCount, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
 						}
 					}
 				}

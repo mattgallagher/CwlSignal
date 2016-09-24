@@ -47,6 +47,41 @@ class DequeTests: XCTestCase {
 		XCTAssert(i == 100)
 	}
 	
+	func testRemoveFirst() {
+		var deque = Deque<Result<Int>>()
+		deque.append(.success(1))
+		deque.append(.success(3))
+		deque.append(.success(5))
+		deque.append(.success(7))
+		deque.append(.success(11))
+
+		XCTAssert(deque.removeFirst().value == 1)
+		XCTAssert(deque.removeFirst().value == 3)
+
+		deque.append(.success(13))
+		deque.append(.success(17))
+		deque.append(.success(19))
+		deque.append(.success(23))
+		
+		XCTAssert(deque[4].value == 17)
+		
+		XCTAssert(deque.removeFirst().value == 5)
+
+		deque.append(.success(29))
+		
+		XCTAssert(deque.removeFirst().value == 7)
+		XCTAssert(deque.removeFirst().value == 11)
+		XCTAssert(deque.removeFirst().value == 13)
+
+		deque.append(.success(31))
+		deque.append(.success(37))
+		deque.append(.success(41))
+		deque.append(.success(43))
+		XCTAssert(deque.removeFirst().value == 17)
+		
+		XCTAssert(deque.count == 7)
+	}
+	
 	func testFIFOPerformance() {
 		measure { () -> Void in
 			#if DEBUG

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C91A74151D962EC00031DB57 /* CwlDeque.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E7F0261D93F49E0039680B /* CwlDeque.swift */; };
+		C91A74281D9685620031DB57 /* CwlDeque.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E7F0261D93F49E0039680B /* CwlDeque.swift */; };
 		C93B5BB51CED95A5002D91D1 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C93B5BB41CED95A5002D91D1 /* mt19937-64.c */; };
 		C93B5BB61CED95A5002D91D1 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C93B5BB41CED95A5002D91D1 /* mt19937-64.c */; };
 		C93E18171C8166470009A053 /* CwlUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = C93E18161C8166470009A053 /* CwlUtils.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -705,7 +705,7 @@
 				C9E6C5951CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */,
 				C93E18651C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
 				C9C9AAEF1C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
-				C91A74151D962EC00031DB57 /* CwlDeque.swift in Sources */,
+				C91A74281D9685620031DB57 /* CwlDeque.swift in Sources */,
 				C93E18601C81BE120009A053 /* CwlFrameAddress.c in Sources */,
 				C93E18501C81794B0009A053 /* CwlStackFrame.swift in Sources */,
 				C9F193CD1D02970200EAC5BE /* CwlMutex.swift in Sources */,
