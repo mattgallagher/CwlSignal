@@ -90,6 +90,10 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 		return 0
 	}
 	
+	public var count: Int {
+		return endIndex
+	}
+	
 	public mutating func append(_ newElement: T) {
 		if let b = buffer {
 			let done = b.withUnsafeMutablePointers { header, body -> Bool in
