@@ -431,10 +431,16 @@ struct DequeMutationInfo {
 	}
 }
 
+#if true
+
 // An implementation of DequeBuffer using ManagedBufferPointer to allocate the
 // storage and then using raw pointer offsets into self to access contents
 // (avoiding the ManagedBufferPointer accessors which are a performance problem
 // in Swift 3).
+//
+// For a version that doesn't use raw pointer offsets (i.e. the version that would
+// ideally be used once performance issues in Swift are resolved), see the disabled
+// "#else" section, below.
 final class DequeBuffer<T> {
 	typealias ValueType = T
 	
@@ -499,3 +505,24 @@ struct HeapObject {
 	let strongRefCount: UInt32 = 0
 	let weakRefCount: UInt32 = 0
 }
+
+#else
+
+// An implementation of DequeBuffer as a simple ManagedBuffer subclass
+final class DequeBuffer<T>: ManagedBuffer<DequeHeader, T> {
+  class func create(capacity: Int, count: Int) -> DequeBuffer<T> {
+    return unsafeDowncast(super.create(minimumCapacity: capacity) { buffer in
+      DequeHeader(offset: 0, count: count, capacity: capacity)
+    }, to: DequeBuffer<T>.self)
+  }
+  
+  deinit {
+    withUnsafeMutablePointers { header, body in
+      if header.pointee.count > 0 {
+        Deque<T>.deinitialize(range: 0..<header.pointee.count, header: header, body: body)
+      }
+    }
+  }
+}
+
+#endif
