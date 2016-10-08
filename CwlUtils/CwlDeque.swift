@@ -24,6 +24,7 @@ let DequeOverAllocateFactor = 2
 let DequeDownsizeTriggerFactor = 16
 let DequeDefaultMinimumCapacity = 0
 
+/// This is a basic "circular-buffer" style Double-Ended Queue.
 public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, ExpressibleByArrayLiteral, CustomDebugStringConvertible {
 	public typealias Index = Int
 	public typealias Indices = CountableRange<Int>
@@ -32,19 +33,23 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	var buffer: DequeBuffer<T>? = nil
 	let minCapacity: Int
 	
+	/// Implementation of RangeReplaceableCollection function
 	public init() {
 		self.minCapacity = DequeDefaultMinimumCapacity
 	}
 	
+	/// Allocate with a minimum capacity
 	public init(minCapacity: Int) {
 		self.minCapacity = minCapacity
 	}
 	
+	/// Implementation of ExpressibleByArrayLiteral function
 	public init(arrayLiteral: T...) {
 		self.minCapacity = DequeDefaultMinimumCapacity
 		replaceSubrange(0..<0, with: arrayLiteral)
 	}
 	
+	/// Implementation of CustomDebugStringConvertible function
 	public var debugDescription: String {
 		var result = "\(type(of: self))(["
 		var iterator = makeIterator()
@@ -59,6 +64,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 		return result
 	}
 	
+	/// Implementation of RandomAccessCollection function
 	public subscript(_ at: Index) -> T {
 		get {
 			if let b = buffer {
@@ -76,10 +82,12 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 		}
 	}
 	
+	/// Implementation of Collection function
 	public var startIndex: Index {
 		return 0
 	}
 	
+	/// Implementation of Collection function
 	public var endIndex: Index {
 		if let b = buffer {
 			return b.withUnsafeMutablePointerToHeader { header -> Int in
@@ -90,10 +98,23 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 		return 0
 	}
 	
+	/// Implementation of Collection function
+	public var isEmpty: Bool {
+      if let b = buffer {
+         return b.withUnsafeMutablePointerToHeader { header -> Bool in
+            return header.pointee.count == 0
+         }
+      }
+      
+      return true
+	}
+   
+	/// Implementation of Collection function
 	public var count: Int {
 		return endIndex
 	}
 	
+	/// Optimized implementation of RangeReplaceableCollection function
 	public mutating func append(_ newElement: T) {
 		if let b = buffer {
 			let done = b.withUnsafeMutablePointers { header, body -> Bool in
@@ -117,6 +138,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 		return replaceSubrange(index..<index, with: CollectionOfOne(newElement))
 	}
 	
+	/// Optimized implementation of RangeReplaceableCollection function
 	public mutating func insert(_ newElement: T, at: Int) {
 		if let b = buffer {
 			let done = b.withUnsafeMutablePointers { header, body -> Bool in
@@ -140,6 +162,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 		return replaceSubrange(at..<at, with: CollectionOfOne(newElement))
 	}
 	
+	/// Optimized implementation of RangeReplaceableCollection function
 	public mutating func remove(at: Int) {
 		if let b = buffer {
 			let done = b.withUnsafeMutablePointerToHeader { header -> Bool in
@@ -164,53 +187,85 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 		return replaceSubrange(at...at, with: EmptyCollection())
 	}
 	
+	/// Optimized implementation of RangeReplaceableCollection function
+	public mutating func removeFirst() -> T {
+		if let b = buffer {
+			return b.withUnsafeMutablePointers { header, body -> T in
+				precondition(header.pointee.count > 0, "Index beyond bounds")
+				let result = body[header.pointee.offset]
+				body.advanced(by: header.pointee.offset).deinitialize()
+				header.pointee.offset += 1
+				if header.pointee.offset >= header.pointee.capacity {
+					header.pointee.offset -= header.pointee.capacity
+				}
+				header.pointee.count -= 1
+				return result
+			}
+		}
+		preconditionFailure("Index beyond bounds")
+	}
+	
+	// Used when removing a range from the collection or deiniting self.
 	fileprivate static func deinitialize(range: CountableRange<Int>, header: UnsafeMutablePointer<DequeHeader>, body: UnsafeMutablePointer<T>) {
-		let splitRange = Deque.indices(forRange: range, header: header)
+		let splitRange = Deque.mapIndices(inRange: range, header: header)
 		body.advanced(by: splitRange.low.startIndex).deinitialize(count: splitRange.low.count)
 		body.advanced(by: splitRange.high.startIndex).deinitialize(count: splitRange.high.count)
 	}
-
+	
+	// Move from an initialized to an uninitialized location, deinitializing the source.
+	//
+	// NOTE: the terms "preMapped" and "postMapped" are used. "preMapped" refer to the public indices exposed by this type (zero based, contiguous), and "postMapped" refers to internal offsets within the buffer (not necessarily zero based and may wrap around). This function will only handle a single, contiguous block of "postMapped" indices so the caller must ensure that this function is invoked separately for each contiguous block.
 	fileprivate static func moveInitialize(preMappedSourceRange: CountableRange<Int>, postMappedDestinationRange: CountableRange<Int>, sourceHeader: UnsafeMutablePointer<DequeHeader>, sourceBody: UnsafeMutablePointer<T>, destinationBody: UnsafeMutablePointer<T>) {
-		let sourceSplitRange = Deque.indices(forRange: preMappedSourceRange, header: sourceHeader)
+		let sourceSplitRange = Deque.mapIndices(inRange: preMappedSourceRange, header: sourceHeader)
 		
 		assert(sourceSplitRange.low.startIndex >= 0 && (sourceSplitRange.low.startIndex < sourceHeader.pointee.capacity || sourceSplitRange.low.startIndex == sourceSplitRange.low.endIndex))
 		assert(sourceSplitRange.low.endIndex >= 0 && sourceSplitRange.low.endIndex <= sourceHeader.pointee.capacity)
-
+		
 		assert(sourceSplitRange.high.startIndex >= 0 && (sourceSplitRange.high.startIndex < sourceHeader.pointee.capacity || sourceSplitRange.high.startIndex == sourceSplitRange.high.endIndex))
 		assert(sourceSplitRange.high.endIndex >= 0 && sourceSplitRange.high.endIndex <= sourceHeader.pointee.capacity)
-
+		
 		destinationBody.advanced(by: postMappedDestinationRange.startIndex).moveInitialize(from: sourceBody.advanced(by: sourceSplitRange.low.startIndex), count: sourceSplitRange.low.count)
 		destinationBody.advanced(by: postMappedDestinationRange.startIndex + sourceSplitRange.low.count).moveInitialize(from: sourceBody.advanced(by: sourceSplitRange.high.startIndex), count: sourceSplitRange.high.count)
 	}
-
+	
+	// Copy from an initialized to an uninitialized location, leaving the source initialized.
+	//
+	// NOTE: the terms "preMapped" and "postMapped" are used. "preMapped" refer to the public indices exposed by this type (zero based, contiguous), and "postMapped" refers to internal offsets within the buffer (not necessarily zero based and may wrap around). This function will only handle a single, contiguous block of "postMapped" indices so the caller must ensure that this function is invoked separately for each contiguous block.
 	fileprivate static func copyInitialize(preMappedSourceRange: CountableRange<Int>, postMappedDestinationRange: CountableRange<Int>, sourceHeader: UnsafeMutablePointer<DequeHeader>, sourceBody: UnsafeMutablePointer<T>, destinationBody: UnsafeMutablePointer<T>) {
-		let sourceSplitRange = Deque.indices(forRange: preMappedSourceRange, header: sourceHeader)
-
+		let sourceSplitRange = Deque.mapIndices(inRange: preMappedSourceRange, header: sourceHeader)
+		
 		assert(sourceSplitRange.low.startIndex >= 0 && (sourceSplitRange.low.startIndex < sourceHeader.pointee.capacity || sourceSplitRange.low.startIndex == sourceSplitRange.low.endIndex))
 		assert(sourceSplitRange.low.endIndex >= 0 && sourceSplitRange.low.endIndex <= sourceHeader.pointee.capacity)
-
+		
 		assert(sourceSplitRange.high.startIndex >= 0 && (sourceSplitRange.high.startIndex < sourceHeader.pointee.capacity || sourceSplitRange.high.startIndex == sourceSplitRange.high.endIndex))
 		assert(sourceSplitRange.high.endIndex >= 0 && sourceSplitRange.high.endIndex <= sourceHeader.pointee.capacity)
-
+		
 		destinationBody.advanced(by: postMappedDestinationRange.startIndex).initialize(from: sourceBody.advanced(by: sourceSplitRange.low.startIndex), count: sourceSplitRange.low.count)
 		destinationBody.advanced(by: postMappedDestinationRange.startIndex + sourceSplitRange.low.count).initialize(from: sourceBody.advanced(by: sourceSplitRange.high.startIndex), count: sourceSplitRange.high.count)
 	}
-
-	fileprivate static func indices(forRange: CountableRange<Int>, header: UnsafeMutablePointer<DequeHeader>) -> (low: CountableRange<Int>, high: CountableRange<Int>) {
+	
+	// Translate from preMapped to postMapped indices.
+	//
+	// "preMapped" refer to the public indices exposed by this type (zero based, contiguous), and "postMapped" refers to internal offsets within the buffer (not necessarily zero based and may wrap around).
+	//
+	// Since "postMapped" indices are not necessarily contiguous, two separate, contiguous ranges are returned. Both `startIndex` and `endIndex` in the `high` range will equal the `endIndex` in the `low` range if the range specified by `inRange` is continuous after mapping.
+	fileprivate static func mapIndices(inRange: CountableRange<Int>, header: UnsafeMutablePointer<DequeHeader>) -> (low: CountableRange<Int>, high: CountableRange<Int>) {
 		let limit = header.pointee.capacity - header.pointee.offset
-		if forRange.startIndex >= limit {
-			return (low: (forRange.startIndex - limit)..<(forRange.endIndex - limit), high: (forRange.endIndex - limit)..<(forRange.endIndex - limit))
-		} else if forRange.endIndex > limit {
-			return (low: (forRange.startIndex + header.pointee.offset)..<header.pointee.capacity, high: 0..<(forRange.endIndex - limit))
+		if inRange.startIndex >= limit {
+			return (low: (inRange.startIndex - limit)..<(inRange.endIndex - limit), high: (inRange.endIndex - limit)..<(inRange.endIndex - limit))
+		} else if inRange.endIndex > limit {
+			return (low: (inRange.startIndex + header.pointee.offset)..<header.pointee.capacity, high: 0..<(inRange.endIndex - limit))
 		}
-		return (low: (forRange.startIndex + header.pointee.offset)..<(forRange.endIndex + header.pointee.offset), high: (forRange.endIndex + header.pointee.offset)..<(forRange.endIndex + header.pointee.offset))
+		return (low: (inRange.startIndex + header.pointee.offset)..<(inRange.endIndex + header.pointee.offset), high: (inRange.endIndex + header.pointee.offset)..<(inRange.endIndex + header.pointee.offset))
 	}
 	
+	// Internal implementation of replaceSubrange<C>(_:with:) when no reallocation
+	// of the underlying buffer is required
 	private static func mutateWithoutReallocate<C>(info: DequeMutationInfo, elements newElements: C, header: UnsafeMutablePointer<DequeHeader>, body: UnsafeMutablePointer<T>) where C: Collection, C.Iterator.Element == T {
 		if info.removed > 0 {
 			Deque.deinitialize(range: info.start..<(info.start + info.removed), header: header, body: body)
 		}
-
+		
 		if info.removed != info.inserted {
 			if info.start < header.pointee.count - (info.start + info.removed) {
 				let oldOffset = header.pointee.offset
@@ -222,7 +277,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 				}
 				let delta = oldOffset - header.pointee.offset
 				if info.start != 0 {
-					let destinationSplitIndices = Deque.indices(forRange: 0..<info.start, header: header)
+					let destinationSplitIndices = Deque.mapIndices(inRange: 0..<info.start, header: header)
 					let lowCount = destinationSplitIndices.low.count
 					Deque.moveInitialize(preMappedSourceRange: delta..<(delta + lowCount), postMappedDestinationRange: destinationSplitIndices.low, sourceHeader: header, sourceBody: body, destinationBody: body)
 					if lowCount != info.start {
@@ -233,7 +288,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 				if (info.start + info.removed) != header.pointee.count {
 					let start = info.start + info.inserted
 					let end = header.pointee.count - info.removed + info.inserted
-					let destinationSplitIndices = Deque.indices(forRange: start..<end, header: header)
+					let destinationSplitIndices = Deque.mapIndices(inRange: start..<end, header: header)
 					let lowCount = destinationSplitIndices.low.count
 					Deque.moveInitialize(preMappedSourceRange: start..<(start + lowCount), postMappedDestinationRange: destinationSplitIndices.low, sourceHeader: header, sourceBody: body, destinationBody: body)
 					if lowCount != end - start {
@@ -251,7 +306,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 				body.advanced(by: header.pointee.offset + info.start).initialize(to: e)
 			}
 		} else if info.inserted > 0 {
-			let inserted = Deque.indices(forRange: info.start..<(info.start + info.inserted), header: header)
+			let inserted = Deque.mapIndices(inRange: info.start..<(info.start + info.inserted), header: header)
 			var iterator = newElements.makeIterator()
 			for i in inserted.low {
 				if let n = iterator.next() {
@@ -265,7 +320,11 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 			}
 		}
 	}
-
+	
+	// Internal implementation of replaceSubrange<C>(_:with:) when reallocation
+	// of the underlying buffer is required. Can handle no previous buffer or
+	// previous buffer too small or previous buffer too big or previous buffer
+	// non-unique.
 	private mutating func reallocateAndMutate<C>(info: DequeMutationInfo, elements newElements: C, header: UnsafeMutablePointer<DequeHeader>?, body: UnsafeMutablePointer<T>?, deletePrevious: Bool) where C: Collection, C.Iterator.Element == T {
 		if info.newCount == 0 {
 			// Let the regular deallocation handle the deinitialize
@@ -284,7 +343,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 				if deletePrevious, info.removed > 0 {
 					Deque.deinitialize(range: info.start..<(info.start + info.removed), header: headerPtr, body: bodyPtr)
 				}
-
+				
 				newBuffer.withUnsafeMutablePointers { newHeader, newBody in
 					if info.start != 0 {
 						if deletePrevious {
@@ -309,18 +368,20 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 					headerPtr.pointee.count = 0
 				}
 			}
-
+			
 			if info.inserted > 0 {
 				// Insert the new subrange
 				newBuffer.withUnsafeMutablePointerToElements { body in
 					body.advanced(by: info.start).initialize(from: newElements)
 				}
 			}
-
+			
 			buffer = newBuffer
 		}
 	}
-
+	
+	/// Implemetation of the RangeReplaceableCollection function. Internally
+	/// implemented using either mutateWithoutReallocate or reallocateAndMutate.
 	public mutating func replaceSubrange<C>(_ subrange: Range<Int>, with newElements: C) where C: Collection, C.Iterator.Element == T {
 		precondition(subrange.lowerBound >= 0, "Subrange lowerBound is negative")
 		
@@ -345,17 +406,48 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	}
 }
 
+// Internal state for the Deque
+struct DequeHeader {
+	var offset: Int
+	var count: Int
+	var capacity: Int
+}
+
+// Private type used to communicate parameters between replaceSubrange<C>(_:with:)
+// and reallocateAndMutate or mutateWithoutReallocate
+struct DequeMutationInfo {
+	let start: Int
+	let removed: Int
+	let inserted: Int
+	let newCount: Int
+	
+	init(subrange: Range<Int>, previousCount: Int, insertedCount: Int) {
+		precondition(subrange.upperBound <= previousCount, "Subrange upperBound is out of range")
+		
+		self.start = subrange.lowerBound
+		self.removed = subrange.count
+		self.inserted = insertedCount
+		self.newCount = previousCount - self.removed + self.inserted
+	}
+}
+
+// An implementation of DequeBuffer using ManagedBufferPointer to allocate the
+// storage and then using raw pointer offsets into self to access contents
+// (avoiding the ManagedBufferPointer accessors which are a performance problem
+// in Swift 3).
 final class DequeBuffer<T> {
+	typealias ValueType = T
+	
 	class func create(capacity: Int, count: Int) -> DequeBuffer<T> {
 		let p = ManagedBufferPointer<DequeHeader, T>(bufferClass: self, minimumCapacity: capacity) { buffer, capacityFunction in
 			DequeHeader(offset: 0, count: count, capacity: capacity)
 		}
-			
+		
 		let result = unsafeDowncast(p.buffer, to: DequeBuffer<T>.self)
-
+		
 		// We need to assert this in case some of our dirty assumptions stop being true
 		assert(ManagedBufferPointer<DequeHeader, T>(unsafeBufferObject: result).withUnsafeMutablePointers { (header, body) in result.unsafeHeader == header && result.unsafeElements == body })
-
+		
 		return result
 	}
 	
@@ -370,23 +462,23 @@ final class DequeBuffer<T> {
 	func withUnsafeMutablePointerToHeader<R>(_ body: (UnsafeMutablePointer<DequeHeader>) throws -> R) rethrows -> R {
 		return try body(unsafeHeader)
 	}
-
+	
 	func withUnsafeMutablePointerToElements<R>(_ body: (UnsafeMutablePointer<T>) throws -> R) rethrows -> R {
 		return try body(unsafeElements)
 	}
-
-	func withUnsafeMutablePointers<R>(_ body: (UnsafeMutablePointer<DequeHeader>, UnsafeMutablePointer<T>) throws -> R ) rethrows -> R {
+	
+	func withUnsafeMutablePointers<R>(_ body: (UnsafeMutablePointer<DequeHeader>, UnsafeMutablePointer<T>) throws -> R) rethrows -> R {
 		return try body(unsafeHeader, unsafeElements)
 	}
-
+	
 	private var unsafeElements: UnsafeMutablePointer<T> {
 		return Unmanaged<DequeBuffer<T>>.passUnretained(self).toOpaque().advanced(by: DequeBuffer<T>.elementOffset).assumingMemoryBound(to: T.self)
 	}
-
+	
 	private var unsafeHeader: UnsafeMutablePointer<DequeHeader> {
 		return Unmanaged<DequeBuffer<T>>.passUnretained(self).toOpaque().advanced(by: DequeBuffer<T>.headerOffset).assumingMemoryBound(to: DequeHeader.self)
 	}
-
+	
 	deinit {
 		let h = unsafeHeader
 		if h.pointee.count > 0 {
@@ -395,35 +487,15 @@ final class DequeBuffer<T> {
 	}
 }
 
+// Private reimplementation of function with same name from stdlib/public/core/BuiltIn.swift
 func roundUp(_ offset: UInt, toAlignment alignment: Int) -> UInt {
-  let x = offset + UInt(bitPattern: alignment) &- 1
-  return x & ~(UInt(bitPattern: alignment) &- 1)
+	let x = offset + UInt(bitPattern: alignment) &- 1
+	return x & ~(UInt(bitPattern: alignment) &- 1)
 }
 
+// Private reimplementation of definition from stdlib/public/SwiftShims/HeapObject.h
 struct HeapObject {
 	let metadata: Int = 0
 	let strongRefCount: UInt32 = 0
 	let weakRefCount: UInt32 = 0
-}
-
-struct DequeHeader {
-	var offset: Int
-	var count: Int
-	var capacity: Int
-}
-
-struct DequeMutationInfo {
-	let start: Int
-	let removed: Int
-	let inserted: Int
-	let newCount: Int
-	
-	init(subrange: Range<Int>, previousCount: Int, insertedCount: Int) {
-		precondition(subrange.upperBound <= previousCount, "Subrange upperBound is out of range")
-
-		self.start = subrange.lowerBound
-		self.removed = subrange.count
-		self.inserted = insertedCount
-		self.newCount = previousCount - self.removed + self.inserted
-	}
 }
