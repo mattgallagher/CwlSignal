@@ -88,9 +88,18 @@ public extension DispatchTimeInterval {
 	public func toSeconds() -> Double {
 		switch self {
 		case .seconds(let t): return Double(t)
-		case .milliseconds(let t): return 1e-3 * Double(t)
-		case .microseconds(let t): return 1e-6 * Double(t)
-		case .nanoseconds(let t): return 1e-9 * Double(t)
+		case .milliseconds(let t): return (1.0 / Double(NSEC_PER_MSEC)) * Double(t)
+		case .microseconds(let t): return (1.0 / Double(NSEC_PER_USEC)) * Double(t)
+		case .nanoseconds(let t): return (1.0 / Double(NSEC_PER_SEC)) * Double(t)
+		}
+	}
+
+	public func toNanoseconds() -> Int {
+		switch self {
+		case .seconds(let t): return Int(NSEC_PER_SEC) * t
+		case .milliseconds(let t): return Int(NSEC_PER_MSEC) * t
+		case .microseconds(let t): return Int(NSEC_PER_USEC) * t
+		case .nanoseconds(let t): return t
 		}
 	}
 }
