@@ -13,6 +13,9 @@ A collection of utilities written as part of articles on [Cocoa with Love](https
 * [Design patterns for safe timer usage](https://www.cocoawithlove.com/blog/2016/07/30/timer-problems.html)
 * [Values and errors, part 1: 'Result' in Swift](https://www.cocoawithlove.com/blog/2016/08/21/result-types-part-one.html)
 * [Optimizing a copy-on-write double-ended queue in Swift](https://www.cocoawithlove.com/blog/2016/09/22/deque.html)
+* [Specifying function execution contexts](https://www.cocoawithlove.com/blog/specifying-execution-contexts.html)
+* [Specifying function execution contexts](https://www.cocoawithlove.com/blog/specifying-execution-contexts.html)
+* [Testing actions over time](https://www.cocoawithlove.com/blog/testing-actions-over-time.html)
 
 ## Usage
 

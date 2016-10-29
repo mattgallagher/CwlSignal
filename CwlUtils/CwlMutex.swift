@@ -40,7 +40,7 @@ public protocol RawMutex: ScopedMutex {
 }
 
 extension RawMutex {
-	/** RECOMMENDATION: until Swift can inline between modules or at least optimize @noescape closures to the stack, if this file is linked into another compilation unit (i.e. part of the CwlUtils.framework) it might be a good idea to copy and paste the relevant `fastsync` implementation code into your file (or module and delete `private` if whole module optimization is enabled) and use it instead, allowing the function to be inlined.
+	/** RECOMMENDATION: until Swift can inline between modules or at least optimize @noescape closures to the stack, if this file is linked into another compilation unit (i.e. linked as part of the CwlUtils.framework but used from another module) it might be a good idea to copy and paste the relevant `fastsync` implementation code into your file (or module and delete `private` if whole module optimization is enabled) and use it instead, allowing the function to be inlined.
 ~~~
 private extension UnfairLock {
 	func fastsync<R>(execute work: @noescape () throws -> R) rethrows -> R {

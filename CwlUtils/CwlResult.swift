@@ -28,6 +28,7 @@ public enum Result<Value> {
 	/// Failure wraps an ErrorType
 	case failure(Error)
 	
+	/// Construct a result from a `throws` function
 	public init(_ capturing: () throws -> Value) {
 		do {
 			self = .success(try capturing())
