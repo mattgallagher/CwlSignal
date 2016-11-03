@@ -56,7 +56,7 @@ class SysctlTests: XCTestCase {
 		let activeCPUs = Sysctl.activeCPUs
 		XCTAssert(activeCPUs > 0)
 		
-		#if os(OSX)
+		#if os(macOS)
 			let cpuFreq = Sysctl.cpuFreq
 			XCTAssert(cpuFreq > 1_000_000_000)
 			

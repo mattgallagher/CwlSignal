@@ -18,7 +18,7 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-#if os(OSX)
+#if os(macOS)
 import Cocoa
 #elseif os(iOS)
 import UIKit
@@ -109,7 +109,7 @@ public class UnanticipatedErrorRecoveryAttempter: NSObject {
 		
 		switch optionIndex {
 		case copyDetailsButtonIndex:
-		#if os(OSX)
+		#if os(macOS)
 			NSPasteboard.general().clearContents()
 			NSPasteboard.general().setString(extendedErrorInformation(error as NSError), forType:NSPasteboardTypeString)
 		#elseif os(iOS)

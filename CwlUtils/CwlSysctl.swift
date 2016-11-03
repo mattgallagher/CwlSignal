@@ -152,7 +152,7 @@ public struct Sysctl {
 	/// "Darwin Kernel Version 15.0.0: Wed Dec  9 22:19:38 PST 2015; root:xnu-3248.31.3~2/RELEASE_ARM64_S8000"
 	public static var version: String { return try! sysctlString(levels: CTL_KERN, KERN_VERSION) }
 	
-	#if os(OSX)
+	#if os(macOS)
 		/// e.g. 2659000000 (not available on iOS)
 		public static var cpuFreq: Int64 { return try! sysctlInt(name: "hw.cpufrequency") }
 
