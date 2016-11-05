@@ -10,6 +10,23 @@
 		C99AD60D1DCE9B2300B9E235 /* CwlSignal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C99AD6031DCE9B2200B9E235 /* CwlSignal.framework */; };
 		C99AD6121DCE9B2300B9E235 /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6111DCE9B2300B9E235 /* CwlSignalTests.swift */; };
 		C99AD6141DCE9B2300B9E235 /* CwlSignal.h in Headers */ = {isa = PBXBuildFile; fileRef = C99AD6061DCE9B2200B9E235 /* CwlSignal.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		C99AD62F1DCE9E0600B9E235 /* CwlAddressInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD61E1DCE9E0600B9E235 /* CwlAddressInfo.swift */; };
+		C99AD6301DCE9E0600B9E235 /* CwlCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD61F1DCE9E0600B9E235 /* CwlCollection.swift */; };
+		C99AD6311DCE9E0600B9E235 /* CwlDebugContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6201DCE9E0600B9E235 /* CwlDebugContext.swift */; };
+		C99AD6321DCE9E0600B9E235 /* CwlDeque.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6211DCE9E0600B9E235 /* CwlDeque.swift */; };
+		C99AD6331DCE9E0600B9E235 /* CwlDispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6221DCE9E0600B9E235 /* CwlDispatch.swift */; };
+		C99AD6341DCE9E0600B9E235 /* CwlExec.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6231DCE9E0600B9E235 /* CwlExec.swift */; };
+		C99AD6351DCE9E0600B9E235 /* CwlFrameAddress.c in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6241DCE9E0600B9E235 /* CwlFrameAddress.c */; };
+		C99AD6361DCE9E0600B9E235 /* CwlFrameAddress.h in Headers */ = {isa = PBXBuildFile; fileRef = C99AD6251DCE9E0600B9E235 /* CwlFrameAddress.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		C99AD6371DCE9E0600B9E235 /* CwlMutex.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6261DCE9E0600B9E235 /* CwlMutex.swift */; };
+		C99AD6381DCE9E0600B9E235 /* CwlOnDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6271DCE9E0600B9E235 /* CwlOnDelete.swift */; };
+		C99AD63A1DCE9E0600B9E235 /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6291DCE9E0600B9E235 /* CwlResult.swift */; };
+		C99AD63B1DCE9E0600B9E235 /* CwlScalarScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD62A1DCE9E0600B9E235 /* CwlScalarScanner.swift */; };
+		C99AD63C1DCE9E0600B9E235 /* CwlStackFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD62B1DCE9E0600B9E235 /* CwlStackFrame.swift */; };
+		C99AD6441DCE9EF300B9E235 /* CwlSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6401DCE9EF300B9E235 /* CwlSignal.swift */; };
+		C99AD6451DCE9EF300B9E235 /* CwlSignalCocoa.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6411DCE9EF300B9E235 /* CwlSignalCocoa.swift */; };
+		C99AD6461DCE9EF300B9E235 /* CwlSignalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6421DCE9EF300B9E235 /* CwlSignalExtensions.swift */; };
+		C99AD6471DCE9EF300B9E235 /* CwlSignalReactive.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6431DCE9EF300B9E235 /* CwlSignalReactive.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,6 +46,23 @@
 		C99AD60C1DCE9B2300B9E235 /* CwlSignalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlSignalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C99AD6111DCE9B2300B9E235 /* CwlSignalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalTests.swift; sourceTree = "<group>"; };
 		C99AD6131DCE9B2300B9E235 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C99AD61E1DCE9E0600B9E235 /* CwlAddressInfo.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlAddressInfo.swift; path = CwlUtils/CwlUtils/CwlAddressInfo.swift; sourceTree = SOURCE_ROOT; };
+		C99AD61F1DCE9E0600B9E235 /* CwlCollection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlCollection.swift; path = CwlUtils/CwlUtils/CwlCollection.swift; sourceTree = SOURCE_ROOT; };
+		C99AD6201DCE9E0600B9E235 /* CwlDebugContext.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlDebugContext.swift; path = CwlUtils/CwlUtils/CwlDebugContext.swift; sourceTree = SOURCE_ROOT; };
+		C99AD6211DCE9E0600B9E235 /* CwlDeque.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlDeque.swift; path = CwlUtils/CwlUtils/CwlDeque.swift; sourceTree = SOURCE_ROOT; };
+		C99AD6221DCE9E0600B9E235 /* CwlDispatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlDispatch.swift; path = CwlUtils/CwlUtils/CwlDispatch.swift; sourceTree = SOURCE_ROOT; };
+		C99AD6231DCE9E0600B9E235 /* CwlExec.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlExec.swift; path = CwlUtils/CwlUtils/CwlExec.swift; sourceTree = SOURCE_ROOT; };
+		C99AD6241DCE9E0600B9E235 /* CwlFrameAddress.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = CwlFrameAddress.c; path = CwlUtils/CwlUtils/CwlFrameAddress.c; sourceTree = SOURCE_ROOT; };
+		C99AD6251DCE9E0600B9E235 /* CwlFrameAddress.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CwlFrameAddress.h; path = CwlUtils/CwlUtils/CwlFrameAddress.h; sourceTree = SOURCE_ROOT; };
+		C99AD6261DCE9E0600B9E235 /* CwlMutex.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlMutex.swift; path = CwlUtils/CwlUtils/CwlMutex.swift; sourceTree = SOURCE_ROOT; };
+		C99AD6271DCE9E0600B9E235 /* CwlOnDelete.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlOnDelete.swift; path = CwlUtils/CwlUtils/CwlOnDelete.swift; sourceTree = SOURCE_ROOT; };
+		C99AD6291DCE9E0600B9E235 /* CwlResult.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlResult.swift; path = CwlUtils/CwlUtils/CwlResult.swift; sourceTree = SOURCE_ROOT; };
+		C99AD62A1DCE9E0600B9E235 /* CwlScalarScanner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlScalarScanner.swift; path = CwlUtils/CwlUtils/CwlScalarScanner.swift; sourceTree = SOURCE_ROOT; };
+		C99AD62B1DCE9E0600B9E235 /* CwlStackFrame.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlStackFrame.swift; path = CwlUtils/CwlUtils/CwlStackFrame.swift; sourceTree = SOURCE_ROOT; };
+		C99AD6401DCE9EF300B9E235 /* CwlSignal.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignal.swift; sourceTree = "<group>"; };
+		C99AD6411DCE9EF300B9E235 /* CwlSignalCocoa.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalCocoa.swift; sourceTree = "<group>"; };
+		C99AD6421DCE9EF300B9E235 /* CwlSignalExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalExtensions.swift; sourceTree = "<group>"; };
+		C99AD6431DCE9EF300B9E235 /* CwlSignalReactive.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalReactive.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,8 +105,12 @@
 		C99AD6051DCE9B2200B9E235 /* CwlSignal */ = {
 			isa = PBXGroup;
 			children = (
-				C99AD6061DCE9B2200B9E235 /* CwlSignal.h */,
-				C99AD6071DCE9B2200B9E235 /* Info.plist */,
+				C99AD6401DCE9EF300B9E235 /* CwlSignal.swift */,
+				C99AD6411DCE9EF300B9E235 /* CwlSignalCocoa.swift */,
+				C99AD6421DCE9EF300B9E235 /* CwlSignalExtensions.swift */,
+				C99AD6431DCE9EF300B9E235 /* CwlSignalReactive.swift */,
+				C99AD61D1DCE9DE000B9E235 /* CwlUtils */,
+				C99AD6481DCE9F0A00B9E235 /* Supporting Files */,
 			);
 			path = CwlSignal;
 			sourceTree = "<group>";
@@ -86,6 +124,35 @@
 			path = CwlSignalTests;
 			sourceTree = "<group>";
 		};
+		C99AD61D1DCE9DE000B9E235 /* CwlUtils */ = {
+			isa = PBXGroup;
+			children = (
+				C99AD61E1DCE9E0600B9E235 /* CwlAddressInfo.swift */,
+				C99AD61F1DCE9E0600B9E235 /* CwlCollection.swift */,
+				C99AD6201DCE9E0600B9E235 /* CwlDebugContext.swift */,
+				C99AD6211DCE9E0600B9E235 /* CwlDeque.swift */,
+				C99AD6221DCE9E0600B9E235 /* CwlDispatch.swift */,
+				C99AD6231DCE9E0600B9E235 /* CwlExec.swift */,
+				C99AD6241DCE9E0600B9E235 /* CwlFrameAddress.c */,
+				C99AD6251DCE9E0600B9E235 /* CwlFrameAddress.h */,
+				C99AD6261DCE9E0600B9E235 /* CwlMutex.swift */,
+				C99AD6271DCE9E0600B9E235 /* CwlOnDelete.swift */,
+				C99AD6291DCE9E0600B9E235 /* CwlResult.swift */,
+				C99AD62A1DCE9E0600B9E235 /* CwlScalarScanner.swift */,
+				C99AD62B1DCE9E0600B9E235 /* CwlStackFrame.swift */,
+			);
+			name = CwlUtils;
+			sourceTree = "<group>";
+		};
+		C99AD6481DCE9F0A00B9E235 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				C99AD6061DCE9B2200B9E235 /* CwlSignal.h */,
+				C99AD6071DCE9B2200B9E235 /* Info.plist */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -93,6 +160,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C99AD6361DCE9E0600B9E235 /* CwlFrameAddress.h in Headers */,
 				C99AD6141DCE9B2300B9E235 /* CwlSignal.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -149,6 +217,7 @@
 					C99AD6021DCE9B2200B9E235 = {
 						CreatedOnToolsVersion = 8.1;
 						DevelopmentTeam = S7YQ892G6G;
+						LastSwiftMigration = 0810;
 						ProvisioningStyle = Automatic;
 					};
 					C99AD60B1DCE9B2300B9E235 = {
@@ -198,6 +267,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C99AD6381DCE9E0600B9E235 /* CwlOnDelete.swift in Sources */,
+				C99AD6301DCE9E0600B9E235 /* CwlCollection.swift in Sources */,
+				C99AD6341DCE9E0600B9E235 /* CwlExec.swift in Sources */,
+				C99AD6371DCE9E0600B9E235 /* CwlMutex.swift in Sources */,
+				C99AD63C1DCE9E0600B9E235 /* CwlStackFrame.swift in Sources */,
+				C99AD6441DCE9EF300B9E235 /* CwlSignal.swift in Sources */,
+				C99AD6311DCE9E0600B9E235 /* CwlDebugContext.swift in Sources */,
+				C99AD62F1DCE9E0600B9E235 /* CwlAddressInfo.swift in Sources */,
+				C99AD6451DCE9EF300B9E235 /* CwlSignalCocoa.swift in Sources */,
+				C99AD6471DCE9EF300B9E235 /* CwlSignalReactive.swift in Sources */,
+				C99AD6351DCE9E0600B9E235 /* CwlFrameAddress.c in Sources */,
+				C99AD6461DCE9EF300B9E235 /* CwlSignalExtensions.swift in Sources */,
+				C99AD63B1DCE9E0600B9E235 /* CwlScalarScanner.swift in Sources */,
+				C99AD6321DCE9E0600B9E235 /* CwlDeque.swift in Sources */,
+				C99AD6331DCE9E0600B9E235 /* CwlDispatch.swift in Sources */,
+				C99AD63A1DCE9E0600B9E235 /* CwlResult.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,7 +346,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -307,7 +392,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
@@ -319,6 +404,7 @@
 		C99AD6181DCE9B2300B9E235 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEFINES_MODULE = YES;
@@ -333,6 +419,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.cocoawithlove.CwlSignal;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
@@ -340,6 +427,7 @@
 		C99AD6191DCE9B2300B9E235 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEFINES_MODULE = YES;
@@ -361,6 +449,7 @@
 		C99AD61B1DCE9B2300B9E235 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = S7YQ892G6G;
 				INFOPLIST_FILE = CwlSignalTests/Info.plist;
@@ -374,6 +463,7 @@
 		C99AD61C1DCE9B2300B9E235 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = S7YQ892G6G;
 				INFOPLIST_FILE = CwlSignalTests/Info.plist;
