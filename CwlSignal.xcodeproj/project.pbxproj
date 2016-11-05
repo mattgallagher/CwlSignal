@@ -1,0 +1,418 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		C99AD60D1DCE9B2300B9E235 /* CwlSignal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C99AD6031DCE9B2200B9E235 /* CwlSignal.framework */; };
+		C99AD6121DCE9B2300B9E235 /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6111DCE9B2300B9E235 /* CwlSignalTests.swift */; };
+		C99AD6141DCE9B2300B9E235 /* CwlSignal.h in Headers */ = {isa = PBXBuildFile; fileRef = C99AD6061DCE9B2200B9E235 /* CwlSignal.h */; settings = {ATTRIBUTES = (Public, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C99AD60E1DCE9B2300B9E235 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD5FA1DCE9B2200B9E235 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C99AD6021DCE9B2200B9E235;
+			remoteInfo = CwlSignal;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		C99AD6031DCE9B2200B9E235 /* CwlSignal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CwlSignal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		C99AD6061DCE9B2200B9E235 /* CwlSignal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CwlSignal.h; sourceTree = "<group>"; };
+		C99AD6071DCE9B2200B9E235 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C99AD60C1DCE9B2300B9E235 /* CwlSignalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlSignalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C99AD6111DCE9B2300B9E235 /* CwlSignalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalTests.swift; sourceTree = "<group>"; };
+		C99AD6131DCE9B2300B9E235 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C99AD5FF1DCE9B2200B9E235 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C99AD6091DCE9B2300B9E235 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C99AD60D1DCE9B2300B9E235 /* CwlSignal.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C99AD5F91DCE9B2200B9E235 = {
+			isa = PBXGroup;
+			children = (
+				C99AD6051DCE9B2200B9E235 /* CwlSignal */,
+				C99AD6101DCE9B2300B9E235 /* CwlSignalTests */,
+				C99AD6041DCE9B2200B9E235 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C99AD6041DCE9B2200B9E235 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C99AD6031DCE9B2200B9E235 /* CwlSignal.framework */,
+				C99AD60C1DCE9B2300B9E235 /* CwlSignalTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C99AD6051DCE9B2200B9E235 /* CwlSignal */ = {
+			isa = PBXGroup;
+			children = (
+				C99AD6061DCE9B2200B9E235 /* CwlSignal.h */,
+				C99AD6071DCE9B2200B9E235 /* Info.plist */,
+			);
+			path = CwlSignal;
+			sourceTree = "<group>";
+		};
+		C99AD6101DCE9B2300B9E235 /* CwlSignalTests */ = {
+			isa = PBXGroup;
+			children = (
+				C99AD6111DCE9B2300B9E235 /* CwlSignalTests.swift */,
+				C99AD6131DCE9B2300B9E235 /* Info.plist */,
+			);
+			path = CwlSignalTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		C99AD6001DCE9B2200B9E235 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C99AD6141DCE9B2300B9E235 /* CwlSignal.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		C99AD6021DCE9B2200B9E235 /* CwlSignal */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C99AD6171DCE9B2300B9E235 /* Build configuration list for PBXNativeTarget "CwlSignal" */;
+			buildPhases = (
+				C99AD5FE1DCE9B2200B9E235 /* Sources */,
+				C99AD5FF1DCE9B2200B9E235 /* Frameworks */,
+				C99AD6001DCE9B2200B9E235 /* Headers */,
+				C99AD6011DCE9B2200B9E235 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CwlSignal;
+			productName = CwlSignal;
+			productReference = C99AD6031DCE9B2200B9E235 /* CwlSignal.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		C99AD60B1DCE9B2300B9E235 /* CwlSignalTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C99AD61A1DCE9B2300B9E235 /* Build configuration list for PBXNativeTarget "CwlSignalTests" */;
+			buildPhases = (
+				C99AD6081DCE9B2300B9E235 /* Sources */,
+				C99AD6091DCE9B2300B9E235 /* Frameworks */,
+				C99AD60A1DCE9B2300B9E235 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C99AD60F1DCE9B2300B9E235 /* PBXTargetDependency */,
+			);
+			name = CwlSignalTests;
+			productName = CwlSignalTests;
+			productReference = C99AD60C1DCE9B2300B9E235 /* CwlSignalTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C99AD5FA1DCE9B2200B9E235 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 0810;
+				LastUpgradeCheck = 0810;
+				ORGANIZATIONNAME = "Matt Gallagher ( http://cocoawithlove.com )";
+				TargetAttributes = {
+					C99AD6021DCE9B2200B9E235 = {
+						CreatedOnToolsVersion = 8.1;
+						DevelopmentTeam = S7YQ892G6G;
+						ProvisioningStyle = Automatic;
+					};
+					C99AD60B1DCE9B2300B9E235 = {
+						CreatedOnToolsVersion = 8.1;
+						DevelopmentTeam = S7YQ892G6G;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = C99AD5FD1DCE9B2200B9E235 /* Build configuration list for PBXProject "CwlSignal" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = C99AD5F91DCE9B2200B9E235;
+			productRefGroup = C99AD6041DCE9B2200B9E235 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C99AD6021DCE9B2200B9E235 /* CwlSignal */,
+				C99AD60B1DCE9B2300B9E235 /* CwlSignalTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C99AD6011DCE9B2200B9E235 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C99AD60A1DCE9B2300B9E235 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C99AD5FE1DCE9B2200B9E235 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C99AD6081DCE9B2300B9E235 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C99AD6121DCE9B2300B9E235 /* CwlSignalTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C99AD60F1DCE9B2300B9E235 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C99AD6021DCE9B2200B9E235 /* CwlSignal */;
+			targetProxy = C99AD60E1DCE9B2300B9E235 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		C99AD6151DCE9B2300B9E235 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		C99AD6161DCE9B2300B9E235 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		C99AD6181DCE9B2300B9E235 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = S7YQ892G6G;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_VERSION = A;
+				INFOPLIST_FILE = CwlSignal/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.cocoawithlove.CwlSignal;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 3.0;
+			};
+			name = Debug;
+		};
+		C99AD6191DCE9B2300B9E235 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = S7YQ892G6G;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				FRAMEWORK_VERSION = A;
+				INFOPLIST_FILE = CwlSignal/Info.plist;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.cocoawithlove.CwlSignal;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 3.0;
+			};
+			name = Release;
+		};
+		C99AD61B1DCE9B2300B9E235 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = S7YQ892G6G;
+				INFOPLIST_FILE = CwlSignalTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.cocoawithlove.CwlSignalTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Debug;
+		};
+		C99AD61C1DCE9B2300B9E235 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = S7YQ892G6G;
+				INFOPLIST_FILE = CwlSignalTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.cocoawithlove.CwlSignalTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C99AD5FD1DCE9B2200B9E235 /* Build configuration list for PBXProject "CwlSignal" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C99AD6151DCE9B2300B9E235 /* Debug */,
+				C99AD6161DCE9B2300B9E235 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C99AD6171DCE9B2300B9E235 /* Build configuration list for PBXNativeTarget "CwlSignal" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C99AD6181DCE9B2300B9E235 /* Debug */,
+				C99AD6191DCE9B2300B9E235 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		C99AD61A1DCE9B2300B9E235 /* Build configuration list for PBXNativeTarget "CwlSignalTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C99AD61B1DCE9B2300B9E235 /* Debug */,
+				C99AD61C1DCE9B2300B9E235 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C99AD5FA1DCE9B2200B9E235 /* Project object */;
+}
