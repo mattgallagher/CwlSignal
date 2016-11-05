@@ -40,6 +40,8 @@
 		C9716DED1D4CDF9E00E90C18 /* CwlDispatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9716DEB1D4CDF9E00E90C18 /* CwlDispatchTests.swift */; };
 		C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */; };
 		C977AA5E1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */; };
+		C99AD64A1DCEA1EC00B9E235 /* CwlDeferredWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6491DCEA1EC00B9E235 /* CwlDeferredWork.swift */; };
+		C99AD64B1DCEA1EC00B9E235 /* CwlDeferredWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6491DCEA1EC00B9E235 /* CwlDeferredWork.swift */; };
 		C9B3EF9A1D6F14B80058AE5E /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF991D6F14B80058AE5E /* CwlResult.swift */; };
 		C9B3EF9B1D6F14B80058AE5E /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF991D6F14B80058AE5E /* CwlResult.swift */; };
 		C9B3EF9D1D6F14F40058AE5E /* CwlResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF9C1D6F14F40058AE5E /* CwlResultTests.swift */; };
@@ -166,6 +168,7 @@
 		C95416BA1D4B76AC00C30D49 /* CwlDispatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlDispatch.swift; sourceTree = "<group>"; };
 		C9716DEB1D4CDF9E00E90C18 /* CwlDispatchTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlDispatchTests.swift; sourceTree = "<group>"; };
 		C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlRandomTests.swift; sourceTree = "<group>"; };
+		C99AD6491DCEA1EC00B9E235 /* CwlDeferredWork.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlDeferredWork.swift; sourceTree = "<group>"; };
 		C9AC2C881D1287FE0034650A /* CwlRandomPerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlRandomPerformanceTests.swift; sourceTree = "<group>"; };
 		C9AC2C8E1D128B560034650A /* CwlMutexPerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlMutexPerformanceTests.swift; sourceTree = "<group>"; };
 		C9B3EF991D6F14B80058AE5E /* CwlResult.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlResult.swift; sourceTree = "<group>"; };
@@ -303,6 +306,7 @@
 				C93E18641C81EFD40009A053 /* CwlAddressInfo.swift */,
 				C926A17C1DBB1C5300E4D6D0 /* CwlCollection.swift */,
 				C9B7C4D01DB852A20093C97A /* CwlDebugContext.swift */,
+				C99AD6491DCEA1EC00B9E235 /* CwlDeferredWork.swift */,
 				C9E7F0261D93F49E0039680B /* CwlDeque.swift */,
 				C95416BA1D4B76AC00C30D49 /* CwlDispatch.swift */,
 				C93CFB461DB08216008858ED /* CwlExec.swift */,
@@ -732,6 +736,7 @@
 				C93E18651C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
 				C9C9AAEF1C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
 				C91A74281D9685620031DB57 /* CwlDeque.swift in Sources */,
+				C99AD64A1DCEA1EC00B9E235 /* CwlDeferredWork.swift in Sources */,
 				C93E18601C81BE120009A053 /* CwlFrameAddress.c in Sources */,
 				C926A17D1DBB1C5300E4D6D0 /* CwlCollection.swift in Sources */,
 				C93E18501C81794B0009A053 /* CwlStackFrame.swift in Sources */,
@@ -777,6 +782,7 @@
 				C93E18661C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
 				C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
 				C9E7F0281D93F49E0039680B /* CwlDeque.swift in Sources */,
+				C99AD64B1DCEA1EC00B9E235 /* CwlDeferredWork.swift in Sources */,
 				C93E18511C8179530009A053 /* CwlStackFrame.swift in Sources */,
 				C926A17E1DBB1C5300E4D6D0 /* CwlCollection.swift in Sources */,
 				C93E18611C81BE120009A053 /* CwlFrameAddress.c in Sources */,
