@@ -27,6 +27,7 @@
 		C99AD6451DCE9EF300B9E235 /* CwlSignalCocoa.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6411DCE9EF300B9E235 /* CwlSignalCocoa.swift */; };
 		C99AD6461DCE9EF300B9E235 /* CwlSignalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6421DCE9EF300B9E235 /* CwlSignalExtensions.swift */; };
 		C99AD6471DCE9EF300B9E235 /* CwlSignalReactive.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6431DCE9EF300B9E235 /* CwlSignalReactive.swift */; };
+		C99AD64D1DCEA29400B9E235 /* CwlDeferredWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD64C1DCEA29400B9E235 /* CwlDeferredWork.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,6 +64,7 @@
 		C99AD6411DCE9EF300B9E235 /* CwlSignalCocoa.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalCocoa.swift; sourceTree = "<group>"; };
 		C99AD6421DCE9EF300B9E235 /* CwlSignalExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalExtensions.swift; sourceTree = "<group>"; };
 		C99AD6431DCE9EF300B9E235 /* CwlSignalReactive.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalReactive.swift; sourceTree = "<group>"; };
+		C99AD64C1DCEA29400B9E235 /* CwlDeferredWork.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlDeferredWork.swift; path = CwlUtils/CwlUtils/CwlDeferredWork.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,6 +132,7 @@
 				C99AD61E1DCE9E0600B9E235 /* CwlAddressInfo.swift */,
 				C99AD61F1DCE9E0600B9E235 /* CwlCollection.swift */,
 				C99AD6201DCE9E0600B9E235 /* CwlDebugContext.swift */,
+				C99AD64C1DCEA29400B9E235 /* CwlDeferredWork.swift */,
 				C99AD6211DCE9E0600B9E235 /* CwlDeque.swift */,
 				C99AD6221DCE9E0600B9E235 /* CwlDispatch.swift */,
 				C99AD6231DCE9E0600B9E235 /* CwlExec.swift */,
@@ -269,6 +272,7 @@
 			files = (
 				C99AD6381DCE9E0600B9E235 /* CwlOnDelete.swift in Sources */,
 				C99AD6301DCE9E0600B9E235 /* CwlCollection.swift in Sources */,
+				C99AD64D1DCEA29400B9E235 /* CwlDeferredWork.swift in Sources */,
 				C99AD6341DCE9E0600B9E235 /* CwlExec.swift in Sources */,
 				C99AD6371DCE9E0600B9E235 /* CwlMutex.swift in Sources */,
 				C99AD63C1DCE9E0600B9E235 /* CwlStackFrame.swift in Sources */,
