@@ -20,7 +20,7 @@
 
 import Foundation
 import XCTest
-import CwlUtils
+import CwlSignal
 
 private enum TestError: Error {
 	case zeroValue
@@ -1257,7 +1257,7 @@ class SignalReactiveTests: XCTestCase {
 			"4",
 			"success(4)",
 			"closed",
-			"failure(CwlUtils.SignalError.closed)",
+			"failure(CwlSignal.SignalError.closed)",
 			"deactivate",
 		])
 	}

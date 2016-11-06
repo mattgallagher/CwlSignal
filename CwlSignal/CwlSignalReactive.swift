@@ -1533,7 +1533,7 @@ extension Signal {
 		return valueDurations(withState: initialState, closesImmediate: closesImmediate, context: context, duration: offset).transform(withState: [Int: T]()) { (values: inout [Int: T], r: Result<(Int, T?)>, n: SignalNext<T>) in
 			switch r {
 			case .success(let index, .some(let t)): values[index] = t
-			case .success(let index, .none): values[index].onSome { n.send(value: $0) }
+			case .success(let index, .none): _ = values[index].map { n.send(value: $0) }
 			case .failure(let e): n.send(error: e)
 			}
 		}

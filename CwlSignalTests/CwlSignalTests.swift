@@ -20,7 +20,7 @@
 
 import Foundation
 import XCTest
-import CwlUtils
+import CwlSignal
 
 private enum TestError: Error {
 	case zeroValue

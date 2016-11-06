@@ -30,6 +30,7 @@
 		C99AD64D1DCEA29400B9E235 /* CwlDeferredWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD64C1DCEA29400B9E235 /* CwlDeferredWork.swift */; };
 		C99AD67B1DCEC12500B9E235 /* CwlWrappers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD67A1DCEC12500B9E235 /* CwlWrappers.swift */; };
 		C99AD67D1DCEC16E00B9E235 /* CwlSignalReactiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD67C1DCEC16E00B9E235 /* CwlSignalReactiveTests.swift */; };
+		C99AD68E1DCEC60700B9E235 /* CwlKeyValueObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD68D1DCEC60700B9E235 /* CwlKeyValueObserver.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,6 +70,7 @@
 		C99AD64C1DCEA29400B9E235 /* CwlDeferredWork.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlDeferredWork.swift; path = CwlUtils/CwlUtils/CwlDeferredWork.swift; sourceTree = SOURCE_ROOT; };
 		C99AD67A1DCEC12500B9E235 /* CwlWrappers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlWrappers.swift; path = CwlUtils/CwlUtils/CwlWrappers.swift; sourceTree = SOURCE_ROOT; };
 		C99AD67C1DCEC16E00B9E235 /* CwlSignalReactiveTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalReactiveTests.swift; sourceTree = "<group>"; };
+		C99AD68D1DCEC60700B9E235 /* CwlKeyValueObserver.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlKeyValueObserver.swift; path = CwlUtils/CwlUtils/CwlKeyValueObserver.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,6 +145,7 @@
 				C99AD6231DCE9E0600B9E235 /* CwlExec.swift */,
 				C99AD6241DCE9E0600B9E235 /* CwlFrameAddress.c */,
 				C99AD6251DCE9E0600B9E235 /* CwlFrameAddress.h */,
+				C99AD68D1DCEC60700B9E235 /* CwlKeyValueObserver.swift */,
 				C99AD6261DCE9E0600B9E235 /* CwlMutex.swift */,
 				C99AD6271DCE9E0600B9E235 /* CwlOnDelete.swift */,
 				C99AD6291DCE9E0600B9E235 /* CwlResult.swift */,
@@ -276,6 +279,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C99AD68E1DCEC60700B9E235 /* CwlKeyValueObserver.swift in Sources */,
 				C99AD6381DCE9E0600B9E235 /* CwlOnDelete.swift in Sources */,
 				C99AD6301DCE9E0600B9E235 /* CwlCollection.swift in Sources */,
 				C99AD64D1DCEA29400B9E235 /* CwlDeferredWork.swift in Sources */,
