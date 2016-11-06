@@ -50,6 +50,10 @@
 		C99AD6741DCEB44B00B9E235 /* CwlPreconditionTesting.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = C99AD6641DCEB07600B9E235 /* CwlPreconditionTesting.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C99AD6761DCEB4A100B9E235 /* CwlDeferredWorkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6751DCEB4A100B9E235 /* CwlDeferredWorkTests.swift */; };
 		C99AD6771DCEB4A100B9E235 /* CwlDeferredWorkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6751DCEB4A100B9E235 /* CwlDeferredWorkTests.swift */; };
+		C99AD6801DCEC20F00B9E235 /* CwlKeyValueObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD67F1DCEC20F00B9E235 /* CwlKeyValueObserver.swift */; };
+		C99AD6811DCEC20F00B9E235 /* CwlKeyValueObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD67F1DCEC20F00B9E235 /* CwlKeyValueObserver.swift */; };
+		C99AD68B1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD68A1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift */; };
+		C99AD68C1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD68A1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift */; };
 		C9B3EF9A1D6F14B80058AE5E /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF991D6F14B80058AE5E /* CwlResult.swift */; };
 		C9B3EF9B1D6F14B80058AE5E /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF991D6F14B80058AE5E /* CwlResult.swift */; };
 		C9B3EF9D1D6F14F40058AE5E /* CwlResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF9C1D6F14F40058AE5E /* CwlResultTests.swift */; };
@@ -257,6 +261,8 @@
 		C99AD6511DCEAF6000B9E235 /* CwlWrapperTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlWrapperTests.swift; sourceTree = "<group>"; };
 		C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CwlPreconditionTesting.xcodeproj; path = CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj; sourceTree = SOURCE_ROOT; };
 		C99AD6751DCEB4A100B9E235 /* CwlDeferredWorkTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlDeferredWorkTests.swift; sourceTree = "<group>"; };
+		C99AD67F1DCEC20F00B9E235 /* CwlKeyValueObserver.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlKeyValueObserver.swift; sourceTree = "<group>"; };
+		C99AD68A1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlKeyValueObserverTests.swift; sourceTree = "<group>"; };
 		C9AC2C881D1287FE0034650A /* CwlRandomPerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlRandomPerformanceTests.swift; sourceTree = "<group>"; };
 		C9AC2C8E1D128B560034650A /* CwlMutexPerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlMutexPerformanceTests.swift; sourceTree = "<group>"; };
 		C9B3EF991D6F14B80058AE5E /* CwlResult.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlResult.swift; sourceTree = "<group>"; };
@@ -400,6 +406,7 @@
 				C93CFB461DB08216008858ED /* CwlExec.swift */,
 				C93E185E1C81BE120009A053 /* CwlFrameAddress.c */,
 				C93E185F1C81BE120009A053 /* CwlFrameAddress.h */,
+				C99AD67F1DCEC20F00B9E235 /* CwlKeyValueObserver.swift */,
 				C9F193CC1D02970200EAC5BE /* CwlMutex.swift */,
 				C9F3E3361CAA254A006728F7 /* CwlOnDelete.swift */,
 				C9B6655E1CEAD9080006B927 /* CwlRandom.swift */,
@@ -425,6 +432,7 @@
 				C9E7F0291D93F4C10039680B /* CwlDequeTests.swift */,
 				C9716DEB1D4CDF9E00E90C18 /* CwlDispatchTests.swift */,
 				C93CFB4A1DB08EB6008858ED /* CwlExecTests.swift */,
+				C99AD68A1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift */,
 				C9F193C61D0296E400EAC5BE /* CwlMutexTests.swift */,
 				C9F3E33F1CAA269C006728F7 /* CwlOnDeleteTests.swift */,
 				C977AA5C1CEC0D0900FC748D /* CwlRandomTests.swift */,
@@ -910,6 +918,7 @@
 				C93E18651C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
 				C9C9AAEF1C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
 				C91A74281D9685620031DB57 /* CwlDeque.swift in Sources */,
+				C99AD6801DCEC20F00B9E235 /* CwlKeyValueObserver.swift in Sources */,
 				C99AD64A1DCEA1EC00B9E235 /* CwlDeferredWork.swift in Sources */,
 				C99AD64F1DCEA32800B9E235 /* CwlWrappers.swift in Sources */,
 				C93E18601C81BE120009A053 /* CwlFrameAddress.c in Sources */,
@@ -934,6 +943,7 @@
 				C9B3EF9D1D6F14F40058AE5E /* CwlResultTests.swift in Sources */,
 				C9E055481CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C9B7C4D41DB852C10093C97A /* CwlDebugContextTests.swift in Sources */,
+				C99AD68B1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift in Sources */,
 				C99AD6521DCEAF6000B9E235 /* CwlWrapperTests.swift in Sources */,
 				C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
 				C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
@@ -959,6 +969,7 @@
 				C93E18661C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
 				C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
 				C9E7F0281D93F49E0039680B /* CwlDeque.swift in Sources */,
+				C99AD6811DCEC20F00B9E235 /* CwlKeyValueObserver.swift in Sources */,
 				C99AD64B1DCEA1EC00B9E235 /* CwlDeferredWork.swift in Sources */,
 				C99AD6501DCEA32800B9E235 /* CwlWrappers.swift in Sources */,
 				C93E18511C8179530009A053 /* CwlStackFrame.swift in Sources */,
@@ -983,6 +994,7 @@
 				C9F193C81D0296E400EAC5BE /* CwlMutexTests.swift in Sources */,
 				C93B5BB61CED95A5002D91D1 /* mt19937-64.c in Sources */,
 				C9B7C4D51DB852C10093C97A /* CwlDebugContextTests.swift in Sources */,
+				C99AD68C1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift in Sources */,
 				C99AD6531DCEAF6000B9E235 /* CwlWrapperTests.swift in Sources */,
 				C9E055491CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C977AA5E1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
