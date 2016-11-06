@@ -46,7 +46,6 @@
 		C99AD6501DCEA32800B9E235 /* CwlWrappers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD64E1DCEA32800B9E235 /* CwlWrappers.swift */; };
 		C99AD6521DCEAF6000B9E235 /* CwlWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6511DCEAF6000B9E235 /* CwlWrapperTests.swift */; };
 		C99AD6531DCEAF6000B9E235 /* CwlWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6511DCEAF6000B9E235 /* CwlWrapperTests.swift */; };
-		C99AD6721DCEB41600B9E235 /* CwlPreconditionTesting.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = C99AD6601DCEB07600B9E235 /* CwlPreconditionTesting.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C99AD6741DCEB44B00B9E235 /* CwlPreconditionTesting.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = C99AD6641DCEB07600B9E235 /* CwlPreconditionTesting.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C99AD6761DCEB4A100B9E235 /* CwlDeferredWorkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6751DCEB4A100B9E235 /* CwlDeferredWorkTests.swift */; };
 		C99AD6771DCEB4A100B9E235 /* CwlDeferredWorkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6751DCEB4A100B9E235 /* CwlDeferredWorkTests.swift */; };
@@ -54,6 +53,7 @@
 		C99AD6811DCEC20F00B9E235 /* CwlKeyValueObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD67F1DCEC20F00B9E235 /* CwlKeyValueObserver.swift */; };
 		C99AD68B1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD68A1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift */; };
 		C99AD68C1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD68A1DCEC21C00B9E235 /* CwlKeyValueObserverTests.swift */; };
+		C9A6311F1DCF5E45001B43D4 /* CwlPreconditionTesting.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = C99AD6601DCEB07600B9E235 /* CwlPreconditionTesting.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C9B3EF9A1D6F14B80058AE5E /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF991D6F14B80058AE5E /* CwlResult.swift */; };
 		C9B3EF9B1D6F14B80058AE5E /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF991D6F14B80058AE5E /* CwlResult.swift */; };
 		C9B3EF9D1D6F14F40058AE5E /* CwlResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF9C1D6F14F40058AE5E /* CwlResultTests.swift */; };
@@ -197,7 +197,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				C99AD6721DCEB41600B9E235 /* CwlPreconditionTesting.framework in CopyFiles */,
+				C9A6311F1DCF5E45001B43D4 /* CwlPreconditionTesting.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
