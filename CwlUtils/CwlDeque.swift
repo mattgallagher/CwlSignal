@@ -64,6 +64,10 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 		return result
 	}
 	
+	public subscript(bounds: Range<Index>) -> RangeReplaceableRandomAccessSlice<Deque<T>> {
+      return RangeReplaceableRandomAccessSlice<Deque<T>>(base: self, bounds: bounds)
+	}
+
 	/// Implementation of RandomAccessCollection function
 	public subscript(_ at: Index) -> T {
 		get {
