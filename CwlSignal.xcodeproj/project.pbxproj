@@ -28,6 +28,8 @@
 		C99AD6461DCE9EF300B9E235 /* CwlSignalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6421DCE9EF300B9E235 /* CwlSignalExtensions.swift */; };
 		C99AD6471DCE9EF300B9E235 /* CwlSignalReactive.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6431DCE9EF300B9E235 /* CwlSignalReactive.swift */; };
 		C99AD64D1DCEA29400B9E235 /* CwlDeferredWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD64C1DCEA29400B9E235 /* CwlDeferredWork.swift */; };
+		C99AD67B1DCEC12500B9E235 /* CwlWrappers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD67A1DCEC12500B9E235 /* CwlWrappers.swift */; };
+		C99AD67D1DCEC16E00B9E235 /* CwlSignalReactiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD67C1DCEC16E00B9E235 /* CwlSignalReactiveTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,6 +67,8 @@
 		C99AD6421DCE9EF300B9E235 /* CwlSignalExtensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalExtensions.swift; sourceTree = "<group>"; };
 		C99AD6431DCE9EF300B9E235 /* CwlSignalReactive.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalReactive.swift; sourceTree = "<group>"; };
 		C99AD64C1DCEA29400B9E235 /* CwlDeferredWork.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlDeferredWork.swift; path = CwlUtils/CwlUtils/CwlDeferredWork.swift; sourceTree = SOURCE_ROOT; };
+		C99AD67A1DCEC12500B9E235 /* CwlWrappers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CwlWrappers.swift; path = CwlUtils/CwlUtils/CwlWrappers.swift; sourceTree = SOURCE_ROOT; };
+		C99AD67C1DCEC16E00B9E235 /* CwlSignalReactiveTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalReactiveTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,6 +125,7 @@
 			isa = PBXGroup;
 			children = (
 				C99AD6111DCE9B2300B9E235 /* CwlSignalTests.swift */,
+				C99AD67C1DCEC16E00B9E235 /* CwlSignalReactiveTests.swift */,
 				C99AD6131DCE9B2300B9E235 /* Info.plist */,
 			);
 			path = CwlSignalTests;
@@ -143,6 +148,7 @@
 				C99AD6291DCE9E0600B9E235 /* CwlResult.swift */,
 				C99AD62A1DCE9E0600B9E235 /* CwlScalarScanner.swift */,
 				C99AD62B1DCE9E0600B9E235 /* CwlStackFrame.swift */,
+				C99AD67A1DCEC12500B9E235 /* CwlWrappers.swift */,
 			);
 			name = CwlUtils;
 			sourceTree = "<group>";
@@ -274,6 +280,7 @@
 				C99AD6301DCE9E0600B9E235 /* CwlCollection.swift in Sources */,
 				C99AD64D1DCEA29400B9E235 /* CwlDeferredWork.swift in Sources */,
 				C99AD6341DCE9E0600B9E235 /* CwlExec.swift in Sources */,
+				C99AD67B1DCEC12500B9E235 /* CwlWrappers.swift in Sources */,
 				C99AD6371DCE9E0600B9E235 /* CwlMutex.swift in Sources */,
 				C99AD63C1DCE9E0600B9E235 /* CwlStackFrame.swift in Sources */,
 				C99AD6441DCE9EF300B9E235 /* CwlSignal.swift in Sources */,
@@ -295,6 +302,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C99AD6121DCE9B2300B9E235 /* CwlSignalTests.swift in Sources */,
+				C99AD67D1DCEC16E00B9E235 /* CwlSignalReactiveTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -497,6 +505,7 @@
 				C99AD6191DCE9B2300B9E235 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		C99AD61A1DCE9B2300B9E235 /* Build configuration list for PBXNativeTarget "CwlSignalTests" */ = {
 			isa = XCConfigurationList;
@@ -505,6 +514,7 @@
 				C99AD61C1DCE9B2300B9E235 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

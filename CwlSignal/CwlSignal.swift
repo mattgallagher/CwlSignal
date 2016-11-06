@@ -1330,7 +1330,7 @@ extension SignalPredecessor {
 /// All `Signal`s, except those with endpoint handlers, are fed to another `Signal`. A `SignalProcessor` is how this is done. This is the abstract base for all handlers that connect to another `Signal`. The default implementation can only connect to a single output (concrete subclass `SignalMultiprocessor` is used for multiple outputs) but a majority of the architecture for any number of outputs is contained in this class.
 /// This class allows its outputs to have a different value type compared to the Signal for this class, although only SignalTransformer, SignalTransformerWithState and SignalCombiner take advantage – all other subclasses derive from SignalProcessor<T, T>.
 fileprivate class SignalProcessor<T, U>: SignalHandler<T>, SignalPredecessor {
-	var outputs = Array<(destination: WeakWrapper<Signal<U>>, activationCount: Int?)>()
+	var outputs = Array<(destination: Weak<Signal<U>>, activationCount: Int?)>()
 	
 	/// Common implementation for a nextHandlerInternal. Currently used only from SignalCacheUntilActive and SignalCombiner
 	fileprivate static func simpleNext(processor: SignalProcessor<T, U>, transform: @escaping (Result<T>) -> Result<U>) -> (Result<T>) -> Void {
@@ -1543,7 +1543,7 @@ fileprivate class SignalProcessor<T, U>: SignalHandler<T>, SignalPredecessor {
 				}
 			}
 			
-			outputs.append((destination: WeakWrapper(sccr), activationCount: nil))
+			outputs.append((destination: Weak(sccr), activationCount: nil))
 			if let p = param {
 				handleParamFromSuccessor(param: p)
 			}
