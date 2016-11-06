@@ -68,6 +68,7 @@ public struct DeferredWork {
 			case .single(let existing):
 				var newWork: ContiguousArray<() -> Void> = [existing]
 				newWork.append(contentsOf: otherWork)
+				work = .multiple(newWork)
 			case .multiple(var existing):
 				work = .none
 				existing.append(contentsOf: otherWork)

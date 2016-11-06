@@ -46,6 +46,10 @@
 		C99AD6501DCEA32800B9E235 /* CwlWrappers.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD64E1DCEA32800B9E235 /* CwlWrappers.swift */; };
 		C99AD6521DCEAF6000B9E235 /* CwlWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6511DCEAF6000B9E235 /* CwlWrapperTests.swift */; };
 		C99AD6531DCEAF6000B9E235 /* CwlWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6511DCEAF6000B9E235 /* CwlWrapperTests.swift */; };
+		C99AD6721DCEB41600B9E235 /* CwlPreconditionTesting.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = C99AD6601DCEB07600B9E235 /* CwlPreconditionTesting.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C99AD6741DCEB44B00B9E235 /* CwlPreconditionTesting.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = C99AD6641DCEB07600B9E235 /* CwlPreconditionTesting.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C99AD6761DCEB4A100B9E235 /* CwlDeferredWorkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6751DCEB4A100B9E235 /* CwlDeferredWorkTests.swift */; };
+		C99AD6771DCEB4A100B9E235 /* CwlDeferredWorkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AD6751DCEB4A100B9E235 /* CwlDeferredWorkTests.swift */; };
 		C9B3EF9A1D6F14B80058AE5E /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF991D6F14B80058AE5E /* CwlResult.swift */; };
 		C9B3EF9B1D6F14B80058AE5E /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF991D6F14B80058AE5E /* CwlResult.swift */; };
 		C9B3EF9D1D6F14F40058AE5E /* CwlResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3EF9C1D6F14F40058AE5E /* CwlResultTests.swift */; };
@@ -110,6 +114,62 @@
 			remoteGlobalIDString = C93E18311C81674F0009A053;
 			remoteInfo = CwlUtils_iOS;
 		};
+		C99AD65F1DCEB07600B9E235 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C98707761C3F886F009B413A;
+			remoteInfo = CwlPreconditionTesting_macOS;
+		};
+		C99AD6611DCEB07600B9E235 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C98707801C3F886F009B413A;
+			remoteInfo = CwlPreconditionTesting_macOSTests;
+		};
+		C99AD6631DCEB07600B9E235 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C9604C801C40DD9A001A7517;
+			remoteInfo = CwlPreconditionTesting_iOS;
+		};
+		C99AD6651DCEB07600B9E235 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C9604C891C40DD9A001A7517;
+			remoteInfo = CwlPreconditionTesting_iOSTests;
+		};
+		C99AD6671DCEB07600B9E235 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C92A97D91C68A4F3008905C2;
+			remoteInfo = CwlPreconditionTesting_POSIX;
+		};
+		C99AD6691DCEB07600B9E235 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C92A97E61C68A515008905C2;
+			remoteInfo = CwlPreconditionTesting_POSIXTests;
+		};
+		C99AD66B1DCEB07600B9E235 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 96ACCC591C6E8BBE00FE0B1B;
+			remoteInfo = CwlPreconditionTesting_tvOS;
+		};
+		C99AD66D1DCEB07600B9E235 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 96ACCC481C6E8A7C00FE0B1B;
+			remoteInfo = CwlPreconditionTesting_tvOSTests;
+		};
 		C9E6C6181CBF6D03007B3F24 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C93E180A1C8166470009A053 /* Project object */;
@@ -127,6 +187,26 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		C99AD6711DCEB0E100B9E235 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C99AD6721DCEB41600B9E235 /* CwlPreconditionTesting.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C99AD6731DCEB43F00B9E235 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C99AD6741DCEB44B00B9E235 /* CwlPreconditionTesting.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C9F1BACB1CC5094D00A255E9 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -175,6 +255,8 @@
 		C99AD6491DCEA1EC00B9E235 /* CwlDeferredWork.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlDeferredWork.swift; sourceTree = "<group>"; };
 		C99AD64E1DCEA32800B9E235 /* CwlWrappers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlWrappers.swift; sourceTree = "<group>"; };
 		C99AD6511DCEAF6000B9E235 /* CwlWrapperTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlWrapperTests.swift; sourceTree = "<group>"; };
+		C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CwlPreconditionTesting.xcodeproj; path = CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj; sourceTree = SOURCE_ROOT; };
+		C99AD6751DCEB4A100B9E235 /* CwlDeferredWorkTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlDeferredWorkTests.swift; sourceTree = "<group>"; };
 		C9AC2C881D1287FE0034650A /* CwlRandomPerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlRandomPerformanceTests.swift; sourceTree = "<group>"; };
 		C9AC2C8E1D128B560034650A /* CwlMutexPerformanceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlMutexPerformanceTests.swift; sourceTree = "<group>"; };
 		C9B3EF991D6F14B80058AE5E /* CwlResult.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlResult.swift; sourceTree = "<group>"; };
@@ -334,10 +416,12 @@
 		C93E18211C8166470009A053 /* CwlUtilsTests */ = {
 			isa = PBXGroup;
 			children = (
+				C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */,
 				C93E185D1C8179C40009A053 /* Supporting Files */,
 				C93E18671C82B6480009A053 /* CwlAddressInfoTests.swift */,
 				C926A17F1DBB1CB500E4D6D0 /* CwlCollectionTests.swift */,
 				C9B7C4D31DB852C10093C97A /* CwlDebugContextTests.swift */,
+				C99AD6751DCEB4A100B9E235 /* CwlDeferredWorkTests.swift */,
 				C9E7F0291D93F4C10039680B /* CwlDequeTests.swift */,
 				C9716DEB1D4CDF9E00E90C18 /* CwlDispatchTests.swift */,
 				C93CFB4A1DB08EB6008858ED /* CwlExecTests.swift */,
@@ -372,6 +456,21 @@
 				C93E18241C8166470009A053 /* Info.plist */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		C99AD6551DCEB07600B9E235 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C99AD6601DCEB07600B9E235 /* CwlPreconditionTesting.framework */,
+				C99AD6621DCEB07600B9E235 /* CwlPreconditionTesting_macOSTests.xctest */,
+				C99AD6641DCEB07600B9E235 /* CwlPreconditionTesting.framework */,
+				C99AD6661DCEB07600B9E235 /* CwlPreconditionTesting_iOSTests.xctest */,
+				C99AD6681DCEB07600B9E235 /* CwlPreconditionTesting.framework */,
+				C99AD66A1DCEB07600B9E235 /* CwlPreconditionTesting_POSIXTests.xctest */,
+				C99AD66C1DCEB07600B9E235 /* CwlPreconditionTesting.framework */,
+				C99AD66E1DCEB07600B9E235 /* CwlPreconditionTesting_tvOSTests.xctest */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		C9AC2C8A1D1288600034650A /* PerformanceTests */ = {
@@ -483,6 +582,7 @@
 				C93E18191C8166470009A053 /* Sources */,
 				C93E181A1C8166470009A053 /* Frameworks */,
 				C93E181B1C8166470009A053 /* Resources */,
+				C99AD6711DCEB0E100B9E235 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -519,6 +619,7 @@
 				C93E18371C81674F0009A053 /* Sources */,
 				C93E18381C81674F0009A053 /* Frameworks */,
 				C93E18391C81674F0009A053 /* Resources */,
+				C99AD6731DCEB43F00B9E235 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -651,6 +752,12 @@
 			mainGroup = C93E18091C8166470009A053;
 			productRefGroup = C93E18141C8166470009A053 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = C99AD6551DCEB07600B9E235 /* Products */;
+					ProjectRef = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				C93E18121C8166470009A053 /* CwlUtils_macOS */,
@@ -664,6 +771,65 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		C99AD6601DCEB07600B9E235 /* CwlPreconditionTesting.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CwlPreconditionTesting.framework;
+			remoteRef = C99AD65F1DCEB07600B9E235 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C99AD6621DCEB07600B9E235 /* CwlPreconditionTesting_macOSTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = CwlPreconditionTesting_macOSTests.xctest;
+			remoteRef = C99AD6611DCEB07600B9E235 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C99AD6641DCEB07600B9E235 /* CwlPreconditionTesting.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CwlPreconditionTesting.framework;
+			remoteRef = C99AD6631DCEB07600B9E235 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C99AD6661DCEB07600B9E235 /* CwlPreconditionTesting_iOSTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = CwlPreconditionTesting_iOSTests.xctest;
+			remoteRef = C99AD6651DCEB07600B9E235 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C99AD6681DCEB07600B9E235 /* CwlPreconditionTesting.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CwlPreconditionTesting.framework;
+			remoteRef = C99AD6671DCEB07600B9E235 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C99AD66A1DCEB07600B9E235 /* CwlPreconditionTesting_POSIXTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = CwlPreconditionTesting_POSIXTests.xctest;
+			remoteRef = C99AD6691DCEB07600B9E235 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C99AD66C1DCEB07600B9E235 /* CwlPreconditionTesting.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CwlPreconditionTesting.framework;
+			remoteRef = C99AD66B1DCEB07600B9E235 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C99AD66E1DCEB07600B9E235 /* CwlPreconditionTesting_tvOSTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = CwlPreconditionTesting_tvOSTests.xctest;
+			remoteRef = C99AD66D1DCEB07600B9E235 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		C93E18111C8166470009A053 /* Resources */ = {
@@ -772,6 +938,7 @@
 				C977AA5D1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
 				C9C9AAF21C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
 				C9FD68981CF022530087ACC6 /* xoroshiro128plus.c in Sources */,
+				C99AD6761DCEB4A100B9E235 /* CwlDeferredWorkTests.swift in Sources */,
 				C9716DEC1D4CDF9E00E90C18 /* CwlDispatchTests.swift in Sources */,
 				C9E6C5931CBE0467007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */,
 				C926A1801DBB1CB500E4D6D0 /* CwlCollectionTests.swift in Sources */,
@@ -820,6 +987,7 @@
 				C9E055491CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */,
 				C977AA5E1CEC0D0900FC748D /* CwlRandomTests.swift in Sources */,
 				C9C9AAF31C8E7FD00019A126 /* CwlSysctlTests.swift in Sources */,
+				C99AD6771DCEB4A100B9E235 /* CwlDeferredWorkTests.swift in Sources */,
 				C9FD68991CF022530087ACC6 /* xoroshiro128plus.c in Sources */,
 				C9E6C5941CBE0468007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */,
 				C926A1811DBB1CB500E4D6D0 /* CwlCollectionTests.swift in Sources */,
