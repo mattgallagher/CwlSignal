@@ -96,7 +96,7 @@ public struct Unowned<T: AnyObject> {
 /// A enum wrapper around a type (usually a class type) so its ownership can be set at runtime.
 public enum PossiblyWeak<T: AnyObject> {
 	case strong(T)
-	case weak(WeakWrapper<T>)
+	case weak(Weak<T>)
 	
 	public var value: T? {
 		switch self {

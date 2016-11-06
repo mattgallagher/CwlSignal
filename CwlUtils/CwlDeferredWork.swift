@@ -35,7 +35,7 @@ public struct DeferredWork {
 	case multiple(ContiguousArray<() -> Void>)
 	}
 	
-	var work: PossibleWork = .none
+	var work: PossibleWork
 
 #if DEBUG
 	let invokeCheck: OnDelete = { () -> OnDelete in
@@ -47,11 +47,11 @@ public struct DeferredWork {
 #endif
 
 	public init() {
-		work = nil
+		work = .none
 	}
 	
 	public init(initial: @escaping () -> Void) {
-		work = [initial]
+		work = .single(initial)
 	}
 	
 	public mutating func append(_ other: DeferredWork) {
@@ -59,11 +59,11 @@ public struct DeferredWork {
 		precondition(!invokeCheck.isCancelled, "Work appended to an already cancelled/invoked DeferredWork")
 		other.invokeCheck.cancel()
 #endif
-		switch other {
+		switch other.work {
 		case .none: break
 		case .single(let otherWork): self.append(otherWork)
 		case .multiple(let otherWork):
-			switch self {
+			switch work {
 			case .none: work = .multiple(otherWork)
 			case .single(let existing):
 				var newWork: ContiguousArray<() -> Void> = [existing]
