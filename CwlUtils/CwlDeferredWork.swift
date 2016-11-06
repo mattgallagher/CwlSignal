@@ -18,14 +18,24 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-// Simple thread safety:
-//  1. No client "work" (functions or closures) should be invoked inside a private dispatch_queue/lock
-//  2. No client supplied data should be released inside a private dispatch_queue/lock
-// To facilitate this requirement, "lock internal" methods can return DeferredWork. DeferredWork values must be passed up the stack until they can be invoked outside any dispatch_queue.
+// This type is designed for guarding against mutex re-entrancy by following two simple rules:
 //
-// To ensure that DeferredWork is not simply forgotten without running, at debug time it includes an OnDelete check that raises a precondition failure if the DeferredWork has not been run.
+//  1. No user "work" (functions or closures) should be invoked inside a private mutex
+//  2. No user supplied data should be released inside a private mutex
+//
+// To facilitate these requirements, any user "work" or data ownership should be handled inside `DeferredWork` blocks. These blocks allow this user code to be queued in the desired order but since the `runWork` function should only be called outside the mutex, these blocks run safely outside the mutex.
+//
+// This pattern has two associated risks:
+//  1. If the deferred work calls back into the mutex, it must be able to ensure that it is still relevant (hasn't been superceded by an action that may have occurred between the end of the mutex and the performing of the `DeferredWork`. This may involve a token (inside the mutex, only the most recent token is accepted) or the mutex queueing further requests until the most recent `DeferredWork` completes.
+//  2. The `runWork` must be manually invoked. Automtic invocation (e.g in the `deinit` of a lifetime managed `class` instance) would add heap allocation overhead and would also be easy to accidentally release at the wrong point (inside the mutex) causing erratic problems. Instead, the `runWork` is guarded with a `DEBUG`-only `OnDelete` check that ensures that the `runWork` has been correctly invoked by the time the `DeferredWork` falls out of scope.
 public struct DeferredWork {
-	var work: [() -> Void]?
+	enum PossibleWork {
+	case none
+	case single(() -> Void)
+	case multiple(ContiguousArray<() -> Void>)
+	}
+	
+	var work: PossibleWork = .none
 
 #if DEBUG
 	let invokeCheck: OnDelete = { () -> OnDelete in
@@ -49,20 +59,31 @@ public struct DeferredWork {
 		precondition(!invokeCheck.isCancelled, "Work appended to an already cancelled/invoked DeferredWork")
 		other.invokeCheck.cancel()
 #endif
-		if var w = work, let o = other.work {
-			w.append(contentsOf: o)
-			work = w
-		} else if work == nil {
-			work = other.work
+		switch other {
+		case .none: break
+		case .single(let otherWork): self.append(otherWork)
+		case .multiple(let otherWork):
+			switch self {
+			case .none: work = .multiple(otherWork)
+			case .single(let existing):
+				var newWork: ContiguousArray<() -> Void> = [existing]
+				newWork.append(contentsOf: otherWork)
+			case .multiple(var existing):
+				work = .none
+				existing.append(contentsOf: otherWork)
+				work = .multiple(existing)
+			}
 		}
 	}
 	
 	public mutating func append(_ additionalWork: @escaping () -> Void) {
-		if var w = work {
-			w.append(additionalWork)
-			work = w
-		} else {
-			work = [additionalWork]
+		switch work {
+		case .none: work = .single(additionalWork)
+		case .single(let existing): work = .multiple([existing, additionalWork])
+		case .multiple(var existing):
+			work = .none
+			existing.append(additionalWork)
+			work = .multiple(existing)
 		}
 	}
 	
@@ -71,6 +92,13 @@ public struct DeferredWork {
 		precondition(!invokeCheck.isCancelled, "Work run multiple times")
 		invokeCheck.cancel()
 #endif
-		work?.forEach { $0() }
+		switch work {
+		case .none: break
+		case .single(let w): w()
+		case .multiple(let ws):
+			for w in ws {
+				w()
+			}
+		}
 	}
 }
