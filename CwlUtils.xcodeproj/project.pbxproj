@@ -73,8 +73,6 @@
 		C9E055491CD8B44C001658AB /* CwlScalarScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E055471CD8B44C001658AB /* CwlScalarScannerTests.swift */; };
 		C9E6C5931CBE0467007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C5911CBE045F007B3F24 /* CwlUnanticipatedErrorTests.swift */; };
 		C9E6C5941CBE0468007B3F24 /* CwlUnanticipatedErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C5911CBE045F007B3F24 /* CwlUnanticipatedErrorTests.swift */; };
-		C9E6C5951CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C58F1CBE0455007B3F24 /* CwlUnanticipatedError.swift */; };
-		C9E6C5961CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C58F1CBE0455007B3F24 /* CwlUnanticipatedError.swift */; };
 		C9E6C60C1CBF6D03007B3F24 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C60B1CBF6D03007B3F24 /* AppDelegate.swift */; };
 		C9E6C60E1CBF6D03007B3F24 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C9E6C60D1CBF6D03007B3F24 /* Assets.xcassets */; };
 		C9E6C6111CBF6D03007B3F24 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = C9E6C60F1CBF6D03007B3F24 /* MainMenu.xib */; };
@@ -914,7 +912,6 @@
 				C9F3E3371CAA254A006728F7 /* CwlOnDelete.swift in Sources */,
 				C95416BB1D4B76AC00C30D49 /* CwlDispatch.swift in Sources */,
 				C9D2EAAD1D8AFF7300D25919 /* CwlRandom.swift in Sources */,
-				C9E6C5951CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */,
 				C93E18651C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
 				C9C9AAEF1C8E7FB60019A126 /* CwlSysctl.swift in Sources */,
 				C91A74281D9685620031DB57 /* CwlDeque.swift in Sources */,
@@ -964,7 +961,6 @@
 				C93CFB481DB08216008858ED /* CwlExec.swift in Sources */,
 				C9FB03061CF4289C00AD7E79 /* CwlRandom.swift in Sources */,
 				C9F3E3381CAA254A006728F7 /* CwlOnDelete.swift in Sources */,
-				C9E6C5961CBE046C007B3F24 /* CwlUnanticipatedError.swift in Sources */,
 				C95416BC1D4B76AC00C30D49 /* CwlDispatch.swift in Sources */,
 				C93E18661C81EFD40009A053 /* CwlAddressInfo.swift in Sources */,
 				C9C9AAF01C8E7FB60019A126 /* CwlSysctl.swift in Sources */,

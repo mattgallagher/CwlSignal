@@ -98,6 +98,14 @@ public enum PossiblyWeak<T: AnyObject> {
 	case strong(T)
 	case weak(Weak<T>)
 	
+	public init(strong value: T) {
+		self = PossiblyWeak<T>.strong(value)
+	}
+	
+	public init(weak value: T) {
+		self = PossiblyWeak<T>.weak(Weak(value))
+	}
+	
 	public var value: T? {
 		switch self {
 		case .strong(let t): return t
