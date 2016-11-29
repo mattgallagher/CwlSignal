@@ -28,7 +28,8 @@ public class KeyValueObserver: NSObject {
 	private let tailPath: String?
 	private let options: NSKeyValueObservingOptions
 	
-	// NOTE: we can't safely use `weak` or even `unowned` here. Our "deletionBlock" is called to notify us that the target is being deallocated (so we can remove the key value observation before a warning is logged) and this happens during the target's "objc_destructinstance" function. At this point, it is no longer safe to retain the target (something which both "weak" and "unowned" values try to do). So we need to hold the target in an Unmanaged wrapper instead.
+	// Our "deletionBlock" is called to notify us that the target is being deallocated (so we can remove the key value observation before a warning is logged) and this happens during the target's "objc_destructinstance" function. At this point, a `weak` var will be `nil` and an `unowned` will trigger a `_swift_abortRetainUnowned` failure.
+	// So we're left with `Unmanaged`. Careful cancellation before the target is deallocated is necessary to ensure we don't access an invalid memory location.
 	private var target: Unmanaged<NSObject>
 	
 	public enum CallbackReason {
