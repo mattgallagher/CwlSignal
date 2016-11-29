@@ -12,6 +12,8 @@
 		C926A17E1DBB1C5300E4D6D0 /* CwlCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C926A17C1DBB1C5300E4D6D0 /* CwlCollection.swift */; };
 		C926A1801DBB1CB500E4D6D0 /* CwlCollectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C926A17F1DBB1CB500E4D6D0 /* CwlCollectionTests.swift */; };
 		C926A1811DBB1CB500E4D6D0 /* CwlCollectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C926A17F1DBB1CB500E4D6D0 /* CwlCollectionTests.swift */; };
+		C93AF1661DED38BD00C10CD4 /* CwlUnanticipatedError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C58F1CBE0455007B3F24 /* CwlUnanticipatedError.swift */; };
+		C93AF16F1DED38BE00C10CD4 /* CwlUnanticipatedError.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E6C58F1CBE0455007B3F24 /* CwlUnanticipatedError.swift */; };
 		C93B5BB51CED95A5002D91D1 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C93B5BB41CED95A5002D91D1 /* mt19937-64.c */; };
 		C93B5BB61CED95A5002D91D1 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C93B5BB41CED95A5002D91D1 /* mt19937-64.c */; };
 		C93CFB471DB08216008858ED /* CwlExec.swift in Sources */ = {isa = PBXBuildFile; fileRef = C93CFB461DB08216008858ED /* CwlExec.swift */; };
@@ -921,6 +923,7 @@
 				C93E18601C81BE120009A053 /* CwlFrameAddress.c in Sources */,
 				C926A17D1DBB1C5300E4D6D0 /* CwlCollection.swift in Sources */,
 				C93E18501C81794B0009A053 /* CwlStackFrame.swift in Sources */,
+				C93AF16F1DED38BE00C10CD4 /* CwlUnanticipatedError.swift in Sources */,
 				C9F193CD1D02970200EAC5BE /* CwlMutex.swift in Sources */,
 				C9B3EF9A1D6F14B80058AE5E /* CwlResult.swift in Sources */,
 			);
@@ -971,6 +974,7 @@
 				C93E18511C8179530009A053 /* CwlStackFrame.swift in Sources */,
 				C926A17E1DBB1C5300E4D6D0 /* CwlCollection.swift in Sources */,
 				C93E18611C81BE120009A053 /* CwlFrameAddress.c in Sources */,
+				C93AF1661DED38BD00C10CD4 /* CwlUnanticipatedError.swift in Sources */,
 				C9F193CE1D02970200EAC5BE /* CwlMutex.swift in Sources */,
 				C9B3EF9B1D6F14B80058AE5E /* CwlResult.swift in Sources */,
 			);
