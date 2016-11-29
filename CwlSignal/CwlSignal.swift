@@ -463,12 +463,12 @@ public class Signal<T> {
 	
 	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` immediately activates its antecedents and is "continuous" (multiple listeners can be attached to the `SignalMulti` and each new listener immediately receives the most recently sent value on "activation").
 	///
-	/// - parameter initialValue: the immediate value sent to any listeners that connect *before* the first value is sent through this `Signal`
+	/// - parameter initial: the immediate value sent to any listeners that connect *before* the first value is sent through this `Signal`
 	///
 	/// - returns: a continuous `SignalMulti`
-	public final func continuous(initialValue: T) -> SignalMulti<T> {
+	public final func continuous(initial: T) -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: true, values: ([initialValue], nil), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in
+			SignalMultiProcessor(signal: s, alwaysActive: true, values: ([initial], nil), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in
 				switch r {
 				case .success(let v): a = [v]
 				case .failure(let e): a = [];	p = e
@@ -526,9 +526,9 @@ public class Signal<T> {
 	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` immediately activates its antecedents. Every time a value is received, it is passed to an "updater" which updates the array of activation values (multiple listeners can be attached to the `SignalMulti` and each new listener receives the array as a series of activation values).
 	///
 	/// - returns: a buffered `SignalMulti`
-	public final func buffer(context: Exec = .direct, initialValues: Array<T> = [], updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) -> SignalMulti<T> {
+	public final func buffer(context: Exec = .direct, initials: Array<T> = [], updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: true, values: (initialValues, nil), isUserUpdated: true, dw: &dw, context: context, updater: updater)
+			SignalMultiProcessor(signal: s, alwaysActive: true, values: (initials, nil), isUserUpdated: true, dw: &dw, context: context, updater: updater)
 		})
 	}
 	
@@ -1197,7 +1197,7 @@ public final class SignalInput<T>: SignalSender, Cancellable {
 }
 
 /// An `Signal<T>` that permits attaching multiple listeners (a normal `Signal<T>` will immediately close subsequent listeners with a `SignalError.duplicate` error).
-/// Instances of this class are created from one of the `SignalMulti<T>` returning functions on `Signal<T>`, including `playback() -> SignalMulti<T>`, `multicast() -> SignalMulti<T>` and `continuous(initialValue: T) -> SignalMulti<T>`.
+/// Instances of this class are created from one of the `SignalMulti<T>` returning functions on `Signal<T>`, including `playback() -> SignalMulti<T>`, `multicast() -> SignalMulti<T>` and `continuous(initial: T) -> SignalMulti<T>`.
 public final class SignalMulti<T>: Signal<T> {
 	fileprivate init(processor: SignalMultiProcessor<T>) {
 		super.init(processor: processor)
@@ -1988,7 +1988,12 @@ public final class SignalEndpoint<T>: SignalHandler<T>, Cancellable {
 	
 	public func cancel() {
 		var dw = DeferredWork()
-		sync { deactivateInternal(dw: &dw) }
+		sync {
+			if case .closed = self.referenceLoop {
+			} else {
+				deactivateInternal(dw: &dw)
+			}
+		}
 		dw.runWork()
 	}
 	
@@ -2496,27 +2501,29 @@ fileprivate enum SignalDelivery {
 /// - inactive:  the signal graph is not activated and the signal was not sent (connect endpoints to activate)
 /// - duplicate: when attempts to add multiple listeners to non-multi `Signals` occurs, the subsequent attempts are instead connected to a separate, pre-closed `Signal` that sends this error.
 /// - cancelled: returned from `send` functions when the sender is no longer the "active" sender for the destination `Signal`. Sent through a graph when an active `SignalInput` is released.
+/// - timeout:   used by some utility functions to indicate a time limit has expired
 public enum SignalError: Error {
 	case closed
 	case inactive
 	case duplicate
 	case cancelled
+	case timeout
 }
 
-/// Used by the Signal<T>.combine(signal1:signal2:behavior:context:processor:) method
+/// Used by the Signal<T>.combine(second:context:processor:) method
 public enum EitherResult2<U, V> {
 	case result1(Result<U>)
 	case result2(Result<V>)
 }
 
-/// Used by the Signal<T>.combine(signal1:signal2:signal3:behavior:context:processor:) method
+/// Used by the Signal<T>.combine(second:third:context:processor:) method
 public enum EitherResult3<U, V, W> {
 	case result1(Result<U>)
 	case result2(Result<V>)
 	case result3(Result<W>)
 }
 
-/// Used by the Signal<T>.combine(signal1:signal2:signal3:signal4:behavior:context:processor:) method
+/// Used by the Signal<T>.combine(second:third:fourth:context:processor:) method
 public enum EitherResult4<U, V, W, X> {
 	case result1(Result<U>)
 	case result2(Result<V>)
@@ -2524,7 +2531,7 @@ public enum EitherResult4<U, V, W, X> {
 	case result4(Result<X>)
 }
 
-/// Used by the Signal<T>.combine(signal1:signal2:signal3:signal4:signal5:behavior:context:processor:) method
+/// Used by the Signal<T>.combine(second:third:fourth:fifth:context:processor:) method
 public enum EitherResult5<U, V, W, X, Y> {
 	case result1(Result<U>)
 	case result2(Result<V>)

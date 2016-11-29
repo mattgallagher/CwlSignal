@@ -130,21 +130,23 @@ class SignalReactiveTests: XCTestCase {
 	}
 	
 	func testTimer() {
-		var results = [Result<()>]()
+		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
-		let ep = timerSignal(interval: .fromSeconds(0.01), context: coordinator.direct).subscribe { r in
+		let ep = Signal<Int>.timer(interval: .fromSeconds(0.005), value: 5, context: coordinator.direct).subscribe { r in
 			results.append(r)
-			if r.isError {
-				coordinator.stop()
-			}
+		}
+		let ep2 = Signal<Int>.timer(interval: .fromSeconds(0.01), context: coordinator.direct).subscribe { r in
+			results.append(r)
 		}
 		coordinator.runScheduledTasks()
 		withExtendedLifetime(ep) {}
+		withExtendedLifetime(ep2) {}
 		
 		XCTAssert(coordinator.currentTime == 10_000_000)
-		XCTAssert(results.count == 2)
-		XCTAssert(results.at(0)?.value != nil)
+		XCTAssert(results.count == 3)
+		XCTAssert(results.at(0)?.value == 5)
 		XCTAssert(results.at(1)?.isSignalClosed == true)
+		XCTAssert(results.at(2)?.isSignalClosed == true)
 	}
 	
 	func testBufferCount() {
@@ -1228,7 +1230,7 @@ class SignalReactiveTests: XCTestCase {
 	func testSwitchLatest() {
 		var results = [Result<Int>]()
 		let (input, signal) = Signal<Signal<Int>>.createPair()
-		let ep = switchLatestSignal(signal).subscribe { (r: Result<Int>) in
+		let ep = Signal<Int>.switchLatest(signal).subscribe { (r: Result<Int>) in
 			results.append(r)
 		}
 		let (input1, child1) = Signal<Int>.createPair()
@@ -1409,7 +1411,7 @@ class SignalReactiveTests: XCTestCase {
 		let coordinator = DebugContextCoordinator()
 		var times = [UInt64]()
 		let ep = Signal<Int>.fromSequence(0..<5).delay(context: coordinator.direct) { (v: Int) -> Signal<()> in
-			return timerSignal(interval: .fromSeconds(Double(6 - v) * 0.05), context: coordinator.default)
+			return Signal<()>.timer(interval: .fromSeconds(Double(6 - v) * 0.05), context: coordinator.default)
 		}.subscribe { (r: Result<Int>) in
 			results.append(r)
 			times.append(coordinator.currentTime)
@@ -1529,7 +1531,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(1)?.value == 1)
 		XCTAssert(results.at(2)?.value == 2)
 
-		switch results.at(3)?.error as? SignalReactiveError {
+		switch results.at(3)?.error as? SignalError {
 		case .some(.timeout): break
 		default: XCTFail()
 		}

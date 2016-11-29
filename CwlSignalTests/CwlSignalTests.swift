@@ -48,7 +48,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(i2.send(value: 0) == SignalError.cancelled)
 		XCTAssert(results.at(2)?.value == 5)
 		XCTAssert(results.at(3)?.error as? TestError == TestError.zeroValue)
-		withExtendedLifetime(ep2) {}
+		ep2.cancel()
 		
 		_ = Signal<Int>.preclosed().subscribe { r in results.append(r) }
 		XCTAssert(results.at(4)?.isSignalClosed == true)
@@ -274,10 +274,10 @@ class SignalTests: XCTestCase {
 		withExtendedLifetime(ep5) {}
 	}
 	
-	func testSignalContinuousWithInitialValue() {
+	func testSignalContinuousWithinitial() {
 		// Create a signal
 		let (input, s) = Signal<Int>.createPair()
-		let signal = s.continuous(initialValue: 5)
+		let signal = s.continuous(initial: 5)
 		
 		// Subscribe twice
 		var results1 = [Result<Int>]()
@@ -285,7 +285,7 @@ class SignalTests: XCTestCase {
 		var results2 = [Result<Int>]()
 		let ep2 = signal.subscribe { r in results2.append(r) }
 		
-		// Ensure we immediately receive the initialValue
+		// Ensure we immediately receive the initial
 		XCTAssert(results1.count == 1)
 		XCTAssert(results1.at(0)?.value == 5)
 		XCTAssert(results2.count == 1)
@@ -411,7 +411,7 @@ class SignalTests: XCTestCase {
 		// Create a signal
 		let (input, s) = Signal<Int>.createPair()
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let signal = s.buffer(context: context, initialValues: [3, 4]) { (activationValues: inout Array<Int>, preclosed: inout Error?, result: Result<Int>) -> Void in
+		let signal = s.buffer(context: context, initials: [3, 4]) { (activationValues: inout Array<Int>, preclosed: inout Error?, result: Result<Int>) -> Void in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			if case .success(6) = result {
 				activationValues = [7]

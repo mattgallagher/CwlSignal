@@ -207,28 +207,27 @@ extension Signal {
 			i.close()
 		}
 	}
-}
 
-/// Implementation of [Reactive X operator "Timer"](http://reactivex.io/documentation/operators/timer.html)
-///
-/// - parameter seconds: the time until the value is sent.
-/// - parameter restartOnActivate: If `true` (default), the returned signal timer restarts **but** only a single listener is supported. If `false`, the timer starts immediately **and** multiple listeners are supported (any listeners connecting after firing will immediately receive the value).
-/// - returns: a signal that will fire once after `seconds` and then close
-public func timerSignal(interval: DispatchTimeInterval, restartOnActivate: Bool = true, context: Exec = .default) -> Signal<()> {
-	var timer: Cancellable? = nil
-	return Signal<()>.generate(context: context) { input in
-		guard let i = input else {
-			timer?.cancel()
-			return
-		}
-		timer = context.singleTimer(interval: interval) {
-			i.send(value: ())
-			i.close()
+	/// Implementation of [Reactive X operator "Timer"](http://reactivex.io/documentation/operators/timer.html)
+	///
+	/// - parameter seconds: the time until the value is sent.
+	/// - returns: a signal that will fire once after `seconds` and then close
+	public static func timer(interval: DispatchTimeInterval, value: T? = nil, context: Exec = .default) -> Signal<T> {
+		var timer: Cancellable? = nil
+		return Signal<T>.generate(context: context) { input in
+			if let i = input {
+				timer = context.singleTimer(interval: interval) {
+					if let v = value {
+						i.send(value: v)
+					}
+					i.close()
+				}
+			} else {
+				timer?.cancel()
+			}
 		}
 	}
-}
 
-extension Signal {
 	/// A shared function for emitting a boundary signal usable by the timed, non-overlapping buffer/window functions buffer(timeshift:count:continuous:behavior:) or window(timeshift:count:continuous:behavior:)
 	///
 	/// - parameter seconds:    maximum seconds between boundaries
@@ -415,7 +414,7 @@ extension Signal {
 	/// - parameter timeshift: the number of seconds between the start of each buffer (if smaller than `timespan`, buffers will overlap).
 	/// - returns: a signal where the values are arrays of values from `self`, accumulated according to `windows`
 	public func buffer(timespan: DispatchTimeInterval, timeshift: DispatchTimeInterval, context: Exec = .direct) -> Signal<[T]> {
-		return buffer(windows: intervalSignal(interval: timeshift, initialInterval: .seconds(0), context: context).map { v in timerSignal(interval: timespan, context: context) })
+		return buffer(windows: intervalSignal(interval: timeshift, initialInterval: .seconds(0), context: context).map { v in Signal<()>.timer(interval: timespan, context: context) })
 	}
 
 	/// Implementation of map and filter. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over child `Optional`s.
@@ -734,7 +733,7 @@ extension Signal {
 	/// - parameter timeshift: the number of seconds between the start of each buffer (if smaller than `timespan`, buffers will overlap).
 	/// - returns: a signal where the values are arrays of values from `self`, accumulated according to `windows`
 	public func window(timespan: DispatchTimeInterval, timeshift: DispatchTimeInterval, context: Exec = .direct) -> Signal<Signal<T>> {
-		return window(windows: intervalSignal(interval: timeshift, context: context).map { v in timerSignal(interval: timespan, context: context) })
+		return window(windows: intervalSignal(interval: timeshift, context: context).map { v in Signal<()>.timer(interval: timespan, context: context) })
 	}
 
 	/// Implementation of [Reactive X operator "Debounce"](http://reactivex.io/documentation/operators/debounce.html)
@@ -1278,24 +1277,24 @@ extension Signal {
 			}
 		}
 	}
-}
 
-/// Implementation of [Reactive X operator "switch"](http://reactivex.io/documentation/operators/switch.html)
-///
-/// See also: `flatMapLatest`
-///
-/// - returns: a signal that emits the values from the latest `Signal` emitted by `self`.
-public func switchLatestSignal<T>(_ signal: Signal<Signal<T>>) -> Signal<T> {
-	return signal.transformFlatten(withState: nil, closesImmediate: true) { (latest: inout Signal<T>?, next: Signal<T>, mergeSet: SignalMergeSet<T>) in
-		if let l = latest {
-			mergeSet.remove(l)
+	/// Implementation of [Reactive X operator "switch"](http://reactivex.io/documentation/operators/switch.html)
+	///
+	/// See also: `flatMapLatest` (emits values from the latest `Signal` to start emitting)
+	///
+	/// NOTE: ideally, this would not be a static function but a "same type" conditional extension. In a future Swift release this will probably change.
+	///
+	/// - returns: a signal that emits the values from the latest `Signal` emitted by `self`.
+	public static func switchLatest<T>(_ signal: Signal<Signal<T>>) -> Signal<T> {
+		return signal.transformFlatten(withState: nil, closesImmediate: true) { (latest: inout Signal<T>?, next: Signal<T>, mergeSet: SignalMergeSet<T>) in
+			if let l = latest {
+				mergeSet.remove(l)
+			}
+			latest = next
+			mergeSet.add(next, closesOutput: false, removeOnDeactivate: true)
 		}
-		latest = next
-		mergeSet.add(next, closesOutput: false, removeOnDeactivate: true)
 	}
-}
 
-extension Signal {
 	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
 	///
 	/// - parameter with: another `Signal`
@@ -1600,7 +1599,7 @@ extension Signal {
 	/// - returns: a mirror of `self` where values are offset according to `offset` – closing occurs when `self` closes or when the last delayed value is sent (whichever occurs last).
 	public func delay<U>(withState initialState: U, closesImmediate: Bool = false, context: Exec = .direct, offset: @escaping (inout U, T) -> DispatchTimeInterval) -> Signal<T> {
 		return delay(withState: initialState, closesImmediate: closesImmediate, context: context) { (state: inout U, value: T) -> Signal<()> in
-			return timerSignal(interval: offset(&state, value), context: context)
+			return Signal<()>.timer(interval: offset(&state, value), context: context)
 		}
 	}
 
@@ -1735,20 +1734,21 @@ extension Signal {
 	public func materialize() -> Signal<Result<T>> {
 		return transform { r, n in n.send(value: r) }
 	}
-}
 
-
-/// Implementation of [Reactive X operator "dematerialize"](http://reactivex.io/documentation/operators/materialize-dematerialize.html)
-///
-/// - parameter signal: a signal whose ValueType is a `Result` wrapped version of an underlying type
-///
-/// - returns: a signal whose ValueType is the unwrapped value from the input, with unwrapped errors sent as errors.
-public func dematerializeSignal<T>(_ signal: Signal<Result<T>>) -> Signal<T> {
-	return signal.transform { (r: Result<Result<T>>, n: SignalNext<T>) in
-		switch r {
-		case .success(.success(let v)): n.send(value: v)
-		case .success(.failure(let e)): n.send(error: e)
-		case .failure(let e): n.send(error: e)
+	/// Implementation of [Reactive X operator "dematerialize"](http://reactivex.io/documentation/operators/materialize-dematerialize.html)
+	///
+	/// NOTE: ideally, this would not be a static function but a "same type" conditional extension. In a future Swift release this will probably change.
+	///
+	/// - parameter signal: a signal whose ValueType is a `Result` wrapped version of an underlying type
+	///
+	/// - returns: a signal whose ValueType is the unwrapped value from the input, with unwrapped errors sent as errors.
+	public static func dematerialize<T>(_ signal: Signal<Result<T>>) -> Signal<T> {
+		return signal.transform { (r: Result<Result<T>>, n: SignalNext<T>) in
+			switch r {
+			case .success(.success(let v)): n.send(value: v)
+			case .success(.failure(let e)): n.send(error: e)
+			case .failure(let e): n.send(error: e)
+			}
 		}
 	}
 }
@@ -1793,13 +1793,13 @@ extension Signal {
 	
 	/// Implementation of [Reactive X operator "Timeout"](http://reactivex.io/documentation/operators/timeout.html)
 	///
-	/// - parameter interval: the duration before a SignalReactiveError.timeout will be emitted
+	/// - parameter interval: the duration before a SignalError.timeout will be emitted
 	/// - parameter resetOnValue: if `true`, each value sent through the signal will reset the timer (making the timeout an "idle" timeout). If `false`, the timeout duration is measured from the start of the signal and is unaffected by whether values are received.
 	/// - parameter context: timestamps will be added based on the time in this context
 	///
-	/// - returns: a mirror of self unless a timeout occurs, in which case it will closed by a SignalReactiveError.timeout
+	/// - returns: a mirror of self unless a timeout occurs, in which case it will closed by a SignalError.timeout
 	public func timeout(interval: DispatchTimeInterval, resetOnValue: Bool = true, context: Exec = .direct) -> Signal<T> {
-		let (junction, signal) = timerSignal(interval: interval, context: context).junctionSignal()
+		let (junction, signal) = Signal<()>.timer(interval: interval, context: context).junctionSignal()
 		return self.combine(second: signal, context: context) { (cr: EitherResult2<T, ()>, n: SignalNext<T>) in
 			switch cr {
 			case .result1(let r):
@@ -1807,7 +1807,7 @@ extension Signal {
 					junction.rejoin()
 				}
 				n.send(result: r)
-			case .result2: n.send(error: SignalReactiveError.timeout)
+			case .result2: n.send(error: SignalError.timeout)
 			}
 		}
 	}
@@ -2239,9 +2239,4 @@ extension Signal where T: IntegerArithmetic, T: ExpressibleByIntegerLiteral {
 			return fold + value
 		}
 	}
-}
-
-public enum SignalReactiveError: Error {
-	/// Used by Signal.timeout to signal its timeout condition rather than a typical close or other error.
-	case timeout
 }

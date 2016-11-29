@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<playground version='6.0' target-platform='macos' display-mode='raw'>
+<playground version='6.0' target-platform='macos' auto-termination-delay='20' display-mode='rendered' executeOnSourceChanges='false' timelineScrubberEnabled='true'>
     <pages>
         <page name='Introduction'/>
         <page name='Basic channel'/>
-        <page name='Serial pipeline'/>
-        <page name='Parallel composition'/>
+        <page name='Serial pipelines - transform'/>
+        <page name='Serial pipelines - map'/>
+        <page name='Parallel composition - combine'/>
+        <page name='Parallel composition - operators'/>
+        <page name='App scenario - threadsafe key-value storage'/>
+        <page name='App scenario - dynamic view properties'/>
     </pages>
 </playground>
