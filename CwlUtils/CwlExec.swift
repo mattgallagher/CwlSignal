@@ -43,7 +43,7 @@ public enum ExecutionType {
 		switch self {
 		case .immediate: return true
 		case .mutex: return true
-		case .conditionallyAsync(let now): return !now
+		case .conditionallyAsync(let async): return !async
 		default: return false
 		}
 	}

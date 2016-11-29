@@ -26,3 +26,9 @@ extension Collection {
 		return (i >= startIndex && i < endIndex) ? self[i] : nil
 	}
 }
+
+extension RangeReplaceableCollection {
+	public static func +=(s: inout Self, e: Iterator.Element) {
+		s.append(e)
+	}
+}
