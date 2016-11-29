@@ -28,7 +28,7 @@ open class SignalActionTarget<T: AnyObject>: NSObject {
 	private(set) public var signal: Signal<T>
 	
 	public override init() {
-		(self.signalInput, self.signal) = Signal<T>.createInput()
+		(self.signalInput, self.signal) = Signal<T>.createPair()
 
 		super.init()
 		
@@ -56,7 +56,7 @@ open class SignalDoubleActionTarget<T: AnyObject>: SignalActionTarget<T> {
 	private let secondSignal: Signal<T>
 
 	public override init() {
-		(self.secondInput, self.secondSignal) = Signal<T>.createInput { $0.multicast() }
+		(self.secondInput, self.secondSignal) = Signal<T>.createPair { $0.multicast() }
 		super.init()
 	}
 	@objc public func secondAction(_ sender: AnyObject) {
@@ -118,7 +118,7 @@ public func signalFromNotifications(center: NotificationCenter = NotificationCen
 }
 
 extension Signal where T: AnyObject {
-	/// Attaches a SignalEndpoint that applies all values to a target NSObject using key value coding via the supplied keyPath. The property must match the runtime type of the Signal signal values or an assertion will be raised.
+	/// Attaches a SignalEndpoint that applies all values to a target NSObject using key value coding via the supplied keyPath. The property must match the runtime type of the Signal signal values or a precondition failure will be raised.
 	///
 	/// - Parameters:
 	///   - context: the execution context where the setting will occur
@@ -139,7 +139,7 @@ extension Signal where T: AnyObject {
 			switch (filterType, value) {
 			case (.some(let ft), let v as NSObjectProtocol) where v.isKind(of: ft): fallthrough
 			case (.none, _): weakTarget?.setValue(value, forKeyPath: keyPath)
-			default: assertionFailure("kvc setter signal failed to match property type \(filterType)")
+			default: preconditionFailure("kvc setter signal type \(T.self) failed to match property type \(filterType)")
 			}
 		}
 	}

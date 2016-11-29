@@ -55,10 +55,10 @@ extension Signal {
 	///   - context: the execution context where the `processor` will be invoked
 	///   - processor: will be invoked with each value received
 	/// - Returns: the `SignalEndpoint` created by this function
-	public func subscribeValues(context: Exec = .direct, processor: @escaping (ValueType) -> Void) -> SignalEndpoint<ValueType> {
+	public func subscribeValues(context: Exec = .direct, handler: @escaping (ValueType) -> Void) -> SignalEndpoint<ValueType> {
 		return subscribe(context: context) { r in
 			if case .success(let v) = r {
-				processor(v)
+				handler(v)
 			}
 		}
 	}
@@ -153,7 +153,7 @@ extension Signal {
 					innerInput.send(error: e)
 				}
 			}
-			let prefixedInnerSignal = Signal<(Int, T?)>.preclosed(values: [(count, Optional(v))]).combine(second: innerSignal) { (r: CombinedResult2<(Int, T?), (Int, T?)>, n: SignalNext<(Int, T?)>) in
+			let prefixedInnerSignal = Signal<(Int, T?)>.preclosed(values: [(count, Optional(v))]).combine(second: innerSignal) { (r: EitherResult2<(Int, T?), (Int, T?)>, n: SignalNext<(Int, T?)>) in
 				switch r {
 				case .result1(.success(let v)): n.send(value: v)
 				case .result1(.failure): break
@@ -182,7 +182,7 @@ extension Signal {
 					innerInput.send(error: e)
 				}
 			}
-			let prefixedInnerSignal = Signal<(Int, T?)>.preclosed(values: [(count, Optional(v))]).combine(second: innerSignal) { (r: CombinedResult2<(Int, T?), (Int, T?)>, n: SignalNext<(Int, T?)>) in
+			let prefixedInnerSignal = Signal<(Int, T?)>.preclosed(values: [(count, Optional(v))]).combine(second: innerSignal) { (r: EitherResult2<(Int, T?), (Int, T?)>, n: SignalNext<(Int, T?)>) in
 				switch r {
 				case .result1(.success(let v)): n.send(value: v)
 				case .result1(.failure): break

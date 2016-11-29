@@ -4,7 +4,12 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
-		<key>CwlSignal.xcscheme</key>
+		<key>CwlSignal_iOS.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
+		<key>CwlSignal_macOS.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
 			<integer>0</integer>
@@ -18,6 +23,46 @@
 			<true/>
 		</dict>
 		<key>C99AD60B1DCE9B2300B9E235</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C9D2395C1DE99BCF0058610A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C9D239641DE99BCF0058610A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C9D239781DE99C630058610A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C9D239801DE99C630058610A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C9D239941DE99C820058610A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C9D2399C1DE99C830058610A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C9D239B01DE99C940058610A</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>C9D239B81DE99C940058610A</key>
 		<dict>
 			<key>primary</key>
 			<true/>
