@@ -136,6 +136,20 @@ public class DebugContextCoordinator {
 		}
 	}
 	
+	/// Performs all scheduled actions in a serial loop.
+	///
+	/// - parameter stoppingAfter: If nil, loop will continue until `stop` invoked or until no actions remain. If non-nil, loop will abort after an action matching Cancellable is completed.
+	public func runScheduledTasks(untilTime: UInt64) {
+		stopRequested = false
+		currentThread = .unspecified
+		while !stopRequested, let (threadIndex, time) = nextTask(), time <= untilTime {
+			_ = runTask(threadIndex: threadIndex, time: time)
+		}
+		if stopRequested {
+			queues = [:]
+		}
+	}
+	
 	/// Causes `runScheduledTasks` to exit as soon as possible, if it is running.
 	public func stop() {
 		stopRequested = true
@@ -171,8 +185,7 @@ public class DebugContextCoordinator {
 		}
 	}
 	
-	// Run the next event. If nil is returned, no further events remain. If
-	func runNextTask() -> DebugContextTimer? {
+	func nextTask() -> (DebugContextThread, UInt64)? {
 		var lowestTime = UInt64.max
 		var selectedIndex = DebugContextThread.unspecified
 		
@@ -186,9 +199,21 @@ public class DebugContextCoordinator {
 		if lowestTime == UInt64.max {
 			return nil
 		}
-		currentThread = selectedIndex
-		internalTime = lowestTime
-		return queues[selectedIndex]?.popAndInvokeNext()
+		
+		return (selectedIndex, lowestTime)
+	}
+	
+	func runTask(threadIndex: DebugContextThread, time: UInt64) -> DebugContextTimer? {
+		(currentThread, internalTime) = (threadIndex, time)
+		return queues[threadIndex]?.popAndInvokeNext()
+	}
+	
+	// Run the next event. If nil is returned, no further events remain. If
+	func runNextTask() -> DebugContextTimer? {
+		if let (threadIndex, time) = nextTask() {
+			return runTask(threadIndex: threadIndex, time: time)
+		}
+		return nil
 	}
 }
 
