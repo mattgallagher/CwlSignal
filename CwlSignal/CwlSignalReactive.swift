@@ -21,7 +21,7 @@
 import Foundation
 
 extension Signal {
-	/// - Note: the [Reactive X operator "Defer"](http://reactivex.io/documentation/operators/create.html) is considered unnecessary, given the `CwlUtils.Signal.generate` and `CwlUtils.Signal.createPair` methods
+	/// - Note: the [Reactive X operator "Create"](http://reactivex.io/documentation/operators/create.html) is considered unnecessary, given the `CwlUtils.Signal.generate` and `CwlUtils.Signal.createPair` methods
 	
 	/// - Note: the [Reactive X operator "Defer"](http://reactivex.io/documentation/operators/defer.html) is considered not applicable, given the different semantics of "activation" with `CwlUtils.Signal`. If `Defer`-like behavior is desired, either a method that constructs and returns a new `Signal` graph should be used (if a truly distinct graph is desired) or `CwlUtils.Signal.generate` should be used (if wait-until-activated behavior is desired).
 	
@@ -445,7 +445,7 @@ extension Signal {
 		}
 	}
 	
-	/// Implementation of [Reactive X operator "FlatMap"](http://reactivex.io/documentation/operators/flatmap.html)
+	/// Implementation of [Reactive X operator "FlatMapFirst"](http://reactivex.io/documentation/operators/flatmap.html)
 	///
 	/// - parameter context: the `Exec` where `processor` will be evaluated (default: .direct).
 	/// - parameter processor: for each value emitted by `self`, outputs a new `Signal`
@@ -459,7 +459,7 @@ extension Signal {
 		}
 	}
 	
-	/// Implementation of [Reactive X operator "FlatMap"](http://reactivex.io/documentation/operators/flatmap.html)
+	/// Implementation of [Reactive X operator "FlatMapLatest"](http://reactivex.io/documentation/operators/flatmap.html)
 	///
 	/// See also `switchLatestSignal`
 	///
@@ -733,7 +733,7 @@ extension Signal {
 	/// - parameter timeshift: the number of seconds between the start of each buffer (if smaller than `timespan`, buffers will overlap).
 	/// - returns: a signal where the values are arrays of values from `self`, accumulated according to `windows`
 	public func window(timespan: DispatchTimeInterval, timeshift: DispatchTimeInterval, context: Exec = .direct) -> Signal<Signal<T>> {
-		return window(windows: intervalSignal(interval: timeshift, context: context).map { v in Signal<()>.timer(interval: timespan, context: context) })
+		return window(windows: intervalSignal(interval: timeshift, initialInterval: .seconds(0), context: context).map { v in Signal<()>.timer(interval: timespan, context: context) })
 	}
 
 	/// Implementation of [Reactive X operator "Debounce"](http://reactivex.io/documentation/operators/debounce.html)
@@ -1300,23 +1300,37 @@ extension Signal {
 	/// - parameter with: another `Signal`
 	/// - returns: a signal that emits the values from `self`, paired with corresponding value from `with`.
 	public func zip<U>(second: Signal<U>) -> Signal<(T, U)> {
-		return combine(withState: (Array<T>(), Array<U>()), second: second) { (queues: inout (first: Array<T>, second: Array<U>), r: EitherResult2<T, U>, n: SignalNext<(T, U)>) in
+		return combine(withState: (Array<T>(), Array<U>(), false, false), second: second) { (queues: inout (first: Array<T>, second: Array<U>, firstClosed: Bool, secondClosed: Bool), r: EitherResult2<T, U>, n: SignalNext<(T, U)>) in
 			switch (r, queues.first.first, queues.second.first) {
 			case (.result1(.success(let first)), _, .some(let second)):
 				n.send(value: (first, second))
 				queues.second.removeFirst()
+				if (queues.second.isEmpty && queues.secondClosed) {
+					n.close()
+				}
 			case (.result1(.success(let first)), _, _):
 				queues.first.append(first)
 			case (.result1(.failure(let e)), _, _):
-				n.send(error: e)
+				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) {
+					n.send(error: e)
+				} else {
+					queues.firstClosed = true
+				}
 
 			case (.result2(.success(let second)), .some(let first), _):
 				n.send(value: (first, second))
 				queues.first.removeFirst()
+				if (queues.first.isEmpty && queues.firstClosed) {
+					n.close()
+				}
 			case (.result2(.success(let second)), _, _):
 				queues.second.append(second)
 			case (.result2(.failure(let e)), _, _):
-				n.send(error: e)
+				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) {
+					n.send(error: e)
+				} else {
+					queues.secondClosed = true
+				}
 			}
 		}
 	}
@@ -1326,34 +1340,55 @@ extension Signal {
 	/// - parameter with: another `Signal`
 	/// - returns: a signal that emits the values from `self`, paired with corresponding value from `with`.
 	public func zip<U, V>(second: Signal<U>, third: Signal<V>) -> Signal<(T, U, V)> {
-		return combine(withState: (Array<T>(), Array<U>(), Array<V>()), second: second, third: third) { (queues: inout (first: Array<T>, second: Array<U>, third: Array<V>), r: EitherResult3<T, U, V>, n: SignalNext<(T, U, V)>) in
+		return combine(withState: (Array<T>(), Array<U>(), Array<V>(), false, false, false), second: second, third: third) { (queues: inout (first: Array<T>, second: Array<U>, third: Array<V>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool), r: EitherResult3<T, U, V>, n: SignalNext<(T, U, V)>) in
 			switch (r, queues.first.first, queues.second.first, queues.third.first) {
 			case (.result1(.success(let first)), _, .some(let second), .some(let third)):
 				n.send(value: (first, second, third))
 				queues.second.removeFirst()
 				queues.third.removeFirst()
+				if (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
+					n.close()
+				}
 			case (.result1(.success(let first)), _, _, _):
 				queues.first.append(first)
 			case (.result1(.failure(let e)), _, _, _):
-				n.send(error: e)
+				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
+					n.send(error: e)
+				} else {
+					queues.firstClosed = true
+				}
 
 			case (.result2(.success(let second)), .some(let first), _, .some(let third)):
 				n.send(value: (first, second, third))
 				queues.first.removeFirst()
 				queues.third.removeFirst()
+				if (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) {
+					n.close()
+				}
 			case (.result2(.success(let second)), _, _, _):
 				queues.second.append(second)
 			case (.result2(.failure(let e)), _, _, _):
-				n.send(error: e)
+				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) {
+					n.send(error: e)
+				} else {
+					queues.secondClosed = true
+				}
 
 			case (.result3(.success(let third)), .some(let first), .some(let second), _):
 				n.send(value: (first, second, third))
 				queues.first.removeFirst()
 				queues.second.removeFirst()
+				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) {
+					n.close()
+				}
 			case (.result3(.success(let third)), _, _, _):
 				queues.third.append(third)
 			case (.result3(.failure(let e)), _, _, _):
-				n.send(error: e)
+				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) {
+					n.send(error: e)
+				} else {
+					queues.thirdClosed = true
+				}
 			}
 		}
 	}
@@ -1363,47 +1398,75 @@ extension Signal {
 	/// - parameter with: another `Signal`
 	/// - returns: a signal that emits the values from `self`, paired with corresponding value from `with`.
 	public func zip<U, V, W>(second: Signal<U>, third: Signal<V>, fourth: Signal<W>) -> Signal<(T, U, V, W)> {
-		return combine(withState: (Array<T>(), Array<U>(), Array<V>(), Array<W>()), second: second, third: third, fourth: fourth) { (queues: inout (first: Array<T>, second: Array<U>, third: Array<V>, fourth: Array<W>), r: EitherResult4<T, U, V, W>, n: SignalNext<(T, U, V, W)>) in
+		return combine(withState: (Array<T>(), Array<U>(), Array<V>(), Array<W>(), false, false, false, false), second: second, third: third, fourth: fourth) { (queues: inout (first: Array<T>, second: Array<U>, third: Array<V>, fourth: Array<W>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool, fourthClosed: Bool), r: EitherResult4<T, U, V, W>, n: SignalNext<(T, U, V, W)>) in
 			switch (r, queues.first.first, queues.second.first, queues.third.first, queues.fourth.first) {
 			case (.result1(.success(let first)), _, .some(let second), .some(let third), .some(let fourth)):
 				n.send(value: (first, second, third, fourth))
 				queues.second.removeFirst()
 				queues.third.removeFirst()
 				queues.fourth.removeFirst()
+				if (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
+					n.close()
+				}
 			case (.result1(.success(let first)), _, _, _, _):
 				queues.first.append(first)
 			case (.result1(.failure(let e)), _, _, _, _):
-				n.send(error: e)
+				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
+					n.send(error: e)
+				} else {
+					queues.firstClosed = true
+				}
 
 			case (.result2(.success(let second)), .some(let first), _, .some(let third), .some(let fourth)):
 				n.send(value: (first, second, third, fourth))
 				queues.first.removeFirst()
 				queues.third.removeFirst()
 				queues.fourth.removeFirst()
+				if (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
+					n.close()
+				}
 			case (.result2(.success(let second)), _, _, _, _):
 				queues.second.append(second)
 			case (.result2(.failure(let e)), _, _, _, _):
-				n.send(error: e)
+				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
+					n.send(error: e)
+				} else {
+					queues.secondClosed = true
+				}
 
 			case (.result3(.success(let third)), .some(let first), .some(let second), _, .some(let fourth)):
 				n.send(value: (first, second, third, fourth))
 				queues.first.removeFirst()
 				queues.second.removeFirst()
 				queues.fourth.removeFirst()
+				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
+					n.close()
+				}
 			case (.result3(.success(let third)), _, _, _, _):
 				queues.third.append(third)
 			case (.result3(.failure(let e)), _, _, _, _):
-				n.send(error: e)
+				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
+					n.send(error: e)
+				} else {
+					queues.thirdClosed = true
+				}
 
 			case (.result4(.success(let fourth)), .some(let first), .some(let second), .some(let third), _):
 				n.send(value: (first, second, third, fourth))
 				queues.first.removeFirst()
 				queues.second.removeFirst()
 				queues.third.removeFirst()
+				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
+					n.close()
+				}
 			case (.result4(.success(let fourth)), _, _, _, _):
 				queues.fourth.append(fourth)
 			case (.result4(.failure(let e)), _, _, _, _):
-				n.send(error: e)
+				if queues.fourth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
+					n.send(error: e)
+				} else {
+					queues.fourthClosed = true
+				}
 			}
 		}
 	}
@@ -1413,7 +1476,7 @@ extension Signal {
 	/// - parameter with: another `Signal`
 	/// - returns: a signal that emits the values from `self`, paired with corresponding value from `with`.
 	public func zip<U, V, W, X>(second: Signal<U>, third: Signal<V>, fourth: Signal<W>, fifth: Signal<X>) -> Signal<(T, U, V, W, X)> {
-		return combine(withState: (Array<T>(), Array<U>(), Array<V>(), Array<W>(), Array<X>()), second: second, third: third, fourth: fourth, fifth: fifth) { (queues: inout (first: Array<T>, second: Array<U>, third: Array<V>, fourth: Array<W>, fifth: Array<X>), r: EitherResult5<T, U, V, W, X>, n: SignalNext<(T, U, V, W, X)>) in
+		return combine(withState: (Array<T>(), Array<U>(), Array<V>(), Array<W>(), Array<X>(), false, false, false, false, false), second: second, third: third, fourth: fourth, fifth: fifth) { (queues: inout (first: Array<T>, second: Array<U>, third: Array<V>, fourth: Array<W>, fifth: Array<X>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool, fourthClosed: Bool, fifthClosed: Bool), r: EitherResult5<T, U, V, W, X>, n: SignalNext<(T, U, V, W, X)>) in
 			switch (r, queues.first.first, queues.second.first, queues.third.first, queues.fourth.first, queues.fifth.first) {
 			case (.result1(.success(let first)), _, .some(let second), .some(let third), .some(let fourth), .some(let fifth)):
 				n.send(value: (first, second, third, fourth, fifth))
@@ -1421,10 +1484,17 @@ extension Signal {
 				queues.third.removeFirst()
 				queues.fourth.removeFirst()
 				queues.fifth.removeFirst()
+				if (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
+					n.close()
+				}
 			case (.result1(.success(let first)), _, _, _, _, _):
 				queues.first.append(first)
 			case (.result1(.failure(let e)), _, _, _, _, _):
-				n.send(error: e)
+				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
+					n.send(error: e)
+				} else {
+					queues.firstClosed = true
+				}
 
 			case (.result2(.success(let second)), .some(let first), _, .some(let third), .some(let fourth), .some(let fifth)):
 				n.send(value: (first, second, third, fourth, fifth))
@@ -1432,10 +1502,17 @@ extension Signal {
 				queues.third.removeFirst()
 				queues.fourth.removeFirst()
 				queues.fifth.removeFirst()
+				if (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
+					n.close()
+				}
 			case (.result2(.success(let second)), _, _, _, _, _):
 				queues.second.append(second)
 			case (.result2(.failure(let e)), _, _, _, _, _):
-				n.send(error: e)
+				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
+					n.send(error: e)
+				} else {
+					queues.secondClosed = true
+				}
 
 			case (.result3(.success(let third)), .some(let first), .some(let second), _, .some(let fourth), .some(let fifth)):
 				n.send(value: (first, second, third, fourth, fifth))
@@ -1443,10 +1520,17 @@ extension Signal {
 				queues.second.removeFirst()
 				queues.fourth.removeFirst()
 				queues.fifth.removeFirst()
+				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
+					n.close()
+				}
 			case (.result3(.success(let third)), _, _, _, _, _):
 				queues.third.append(third)
 			case (.result3(.failure(let e)), _, _, _, _, _):
-				n.send(error: e)
+				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
+					n.send(error: e)
+				} else {
+					queues.thirdClosed = true
+				}
 
 			case (.result4(.success(let fourth)), .some(let first), .some(let second), .some(let third), _, .some(let fifth)):
 				n.send(value: (first, second, third, fourth, fifth))
@@ -1454,10 +1538,17 @@ extension Signal {
 				queues.second.removeFirst()
 				queues.third.removeFirst()
 				queues.fifth.removeFirst()
+				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
+					n.close()
+				}
 			case (.result4(.success(let fourth)), _, _, _, _, _):
 				queues.fourth.append(fourth)
 			case (.result4(.failure(let e)), _, _, _, _, _):
-				n.send(error: e)
+				if queues.fourth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
+					n.send(error: e)
+				} else {
+					queues.fourthClosed = true
+				}
 
 			case (.result5(.success(let fifth)), .some(let first), .some(let second), .some(let third), .some(let fourth), _):
 				n.send(value: (first, second, third, fourth, fifth))
@@ -1465,10 +1556,17 @@ extension Signal {
 				queues.second.removeFirst()
 				queues.third.removeFirst()
 				queues.fourth.removeFirst()
+				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
+					n.close()
+				}
 			case (.result5(.success(let fifth)), _, _, _, _, _):
 				queues.fifth.append(fifth)
 			case (.result5(.failure(let e)), _, _, _, _, _):
-				n.send(error: e)
+				if queues.fifth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
+					n.send(error: e)
+				} else {
+					queues.fifthClosed = true
+				}
 			}
 		}
 	}
@@ -1609,7 +1707,7 @@ extension Signal {
 	/// - parameter context: the `Exec` where timed reconnection will occcur (default: .Default).
 	/// - returns: a mirror of `self` where values are delayed by `seconds` – closing occurs when `self` closes or when the last delayed value is sent (whichever occurs last).
 	public func delay(interval: DispatchTimeInterval, closesImmediate: Bool = false, context: Exec = .direct) -> Signal<T> {
-		return delay(withState: interval, closesImmediate: closesImmediate) { (s: inout DispatchTimeInterval, v: T) -> DispatchTimeInterval in s }
+		return delay(withState: interval, closesImmediate: closesImmediate, context: context) { (s: inout DispatchTimeInterval, v: T) -> DispatchTimeInterval in s }
 	}
 	
 	/// Implementation of [Reactive X operator "delay"](http://reactivex.io/documentation/operators/delay.html) where delay for each value is determined by the duration of a signal returned from `offset`.
@@ -1727,6 +1825,8 @@ extension Signal {
 	}
 	
 	/// Implementation of [Reactive X operator "materialize"](http://reactivex.io/documentation/operators/materialize-dematerialize.html)
+	///
+	/// WARNING: the output signal won't close, even when the input closes. Graph lifecycle must be managed through other means.
 	///
 	/// - parameter context: the `Exec` where timed reconnection will occcur (default: .Default).
 	/// - parameter offset: a function that, when passed the latest value from `self`, returns a `Signal`.

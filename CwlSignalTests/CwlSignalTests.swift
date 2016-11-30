@@ -474,6 +474,14 @@ class SignalTests: XCTestCase {
 		}
 		XCTAssert(results2.count == 1)
 		XCTAssert(results2.at(0)?.error as? SignalError == .closed)
+
+		var results3 = [Result<Int>]()
+		_ = Signal<Int>.preclosed(7).subscribe { r in
+			results3.append(r)
+		}
+		XCTAssert(results3.count == 2)
+		XCTAssert(results3.at(0)?.value == 7)
+		XCTAssert(results3.at(1)?.error as? SignalError == .closed)
 	}
 	
 	func testCapture() {
@@ -1802,7 +1810,7 @@ class SignalTests: XCTestCase {
 		#if DEBUG
 			let sequenceLength = 10_000
 			let expected = 0.02 // +/- 0.15
-			let upperThreshold = 1.0
+			let upperThreshold = 3.0
 		#else
 			let sequenceLength = 1_000_000
 			let expected = 3.2 // +/- 0.4
