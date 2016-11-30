@@ -93,16 +93,7 @@ extension Signal {
 	///
 	/// - returns: output of the merge set
 	public func transformFlatten<U>(context: Exec = .direct, closesImmediate: Bool = false, processor: @escaping (T, SignalMergeSet<U>) -> ()) -> Signal<U> {
-		let (mergeSet, result) = Signal<U>.mergeSetAndSignal()
-		let closeSignal = self.transform(context: context) { (r: Result<T>, n: SignalNext<U>) in
-			switch r {
-			case .success(let v): processor(v, mergeSet)
-			case .failure(let e): n.send(error: e)
-			}
-		}
-		// Keep the merge set alive at least as long as self
-		mergeSet.add(closeSignal, closesOutput: closesImmediate)
-		return result
+		return transformFlatten(withState: (), closesImmediate: closesImmediate, context: context, processor: { (state: inout (), value: T, mergeSet: SignalMergeSet<U>) in processor(value, mergeSet) })
 	}
 	
 	/// A signal transform function that, instead of sending values to a `SignalNext`, outputs entire signals to a `SignalMergeSet`. The output of the merge set is then the result from this function.
@@ -118,9 +109,9 @@ extension Signal {
 	public func transformFlatten<S, U>(withState initialState: S, closesImmediate: Bool = false, context: Exec = .direct, processor: @escaping (inout S, T, SignalMergeSet<U>) -> ()) -> Signal<U> {
 		let (mergeSet, result) = Signal<U>.mergeSetAndSignal()
 		var closeError: Error? = nil
-		let closeSignal = transform(withState: (onDelete: nil, userState: initialState), context: context) { (state: inout (onDelete: OnDelete?, userState: S), r: Result<T>, n: SignalNext<U>) in
+		let closeSignal = transform(withState: initialState, context: context) { (state: inout S, r: Result<T>, n: SignalNext<U>) in
 			switch r {
-			case .success(let v): processor(&state.userState, v, mergeSet)
+			case .success(let v): processor(&state, v, mergeSet)
 			case .failure(let e):
 				closeError = e
 				n.send(error: e)
@@ -131,7 +122,12 @@ extension Signal {
 		mergeSet.add(closeSignal, closesOutput: closesImmediate)
 		
 		// On close, emit the error from self rather than the error from the merge set (which is usually `SignalError.cancelled` when `closesImmediate` is false.
-		return result.transform { (r, n) in
+		return result.transform(withState: nil) { (onDelete: inout OnDelete?, r: Result<U>, n: SignalNext<U>) in
+			if onDelete == nil {
+				onDelete = OnDelete {
+					closeError = nil
+				}
+			}
 			switch r {
 			case .success(let v): n.send(value: v)
 			case .failure(let e): n.send(error: closeError ?? e)
@@ -146,25 +142,7 @@ extension Signal {
 	///
 	/// - returns: a signal of two element tuples
 	public func valueDurations<U>(closesImmediate: Bool = false, context: Exec = .direct, duration: @escaping (T) -> Signal<U>) -> Signal<(Int, T?)> {
-		return transformFlatten(withState: 0, closesImmediate: closesImmediate, context: context) { (count: inout Int, v: T, mergeSet: SignalMergeSet<(Int, T?)>) in
-			let innerSignal = duration(v).transform { [count] (innerResult: Result<U>, innerInput: SignalNext<(Int, T?)>) in
-				if case .failure(let e) = innerResult {
-					innerInput.send(value: (count, nil))
-					innerInput.send(error: e)
-				}
-			}
-			let prefixedInnerSignal = Signal<(Int, T?)>.preclosed(values: [(count, Optional(v))]).combine(second: innerSignal) { (r: EitherResult2<(Int, T?), (Int, T?)>, n: SignalNext<(Int, T?)>) in
-				switch r {
-				case .result1(.success(let v)): n.send(value: v)
-				case .result1(.failure): break
-				case .result2(.success(let v)): n.send(value: v)
-				case .result2(.failure(let e)): n.send(error: e)
-				}
-			}
-
-			mergeSet.add(prefixedInnerSignal)
-			count += 1
-		}
+		return valueDurations(withState: (), closesImmediate: closesImmediate, context: context, duration: { (state: inout (), value: T) -> Signal<U> in duration(value) })
 	}
 
 	/// A utility function, used by ReactiveX implementations, that generates "window" durations in single signal from the values in self and a "duration" function that returns duration signals for each value.
