@@ -1,10 +1,12 @@
 /*:
 
-# Parallel composition, part 1
+# Parallel composition 1
 
 > **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
 
 ## The `combine` function
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 Any number of `Signal` instances can be chained in series to form pipelines, allowing value transformations and other "stream processing" to be applied to values between the sender and the subscriber.
 
@@ -47,5 +49,4 @@ endpoint.cancel()
 [Next page: Parallel composition - operators](@next)
 
 [Previous page: Serial pipelines - map](@previous)
-
 */

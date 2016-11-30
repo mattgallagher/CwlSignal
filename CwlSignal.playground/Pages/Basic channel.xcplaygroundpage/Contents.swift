@@ -5,6 +5,8 @@
 
 ## The createPair function
 
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
+
 The CwlSignal library is centered around the Signal type; a one-way communication channel.
 
 The `(SignalInput, Signal)` pair returned from `createPair` are the two ends of the channel and can be passed around your program to locations where values are emitted or where values are needed.
@@ -32,7 +34,7 @@ input.send(value: 2)
 input.send(value: 3)
 input.close()
 
-// You'd normally store the endpoint in a parent and let ARC control its lifetime.
+// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
 endpoint.cancel()
 /*:
 ---
@@ -40,5 +42,4 @@ endpoint.cancel()
 [Next page: Serial pipelines - transform](@next)
 
 [Previous page: Introduction](@previous)
-
 */

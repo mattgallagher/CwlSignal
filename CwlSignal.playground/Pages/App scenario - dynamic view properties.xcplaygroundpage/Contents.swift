@@ -1,6 +1,6 @@
 /*:
 
-# App scenario, part 2
+# App scenario, part 2 2
 
 > **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
 
@@ -90,6 +90,5 @@ class ViewController: NSViewController {
 /*:
 ---
 
-[Previous page: App scenario - dynamic view properties](@previous)
-
+[Previous page: App scenario - threadsafe key-value storage](@previous)
 */

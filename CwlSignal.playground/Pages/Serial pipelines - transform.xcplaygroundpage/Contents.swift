@@ -1,10 +1,12 @@
 /*:
 
-# Serial pipelines, part 1
+# Serial pipelines 1
 
 > **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
 
 ## The `transform` function
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 Any number of `Signal` instances can be chained in series to form pipelines. This allows value transformations and other "stream processing" to be applied to values between the sender and the subscriber.
 
@@ -29,7 +31,7 @@ let endpoint = o.transform { (result: Result<Int>, next: SignalNext<String>) in
 i.send(value: 3)
 i.close()
 
-// You'd normally store the endpoint in a parent and let ARC control its lifetime.
+// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
 endpoint.cancel()
 /*:
 ---
@@ -37,5 +39,4 @@ endpoint.cancel()
 [Next page: Serial pipelines - map](@next)
 
 [Previous page: Basic channel](@previous)
-
 */

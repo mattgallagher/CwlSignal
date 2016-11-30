@@ -20,8 +20,11 @@ Failure to follow these steps correctly will result in a "Playground execution f
 4. [Serial pipeline](Serial%20pipeline)
 5. [Parallel composition - combine](Parallel%20composition%20-%20combine)
 6. [Parallel composition - operators](Parallel%20composition%20-%20operators)
-7. [App scenario - threadsafe key-value storage](App%20scenario%20-%20threadsafe%20key-value%20storage)
-8. [App scenario - dynamic view properties](App%20scenario%20-%20dynamic%20view%20properties)
+7. [Advanced behaviors - continuous](Advanced%20behaviors%20-%20continuous)
+8. [Advanced behaviors - lazy generation](Advanced%20behaviors%20-%20lazy%20generation)
+9. [Advanced behaviors - capturing](Advanced%20behaviors%20-%20capturing)
+10. [App scenario - threadsafe key-value storage](App%20scenario%20-%20threadsafe%20key-value%20storage)
+11. [App scenario - dynamic view properties](App%20scenario%20-%20dynamic%20view%20properties)
 
 [Next: Basic channel](@next)
 */

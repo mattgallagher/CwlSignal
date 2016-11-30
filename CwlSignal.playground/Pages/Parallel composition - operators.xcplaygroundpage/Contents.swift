@@ -1,10 +1,12 @@
 /*:
 
-# Parallel composition, part 2
+# Parallel composition 2
 
 > **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
 
 ## Some advanced operators
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 There are lots of different "operator" functions for merging and combining `Signal` instances. This page demonstrates `switchLatest` and `timeout` but there are many more (including the `combineLatest` used in [App scenario - dynamic view properties](App%20scenario%20-%20dynamic%20view%20properties)).
 
@@ -59,12 +61,13 @@ service.connect(seconds: 1.0)
 
 // Let everything run for a 10 seconds.
 RunLoop.current.run(until: Date(timeIntervalSinceNow: 10.0))
-withExtendedLifetime(endpoint) {}
+
+// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+endpoint.cancel()
 /*:
 ---
 
-[Next page: App scenario - threadsafe key-value storage](@next)
+[Next page: Advanced behaviors - continuous](@next)
 
 [Previous page: Parallel composition - combine](@previous)
-
 */

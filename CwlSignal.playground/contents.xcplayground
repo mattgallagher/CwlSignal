@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<playground version='6.0' target-platform='macos' auto-termination-delay='20' display-mode='rendered' executeOnSourceChanges='false' timelineScrubberEnabled='true'>
+<playground version='6.0' target-platform='macos' auto-termination-delay='20' display-mode='raw' executeOnSourceChanges='false' timelineScrubberEnabled='true'>
     <pages>
         <page name='Introduction'/>
         <page name='Basic channel'/>
@@ -7,6 +7,9 @@
         <page name='Serial pipelines - map'/>
         <page name='Parallel composition - combine'/>
         <page name='Parallel composition - operators'/>
+        <page name='Advanced behaviors - continuous'/>
+        <page name='Advanced behaviors - lazy generation'/>
+        <page name='Advanced behaviors - capturing'/>
         <page name='App scenario - threadsafe key-value storage'/>
         <page name='App scenario - dynamic view properties'/>
     </pages>

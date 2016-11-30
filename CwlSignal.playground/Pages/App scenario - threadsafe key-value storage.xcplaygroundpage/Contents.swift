@@ -1,10 +1,12 @@
 /*:
 
-# App scenario, part 1
+# App scenario 1
 
 > **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
 
-## A threadsafe key-value storage
+## A threadsafe, notifying key-value storage
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 The following is a threadsafe dictionary of values. You might use something similar for the "model" in a trivial app. Even if more sophisticated storage than a dictionary is required, the pattern of updating and notifying will likely be the same.
 
@@ -25,6 +27,8 @@ let dv = DocumentValues()
 let ep = dv.signal.subscribeValues { v in print("Latest update: \(v)") }
 
 // Change the contents
+dv.setValue("Hi, there.", forKey: "Oh!")
+dv.removeValue(forKey: "Oh!")
 dv.setValue("World", forKey: "Hello")
 
 withExtendedLifetime(ep) {}
@@ -69,6 +73,5 @@ class DocumentValues {
 
 [Next page: App scenario - dynamic view properties](@next)
 
-[Previous page: Parallel composition - operators](@previous)
-
+[Previous page: Advanced behaviors - capturing](@previous)
 */
