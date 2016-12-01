@@ -72,14 +72,12 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	public subscript(_ at: Index) -> T {
 		get {
 			if let b = buffer {
-				return b.withUnsafeMutablePointers { header, body -> T in
-					precondition(at < header.pointee.count)
-					var offset = header.pointee.offset + at
-					if offset >= header.pointee.capacity {
-						offset -= header.pointee.capacity
-					}
-					return body[offset]
+				precondition(at < b.unsafeHeader.pointee.count)
+				var offset = b.unsafeHeader.pointee.offset + at
+				if offset >= b.unsafeHeader.pointee.capacity {
+					offset -= b.unsafeHeader.pointee.capacity
 				}
+				return b.unsafeElements[offset]
 			} else {
 				preconditionFailure("Index beyond end of queue")
 			}
@@ -94,9 +92,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	/// Implementation of Collection function
 	public var endIndex: Index {
 		if let b = buffer {
-			return b.withUnsafeMutablePointerToHeader { header -> Int in
-				return header.pointee.count
-			}
+			return b.unsafeHeader.pointee.count
 		}
 		
 		return 0
@@ -105,9 +101,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	/// Implementation of Collection function
 	public var isEmpty: Bool {
       if let b = buffer {
-         return b.withUnsafeMutablePointerToHeader { header -> Bool in
-            return header.pointee.count == 0
-         }
+         return b.unsafeHeader.pointee.count == 0
       }
       
       return true
@@ -121,19 +115,13 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	/// Optimized implementation of RangeReplaceableCollection function
 	public mutating func append(_ newElement: T) {
 		if let b = buffer {
-			let done = b.withUnsafeMutablePointers { header, body -> Bool in
-				if header.pointee.capacity >= header.pointee.count + 1 {
-					var index = header.pointee.offset + header.pointee.count
-					if index >= header.pointee.capacity {
-						index -= header.pointee.capacity
-					}
-					body.advanced(by: index).initialize(to: newElement)
-					header.pointee.count += 1
-					return true
+			if b.unsafeHeader.pointee.capacity >= b.unsafeHeader.pointee.count + 1 {
+				var index = b.unsafeHeader.pointee.offset + b.unsafeHeader.pointee.count
+				if index >= b.unsafeHeader.pointee.capacity {
+					index -= b.unsafeHeader.pointee.capacity
 				}
-				return false
-			}
-			if done {
+				b.unsafeElements.advanced(by: index).initialize(to: newElement)
+				b.unsafeHeader.pointee.count += 1
 				return
 			}
 		}
@@ -145,20 +133,14 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	/// Optimized implementation of RangeReplaceableCollection function
 	public mutating func insert(_ newElement: T, at: Int) {
 		if let b = buffer {
-			let done = b.withUnsafeMutablePointers { header, body -> Bool in
-				if at == 0, header.pointee.capacity >= header.pointee.count + 1 {
-					var index = header.pointee.offset - 1
-					if index < 0 {
-						index += header.pointee.capacity
-					}
-					body.advanced(by: index).initialize(to: newElement)
-					header.pointee.count += 1
-					header.pointee.offset = index
-					return true
+			if at == 0, b.unsafeHeader.pointee.capacity >= b.unsafeHeader.pointee.count + 1 {
+				var index = b.unsafeHeader.pointee.offset - 1
+				if index < 0 {
+					index += b.unsafeHeader.pointee.capacity
 				}
-				return false
-			}
-			if done {
+				b.unsafeElements.advanced(by: index).initialize(to: newElement)
+				b.unsafeHeader.pointee.count += 1
+				b.unsafeHeader.pointee.offset = index
 				return
 			}
 		}
@@ -169,21 +151,15 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	/// Optimized implementation of RangeReplaceableCollection function
 	public mutating func remove(at: Int) {
 		if let b = buffer {
-			let done = b.withUnsafeMutablePointerToHeader { header -> Bool in
-				if at == header.pointee.count - 1 {
-					header.pointee.count -= 1
-					return true
-				} else if at == 0, header.pointee.count > 0 {
-					header.pointee.offset += 1
-					if header.pointee.offset >= header.pointee.capacity {
-						header.pointee.offset -= header.pointee.capacity
-					}
-					header.pointee.count -= 1
-					return true
+			if at == b.unsafeHeader.pointee.count - 1 {
+				b.unsafeHeader.pointee.count -= 1
+				return
+			} else if at == 0, b.unsafeHeader.pointee.count > 0 {
+				b.unsafeHeader.pointee.offset += 1
+				if b.unsafeHeader.pointee.offset >= b.unsafeHeader.pointee.capacity {
+					b.unsafeHeader.pointee.offset -= b.unsafeHeader.pointee.capacity
 				}
-				return false
-			}
-			if done {
+				b.unsafeHeader.pointee.count -= 1
 				return
 			}
 		}
@@ -194,17 +170,15 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	/// Optimized implementation of RangeReplaceableCollection function
 	public mutating func removeFirst() -> T {
 		if let b = buffer {
-			return b.withUnsafeMutablePointers { header, body -> T in
-				precondition(header.pointee.count > 0, "Index beyond bounds")
-				let result = body[header.pointee.offset]
-				body.advanced(by: header.pointee.offset).deinitialize()
-				header.pointee.offset += 1
-				if header.pointee.offset >= header.pointee.capacity {
-					header.pointee.offset -= header.pointee.capacity
-				}
-				header.pointee.count -= 1
-				return result
+			precondition(b.unsafeHeader.pointee.count > 0, "Index beyond bounds")
+			let result = b.unsafeElements[b.unsafeHeader.pointee.offset]
+			b.unsafeElements.advanced(by: b.unsafeHeader.pointee.offset).deinitialize()
+			b.unsafeHeader.pointee.offset += 1
+			if b.unsafeHeader.pointee.offset >= b.unsafeHeader.pointee.capacity {
+				b.unsafeHeader.pointee.offset -= b.unsafeHeader.pointee.capacity
 			}
+			b.unsafeHeader.pointee.count -= 1
+			return result
 		}
 		preconditionFailure("Index beyond bounds")
 	}
@@ -348,22 +322,21 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 					Deque.deinitialize(range: info.start..<(info.start + info.removed), header: headerPtr, body: bodyPtr)
 				}
 				
-				newBuffer.withUnsafeMutablePointers { newHeader, newBody in
-					if info.start != 0 {
-						if deletePrevious {
-							Deque.moveInitialize(preMappedSourceRange: 0..<info.start, postMappedDestinationRange: 0..<info.start, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
-						} else {
-							Deque.copyInitialize(preMappedSourceRange: 0..<info.start, postMappedDestinationRange: 0..<info.start, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
-						}
+				let newBody = newBuffer.unsafeElements
+				if info.start != 0 {
+					if deletePrevious {
+						Deque.moveInitialize(preMappedSourceRange: 0..<info.start, postMappedDestinationRange: 0..<info.start, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
+					} else {
+						Deque.copyInitialize(preMappedSourceRange: 0..<info.start, postMappedDestinationRange: 0..<info.start, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
 					}
-					
-					let oldCount = header?.pointee.count ?? 0
-					if info.start + info.removed != oldCount {
-						if deletePrevious {
-							Deque.moveInitialize(preMappedSourceRange: (info.start + info.removed)..<oldCount, postMappedDestinationRange: (info.start + info.inserted)..<info.newCount, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
-						} else {
-							Deque.copyInitialize(preMappedSourceRange: (info.start + info.removed)..<oldCount, postMappedDestinationRange: (info.start + info.inserted)..<info.newCount, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
-						}
+				}
+				
+				let oldCount = header?.pointee.count ?? 0
+				if info.start + info.removed != oldCount {
+					if deletePrevious {
+						Deque.moveInitialize(preMappedSourceRange: (info.start + info.removed)..<oldCount, postMappedDestinationRange: (info.start + info.inserted)..<info.newCount, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
+					} else {
+						Deque.copyInitialize(preMappedSourceRange: (info.start + info.removed)..<oldCount, postMappedDestinationRange: (info.start + info.inserted)..<info.newCount, sourceHeader: headerPtr, sourceBody: bodyPtr, destinationBody: newBody)
 					}
 				}
 				
@@ -375,9 +348,7 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 			
 			if info.inserted > 0 {
 				// Insert the new subrange
-				newBuffer.withUnsafeMutablePointerToElements { body in
-					body.advanced(by: info.start).initialize(from: newElements)
-				}
+				newBuffer.unsafeElements.advanced(by: info.start).initialize(from: newElements)
 			}
 			
 			buffer = newBuffer
@@ -390,19 +361,17 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 		precondition(subrange.lowerBound >= 0, "Subrange lowerBound is negative")
 		
 		if isKnownUniquelyReferenced(&buffer), let b = buffer {
-			b.withUnsafeMutablePointers { header, body in
-				let info = DequeMutationInfo(subrange: subrange, previousCount: header.pointee.count, insertedCount: numericCast(newElements.count))
-				if info.newCount <= header.pointee.capacity && (info.newCount < minCapacity || info.newCount > header.pointee.capacity / DequeDownsizeTriggerFactor) {
-					Deque.mutateWithoutReallocate(info: info, elements: newElements, header: header, body: body)
-				} else {
-					reallocateAndMutate(info: info, elements: newElements, header: header, body: body, deletePrevious: true)
-				}
+			let (header, body) = (b.unsafeHeader, b.unsafeElements)
+			let info = DequeMutationInfo(subrange: subrange, previousCount: header.pointee.count, insertedCount: numericCast(newElements.count))
+			if info.newCount <= header.pointee.capacity && (info.newCount < minCapacity || info.newCount > header.pointee.capacity / DequeDownsizeTriggerFactor) {
+				Deque.mutateWithoutReallocate(info: info, elements: newElements, header: header, body: body)
+			} else {
+				reallocateAndMutate(info: info, elements: newElements, header: header, body: body, deletePrevious: true)
 			}
 		} else if let b = buffer {
-			b.withUnsafeMutablePointers { header, body in
-				let info = DequeMutationInfo(subrange: subrange, previousCount: header.pointee.count, insertedCount: numericCast(newElements.count))
-				reallocateAndMutate(info: info, elements: newElements, header: header, body: body, deletePrevious: false)
-			}
+			let (header, body) = (b.unsafeHeader, b.unsafeElements)
+			let info = DequeMutationInfo(subrange: subrange, previousCount: header.pointee.count, insertedCount: numericCast(newElements.count))
+			reallocateAndMutate(info: info, elements: newElements, header: header, body: body, deletePrevious: false)
 		} else {
 			let info = DequeMutationInfo(subrange: subrange, previousCount: 0, insertedCount: numericCast(newElements.count))
 			reallocateAndMutate(info: info, elements: newElements, header: nil, body: nil, deletePrevious: true)
@@ -435,16 +404,10 @@ struct DequeMutationInfo {
 	}
 }
 
-#if true
-
 // An implementation of DequeBuffer using ManagedBufferPointer to allocate the
 // storage and then using raw pointer offsets into self to access contents
 // (avoiding the ManagedBufferPointer accessors which are a performance problem
 // in Swift 3).
-//
-// For a version that doesn't use raw pointer offsets (i.e. the version that would
-// ideally be used once performance issues in Swift are resolved), see the disabled
-// "#else" section, below.
 final class DequeBuffer<T> {
 	typealias ValueType = T
 	
@@ -469,23 +432,11 @@ final class DequeBuffer<T> {
 		return Int(roundUp(UInt(headerOffset) + UInt(MemoryLayout<DequeHeader>.size), toAlignment: MemoryLayout<T>.alignment))
 	}
 	
-	func withUnsafeMutablePointerToHeader<R>(_ body: (UnsafeMutablePointer<DequeHeader>) throws -> R) rethrows -> R {
-		return try body(unsafeHeader)
-	}
-	
-	func withUnsafeMutablePointerToElements<R>(_ body: (UnsafeMutablePointer<T>) throws -> R) rethrows -> R {
-		return try body(unsafeElements)
-	}
-	
-	func withUnsafeMutablePointers<R>(_ body: (UnsafeMutablePointer<DequeHeader>, UnsafeMutablePointer<T>) throws -> R) rethrows -> R {
-		return try body(unsafeHeader, unsafeElements)
-	}
-	
-	private var unsafeElements: UnsafeMutablePointer<T> {
+	var unsafeElements: UnsafeMutablePointer<T> {
 		return Unmanaged<DequeBuffer<T>>.passUnretained(self).toOpaque().advanced(by: DequeBuffer<T>.elementOffset).assumingMemoryBound(to: T.self)
 	}
 	
-	private var unsafeHeader: UnsafeMutablePointer<DequeHeader> {
+	var unsafeHeader: UnsafeMutablePointer<DequeHeader> {
 		return Unmanaged<DequeBuffer<T>>.passUnretained(self).toOpaque().advanced(by: DequeBuffer<T>.headerOffset).assumingMemoryBound(to: DequeHeader.self)
 	}
 	
@@ -509,24 +460,3 @@ struct HeapObject {
 	let strongRefCount: UInt32 = 0
 	let weakRefCount: UInt32 = 0
 }
-
-#else
-
-// An implementation of DequeBuffer as a simple ManagedBuffer subclass
-final class DequeBuffer<T>: ManagedBuffer<DequeHeader, T> {
-  class func create(capacity: Int, count: Int) -> DequeBuffer<T> {
-    return unsafeDowncast(super.create(minimumCapacity: capacity) { buffer in
-      DequeHeader(offset: 0, count: count, capacity: capacity)
-    }, to: DequeBuffer<T>.self)
-  }
-  
-  deinit {
-    withUnsafeMutablePointers { header, body in
-      if header.pointee.count > 0 {
-        Deque<T>.deinitialize(range: 0..<header.pointee.count, header: header, body: body)
-      }
-    }
-  }
-}
-
-#endif
