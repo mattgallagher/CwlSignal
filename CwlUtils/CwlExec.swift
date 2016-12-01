@@ -409,13 +409,7 @@ public enum Exec: ExecutionContext {
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
 	public func invokeAndWait(_ execute: @escaping () -> Void) {
 		switch self {
-		case .custom(let c):
-			var complete = false
-			c.invokeAndWait {
-				execute()
-				complete = true
-			}
-			precondition(complete, "Custom Exec failed to run execute before returning")
+		case .custom(let c): c.invokeAndWait(execute)
 		case .main where Thread.isMainThread: execute()
 		case .main: DispatchQueue.main.async(execute: execute)
 		case .mainAsync where Thread.isMainThread: execute()
