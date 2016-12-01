@@ -199,7 +199,7 @@ public class DebugContextCoordinator {
 		if lowestTime == UInt64.max {
 			return nil
 		}
-	
+		
 		return (selectedIndex, lowestTime)
 	}
 	
