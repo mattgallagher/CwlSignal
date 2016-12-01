@@ -28,7 +28,7 @@ open class SignalActionTarget<T: AnyObject>: NSObject {
 	private(set) public var signal: Signal<T>
 	
 	public override init() {
-		(self.signalInput, self.signal) = Signal<T>.createPair()
+		(self.signalInput, self.signal) = Signal<T>.create()
 
 		super.init()
 		
@@ -56,7 +56,7 @@ open class SignalDoubleActionTarget<T: AnyObject>: SignalActionTarget<T> {
 	private let secondSignal: Signal<T>
 
 	public override init() {
-		(self.secondInput, self.secondSignal) = Signal<T>.createPair { $0.multicast() }
+		(self.secondInput, self.secondSignal) = Signal<T>.create { $0.multicast() }
 		super.init()
 	}
 	@objc public func secondAction(_ sender: AnyObject) {

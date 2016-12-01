@@ -1,6 +1,6 @@
 //
 //  CwlSignalReactiveTests.swift
-//  CwlUtils
+//  CwlSignal
 //
 //  Created by Matt Gallagher on 2016/09/08.
 //  Copyright © 2016 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.
@@ -44,7 +44,7 @@ class SignalReactiveTests: XCTestCase {
 	func testFromSequence() {
 		var results = [Result<Int>]()
 		let capture = Signal<Int>.fromSequence([1, 3, 5, 7, 11]).capture()
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		let ep = signal.subscribe { r in results.append(r) }
 		let (values, error) = capture.activation()
 		do {
@@ -68,7 +68,7 @@ class SignalReactiveTests: XCTestCase {
 		let results = Array<Int>(signal.toSequence())
 		XCTAssert(results == [1, 3, 5, 7, 11])
 
-		let (input, signal2) = Signal<Int>.createPair()
+		let (input, signal2) = Signal<Int>.create()
 		let sequence = signal2.toSequence()
 		input.send(value: 13)
 		
@@ -183,7 +183,7 @@ class SignalReactiveTests: XCTestCase {
 	func testBufferSeconds() {
 		var results = [Result<[Int]>]()
 		let coordinator = DebugContextCoordinator()
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		let ep = signal.buffer(interval: .fromSeconds(0.02), count: 3, context: coordinator.direct).subscribe { r in
 			results.append(r)
 			if results.count == 4 {
@@ -211,7 +211,7 @@ class SignalReactiveTests: XCTestCase {
 	func testBufferTimespan() {
 		var results = [Result<[Int]>]()
 		let coordinator = DebugContextCoordinator()
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		let ep = signal.buffer(timespan: .fromSeconds(2), timeshift: .fromSeconds(5), context: coordinator.direct).subscribe { r in
 			results.append(r)
 			if results.count == 3 {
@@ -399,8 +399,8 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testConcatMap() {
 		var results = [Result<String>]()
-		let inputOutputPairs = (0..<4).map { i in Signal<String>.createPair() }
-		let (input, ep) = Signal<Int>.createPair { r in
+		let inputOutputPairs = (0..<4).map { i in Signal<String>.create() }
+		let (input, ep) = Signal<Int>.create { r in
 			r.concatMap { v in inputOutputPairs[v].1 }.subscribe { r in
 				results.append(r)
 			}
@@ -569,7 +569,7 @@ class SignalReactiveTests: XCTestCase {
 	func testWindowInterval() {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
-		let (input, ep) = Signal<Int>.createPair { s in
+		let (input, ep) = Signal<Int>.create { s in
 			s.window(interval: .fromSeconds(0.2), count: 5, context: coordinator.direct).subscribe { r in
 				if let v = r.value {
 					let index = results.count
@@ -813,7 +813,7 @@ class SignalReactiveTests: XCTestCase {
 	func testDebounce() {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		var delayedInputs = [Cancellable]()
 		let delays: [Int] = [4, 8, 12, 16, 60, 64, 68, 72, 120, 124, 128, 170, 174, 220, 224]
 		for i in 0..<delays.count {
@@ -845,7 +845,7 @@ class SignalReactiveTests: XCTestCase {
 	func testThrottleFirst() {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		var delayedInputs = [Cancellable]()
 		let delays: [Int] = [4, 8, 12, 16, 60, 64, 68, 72, 120, 124, 128, 170, 174, 220, 224]
 		for i in 0..<delays.count {
@@ -1048,8 +1048,8 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testSample() {
 		var results = [Result<Int>]()
-		let (input, signal) = Signal<Int>.createPair()
-		let (triggerInput, trigger) = Signal<()>.createPair()
+		let (input, signal) = Signal<Int>.create()
+		let (triggerInput, trigger) = Signal<()>.create()
 		let sample = signal.sample(trigger)
 		let ep = sample.subscribe { (r: Result<Int>) -> Void in
 			results.append(r)
@@ -1133,8 +1133,8 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testCombineLatest2() {
 		var results = [Result<String>]()
-		let (signal1Input, signal1) = Signal<Int>.createPair()
-		let (signal2Input, signal2) = Signal<Double>.createPair()
+		let (signal1Input, signal1) = Signal<Int>.create()
+		let (signal2Input, signal2) = Signal<Double>.create()
 		let combined = signal1.combineLatest(second: signal2) {
 			"\($0) \($1)"
 		}
@@ -1165,9 +1165,9 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testCombineLatest3() {
 		var results = [Result<String>]()
-		let (signal1Input, signal1) = Signal<Int>.createPair()
-		let (signal2Input, signal2) = Signal<Double>.createPair()
-		let (signal3Input, signal3) = Signal<String>.createPair()
+		let (signal1Input, signal1) = Signal<Int>.create()
+		let (signal2Input, signal2) = Signal<Double>.create()
+		let (signal3Input, signal3) = Signal<String>.create()
 		let combined = signal1.combineLatest(second: signal2, third: signal3) {
 			"\($0) \($1) \($2)"
 		}
@@ -1200,10 +1200,10 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testCombineLatest4() {
 		var results = [Result<String>]()
-		let (signal1Input, signal1) = Signal<Int>.createPair()
-		let (signal2Input, signal2) = Signal<Double>.createPair()
-		let (signal3Input, signal3) = Signal<String>.createPair()
-		let (signal4Input, signal4) = Signal<Int>.createPair()
+		let (signal1Input, signal1) = Signal<Int>.create()
+		let (signal2Input, signal2) = Signal<Double>.create()
+		let (signal3Input, signal3) = Signal<String>.create()
+		let (signal4Input, signal4) = Signal<Int>.create()
 		let combined = signal1.combineLatest(second: signal2, third: signal3, fourth: signal4) {
 			"\($0) \($1) \($2) \($3)"
 		}
@@ -1238,11 +1238,11 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testCombineLatest5() {
 		var results = [Result<String>]()
-		let (signal1Input, signal1) = Signal<Int>.createPair()
-		let (signal2Input, signal2) = Signal<Double>.createPair()
-		let (signal3Input, signal3) = Signal<String>.createPair()
-		let (signal4Input, signal4) = Signal<Int>.createPair()
-		let (signal5Input, signal5) = Signal<Bool>.createPair()
+		let (signal1Input, signal1) = Signal<Int>.create()
+		let (signal2Input, signal2) = Signal<Double>.create()
+		let (signal3Input, signal3) = Signal<String>.create()
+		let (signal4Input, signal4) = Signal<Int>.create()
+		let (signal5Input, signal5) = Signal<Bool>.create()
 		let combined = signal1.combineLatest(second: signal2, third: signal3, fourth: signal4, fifth: signal5) {
 			"\($0) \($1) \($2) \($3) \($4)"
 		}
@@ -1280,8 +1280,8 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testJoin() {
 		var results1 = [Result<String>]()
-		let (leftInput1, leftSignal1) = Signal<Int>.createPair()
-		let (rightInput1, rightSignal1) = Signal<Double>.createPair()
+		let (leftInput1, leftSignal1) = Signal<Int>.create()
+		let (rightInput1, rightSignal1) = Signal<Double>.create()
 		let ep1 = leftSignal1.join(withRight: rightSignal1, leftEnd: { v -> Signal<()> in Signal<()>.preclosed() }, rightEnd: { v in Signal<()>.preclosed() }) { (l, r) in return "Unexpected \(l) \(r)" }.subscribe {
 			results1.append($0)
 		}
@@ -1300,8 +1300,8 @@ class SignalReactiveTests: XCTestCase {
 		withExtendedLifetime(ep1) {}
 		
 		var results2 = [Result<String>]()
-		let (leftInput2, leftSignal2) = Signal<Int>.createPair { s in s.multicast() }
-		let (rightInput2, rightSignal2) = Signal<Double>.createPair { s in s.multicast() }
+		let (leftInput2, leftSignal2) = Signal<Int>.create { s in s.multicast() }
+		let (rightInput2, rightSignal2) = Signal<Double>.create { s in s.multicast() }
 		let ep2 = leftSignal2.join(withRight: rightSignal2, leftEnd: { v in leftSignal2 }, rightEnd: { v in rightSignal2 }) { (l, r) in return "\(l) \(r)" }.subscribe {
 			results2.append($0)
 		}
@@ -1325,8 +1325,8 @@ class SignalReactiveTests: XCTestCase {
 		withExtendedLifetime(ep2) {}
 		
 		var results3 = [Result<String>]()
-		let (leftInput3, leftSignal3) = Signal<Int>.createPair { s in s.multicast() }
-		let (rightInput3, rightSignal3) = Signal<Double>.createPair { s in s.multicast() }
+		let (leftInput3, leftSignal3) = Signal<Int>.create { s in s.multicast() }
+		let (rightInput3, rightSignal3) = Signal<Double>.create { s in s.multicast() }
 		let ep3 = leftSignal3.join(withRight: rightSignal3, leftEnd: { v in leftSignal3.skip(1) }, rightEnd: { v in rightSignal3.skip(1) }) { (l, r) in return "\(l) \(r)" }.subscribe {
 			results3.append($0)
 		}
@@ -1356,8 +1356,8 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testGroupJoin() {
 		var results1 = [Result<String>]()
-		let (leftInput1, leftSignal1) = Signal<Int>.createPair()
-		let (rightInput1, rightSignal1) = Signal<Double>.createPair()
+		let (leftInput1, leftSignal1) = Signal<Int>.create()
+		let (rightInput1, rightSignal1) = Signal<Double>.create()
 		let ep1 = leftSignal1.groupJoin(withRight: rightSignal1, leftEnd: { v -> Signal<()> in Signal<()>.preclosed() }, rightEnd: { v in Signal<()>.preclosed() }) { (l, r) in r.map { "\(l) \($0)" } }.subscribe {
 			switch $0 {
 			case .success(let v): v.subscribeValues { results1.append(Result<String>.success($0)) }.keepAlive()
@@ -1379,8 +1379,8 @@ class SignalReactiveTests: XCTestCase {
 		withExtendedLifetime(ep1) {}
 		
 		var results2 = [Result<String>]()
-		let (leftInput2, leftSignal2) = Signal<Int>.createPair { s in s.multicast() }
-		let (rightInput2, rightSignal2) = Signal<Double>.createPair { s in s.multicast() }
+		let (leftInput2, leftSignal2) = Signal<Int>.create { s in s.multicast() }
+		let (rightInput2, rightSignal2) = Signal<Double>.create { s in s.multicast() }
 		let ep2 = leftSignal2.groupJoin(withRight: rightSignal2, leftEnd: { v in leftSignal2 }, rightEnd: { v in rightSignal2 }) { (l, r) in r.map { "\(l) \($0)" } }.subscribe {
 			switch $0 {
 			case .success(let v):
@@ -1411,8 +1411,8 @@ class SignalReactiveTests: XCTestCase {
 		withExtendedLifetime(ep2) {}
 		
 		var results3 = [Result<String>]()
-		let (leftInput3, leftSignal3) = Signal<Int>.createPair { s in s.multicast() }
-		let (rightInput3, rightSignal3) = Signal<Double>.createPair { s in s.multicast() }
+		let (leftInput3, leftSignal3) = Signal<Int>.create { s in s.multicast() }
+		let (rightInput3, rightSignal3) = Signal<Double>.create { s in s.multicast() }
 		let ep3 = leftSignal3.groupJoin(withRight: rightSignal3, leftEnd: { v in leftSignal3.skip(1) }, rightEnd: { v in rightSignal3.skip(1) }) { (l, r) in r.map { "\(l) \($0)" } }.subscribe {
 			switch $0 {
 			case .success(let v): v.subscribeValues { results3.append(Result<String>.success($0)) }.keepAlive()
@@ -1482,14 +1482,14 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testSwitchLatest() {
 		var results = [Result<Int>]()
-		let (input, signal) = Signal<Signal<Int>>.createPair()
+		let (input, signal) = Signal<Signal<Int>>.create()
 		let ep = Signal<Int>.switchLatest(signal).subscribe { (r: Result<Int>) in
 			results.append(r)
 		}
-		let (input1, child1) = Signal<Int>.createPair()
-		let (input2, child2) = Signal<Int>.createPair()
-		let (input3, child3) = Signal<Int>.createPair()
-		let (input4, child4) = Signal<Int>.createPair()
+		let (input1, child1) = Signal<Int>.create()
+		let (input2, child2) = Signal<Int>.create()
+		let (input3, child3) = Signal<Int>.create()
+		let (input4, child4) = Signal<Int>.create()
 		input.send(value: child1)
 		input1.send(value: 0)
 		input1.send(value: 1)
@@ -1530,8 +1530,8 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testZip2() {
 		var results = [Result<(Int, Int)>]()
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Int>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Int>.create()
 		let ep = signal1.zip(second: signal2).subscribe { (r: Result<(Int, Int)>) in
 			results.append(r)
 		}
@@ -1558,9 +1558,9 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testZip3() {
 		var results = [Result<(Int, Int, Int)>]()
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Int>.createPair()
-		let (input3, signal3) = Signal<Int>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Int>.create()
+		let (input3, signal3) = Signal<Int>.create()
 		let ep = signal1.zip(second: signal2, third: signal3).subscribe { (r: Result<(Int, Int, Int)>) in
 			results.append(r)
 		}
@@ -1593,10 +1593,10 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testZip4() {
 		var results = [Result<(Int, Int, Int, Int)>]()
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Int>.createPair()
-		let (input3, signal3) = Signal<Int>.createPair()
-		let (input4, signal4) = Signal<Int>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Int>.create()
+		let (input3, signal3) = Signal<Int>.create()
+		let (input4, signal4) = Signal<Int>.create()
 		let ep = signal1.zip(second: signal2, third: signal3, fourth: signal4).subscribe { (r: Result<(Int, Int, Int, Int)>) in
 			results.append(r)
 		}
@@ -1633,11 +1633,11 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testZip5() {
 		var results = [Result<(Int, Int, Int, Int, Int)>]()
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Int>.createPair()
-		let (input3, signal3) = Signal<Int>.createPair()
-		let (input4, signal4) = Signal<Int>.createPair()
-		let (input5, signal5) = Signal<Int>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Int>.create()
+		let (input3, signal3) = Signal<Int>.create()
+		let (input4, signal4) = Signal<Int>.create()
+		let (input5, signal5) = Signal<Int>.create()
 		let ep = signal1.zip(second: signal2, third: signal3, fourth: signal4, fifth: signal5).subscribe { (r: Result<(Int, Int, Int, Int, Int)>) in
 			results.append(r)
 		}
@@ -1908,7 +1908,7 @@ class SignalReactiveTests: XCTestCase {
 	func testTimeInterval() {
 		var results = [Result<Double>]()
 		let coordinator = DebugContextCoordinator()
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		let ep = signal.timeInterval(context: coordinator.direct).subscribe { (r: Result<Double>) in
 			results.append(r)
 		}
@@ -1943,7 +1943,7 @@ class SignalReactiveTests: XCTestCase {
 	func testTimeout() {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		let ep = signal.timeout(interval: .fromSeconds(0.09), context: coordinator.direct).subscribe { (r: Result<Int>) in
 			results.append(r)
 		}
@@ -1976,7 +1976,7 @@ class SignalReactiveTests: XCTestCase {
 	func testTimestamp() {
 		var results = [Result<(Int, DispatchTime)>]()
 		let coordinator = DebugContextCoordinator()
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		let ep = signal.timestamp(context: coordinator.direct).subscribe { (r: Result<(Int, DispatchTime)>) in
 			results.append(r)
 		}
@@ -2023,9 +2023,9 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testAmb() {
 		var results = [Result<Int>]()
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Int>.createPair()
-		let (input3, signal3) = Signal<Int>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Int>.create()
+		let (input3, signal3) = Signal<Int>.create()
 		let ep = Signal<Int>.amb(inputs: [signal1, signal2, signal3]).subscribe { (r: Result<Int>) in
 			results.append(r)
 		}
@@ -2135,8 +2135,8 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testSkipUntil() {
 		var results = [Result<Int>]()
-		let (otherInput, otherSignal) = Signal<()>.createPair()
-		let (input, ep) = Signal<Int>.createPair { s in s.skipUntil(otherSignal).subscribe { r in results.append(r) } }
+		let (otherInput, otherSignal) = Signal<()>.create()
+		let (input, ep) = Signal<Int>.create { s in s.skipUntil(otherSignal).subscribe { r in results.append(r) } }
 		
 		input.send(value: 0)
 		input.send(value: 1)
@@ -2158,7 +2158,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testSkipWhile() {
 		var results = [Result<Int>]()
-		let (input, ep) = Signal<Int>.createPair { s in s.skipWhile { v in v != 3 }.subscribe { r in results.append(r) } }
+		let (input, ep) = Signal<Int>.create { s in s.skipWhile { v in v != 3 }.subscribe { r in results.append(r) } }
 		
 		input.send(value: 0)
 		input.send(value: 1)
@@ -2179,7 +2179,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testSkipWhileWithState() {
 		var results = [Result<Int>]()
-		let (input, ep) = Signal<Int>.createPair { s in s.skipWhile(withState: 0) { (state: inout Int, v: Int) -> Bool in
+		let (input, ep) = Signal<Int>.create { s in s.skipWhile(withState: 0) { (state: inout Int, v: Int) -> Bool in
 			state += v
 			return (v + state) != 9
 		}.subscribe { r in results.append(r) } }
@@ -2203,8 +2203,8 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testTakeUntil() {
 		var results = [Result<Int>]()
-		let (otherInput, otherSignal) = Signal<()>.createPair()
-		let (input, ep) = Signal<Int>.createPair { s in s.takeUntil(otherSignal).subscribe { r in results.append(r) } }
+		let (otherInput, otherSignal) = Signal<()>.create()
+		let (input, ep) = Signal<Int>.create { s in s.takeUntil(otherSignal).subscribe { r in results.append(r) } }
 		
 		input.send(value: 0)
 		input.send(value: 1)
@@ -2226,7 +2226,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testTakeWhile() {
 		var results = [Result<Int>]()
-		let (input, ep) = Signal<Int>.createPair { s in s.takeWhile { v in v != 3 }.subscribe { r in results.append(r) } }
+		let (input, ep) = Signal<Int>.create { s in s.takeWhile { v in v != 3 }.subscribe { r in results.append(r) } }
 		
 		input.send(value: 0)
 		input.send(value: 1)
@@ -2247,7 +2247,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testTakeWhileWithState() {
 		var results = [Result<Int>]()
-		let (input, ep) = Signal<Int>.createPair { s in s.takeWhile(withState: 0) { (state: inout Int, v: Int) -> Bool in
+		let (input, ep) = Signal<Int>.create { s in s.takeWhile(withState: 0) { (state: inout Int, v: Int) -> Bool in
 			state += v
 			return (v + state) != 9
 		}.subscribe { r in results.append(r) } }

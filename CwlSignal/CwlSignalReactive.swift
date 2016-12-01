@@ -21,11 +21,11 @@
 import Foundation
 
 extension Signal {
-	/// - Note: the [Reactive X operator "Create"](http://reactivex.io/documentation/operators/create.html) is considered unnecessary, given the `CwlUtils.Signal.generate` and `CwlUtils.Signal.createPair` methods
+	/// - Note: the [Reactive X operator "Create"](http://reactivex.io/documentation/operators/create.html) is considered unnecessary, given the `CwlSignal.Signal.generate` and `CwlSignal.Signal.create` methods.
 	
-	/// - Note: the [Reactive X operator "Defer"](http://reactivex.io/documentation/operators/defer.html) is considered not applicable, given the different semantics of "activation" with `CwlUtils.Signal`. If `Defer`-like behavior is desired, either a method that constructs and returns a new `Signal` graph should be used (if a truly distinct graph is desired) or `CwlUtils.Signal.generate` should be used (if wait-until-activated behavior is desired).
+	/// - Note: the [Reactive X operator "Defer"](http://reactivex.io/documentation/operators/defer.html) is considered not applicable, given the different semantics of "activation" with `CwlSignal.Signal`. If `Defer`-like behavior is desired, either a method that constructs and returns a new `Signal` graph should be used (if a truly distinct graph is desired) or `CwlSignal.Signal.generate` should be used (if wait-until-activated behavior is desired).
 	
-	/// - Note: the Reactive X operator [Reactive X operator "Empty"](http://reactivex.io/documentation/operators/empty-never-throw.html) is redundant with the default invocation of `CwlUtils.Signal.preclosed`
+	/// - Note: the Reactive X operator [Reactive X operator "Empty"](http://reactivex.io/documentation/operators/empty-never-throw.html) is redundant with the default invocation of `CwlSignal.Signal.preclosed`
 }
 
 extension Signal {
@@ -169,9 +169,9 @@ public func intervalSignal(interval: DispatchTimeInterval, initialInterval: Disp
 }
 
 extension Signal {
-	/// - Note: the [Reactive X operator "Just"](http://reactivex.io/documentation/operators/just.html) is redundant with the default invocation of `CwlUtils.Signal.preclosed`
+	/// - Note: the [Reactive X operator "Just"](http://reactivex.io/documentation/operators/just.html) is redundant with the default invocation of `CwlSignal.Signal.preclosed`
 
-	/// - Note: the [Reactive X operator `Range`](http://reactivex.io/documentation/operators/range.html) is considered unnecessary, given the `CwlUtils.Signal.fromSequence`. Further, since Swift uses multiple different *kinds* of range, multiple implementations would be required. Doesn't seem worth the effort.
+	/// - Note: the [Reactive X operator `Range`](http://reactivex.io/documentation/operators/range.html) is considered unnecessary, given the `CwlSignal.Signal.fromSequence`. Further, since Swift uses multiple different *kinds* of range, multiple implementations would be required. Doesn't seem worth the effort.
 }
 
 extension Signal {
@@ -247,7 +247,7 @@ extension Signal {
 		
 		// The interval signal may need to be disconnectable so create a junction
 		let intervalJunction = intSig.junction()
-		let (initialInput, signal) = Signal<Int>.createPair()
+		let (initialInput, signal) = Signal<Int>.create()
 
 		// Continuous signals don't really need the junction. Just connect it immediately and ignore it.
 		if continuous {
@@ -558,7 +558,7 @@ extension Signal {
 				if let o = outputs[u] {
 					o.send(value: v)
 				} else {
-					let (input, signal) = Signal<T>.createPair { s in s.cacheUntilActive() }
+					let (input, signal) = Signal<T>.create { s in s.cacheUntilActive() }
 					input.send(value: v)
 					n.send(value: (u, signal))
 					outputs[u] = input
@@ -626,7 +626,7 @@ extension Signal {
 			switch cr {
 			case .result1(.success(let v)):
 				if current == nil {
-					let (i, s) = Signal<T>.createPair()
+					let (i, s) = Signal<T>.create()
 					current = i
 					next.send(value: s)
 				}
@@ -662,7 +662,7 @@ extension Signal {
 			case .result1(.failure(let e)):
 				next.send(error: e)
 			case .result2(.success((let index, .some))):
-				let (i, s) = Signal<T>.createPair()
+				let (i, s) = Signal<T>.create()
 				children[index] = i
 				next.send(value: s)
 			case .result2(.success((let index, .none))):
@@ -1067,7 +1067,7 @@ extension Signal {
 }
 
 extension Signal {
-	/// - Note: the [Reactive X operators "And", "Then" and "When"](http://reactivex.io/documentation/operators/and-then-when.html) are considered unnecessary, given the slightly different implementation of `CwlUtils.Signal.zip` which produces tuples (rather than producing a non-structural type) and is hence equivalent to `and`+`then`.
+	/// - Note: the [Reactive X operators "And", "Then" and "When"](http://reactivex.io/documentation/operators/and-then-when.html) are considered unnecessary, given the slightly different implementation of `CwlSignal.Signal.zip` which produces tuples (rather than producing a non-structural type) and is hence equivalent to `and`+`then`.
 }
 
 extension Signal {
@@ -1217,7 +1217,7 @@ extension Signal {
 		return leftDurations.combine(withState: ([Int: SignalInput<U>](), [Int: U]()), second: rightDurations) { (state: inout (activeLeft: [Int: SignalInput<U>], activeRight: [Int: U]), cr: EitherResult2<(Int, T?), (Int, U?)>, next: SignalNext<(T, Signal<U>)>) in
 			switch cr {
 			case .result1(.success((let leftIndex, .some(let leftValue)))):
-				let (li, ls) = Signal<U>.createPair()
+				let (li, ls) = Signal<U>.create()
 				state.activeLeft[leftIndex] = li
 				next.send(value: (leftValue, ls))
 				state.activeRight.sorted { $0.0 < $1.0 }.forEach { (i, r) in li.send(value: r) }
@@ -1640,7 +1640,7 @@ extension Signal {
 	/// - parameter recover: a function that, when passed the `ErrorType` that closed `self`, returns an `Optional<Signal<T>>`.
 	/// - returns: a signal that emits the values from `self` until an error is received and then, if `recover` returns non-`nil` emits the values from `recover` and then emits the error from `recover`, otherwise if `recover` returns `nil`, emits the `ErrorType` from `self`.
 	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<T>?) -> Signal<T> {
-		let (input, signal) = Signal<T>.createPair()
+		let (input, signal) = Signal<T>.create()
 		do {
 			try join(toInput: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin)
 		} catch {
@@ -1658,7 +1658,7 @@ extension Signal {
 	/// - parameter shouldRetry: a function that, when passed the current state value and the `ErrorType` that closed `self`, returns an `Optional<Double>`.
 	/// - returns: a signal that emits the values from `self` until an error is received and then, if `shouldRetry` returns non-`nil`, disconnects from `self`, delays by the number of seconds returned from `shouldRetry`, and reconnects to `self` (triggering re-activation), otherwise if `shouldRetry` returns `nil`, emits the `ErrorType` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
 	public func retry<U>(_ initialState: U, context: Exec = .direct, shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?) -> Signal<T> {
-		let (input, signal) = Signal<T>.createPair()
+		let (input, signal) = Signal<T>.create()
 		do {
 			try join(toInput: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin)
 		} catch {
@@ -1854,9 +1854,9 @@ extension Signal {
 }
 
 extension Signal {
-	/// - Note: the [Reactive X operator "ObserveOn"](http://reactivex.io/documentation/operators/observeon.html) doesn't apply to CwlUtils.Signal since any CwlUtils.Signal that runs work can specify their own execution context and control scheduling in that way.
+	/// - Note: the [Reactive X operator "ObserveOn"](http://reactivex.io/documentation/operators/observeon.html) doesn't apply to CwlSignal.Signal since any CwlSignal.Signal that runs work can specify their own execution context and control scheduling in that way.
 
-	/// - Note: the [Reactive X operator "Serialize"](http://reactivex.io/documentation/operators/serialize.html) doesn't apply to CwlUtils.Signal since all CwlUtils.Signal instances are serialized and well-behaved.
+	/// - Note: the [Reactive X operator "Serialize"](http://reactivex.io/documentation/operators/serialize.html) doesn't apply to CwlSignal.Signal since all CwlSignal.Signal instances are serialized and well-behaved.
 
 	/// - Note: the [Reactive X operator "Subscribe" and "SubscribeOn"](http://reactivex.io/documentation/operators/subscribe.html) are implemented as `subscribe`.
 }
@@ -1928,7 +1928,7 @@ extension Signal {
 }
 
 extension Signal {
-	/// - Note: the [Reactive X operator "Using"](http://reactivex.io/documentation/operators/using.html) doesn't apply to CwlUtils.Signal which uses standard Swift reference counted lifetimes. Resources should be captured by closures or `transform(withState:...)`.
+	/// - Note: the [Reactive X operator "Using"](http://reactivex.io/documentation/operators/using.html) doesn't apply to CwlSignal.Signal which uses standard Swift reference counted lifetimes. Resources should be captured by closures or `transform(withState:...)`.
 }
 
 extension Signal {
@@ -2038,7 +2038,7 @@ extension Signal {
 	/// - returns: a signal that emits the same values as self or mirrors `alternate` if self closes without emitting a value
 	public func switchIfEmpty(alternate: Signal<T>) -> Signal<T> {
 		var fallback: Signal<T>? = alternate
-		let (input, signal) = Signal<T>.createPair { s -> Signal<T> in
+		let (input, signal) = Signal<T>.create { s -> Signal<T> in
 			s.map { v in
 				fallback = nil
 				return v

@@ -14,21 +14,22 @@ SignalCapture allows activation values to be pulled synchronously from a signal.
 import CwlSignal
 
 // Create an input/output pair, transforming the output before returning
-let (input, output) = Signal<Int>.createPair { signal in signal.continuous() }
+let (input, output) = Signal<Int>.create { signal in signal.continuous() }
 
-// Send values before a subscriber exists
+// The `continuous` signal will cache the most recently sent value
 input.send(value: 1)
 input.send(value: 2)
 
-// Capture the activation value cached by the `continuous` signal
+// Capture the "2" activation value cached by the `continuous` signal
 let capture = output.capture()
 let (values, error) = capture.activation()
 print("Activation values: \(values)")
 
-// Capturing blocks the signal so this will be queued for later
+// Capturing blocks signal delivery so *both* of these will be queued for later
 input.send(value: 3)
+input.send(value: 4)
 
-// Subscribing to the capture unblocks the signal so the "3" will now be sent through.
+// Subscribing unblocks the signal so the "3" and the "4" will now be sent through.
 let ep = capture.subscribeValues { value in print("Regular value: \(value)") }
 
 // You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.

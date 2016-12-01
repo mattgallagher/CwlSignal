@@ -17,7 +17,7 @@ import CwlSignal
 let semaphore = DispatchSemaphore(value: 0)
 
 // Create an input/output pair
-let (input, output) = Signal<Int>.createPair()
+let (input, output) = Signal<Int>.create()
 
 // Create the processor
 let endpoint = output.map(context: .default) { value in

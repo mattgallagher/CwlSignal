@@ -1,6 +1,6 @@
 //
 //  CwlSignalTests.swift
-//  CwlUtils
+//  CwlSignal
 //
 //  Created by Matt Gallagher on 2016/06/08.
 //  Copyright © 2016 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.
@@ -31,7 +31,7 @@ private enum TestError: Error {
 class SignalTests: XCTestCase {
 	func testBasics() {
 		var results = [Result<Int>]()
-		let (i1, ep) = Signal<Int>.createPair { $0.subscribe { r in results.append(r) } }
+		let (i1, ep) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
 		i1.send(result: .success(1))
 		i1.send(value: 3)
 		XCTAssert(ep.isClosed == false)
@@ -42,7 +42,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(1)?.value == 3)
 		withExtendedLifetime(ep) {}
 
-		let (i2, ep2) = Signal<Int>.createPair { $0.transform { r, n in n.send(result: r) }.subscribe { r in results.append(r) } }
+		let (i2, ep2) = Signal<Int>.create { $0.transform { r, n in n.send(result: r) }.subscribe { r in results.append(r) } }
 		i2.send(result: .success(5))
 		i2.send(error: TestError.zeroValue)
 		XCTAssert(i2.send(value: 0) == SignalError.cancelled)
@@ -62,7 +62,7 @@ class SignalTests: XCTestCase {
 		var results1 = [Result<Int>]()
 		var results2 = [Result<Int>]()
 		do {
-			let (input1, signal1) = Signal<Int>.createPair()
+			let (input1, signal1) = Signal<Int>.create()
 			weakSignal1 = signal1
 
 			do {
@@ -79,7 +79,7 @@ class SignalTests: XCTestCase {
 			
 			XCTAssert(weakEndpoint1 == nil)
 
-			let (input2, signal2) = Signal<Int>.createPair()
+			let (input2, signal2) = Signal<Int>.create()
 			weakSignal2 = signal2
 
 			do {
@@ -112,7 +112,7 @@ class SignalTests: XCTestCase {
 	
 	func testcreatePairAndSignal() {
 		// Create a signal with default behavior
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		
 		// Make sure we get an .Inactive response before anything is connected
 		XCTAssert(input.send(result: .success(321)) == SignalError.inactive)
@@ -152,7 +152,7 @@ class SignalTests: XCTestCase {
 	
 	func testSignalPassthrough() {
 		// Create a restartable
-		let (input, s) = Signal<Int>.createPair()
+		let (input, s) = Signal<Int>.create()
 		let signal = s.multicast()
 		
 		// Make sure we get an .Inactive response before anything is connected
@@ -203,7 +203,7 @@ class SignalTests: XCTestCase {
 	
 	func testSignalContinuous() {
 		// Create a signal
-		let (input, s) = Signal<Int>.createPair()
+		let (input, s) = Signal<Int>.create()
 		let signal = s.continuous()
 		
 		// Subscribe twice
@@ -276,7 +276,7 @@ class SignalTests: XCTestCase {
 	
 	func testSignalContinuousWithinitial() {
 		// Create a signal
-		let (input, s) = Signal<Int>.createPair()
+		let (input, s) = Signal<Int>.create()
 		let signal = s.continuous(initial: 5)
 		
 		// Subscribe twice
@@ -306,7 +306,7 @@ class SignalTests: XCTestCase {
 	
 	func testSignalPlayback() {
 		// Create a signal
-		let (input, s) = Signal<Int>.createPair()
+		let (input, s) = Signal<Int>.create()
 		let signal = s.playback()
 		
 		// Send a value and leave open
@@ -364,7 +364,7 @@ class SignalTests: XCTestCase {
 	
 	func testSignalCacheUntilActive() {
 		// Create a signal
-		let (input, s) = Signal<Int>.createPair()
+		let (input, s) = Signal<Int>.create()
 		let signal = s.cacheUntilActive()
 		
 		// Send a value and leave open
@@ -409,7 +409,7 @@ class SignalTests: XCTestCase {
 	
 	func testSignalBuffer() {
 		// Create a signal
-		let (input, s) = Signal<Int>.createPair()
+		let (input, s) = Signal<Int>.create()
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 		let signal = s.buffer(context: context, initials: [3, 4]) { (activationValues: inout Array<Int>, preclosed: inout Error?, result: Result<Int>) -> Void in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
@@ -485,13 +485,13 @@ class SignalTests: XCTestCase {
 	}
 	
 	func testCapture() {
-		let (input, s) = Signal<Int>.createPair()
+		let (input, s) = Signal<Int>.create()
 		let signal = s.continuous()
 		input.send(value: 1)
 		
 		let capture = signal.capture()
 		var results = [Result<Int>]()
-		let (subsequentInput, subsequentSignal) = Signal<Int>.createPair()
+		let (subsequentInput, subsequentSignal) = Signal<Int>.create()
 		let ep = subsequentSignal.subscribe { (r: Result<Int>) in
 			results.append(r)
 		}
@@ -521,7 +521,7 @@ class SignalTests: XCTestCase {
 	}
 	
 	func testCaptureAndSubscribe() {
-		let (input, output) = Signal<Int>.createPair { signal in signal.continuous() }
+		let (input, output) = Signal<Int>.create { signal in signal.continuous() }
 		input.send(value: 1)
 		input.send(value: 2)
 
@@ -557,7 +557,7 @@ class SignalTests: XCTestCase {
 	}
 	
 	func testCaptureAndSubscribeValues() {
-		let (input, output) = Signal<Int>.createPair { signal in signal.continuous() }
+		let (input, output) = Signal<Int>.create { signal in signal.continuous() }
 		input.send(value: 1)
 		input.send(value: 2)
 
@@ -593,13 +593,13 @@ class SignalTests: XCTestCase {
 	}
 	
 	func testCaptureOnError() {
-		let (input, s) = Signal<Int>.createPair()
+		let (input, s) = Signal<Int>.create()
 		let signal = s.continuous()
 		input.send(value: 1)
 		
 		let capture = signal.capture()
 		var results = [Result<Int>]()
-		let (subsequentInput, subsequentSignal) = Signal<Int>.createPair()
+		let (subsequentInput, subsequentSignal) = Signal<Int>.create()
 		let ep1 = subsequentSignal.subscribe { (r: Result<Int>) in
 			results.append(r)
 		}
@@ -635,7 +635,7 @@ class SignalTests: XCTestCase {
 		let (values3, error3) = capture2.activation()
 
 		var results2 = [Result<Int>]()
-		let (subsequentInput2, subsequentSignal2) = Signal<Int>.createPair()
+		let (subsequentInput2, subsequentSignal2) = Signal<Int>.create()
 		let ep2 = subsequentSignal2.subscribe { (r: Result<Int>) in
 			results2.append(r)
 		}
@@ -753,7 +753,7 @@ class SignalTests: XCTestCase {
 		var results = [Result<Int>]()
 		
 		do {
-			let (i1, s) = Signal<Int>.createPair()
+			let (i1, s) = Signal<Int>.create()
 			let ep = s.subscribe { results.append($0) }
 			let d = try sequence1.join(toInput: i1)
 			i1.send(value: 3)
@@ -792,7 +792,7 @@ class SignalTests: XCTestCase {
 		withExtendedLifetime(firstInput) {}
 		
 		var results2 = [Result<Int>]()
-		let (i4, ep2) = Signal<Int>.createPair { $0.subscribe {
+		let (i4, ep2) = Signal<Int>.create { $0.subscribe {
 			results2.append($0)
 		} }
 
@@ -871,8 +871,8 @@ class SignalTests: XCTestCase {
 		weak var weakSignal2: Signal<Int>? = nil
 		weak var weakEndpoint: SignalEndpoint<Int>? = nil
 		do {
-			let (input1, signal1) = Signal<Int>.createPair()
-			var (input2, signal2) = Signal<Int>.createPair()
+			let (input1, signal1) = Signal<Int>.create()
+			var (input2, signal2) = Signal<Int>.create()
 			weakInput1 = input1
 			weakInput2 = input2
 			weakSignal1 = signal1
@@ -927,7 +927,7 @@ class SignalTests: XCTestCase {
 	}
 	
 	func testTransform() {
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		var results = [Result<String>]()
 		
 		// Test using default behavior and context
@@ -955,7 +955,7 @@ class SignalTests: XCTestCase {
 		
 		// Test using custom behavior and context
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let (input2, signal2) = Signal<Int>.createPair()
+		let (input2, signal2) = Signal<Int>.create()
 		let ep2 = signal2.transform(context: context) { (r: Result<Int>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			switch r {
@@ -982,7 +982,7 @@ class SignalTests: XCTestCase {
 	}
 
 	func testTransformWithState() {
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		var results = [Result<String>]()
 		
 		// Scope the creation of 't' so we can ensure it is removed before we re-add to the signal.
@@ -1020,7 +1020,7 @@ class SignalTests: XCTestCase {
 		
 		// Test using custom context
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let (input2, signal2) = Signal<Int>.createPair()
+		let (input2, signal2) = Signal<Int>.create()
 		let ep2 = signal2.transform(withState: 10, context: context) { (state: inout Int, r: Result<Int>, n: SignalNext<String>) in
 			switch r {
 			case .success(let v):
@@ -1050,7 +1050,7 @@ class SignalTests: XCTestCase {
 	
 	func testEscapingTransformer() {
 		var results = [Result<Double>]()
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		var escapedNext: SignalNext<Double>? = nil
 		var escapedValue: Int = 0
 		let ep = signal.transform { (r: Result<Int>, n: SignalNext<Double>) in
@@ -1106,7 +1106,7 @@ class SignalTests: XCTestCase {
 	
 	func testEscapingTransformerWithState() {
 		var results = [Result<Double>]()
-		let (input, signal) = Signal<Int>.createPair()
+		let (input, signal) = Signal<Int>.create()
 		var escapedNext: SignalNext<Double>? = nil
 		var escapedValue: Int = 0
 		let ep = signal.transform(withState: 0) { ( s: inout Int, r: Result<Int>, n: SignalNext<Double>) in
@@ -1162,7 +1162,7 @@ class SignalTests: XCTestCase {
 	
 	func testClosedTriangleGraphLeft() {
 		var results = [Result<Int>]()
-		let (input, signal) = Signal<Int>.createPair { s in s.multicast() }
+		let (input, signal) = Signal<Int>.create { s in s.multicast() }
 		let left = signal.transform { (r: Result<Int>, n: SignalNext<Int>) in
 			switch r {
 			case .success(let v): n.send(value: v * 10)
@@ -1185,7 +1185,7 @@ class SignalTests: XCTestCase {
 
 	func testClosedTriangleGraphRight() {
 		var results = [Result<Int>]()
-		let (input, signal) = Signal<Int>.createPair { s in s.multicast() }
+		let (input, signal) = Signal<Int>.create { s in s.multicast() }
 		let (mergeSet, signal2) = Signal<Int>.mergeSetAndSignal([signal], closesOutput: true)
 		let ep = signal2.subscribe { r in results.append(r) }
 		let right = signal.transform { (r: Result<Int>, n: SignalNext<Int>) in
@@ -1212,13 +1212,13 @@ class SignalTests: XCTestCase {
 		do {
 			var results = [Result<Int>]()
 			let (mergeSet, mergeSignal) = Signal<Int>.mergeSetAndSignal()
-			let (input, ep) = Signal<Int>.createPair { $0.subscribe { r in results.append(r) } }
+			let (input, ep) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
 			let disconnector = try mergeSignal.join(toInput: input)
 			
-			let (input1, signal1) = Signal<Int>.createPair { $0.cacheUntilActive() }
-			let (input2, signal2) = Signal<Int>.createPair { $0.cacheUntilActive() }
-			let (input3, signal3) = Signal<Int>.createPair { $0.cacheUntilActive() }
-			let (input4, signal4) = Signal<Int>.createPair { $0.cacheUntilActive() }
+			let (input1, signal1) = Signal<Int>.create { $0.cacheUntilActive() }
+			let (input2, signal2) = Signal<Int>.create { $0.cacheUntilActive() }
+			let (input3, signal3) = Signal<Int>.create { $0.cacheUntilActive() }
+			let (input4, signal4) = Signal<Int>.create { $0.cacheUntilActive() }
 			mergeSet.add(signal1, closesOutput: false, removeOnDeactivate: false)
 			mergeSet.add(signal2, closesOutput: true, removeOnDeactivate: false)
 			mergeSet.add(signal3, closesOutput: false, removeOnDeactivate: true)
@@ -1260,8 +1260,8 @@ class SignalTests: XCTestCase {
 	func testCombine2() {
 		var results = [Result<String>]()
 		
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Double>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Double>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 		let combined = signal1.combine(second: signal2, context: context) { (cr: EitherResult2<Int, Double>, n: SignalNext<String>) in
@@ -1297,8 +1297,8 @@ class SignalTests: XCTestCase {
 	func testCombine2WithState() {
 		var results = [Result<String>]()
 		
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Double>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Double>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 		let combined = signal1.combine(withState: "", second: signal2, context: context) { (state: inout String, cr: EitherResult2<Int, Double>, n: SignalNext<String>) in
@@ -1335,9 +1335,9 @@ class SignalTests: XCTestCase {
 	func testCombine3() {
 		var results = [Result<String>]()
 		
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Double>.createPair()
-		let (input3, signal3) = Signal<Int8>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Double>.create()
+		let (input3, signal3) = Signal<Int8>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 		let combined = signal1.combine(second: signal2, third: signal3, context: context) { (cr: EitherResult3<Int, Double, Int8>, n: SignalNext<String>) in
@@ -1381,9 +1381,9 @@ class SignalTests: XCTestCase {
 	func testCombine3WithState() {
 		var results = [Result<String>]()
 		
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Double>.createPair()
-		let (input3, signal3) = Signal<Int8>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Double>.create()
+		let (input3, signal3) = Signal<Int8>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 		let combined = signal1.combine(withState: "", second: signal2, third: signal3, context: context) { (state: inout String, cr: EitherResult3<Int, Double, Int8>, n: SignalNext<String>) in
@@ -1428,10 +1428,10 @@ class SignalTests: XCTestCase {
 	func testCombine4() {
 		var results = [Result<String>]()
 		
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Double>.createPair()
-		let (input3, signal3) = Signal<Int8>.createPair()
-		let (input4, signal4) = Signal<Int16>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Double>.create()
+		let (input3, signal3) = Signal<Int8>.create()
+		let (input4, signal4) = Signal<Int16>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 		let combined = signal1.combine(second: signal2, third: signal3, fourth: signal4, context: context) { (cr: EitherResult4<Int, Double, Int8, Int16>, n: SignalNext<String>) in
@@ -1483,10 +1483,10 @@ class SignalTests: XCTestCase {
 	func testCombine4WithState() {
 		var results = [Result<String>]()
 		
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Double>.createPair()
-		let (input3, signal3) = Signal<Int8>.createPair()
-		let (input4, signal4) = Signal<Int16>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Double>.create()
+		let (input3, signal3) = Signal<Int8>.create()
+		let (input4, signal4) = Signal<Int16>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 		let combined = signal1.combine(withState: "", second: signal2, third: signal3, fourth: signal4, context: context) { (state: inout String, cr: EitherResult4<Int, Double, Int8, Int16>, n: SignalNext<String>) in
@@ -1539,11 +1539,11 @@ class SignalTests: XCTestCase {
 	func testCombine5() {
 		var results = [Result<String>]()
 		
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Double>.createPair()
-		let (input3, signal3) = Signal<Int8>.createPair()
-		let (input4, signal4) = Signal<Int16>.createPair()
-		let (input5, signal5) = Signal<Int32>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Double>.create()
+		let (input3, signal3) = Signal<Int8>.create()
+		let (input4, signal4) = Signal<Int16>.create()
+		let (input5, signal5) = Signal<Int32>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 		let combined = signal1.combine(second: signal2, third: signal3, fourth: signal4, fifth: signal5, context: context) { (cr: EitherResult5<Int, Double, Int8, Int16, Int32>, n: SignalNext<String>) in
@@ -1601,11 +1601,11 @@ class SignalTests: XCTestCase {
 	func testCombine5WithState() {
 		var results = [Result<String>]()
 		
-		let (input1, signal1) = Signal<Int>.createPair()
-		let (input2, signal2) = Signal<Double>.createPair()
-		let (input3, signal3) = Signal<Int8>.createPair()
-		let (input4, signal4) = Signal<Int16>.createPair()
-		let (input5, signal5) = Signal<Int32>.createPair()
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Double>.create()
+		let (input3, signal3) = Signal<Int8>.create()
+		let (input4, signal4) = Signal<Int16>.create()
+		let (input5, signal5) = Signal<Int32>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 		let combined = signal1.combine(withState: "", second: signal2, third: signal3, fourth: signal4, fifth: signal5, context: context) { (state: inout String, cr: EitherResult5<Int, Double, Int8, Int16, Int32>, n: SignalNext<String>) in
@@ -1908,7 +1908,7 @@ class SignalTests: XCTestCase {
 		for j in 0..<threadCount {
 			Exec.default.invoke {
 				for i in 0..<iterations {
-					let (input, s) = Signal<Int>.createPair()
+					let (input, s) = Signal<Int>.create()
 					var signal = s.transform(withState: 0) { (count: inout Int, r: Result<Int>, n: SignalNext<(thread: Int, iteration: Int, value: Int)>) in
 						switch r {
 						case .success(let v): n.send(value: (thread: j, iteration: i, value: v))

@@ -45,7 +45,7 @@ class DocumentValues {
 
    init() {
       // Actual values storage is encapsulated within the signal
-      (self.input, self.signal) = Signal<Tuple>.createPair {
+      (self.input, self.signal) = Signal<Tuple>.create {
          $0.map(withState: [:]) { (state: inout Dict, update: Tuple) in
             
             // All updates pass through this single, common function.

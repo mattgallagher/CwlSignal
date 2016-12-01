@@ -28,7 +28,7 @@ class Service {
 	
 	// The behavior of this class is is encapsulated in the signal, constructed on `init`.
    init(connect: @escaping () -> Signal<String>) {
-      (self.input, self.signal) = Signal<DispatchTimeInterval>.createPair { s in
+      (self.input, self.signal) = Signal<DispatchTimeInterval>.create { s in
       	// Return results only from the latest connection attempt
 			Signal<Result<String>>.switchLatest(
 	      	// Convert each incoming timeout duration into a connection attempt

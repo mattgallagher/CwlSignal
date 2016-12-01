@@ -16,7 +16,7 @@ There are lots of different "operator" functions for chaining `Signal` instances
  */
 import CwlSignal
 
-let (i, o) = Signal<Int>.createPair()
+let (i, o) = Signal<Int>.create()
 
 // Transform into signal that emits a number of "Beep"s equal to the integer received
 let endpoint = o.transform { (result: Result<Int>, next: SignalNext<String>) in

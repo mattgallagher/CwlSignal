@@ -93,7 +93,7 @@ public class Signal<T> {
 	/// Create a manual input/output pair where values sent to the `SignalInput` are passed through the `Signal` output. The `SignalInput` will remain valid until it is replaced or the graph is deactivated.
 	///
 	/// - returns: the `SignalInput` and `Signal` pair
-	public static func createPair() -> (input: SignalInput<T>, signal: Signal<T>) {
+	public static func create() -> (input: SignalInput<T>, signal: Signal<T>) {
 		let s = Signal<T>()
 		var dw = DeferredWork()
 		s.mutex.sync { s.updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw) }
@@ -101,18 +101,18 @@ public class Signal<T> {
 		return (SignalInput(signal: s, activationCount: s.activationCount), s)
 	}
 	
-	/// Like `createPair` but also provides a trailing closure to transform the `Signal` normally returned from `createPair` and in its place, return the result of the transformation.
+	/// Like `create` but also provides a trailing closure to transform the `Signal` normally returned from `create` and in its place, return the result of the transformation.
 	///
 	/// - parameter compose: a trailing closure which receices the `Signal` as a parameter and any result is returned as the second tuple parameter from this function
 	///
 	/// - throws: rethrows any error from the closure
 	/// - returns: the `SignalInput` and compose result pair
-	public static func createPair<U>(compose: (Signal<T>) throws -> U) rethrows -> (input: SignalInput<T>, composed: U) {
-		let (i, s) = createPair()
+	public static func create<U>(compose: (Signal<T>) throws -> U) rethrows -> (input: SignalInput<T>, composed: U) {
+		let (i, s) = create()
 		return (i, try compose(s))
 	}
 	
-	/// Equivalent to `createPair` but rather than immediately providing a `SignalInput`, this functions provides it to the provided `activationChange` function when the signal graph is activated. When the graph deactivates, `nil` is sent to the `activationChange` function. If a subsequent reactivation occurs, the new `SignalInput` for the activation is provided.
+	/// Equivalent to `create` but rather than immediately providing a `SignalInput`, this functions provides it to the provided `activationChange` function when the signal graph is activated. When the graph deactivates, `nil` is sent to the `activationChange` function. If a subsequent reactivation occurs, the new `SignalInput` for the activation is provided.
 	///
 	/// NOTE: even when `context` is a concurrent context, it is guaranteed that calls to `activationChange` will be serialized.
 	///
@@ -239,7 +239,7 @@ public class Signal<T> {
 	/// - returns: the `SignalJunction<T>` and the connected `Signal` as a pair
 	@discardableResult
 	public final func junctionSignal() -> (SignalJunction<T>, Signal<T>) {
-		let (input, signal) = Signal<T>.createPair()
+		let (input, signal) = Signal<T>.create()
 		let j = try! self.join(toInput: input)
 		return (j, signal)
 	}
@@ -249,7 +249,7 @@ public class Signal<T> {
 	/// - returns: the `SignalJunction<T>` and the connected `Signal` as a pair
 	@discardableResult
 	public final func junctionSignal(onError: @escaping (SignalJunction<T>, Error, SignalInput<T>) -> ()) -> (SignalJunction<T>, Signal<T>) {
-		let (input, signal) = Signal<T>.createPair()
+		let (input, signal) = Signal<T>.create()
 		let j = try! self.join(toInput: input, onError: onError)
 		return (j, signal)
 	}
@@ -2391,25 +2391,25 @@ public final class SignalCapture<T>: SignalProcessor<T, T> {
 	}
 	
 	public func subscribe(resend: Bool = false, context: Exec = .direct, handler: @escaping (Result<T>) -> Void) -> SignalEndpoint<T> {
-		let (input, output) = Signal<T>.createPair()
+		let (input, output) = Signal<T>.create()
 		try! join(toInput: input, resend: resend)
 		return output.subscribe(context: context, handler: handler)
 	}
 	
 	public func subscribe(resend: Bool = false, onError: @escaping (SignalCapture<T>, Error, SignalInput<T>) -> (), context: Exec = .direct, handler: @escaping (Result<T>) -> Void) -> SignalEndpoint<T> {
-		let (input, output) = Signal<T>.createPair()
+		let (input, output) = Signal<T>.create()
 		try! join(toInput: input, resend: resend, onError: onError)
 		return output.subscribe(context: context, handler: handler)
 	}
 	
 	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
-		let (input, output) = Signal<T>.createPair()
+		let (input, output) = Signal<T>.create()
 		try! join(toInput: input, resend: resend)
 		return output.subscribeValues(context: context, handler: handler)
 	}
 	
 	public func subscribeValues(resend: Bool = false, onError: @escaping (SignalCapture<T>, Error, SignalInput<T>) -> (), context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
-		let (input, output) = Signal<T>.createPair()
+		let (input, output) = Signal<T>.create()
 		try! join(toInput: input, resend: resend, onError: onError)
 		return output.subscribeValues(context: context, handler: handler)
 	}
