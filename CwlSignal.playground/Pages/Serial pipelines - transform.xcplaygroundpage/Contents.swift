@@ -6,8 +6,6 @@
 
 ## The `transform` function
 
-*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
-
 Any number of `Signal` instances can be chained in series to form pipelines. This allows value transformations and other "stream processing" to be applied to values between the sender and the subscriber.
 
 There are lots of different "operator" functions for chaining `Signal` instances together (including names like `map` and `flatMap` that you might recognize from `Sequence` and `Collection` processing in Swift) but most are implemented on top of the `transform` function which looks a little like this:
@@ -35,6 +33,8 @@ i.close()
 endpoint.cancel()
 /*:
 ---
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 [Next page: Serial pipelines - map](@next)
 

@@ -5,8 +5,6 @@
 
 ## Capturing
 
-*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
-
 SignalCapture allows activation values to be pulled synchronously from a signal. This provides potential solutions to scenarios where code cannot proceed without being able to obtain an immediate value. Simply put: activation in CwlSignal provides pull-based synchronous behaviors, whereas typical reactive programming is push-based and potentially asynchronous.
 
 ---
@@ -36,6 +34,8 @@ let ep = capture.subscribeValues { value in print("Regular value: \(value)") }
 ep.cancel()
 /*:
 ---
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 [Next page: App scenario - threadsafe key-value storage](@next)
 

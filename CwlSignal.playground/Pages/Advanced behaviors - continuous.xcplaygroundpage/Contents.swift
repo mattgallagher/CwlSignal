@@ -5,8 +5,6 @@
 
 ## Continuous
 
-*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
-
 Making the signal `continuous`, as in this example, causes it to re-emit the most recent value when a new subscriber connects. Other options include `playback` (for re-emitting *all* values) or `buffer` (which lets you update a custom series of values each time a value is processed).
 
 ---
@@ -33,6 +31,8 @@ endpoint.cancel()
 
 /*:
 ---
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 [Next page: Parallel composition - operators](@next)
 

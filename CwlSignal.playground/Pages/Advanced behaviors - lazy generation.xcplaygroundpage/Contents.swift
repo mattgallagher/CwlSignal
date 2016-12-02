@@ -5,8 +5,6 @@
 
 ## Lazy generation
 
-*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
-
 In many cases, we want to defer the actual generation of values until *after* a subscriber is ready to receive them. In CwlSignal, we can use the `generate` function, which invokes its closure every time the "activation" state changes, to start after the signal graph becomes active.
 
 The `generate` function's closure will also be invoke with a `nil` value when the signal graph *deactives* so you can clean up resources.
@@ -32,6 +30,8 @@ endpoint.cancel()
 
 /*:
 ---
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 [Next page: Advanced behaviors - capturing](@next)
 

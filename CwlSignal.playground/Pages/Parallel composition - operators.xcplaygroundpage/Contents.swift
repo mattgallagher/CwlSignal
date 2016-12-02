@@ -6,8 +6,6 @@
 
 ## Some advanced operators
 
-*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
-
 There are lots of different "operator" functions for merging and combining `Signal` instances. This page demonstrates `switchLatest` and `timeout` but there are many more (including the `combineLatest` used in [App scenario - dynamic view properties](App%20scenario%20-%20dynamic%20view%20properties)).
 
 This page contains a `Service`. The service constructs an underlying signal and times out if the underlying signal runs longer than a specified timeout time. The service is complicated by the requirement that the `connect` function can be called at any time and any previous connection must be abandoned.
@@ -66,6 +64,8 @@ RunLoop.current.run(until: Date(timeIntervalSinceNow: 10.0))
 endpoint.cancel()
 /*:
 ---
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 [Next page: Advanced behaviors - continuous](@next)
 

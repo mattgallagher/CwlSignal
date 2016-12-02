@@ -110,7 +110,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(weakSignal2 == nil)
 	}
 	
-	func testcreatePairAndSignal() {
+	func testCreate() {
 		// Create a signal with default behavior
 		let (input, signal) = Signal<Int>.create()
 		

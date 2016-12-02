@@ -615,7 +615,7 @@ public class Signal<T> {
 		})
 	}
 	
-	/// Constructor for signal graph head. Called from `createPairAndSignal`.
+	/// Constructor for signal graph head. Called from `create`.
 	///
 	/// - returns: the manual `Signal`
 	fileprivate init() {
@@ -1197,7 +1197,7 @@ public protocol SignalSender {
 	@discardableResult func send(result: Result<ValueType>) -> SignalError?
 }
 
-/// An `SignalInput` is used to send values to the "head" `Signal`s in a signal graph. It is created using the `Signal<T>.createPairAndSignal()` function.
+/// An `SignalInput` is used to send values to the "head" `Signal`s in a signal graph. It is created using the `Signal<T>.create()` function.
 public final class SignalInput<T>: SignalSender, Cancellable {
 	public typealias ValueType = T
 	

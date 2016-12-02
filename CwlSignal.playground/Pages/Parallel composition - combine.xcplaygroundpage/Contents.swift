@@ -6,8 +6,6 @@
 
 ## The `combine` function
 
-*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
-
 Any number of `Signal` instances can be chained in series to form pipelines, allowing value transformations and other "stream processing" to be applied to values between the sender and the subscriber.
 
 While there are lots of different "operator" functions for chaining `Signal` instances together (including names like `map` and `flatMap` that you might recognize from `Sequence` and `Collection` processing in Swift) most are implemented on top of the `transform` function which works as follows:
@@ -39,12 +37,15 @@ let endpoint = intSignal.combine(second: doubleSignal) { (eitherResult: EitherRe
 	}
 }
 
+// In reactive programming, blocking is normally "bad" but we need to block or the playground will finish before the background work.
 semaphore.wait()
 
 // You'd normally store the endpoint in a parent and let ARC control its lifetime.
 endpoint.cancel()
 /*:
 ---
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 [Next page: Parallel composition - operators](@next)
 

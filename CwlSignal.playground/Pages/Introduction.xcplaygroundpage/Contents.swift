@@ -8,7 +8,7 @@ This playground requires the CwlSignal.framework built by the CwlSignal_macOS sc
 
 1. You must not open CwlSignal.playground on its own. Instead, make sure any separately opened copy of CwlSignal.playground is closed and open the CwlSignal.xcodeproj in Xcode.
 2. Select the "CwlSignal_macOS" scheme (from the "Product" → "Scheme" menu or the scheme popup menu if it's available in your toolbar) and build ("Product" → "Build").
-3. You will usually need to close the playground page and re-open before it will pick up the newly built dependency. Close an already open playground page by pressing Command-Control-W (or selecting "Close Introduction.xcplaygroundpage" from the File menu) before clicking in the file tree to re-open.
+3. You may need to close and re-open any playground page before it will pick up the newly built framework. Close an already open playground page by pressing Command-Control-W (or selecting "Close Introduction.xcplaygroundpage" from the File menu) before clicking in the file tree to re-open.
 
 Failure to follow these steps correctly will result in a "Playground execution failed: error: no such module 'CwlSignal'" error (along with a large number of stack frames) logged to the Debug Area (show with the "View" → "Debug Area" → "Show Debug Area" menu if it is not visible.
 

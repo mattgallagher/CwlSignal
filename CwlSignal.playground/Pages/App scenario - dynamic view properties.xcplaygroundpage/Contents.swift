@@ -1,6 +1,6 @@
 /*:
 
-# App scenario, part 2 2
+# App scenario, part 2
 
 > **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
 
@@ -20,7 +20,7 @@ The most important part of the code are the three "dynamic properties" at the bo
 To display the "view" for this playgrounds page, you should enable the Playgrounds "Timeline" Assistant View. To do this,
 
 1. Make sure you can see Assistant Editor (from the menubar: "View" → "Assistant Editor" → "Show Assistant Editor").
-2. Use the toolbar at the top of the Assistant Editor to select "Timeline" (the popup you need is to the right of the "< >" arrows but to the left of the filename.
+2. Use the toolbar at the top of the Assistant Editor to select "Timeline" (the popup you need is to the right of the "< >" arrows but to the left of the filename/filepath.
 
 After the page has run, you should be able to use the "timeline" slider to move forwards and backwards in time and see how the view state changed in response to the two state values.
 
@@ -63,8 +63,6 @@ class ViewController: NSViewController {
 		// Set static properties
 		view.orientation = .vertical
 		view.setHuggingPriority(NSLayoutPriorityRequired, for: .horizontal)
-		loggedInStatusButton.isEnabled = false
-		filesSelectedLabel.isEnabled = false
 
 		// Construct the view tree
 		view.addView(addToFavoritesButton, in: NSStackViewGravity.center)

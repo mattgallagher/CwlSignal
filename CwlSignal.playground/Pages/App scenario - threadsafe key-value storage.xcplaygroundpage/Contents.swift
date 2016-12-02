@@ -6,8 +6,6 @@
 
 ## A threadsafe, notifying key-value storage
 
-*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
-
 The following is a threadsafe dictionary of values. You might use something similar for the "model" in a trivial app. Even if more sophisticated storage than a dictionary is required, the pattern of updating and notifying will likely be the same.
 
 1. The same work is involved in accessing a value once or subscribing properly so good behavior is encouraged.
@@ -70,6 +68,8 @@ class DocumentValues {
 }
 /*:
 ---
+
+*This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
 [Next page: App scenario - dynamic view properties](@next)
 
