@@ -112,7 +112,7 @@ public class Signal<T> {
 		return (i, try compose(s))
 	}
 	
-	/// Equivalent to `create` but rather than immediately providing a `SignalInput`, this functions provides it to the provided `activationChange` function when the signal graph is activated. When the graph deactivates, `nil` is sent to the `activationChange` function. If a subsequent reactivation occurs, the new `SignalInput` for the activation is provided.
+	/// Similar to `create`, in that it creates a "head" for the graph but rather than immediately providing a `SignalInput`, this function calls the `activationChange` function when the signal graph is activated and provides the newly created `SignalInput` at that time. When the graph deactivates, `nil` is sent to the `activationChange` function. If a subsequent reactivation occurs, the new `SignalInput` for the re-activation is provided.
 	///
 	/// NOTE: even when `context` is a concurrent context, it is guaranteed that calls to `activationChange` will be serialized.
 	///
