@@ -525,11 +525,20 @@ public class Signal<T> {
 	
 	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` immediately activates its antecedents. Every time a value is received, it is passed to an "updater" which updates the array of activation values (multiple listeners can be attached to the `SignalMulti` and each new listener receives the array as a series of activation values).
 	///
-	/// - returns: a buffered `SignalMulti`
-	public final func buffer(context: Exec = .direct, initials: Array<T> = [], updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) -> SignalMulti<T> {
+	/// - Parameters:
+	///   - initial: activation values used when *before* any incoming value is received (if you wan't to specify closed as well, use `preclosed` instead)
+	///   - context: the execution context where the `updater` will run
+	///   - updater: run for each incoming `Result<T>` to update the buffered activation values
+	/// - Returns: a buffered `SignalMulti`
+	public final func buffer(initial: Array<T> = [], context: Exec = .direct, updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: true, values: (initials, nil), isUserUpdated: true, dw: &dw, context: context, updater: updater)
+			SignalMultiProcessor(signal: s, alwaysActive: true, values: (initial, nil), isUserUpdated: true, dw: &dw, context: context, updater: updater)
 		})
+	}
+	
+	@available(*, deprecated, message:"Use buffer(initial:context:updater:) instead")
+	public final func buffer(context: Exec = .direct, initials: Array<T>, updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) -> SignalMulti<T> {
+		return buffer(initial: initials, context: context, updater: updater)
 	}
 	
 	/// Constructs a `SignalMulti` with an array of "activation" values and a closing error.
