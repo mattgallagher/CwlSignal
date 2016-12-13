@@ -29,7 +29,8 @@ dv.setValue("Hi, there.", forKey: "Oh!")
 dv.removeValue(forKey: "Oh!")
 dv.setValue("World", forKey: "Hello")
 
-withExtendedLifetime(ep) {}
+// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+ep.cancel()
 
 /// A threadsafe key-value storage using reactive programming
 class DocumentValues {
