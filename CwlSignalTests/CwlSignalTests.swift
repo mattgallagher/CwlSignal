@@ -411,7 +411,7 @@ class SignalTests: XCTestCase {
 		// Create a signal
 		let (input, s) = Signal<Int>.create()
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let signal = s.buffer(context: context, initials: [3, 4]) { (activationValues: inout Array<Int>, preclosed: inout Error?, result: Result<Int>) -> Void in
+		let signal = s.buffer(initial: [3, 4], context: context) { (activationValues: inout Array<Int>, preclosed: inout Error?, result: Result<Int>) -> Void in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			if case .success(6) = result {
 				activationValues = [7]

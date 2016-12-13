@@ -1,4 +1,4 @@
-
+//
 //  CwlSignal.swift
 //  CwlSignal
 //
@@ -468,11 +468,13 @@ public class Signal<T> {
 	/// - returns: a continuous `SignalMulti`
 	public final func continuous(initial: T) -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: true, values: ([initial], nil), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in
+			SignalMultiProcessor(signal: s, values: ([initial], nil), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r -> (Array<T>, Error?) in
+				let previous: (Array<T>, Error?) = (a, p)
 				switch r {
 				case .success(let v): a = [v]
 				case .failure(let e): a = []; p = e
 				}
+				return previous
 			})
 		})
 	}
@@ -482,11 +484,13 @@ public class Signal<T> {
 	/// - returns: a continuous `SignalMulti`
 	public final func continuous() -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: true, values: ([], nil), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in
+			SignalMultiProcessor(signal: s, values: ([], nil), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r -> (Array<T>, Error?) in
+				let previous: (Array<T>, Error?) = (a, p)
 				switch r {
 				case .success(let v): a = [v]; p = nil
 				case .failure(let e): a = []; p = e
 				}
+				return previous
 			})
 		})
 	}
@@ -496,11 +500,12 @@ public class Signal<T> {
 	/// - returns: a playback `SignalMulti`
 	public final func playback() -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: true, values: ([], nil), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in
+			SignalMultiProcessor(signal: s, values: ([], nil), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r -> (Array<T>, Error?) in
 				switch r {
 				case .success(let v): a.append(v)
 				case .failure(let e): p = e
 				}
+				return ([], nil)
 			})
 		})
 	}
@@ -519,20 +524,27 @@ public class Signal<T> {
 	/// - returns: a "multicast" `SignalMulti`.
 	public final func multicast() -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: false, values: ([], nil), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in })
+			SignalMultiProcessor(signal: s, values: ([], nil), isUserUpdated: false, dw: &dw, context: .direct, updater: nil)
 		})
 	}
 	
 	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` immediately activates its antecedents. Every time a value is received, it is passed to an "updater" which updates the array of activation values (multiple listeners can be attached to the `SignalMulti` and each new listener receives the array as a series of activation values).
+	///
+	/// PERFORMANCE NOTE: for thread safety reasons, the `updater` function is always run on a *copy* of the array. Keep this copying in mind when using this function. If you need to avoid a copy, you would need to use a `class` type for `T` (so only the reference is copied) and use serialized execution `context`s for all `Signal`s handling the reference.
 	///
 	/// - Parameters:
 	///   - initial: activation values used when *before* any incoming value is received (if you wan't to specify closed as well, use `preclosed` instead)
 	///   - context: the execution context where the `updater` will run
 	///   - updater: run for each incoming `Result<T>` to update the buffered activation values
 	/// - Returns: a buffered `SignalMulti`
-	public final func buffer(initial: Array<T> = [], context: Exec = .direct, updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) -> SignalMulti<T> {
+	public final func buffer(initial: Array<T> = [], context: Exec = .direct, updater: @escaping (_ bufferedValues: inout Array<T>, _ bufferedError: inout Error?, _ incoming: Result<T>) -> Void) -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: true, values: (initial, nil), isUserUpdated: true, dw: &dw, context: context, updater: updater)
+			SignalMultiProcessor(signal: s, values: (initial, nil), isUserUpdated: true, dw: &dw, context: context) { (bufferedValues: inout Array<T>, bufferedError: inout Error?, incoming: Result<T>) -> (Array<T>, Error?) in
+				let oldActivationValues = bufferedValues
+				let oldError = bufferedError
+				updater(&bufferedValues, &bufferedError, incoming)
+				return (oldActivationValues, oldError)
+			}
 		})
 	}
 	
@@ -549,7 +561,7 @@ public class Signal<T> {
 	/// - returns: an `SignalMulti`
 	public static func preclosed<S: Sequence>(values: S, error: Error = SignalError.closed) -> SignalMulti<T> where S.Iterator.Element == T {
 		return SignalMulti<T>(processor: Signal<T>().attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: true, values: (Array(values), error), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in })
+			SignalMultiProcessor(signal: s, values: (Array(values), error), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
 		})
 	}
 	
@@ -560,7 +572,7 @@ public class Signal<T> {
 	/// - returns: an `SignalMulti`
 	public static func preclosed(error: Error = SignalError.closed) -> SignalMulti<T> {
 		return SignalMulti<T>(processor: Signal<T>().attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: true, values: ([], error), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in })
+			SignalMultiProcessor(signal: s, values: ([], error), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
 		})
 	}
 	
@@ -571,7 +583,7 @@ public class Signal<T> {
 	/// - returns: an `SignalMulti`
 	public static func preclosed(_ value: T, error: Error = SignalError.closed) -> SignalMulti<T> {
 		return SignalMulti<T>(processor: Signal<T>().attach { (s, dw) in
-			SignalMultiProcessor(signal: s, alwaysActive: true, values: ([value], error), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in })
+			SignalMultiProcessor(signal: s, values: ([value], error), isUserUpdated: false, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
 		})
 	}
 	
@@ -1449,7 +1461,8 @@ extension SignalPredecessor {
 /// All `Signal`s, except those with endpoint handlers, are fed to another `Signal`. A `SignalProcessor` is how this is done. This is the abstract base for all handlers that connect to another `Signal`. The default implementation can only connect to a single output (concrete subclass `SignalMultiprocessor` is used for multiple outputs) but a majority of the architecture for any number of outputs is contained in this class.
 /// This class allows its outputs to have a different value type compared to the Signal for this class, although only SignalTransformer, SignalTransformerWithState and SignalCombiner take advantage – all other subclasses derive from SignalProcessor<T, T>.
 fileprivate class SignalProcessor<T, U>: SignalHandler<T>, SignalPredecessor {
-	var outputs = Array<(destination: Weak<Signal<U>>, activationCount: Int?)>()
+	typealias OutputsArray = Array<(destination: Weak<Signal<U>>, activationCount: Int?)>
+	var outputs = OutputsArray()
 	
 	/// Common implementation for a nextHandlerInternal. Currently used only from SignalCacheUntilActive and SignalCombiner
 	fileprivate static func simpleNext(processor: SignalProcessor<T, U>, transform: @escaping (Result<T>) -> Result<U>) -> (Result<T>) -> Void {
@@ -1714,18 +1727,18 @@ fileprivate class SignalProcessor<T, U>: SignalHandler<T>, SignalPredecessor {
 
 /// Implementation of a processor that can output to multiple `Signal`s. Used by `continuous`, `continuous`, `playback`, `multicast`, `buffer` and `preclosed`.
 fileprivate class SignalMultiProcessor<T>: SignalProcessor<T, T> {
-	let updater: (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void
+	typealias Updater = (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> (Array<T>, Error?)
+	let updater: Updater?
 	var activationValues: Array<T>
 	var preclosed: Error?
-	var alwaysActive: Bool
 	let isUserUpdated: Bool
 	
 	/// Rather than using different subclasses for each of the "multi" `Signal`s, this one subclass is used for all. However, that requires a few different parameters to enable different behaviors.
-	init(signal: Signal<T>, alwaysActive: Bool, values: (Array<T>, Error?), isUserUpdated: Bool, dw: inout DeferredWork, context: Exec, updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) {
+	init(signal: Signal<T>, values: (Array<T>, Error?), isUserUpdated: Bool, dw: inout DeferredWork, context: Exec, updater: Updater?) {
+		precondition((values.1 == nil && values.0.isEmpty) || updater != nil, "Non empty activation values requires always active.")
 		self.updater = updater
 		self.activationValues = values.0
 		self.preclosed = values.1
-		self.alwaysActive = alwaysActive
 		self.isUserUpdated = isUserUpdated
 		super.init(signal: signal, dw: &dw, context: context)
 	}
@@ -1733,7 +1746,7 @@ fileprivate class SignalMultiProcessor<T>: SignalProcessor<T, T> {
 	/// Multicast is not preactivated but all other types are
 	fileprivate override var alwaysActiveInternal: Bool {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		return alwaysActive
+		return updater != nil
 	}
 	
 	/// Multiprocessor can handle multiple outputs
@@ -1751,7 +1764,7 @@ fileprivate class SignalMultiProcessor<T>: SignalProcessor<T, T> {
 		assert(signal.mutex.unbalancedTryLock() == false)
 		return { [weak self] r in
 			if let s = self {
-				s.updater(&s.activationValues, &s.preclosed, r)
+				_ = s.updater?(&s.activationValues, &s.preclosed, r)
 			}
 		}
 	}
@@ -1759,35 +1772,65 @@ fileprivate class SignalMultiProcessor<T>: SignalProcessor<T, T> {
 	/// On result, update any activation values.
 	fileprivate override func nextHandlerInternal() -> (Result<T>) -> Void {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		let os = outputs
+		
+		// There's a tricky point here: for multicast, we only want to send to outputs that were connected *before* we started sending this value; otherwise values could be sent to the wrong outputs following asychronous graph manipulations.
+		// HOWEVER, when activation values exist, we must ensure that any output that was sent the *old* activation values will receive this new value *regardless* of when it connects.
+		// To balance these needs, the outputs array is copied here for "multicast" but isn't copied until immediately after updating the `activationValues` in all other cases
+		var outs: OutputsArray? = updater != nil ? nil : outputs
+		
 		let activated = signal.delivery.isNormal
 		return { [weak self] r in
 			if let s = self {
-				if s.isUserUpdated {
-					// The user-supplied function for updating "buffer" `Signal`s is run outside the mutex for safety reasons but this requires copying the array.
-					var values = [T]()
-					var error: Error?
-					s.sync {
-						values = s.activationValues
-						error = s.preclosed
-					}
-					s.updater(&values, &error, r)
-					s.sync {
-						s.activationValues = values
-						s.preclosed = error
-					}
-				} else {
-					s.sync {
-						// Other closures are run inside the mutex
-						s.updater(&s.activationValues, &s.preclosed, r)
+				if let u = s.updater {
+					if s.isUserUpdated {
+						var values = [T]()
+						var error: Error?
+						
+						// Mutably copy the activation values and error
+						s.sync {
+							values = s.activationValues
+							error = s.preclosed
+						}
+						
+						// Perform the update on the copies
+						let expired = u(&values, &error, r)
+
+						// Change the authoritative activation values and error
+						s.sync {
+							s.activationValues = values
+							s.preclosed = error
+							
+							if outs == nil {
+								outs = s.outputs
+							}
+						}
+
+						// Make sure any reference to the originals is released *outside* the mutex
+						withExtendedLifetime(expired) {}
+					} else {
+						var expired: (Array<T>, Error?)? = nil
+						
+						// Perform the update on the copies
+						s.sync {
+							expired = u(&s.activationValues, &s.preclosed, r)
+							
+							if outs == nil {
+								outs = s.outputs
+							}
+						}
+					
+						// Make sure any expired content is released *outside* the mutex
+						withExtendedLifetime(expired) {}
 					}
 				}
-				
-				// Iteration is over the *cached* version of the outputs, since we don't want multicast (which isn't pre-activated) to send out-of-date values to outputs that connect after they are sent.
-				let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(s)
-				for o in os {
-					if let d = o.destination.value, let ac = o.activationCount {
-						d.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
+
+				// Send the result *before* changing the authoritative activation values and error
+				if let os = outs {
+					let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(s)
+					for o in os {
+						if let d = o.destination.value, let ac = o.activationCount {
+							d.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
+						}
 					}
 				}
 			}
