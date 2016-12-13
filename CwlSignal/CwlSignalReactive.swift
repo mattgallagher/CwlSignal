@@ -1826,13 +1826,18 @@ extension Signal {
 	
 	/// Implementation of [Reactive X operator "materialize"](http://reactivex.io/documentation/operators/materialize-dematerialize.html)
 	///
-	/// WARNING: the output signal won't close, even when the input closes. Graph lifecycle must be managed through other means.
+	/// WARNING: in CwlSignal, this operator will emit a `SignalError.cancelled` into the output signal immediately after emitting the first wrapped error. Within the "first error closes signal" behavior of CwlSignal, this is the only behavior that makes sense, however, it does limit the usefulness of `materialize` to constructions where the `materialize` signal immediately outputs into a `SignalMergeSet` (including abstractions built on top, like `switchLatest` or child signals of a `flatMap`) that ignores the actual close of the source signal.
 	///
 	/// - parameter context: the `Exec` where timed reconnection will occcur (default: .Default).
 	/// - parameter offset: a function that, when passed the latest value from `self`, returns a `Signal`.
 	/// - returns: a mirror of `self` where values are delayed by the duration of signals returned from `offset` – closing occurs when `self` closes or when the last delayed value is sent (whichever occurs last).
 	public func materialize() -> Signal<Result<T>> {
-		return transform { r, n in n.send(value: r) }
+		return transform { r, n in
+			n.send(value: r)
+			if r.isError {
+				n.send(error: SignalError.cancelled)
+			}
+		}
 	}
 
 	/// Implementation of [Reactive X operator "dematerialize"](http://reactivex.io/documentation/operators/materialize-dematerialize.html)

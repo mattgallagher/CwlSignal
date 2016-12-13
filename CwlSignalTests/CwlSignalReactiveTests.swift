@@ -1884,12 +1884,13 @@ class SignalReactiveTests: XCTestCase {
 		_ = Signal<Int>.fromSequence([0, 1, 2, 3]).materialize().subscribe { r in
 			results += r
 		}
-		XCTAssert(results.count == 5)
+		XCTAssert(results.count == 6)
 		XCTAssert(results.at(0)?.value?.value == 0)
 		XCTAssert(results.at(1)?.value?.value == 1)
 		XCTAssert(results.at(2)?.value?.value == 2)
 		XCTAssert(results.at(3)?.value?.value == 3)
 		XCTAssert(results.at(4)?.value?.isSignalClosed == true)
+		XCTAssert(results.at(5)?.error as? SignalError == .cancelled)
 	}
 	
 	func testDematerialize() {
