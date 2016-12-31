@@ -20,36 +20,71 @@
 
 import Foundation
 
+/// A wrapper around key-value observing so that you:
+///	1. don't need to implement `observeValue` yourself, you can instead handle changes in a closure
+///	2. you get a `CallbackReason` for each change which includes `valueChanged`, `pathChanged`, `targetDeleted`.
+///	3. observation is automatically cancelled if you release the KeyValueObserver or the target is released
+///
+/// THREAD SAFETY:
+/// This class is memory safe even when observations are triggered concurrently from different threads.
+/// Do note though that while all changes are registered under the mutex, callbacks are invoked *outside* the mutex, so it is possible for callbacks to be invoked in a different order than the internal synchronized order.
+/// In general, this shouldn't be a problem (since key-value observing is not itself synchronized so there *isn't* an authoritative ordering). However, this may cause unexpected behavior if you invoke `cancel` on this class. If you `cancel` the `KeyValueObserver` while it is concurrently processing changes on another thread, this might result in callback invocations occurring *after* the call to `cancel`. This will only happen if the changes associated with those callbacks were received *before* the `cancel` - it's just the callback that's getting invoked later.
 public class KeyValueObserver: NSObject {
 	public typealias Callback = (_ change: [NSKeyValueChangeKey: Any], _ reason: CallbackReason) -> Void
+
+	// This is the user-supplied callback function
 	private var callback: Callback?
+	
+	// When observing a keyPath, we use a separate KeyValueObserver for each component of the path. The `tailObserver` is the `KeyValueObserver` for the *next* element in the path.
 	private var tailObserver: KeyValueObserver?
+	
+	// This is the key that we're observing on `target`
 	private let key: String
+	
+	// This is any path beyond the key.
 	private let tailPath: String?
+	
+	// This is the set of options passed on construction
 	private let options: NSKeyValueObservingOptions
+	
+	// Used to ensure memory safety for the callback and tailObserver.
+	private let mutex = DispatchQueue(label: "")
 	
 	// Our "deletionBlock" is called to notify us that the target is being deallocated (so we can remove the key value observation before a warning is logged) and this happens during the target's "objc_destructinstance" function. At this point, a `weak` var will be `nil` and an `unowned` will trigger a `_swift_abortRetainUnowned` failure.
 	// So we're left with `Unmanaged`. Careful cancellation before the target is deallocated is necessary to ensure we don't access an invalid memory location.
-	private var target: Unmanaged<NSObject>
+	private let target: Unmanaged<NSObject>
 	
+	/// The `CallbackReason` explains the location in the path where the change occurred.
+	///
+	/// - valueChanged: the observed value changed
+	/// - pathChanged: one of the connected elements in the path changed
+	/// - targetDeleted: the observed target was deallocated
+	/// - cancelled: will never be sent
 	public enum CallbackReason {
 		case valueChanged
 		case pathChanged
-		case cancelled
 		case targetDeleted
+		case cancelled
 	}
 	
-    public init(target: NSObject, keyPath: String, options: NSKeyValueObservingOptions, callback: @escaping Callback) {
+	/// Establish the key value observing.
+	///
+	/// - Parameters:
+	///   - target: object on which there's a property we wish to observe
+	///   - keyPath: a key or keyPath identifying the property we wish to observe
+	///   - options: same as for the normal `addObserver` method
+	///   - callback: will be invoked on each change with the change dictionary and the change reason
+	public init(target: NSObject, keyPath: String, options: NSKeyValueObservingOptions = NSKeyValueObservingOptions.new.union(NSKeyValueObservingOptions.initial), callback: @escaping Callback) {
 		self.callback = callback
 		self.target = Unmanaged.passUnretained(target)
 		self.options = options
 		
 		// Look for "." indicating a key path
-		var range = keyPath.range(of: ".", options: NSString.CompareOptions(), range: nil, locale: nil)
-
+		var range = keyPath.range(of: ".")
+		
 		// If we have a collection operator, consider the next path component as part of this key
 		if let r = range, keyPath.hasPrefix("@") {
-			range = keyPath.range(of: ".", options: NSString.CompareOptions(), range: keyPath.index(after: r.lowerBound)..<keyPath.endIndex, locale: nil)
+			range = keyPath.range(of: ".", range: keyPath.index(after: r.lowerBound)..<keyPath.endIndex, locale: nil)
 		}
 		
 		// Set the key and tailPath based on whether we detected multiple path components
@@ -70,16 +105,13 @@ public class KeyValueObserver: NSObject {
 			}
 			self.tailPath = p
 		}
-
+		
 		super.init()
 		
 		// Detect if the target is deleted
-		let deletionBlock = OnDelete() { [weak self] () -> Void in
-			self?.cancel(.targetDeleted)
-			return
-		}
+		let deletionBlock = OnDelete { [weak self] in self?.cancel(.targetDeleted) }
 		objc_setAssociatedObject(target, Unmanaged.passUnretained(self).toOpaque(), deletionBlock, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
-
+		
 		// Start observing the target
 		if key != "self" {
 			var currentOptions = options
@@ -92,7 +124,7 @@ public class KeyValueObserver: NSObject {
 		
 		// Start observing the value of the target
 		if tailPath != nil {
-			updateTailObserver(target.value(forKeyPath: self.key) as? NSObject, isInitial: true)
+			updateTailObserver(onValue: target.value(forKeyPath: self.key) as? NSObject, isInitial: true)
 		}
 	}
 	
@@ -100,36 +132,45 @@ public class KeyValueObserver: NSObject {
 		cancel()
 	}
 	
-	private func updateTailObserver(_ onValue: NSObject?, isInitial: Bool) {
+	// Method must be called from *INSIDE* mutex (although, it must be *OUTSIDE* the tailObserver's mutex).
+	private func updateTailObserver(onValue: NSObject?, isInitial: Bool) {
 		tailObserver?.cancel()
 		tailObserver = nil
-
-		if let _ = callback, let tp = tailPath, let currentValue = onValue {
+		
+		if let _ = self.callback, let tp = tailPath, let currentValue = onValue {
 			let currentOptions = isInitial ? self.options : self.options.subtracting(NSKeyValueObservingOptions.initial)
 			self.tailObserver = KeyValueObserver(target: currentValue, keyPath: tp, options: currentOptions, callback: self.tailCallback)
 		}
 	}
 	
+	// Safe for invocation in or out of mutex
 	private var isObservingTail: Bool {
 		return tailPath == nil || tailPath == "self"
 	}
 	
+	// Safe for invocation in or out of mutex
 	private var needsWeakTailObserver: Bool {
 		return tailPath == "self"
 	}
 	
+	// Method is called *OUTSIDE* mutex since it is used as a callback function for the `tailObserver`
 	private func tailCallback(_ change: [NSKeyValueChangeKey: Any], reason: CallbackReason) {
 		switch reason {
 		case .cancelled:
 			return
 		case .targetDeleted:
-			updateTailObserver(nil, isInitial: false)
-			callback?(change, self.isObservingTail ? .valueChanged : .pathChanged)
+			let c = mutex.sync(execute: { () -> Callback? in
+				updateTailObserver(onValue: nil, isInitial: false)
+				return self.callback
+			})
+			c?(change, self.isObservingTail ? .valueChanged : .pathChanged)
 		default:
-			callback?(change, reason)
+			let c = mutex.sync { self.callback }
+			c?(change, reason)
 		}
 	}
 	
+	// Method must be called from *INSIDE* mutex.
 	private func targetValue() -> Any? {
 		if let t = tailObserver, !isObservingTail {
 			return t.targetValue()
@@ -138,16 +179,18 @@ public class KeyValueObserver: NSObject {
 		}
 	}
 	
-	private func updateTailObserverGivenChangeDictionary(_ change: [NSKeyValueChangeKey: Any]) {
+	// Method must be called from *INSIDE* mutex.
+	private func updateTailObserverGivenChangeDictionary(change: [NSKeyValueChangeKey: Any]) {
 		if let newValue = change[NSKeyValueChangeKey.newKey] as? NSObject {
 			let value: NSObject? = newValue == NSNull() ? nil : newValue
-			updateTailObserver(value, isInitial: false)
+			updateTailObserver(onValue: value, isInitial: false)
 		} else {
-			updateTailObserver(targetValue() as? NSObject, isInitial: false)
+			updateTailObserver(onValue: targetValue() as? NSObject, isInitial: false)
 		}
 	}
 	
-    public override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
+	// Implementation of standard key-value observing method.
+	public override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
 		if context != Unmanaged.passUnretained(self).toOpaque() {
 			super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
 		}
@@ -158,48 +201,64 @@ public class KeyValueObserver: NSObject {
 		}
 		
 		if self.isObservingTail {
-			callback?(c, .valueChanged)
-			if needsWeakTailObserver {
-				updateTailObserverGivenChangeDictionary(c)
+			let cb = mutex.sync { () -> Callback? in
+				if needsWeakTailObserver {
+					updateTailObserverGivenChangeDictionary(change: c)
+				}
+				return self.callback
 			}
+			cb?(c, .valueChanged)
+			
 		} else {
-			var transmittedChange: [NSKeyValueChangeKey: Any] = [:]
-			if !options.intersection(NSKeyValueObservingOptions.old).isEmpty {
-				transmittedChange[NSKeyValueChangeKey.oldKey] = tailObserver?.targetValue() ?? NSNull()
+			let tuple = mutex.sync { () -> (Callback, [NSKeyValueChangeKey: Any])? in
+				var transmittedChange: [NSKeyValueChangeKey: Any] = [:]
+				if !options.intersection(NSKeyValueObservingOptions.old).isEmpty {
+					transmittedChange[NSKeyValueChangeKey.oldKey] = tailObserver?.targetValue()
+				}
+				if let _ = c[NSKeyValueChangeKey.notificationIsPriorKey] as? Bool {
+					transmittedChange[NSKeyValueChangeKey.notificationIsPriorKey] = true
+				}
+				updateTailObserverGivenChangeDictionary(change: c)
+				if !options.intersection(NSKeyValueObservingOptions.new).isEmpty {
+					transmittedChange[NSKeyValueChangeKey.newKey] = tailObserver?.targetValue()
+				}
+				if let c = callback {
+					return (c, transmittedChange)
+				}
+				return nil
 			}
-			if let _ = c[NSKeyValueChangeKey.notificationIsPriorKey] as? Bool {
-				transmittedChange[NSKeyValueChangeKey.notificationIsPriorKey] = true
+			if let (cb, tc) = tuple {
+				cb(tc, .pathChanged)
 			}
-			updateTailObserverGivenChangeDictionary(c)
-			if !options.intersection(NSKeyValueObservingOptions.new).isEmpty {
-				transmittedChange[NSKeyValueChangeKey.newKey] = tailObserver?.targetValue() ?? NSNull()
-			}
-			callback?(transmittedChange, .pathChanged)
 		}
 	}
-
+	
+	/// Stop observing.
 	public func cancel() {
 		cancel(.cancelled)
 	}
-
+	
+	// Method is called *OUTSIDE* mutex
 	private func cancel(_ reason: CallbackReason) {
-		if let c = callback {
+		let cb = mutex.sync { () -> Callback? in
+			guard let c = callback else { return nil }
+			
 			// Flag as inactive
 			callback = nil
-
+			
 			// Remove the observations from this object
 			if key != "self" {
 				target.takeUnretainedValue().removeObserver(self, forKeyPath: key, context: Unmanaged.passUnretained(self).toOpaque())
 			}
 			objc_setAssociatedObject(target, Unmanaged.passUnretained(self).toOpaque(), nil, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN);
-
+			
 			// Remove tail observers
-			updateTailObserver(nil, isInitial: false)
+			updateTailObserver(onValue: nil, isInitial: false)
 			
 			// Send notifications
-			if reason != .cancelled {
-				c([NSKeyValueChangeKey.kindKey: NSKeyValueChange.setting.rawValue, NSKeyValueChangeKey.newKey: NSNull()], reason)
-			}
+			return reason != .cancelled ? c : nil
 		}
+		
+		cb?([:], reason)
 	}
 }
