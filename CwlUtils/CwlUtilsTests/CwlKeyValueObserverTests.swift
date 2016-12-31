@@ -38,12 +38,20 @@ class TestObservable: NSObject {
 class KeyValueObserverTests: XCTestCase {
 	func testBasicProperty() {
 		var results: [(String?, KeyValueObserver.CallbackReason)] = Array()
+		var kvo2Count = 0
 		var testObservable1: TestObservable? = TestObservable(value: "empty")
 		var kvo: KeyValueObserver?
+		var kvo2: KeyValueObserver?
 		
 		if let to1 = testObservable1 {
 			kvo = KeyValueObserver(target: to1, keyPath: #keyPath(TestObservable.someProperty), options: NSKeyValueObservingOptions.new) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
 				results.append(change[NSKeyValueChangeKey.newKey] as? String, reason)
+			}
+		}
+		
+		if let to1 = testObservable1 {
+			kvo2 = KeyValueObserver(target: to1, keyPath: #keyPath(TestObservable.someProperty), options: NSKeyValueObservingOptions()) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
+				kvo2Count += 1
 			}
 		}
 		
@@ -56,8 +64,11 @@ class KeyValueObserverTests: XCTestCase {
 		XCTAssert(results[0].0 == "filled" && results[0].1 == .valueChanged)
 		XCTAssert(results[1].0 == nil && results[1].1 == .targetDeleted)
 		XCTAssert(results.count == 2)
+
+		XCTAssert(kvo2Count == 2)
 		
 		withExtendedLifetime(kvo) {}
+		withExtendedLifetime(kvo2) {}
 	}
 	
 	func testChainedProperty() {

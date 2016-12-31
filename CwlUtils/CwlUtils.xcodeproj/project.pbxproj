@@ -104,6 +104,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		C923AFD21E0246A5004784AA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = C98707751C3F886F009B413A;
+			remoteInfo = CwlPreconditionTesting_macOS;
+		};
+		C923AFDC1E0246C0004784AA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C99AD6541DCEB07600B9E235 /* CwlPreconditionTesting.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = C9604C7F1C40DD9A001A7517;
+			remoteInfo = CwlPreconditionTesting_iOS;
+		};
 		C93E181F1C8166470009A053 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C93E180A1C8166470009A053 /* Project object */;
@@ -595,6 +609,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				C923AFD31E0246A5004784AA /* PBXTargetDependency */,
 				C93E18201C8166470009A053 /* PBXTargetDependency */,
 			);
 			name = CwlUtils_macOSTests;
@@ -632,6 +647,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				C923AFDD1E0246C0004784AA /* PBXTargetDependency */,
 				C93E183E1C81674F0009A053 /* PBXTargetDependency */,
 			);
 			name = CwlUtils_iOSTests;
@@ -1042,6 +1058,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		C923AFD31E0246A5004784AA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CwlPreconditionTesting_macOS;
+			targetProxy = C923AFD21E0246A5004784AA /* PBXContainerItemProxy */;
+		};
+		C923AFDD1E0246C0004784AA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CwlPreconditionTesting_iOS;
+			targetProxy = C923AFDC1E0246C0004784AA /* PBXContainerItemProxy */;
+		};
 		C93E18201C8166470009A053 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = C93E18121C8166470009A053 /* CwlUtils_macOS */;
