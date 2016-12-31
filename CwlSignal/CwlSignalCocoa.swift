@@ -69,14 +69,14 @@ public enum SignalObservingError: Error {
 	case UnexpectedObservationState
 }
 
-/// Observe a property via key-value-observing and emit the changes as a Signal
+/// Observe a property via key-value-observing and emit the changes as a Signal<Any>
 ///
 /// - Parameters:
 ///   - target: will have `addObserver(_:forKeyPath:options:context:)` invoked on it
 ///   - keyPath: passed to `addObserver(_:forKeyPath:options:context:)`
 ///   - initial: if true, NSKeyValueObservingOptions.initial is included in the options passed to `addObserver(_:forKeyPath:options:context:)`
 /// - Returns: a signal which emits the observation results
-public func signalObserving(target: NSObject, keyPath: String, initial: Bool = true) -> Signal<Any> {
+public func signalKeyValueObserving(_ target: NSObject, keyPath: String, initial: Bool = true) -> Signal<Any> {
 	var observer: KeyValueObserver?
 	return Signal<Any>.generate { [weak target] (input: SignalInput<Any>?) -> Void in
 		guard let i = input, let t = target else {
@@ -92,6 +92,24 @@ public func signalObserving(target: NSObject, keyPath: String, initial: Bool = t
 			}
 		})
 		withExtendedLifetime(observer) {}
+	}
+}
+
+@available(*, deprecated, message:"Use signalKeyValueObserving(_:keyPath:initial:) instead")
+public func signalObserving(target: NSObject, keyPath: String, initial: Bool = true) -> Signal<Any> {
+	return signalKeyValueObserving(target, keyPath: keyPath, initial: initial)
+}
+
+extension Signal {
+	/// Observe a property via key-value-observing and emit the new values that can be downcast to T. This is just a wrapper around `signalKeyValueObserving` that applies `filterMap` to downcast values to T and emit only if the downcast is successful.
+	///
+	/// - Parameters:
+	///   - target: will have `addObserver(_:forKeyPath:options:context:)` invoked on it
+	///   - keyPath: passed to `addObserver(_:forKeyPath:options:context:)`
+	///   - initial: if true, NSKeyValueObservingOptions.initial is included in the options passed to `addObserver(_:forKeyPath:options:context:)`
+	/// - Returns: a signal which emits the observation results
+	public static func keyValueObserving(_ target: NSObject, keyPath: String, initial: Bool = true) -> Signal<T> {
+		return signalKeyValueObserving(target, keyPath: keyPath, initial: initial).filterMap { $0 as? T }
 	}
 }
 

@@ -53,6 +53,8 @@
 		C9D239F11DE99DC20058610A /* CwlFrameAddress.h in Headers */ = {isa = PBXBuildFile; fileRef = C99AD6251DCE9E0600B9E235 /* CwlFrameAddress.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9D239F21DE99E2F0058610A /* CwlSignal.h in Headers */ = {isa = PBXBuildFile; fileRef = C99AD6061DCE9B2200B9E235 /* CwlSignal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9D239F31DE99E300058610A /* CwlSignal.h in Headers */ = {isa = PBXBuildFile; fileRef = C99AD6061DCE9B2200B9E235 /* CwlSignal.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		C9ECF6F11E177AD400626509 /* CwlSignalCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9ECF6F01E177AD400626509 /* CwlSignalCocoaTests.swift */; };
+		C9ECF6F21E177AD400626509 /* CwlSignalCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9ECF6F01E177AD400626509 /* CwlSignalCocoaTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -102,6 +104,7 @@
 		C9D239B11DE99C940058610A /* CwlSignal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CwlSignal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9D239B91DE99C940058610A /* CwlSignal_iOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlSignal_iOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9D23A2E1DED295E0058610A /* CwlSignal.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = CwlSignal.playground; sourceTree = "<group>"; };
+		C9ECF6F01E177AD400626509 /* CwlSignalCocoaTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlSignalCocoaTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -176,6 +179,7 @@
 			isa = PBXGroup;
 			children = (
 				C99AD6111DCE9B2300B9E235 /* CwlSignalTests.swift */,
+				C9ECF6F01E177AD400626509 /* CwlSignalCocoaTests.swift */,
 				C99AD67C1DCEC16E00B9E235 /* CwlSignalReactiveTests.swift */,
 				C99AD6131DCE9B2300B9E235 /* Info.plist */,
 			);
@@ -424,6 +428,7 @@
 			files = (
 				C9D239EE1DE99DBA0058610A /* CwlSignalTests.swift in Sources */,
 				C9D239EF1DE99DBA0058610A /* CwlSignalReactiveTests.swift in Sources */,
+				C9ECF6F11E177AD400626509 /* CwlSignalCocoaTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -458,6 +463,7 @@
 			files = (
 				C9D239EC1DE99DB90058610A /* CwlSignalTests.swift in Sources */,
 				C9D239ED1DE99DB90058610A /* CwlSignalReactiveTests.swift in Sources */,
+				C9ECF6F21E177AD400626509 /* CwlSignalCocoaTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
