@@ -2149,7 +2149,7 @@ fileprivate func joinFunction<T>(processor: SignalProcessor<T, T>, disconnect: (
 }
 
 /// A junction is a point in the signal graph that can be disconnected and reconnected at any time. Constructed by calling `join(toInput:...)` or `junction()` on an `Signal`.
-public class SignalJunction<T>: SignalProcessor<T, T> {
+public class SignalJunction<T>: SignalProcessor<T, T>, Cancellable {
 	private var disconnectOnError: ((SignalJunction<T>, Error, SignalInput<T>) -> ())? = nil
 	
 	/// Basic `.sync` processor
@@ -2194,6 +2194,10 @@ public class SignalJunction<T>: SignalProcessor<T, T> {
 		}?.newInput(forDisconnector: self)
 		withExtendedLifetime(previous) {}
 		return result
+	}
+	
+	public func cancel() {
+		_ = disconnect()
 	}
 	
 	/// The `disconnectOnError` needs to be set inside the mutex, if-and-only-if a successor connects successfully. To allow this to work, the desired `disconnectOnError` function is passed into this function via the `outputAddedSuccessorInternal` called from `addPreceedingInternal` in the `joinFunction`.
