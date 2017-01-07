@@ -44,13 +44,13 @@ class KeyValueObserverTests: XCTestCase {
 		var kvo2: KeyValueObserver?
 		
 		if let to1 = testObservable1 {
-			kvo = KeyValueObserver(target: to1, keyPath: #keyPath(TestObservable.someProperty), options: NSKeyValueObservingOptions.new) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
+			kvo = KeyValueObserver(source: to1, keyPath: #keyPath(TestObservable.someProperty), options: NSKeyValueObservingOptions.new) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
 				results.append(change[NSKeyValueChangeKey.newKey] as? String, reason)
 			}
 		}
 		
 		if let to1 = testObservable1 {
-			kvo2 = KeyValueObserver(target: to1, keyPath: #keyPath(TestObservable.someProperty), options: NSKeyValueObservingOptions()) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
+			kvo2 = KeyValueObserver(source: to1, keyPath: #keyPath(TestObservable.someProperty), options: NSKeyValueObservingOptions()) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
 				kvo2Count += 1
 			}
 		}
@@ -58,17 +58,33 @@ class KeyValueObserverTests: XCTestCase {
 		// Test basic observer notifications
 		testObservable1?.someProperty = "filled"
 		
-		// Test target deleted notification
+		// Test source deleted notification
 		testObservable1 = nil
 		
 		XCTAssert(results[0].0 == "filled" && results[0].1 == .valueChanged)
-		XCTAssert(results[1].0 == nil && results[1].1 == .targetDeleted)
+		XCTAssert(results[1].0 == nil && results[1].1 == .sourceDeleted)
 		XCTAssert(results.count == 2)
 
 		XCTAssert(kvo2Count == 2)
 		
 		withExtendedLifetime(kvo) {}
 		withExtendedLifetime(kvo2) {}
+	}
+	
+	func testCancel() {
+		var results: [(String?, KeyValueObserver.CallbackReason)] = Array()
+		let testObservable = TestObservable(value: "empty")
+		let kvo = KeyValueObserver(source: testObservable, keyPath: #keyPath(TestObservable.someProperty)) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
+				results.append(change[NSKeyValueChangeKey.newKey] as? String, reason)
+		}
+		
+		testObservable.someProperty = "one"
+		kvo.cancel()
+		testObservable.someProperty = "two"
+		
+		XCTAssert(results.count == 2)
+		XCTAssert(results.at(0)?.0 == "empty" && results.at(0)?.1 == .valueChanged)
+		XCTAssert(results.at(1)?.0 == "one" && results.at(1)?.1 == .valueChanged)
 	}
 	
 	func testChainedProperty() {
@@ -82,7 +98,7 @@ class KeyValueObserverTests: XCTestCase {
 		if let to1 = testObservable1, let to2 = testObservable2, let to3 = testObservable3 {
 			to2.chainedObservable = to3
 			to1.chainedObservable = to2
-			kvo = KeyValueObserver(target: to1, keyPath: "chainedObservable.chainedObservable.someProperty", options: NSKeyValueObservingOptions.new) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
+			kvo = KeyValueObserver(source: to1, keyPath: "chainedObservable.chainedObservable.someProperty", options: NSKeyValueObservingOptions.new) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
 				results.append(change[NSKeyValueChangeKey.newKey] as? String, reason)
 			}
 		}
@@ -108,7 +124,7 @@ class KeyValueObserverTests: XCTestCase {
 		XCTAssert(results[5].0 == nil && results[5].1 == .pathChanged)
 		
 		testObservable1 = nil
-		XCTAssert(results[6].0 == nil && results[6].1 == .targetDeleted)
+		XCTAssert(results[6].0 == nil && results[6].1 == .sourceDeleted)
 		XCTAssert(results.count == 7)
 		
 		withExtendedLifetime(kvo) { () -> Void in }
@@ -120,7 +136,7 @@ class KeyValueObserverTests: XCTestCase {
 		var kvo: KeyValueObserver?
 		
 		if let to1 = testObservable1 {
-			kvo = KeyValueObserver(target: to1, keyPath: "weakProperty", options: NSKeyValueObservingOptions.new) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
+			kvo = KeyValueObserver(source: to1, keyPath: "weakProperty", options: NSKeyValueObservingOptions.new) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
 				results.append(((change[NSKeyValueChangeKey.newKey] as? TestObservable)?.someProperty, reason))
 			}
 		}
@@ -148,7 +164,7 @@ class KeyValueObserverTests: XCTestCase {
 			let testObservable3 = TestObservable(value: "empty")
 			testObservable1.chainedObservable = testObservable2
 			testObservable2.chainedObservable = testObservable3
-			let kvo = KeyValueObserver(target: testObservable1, keyPath: "chainedObservable.chainedObservable.someProperty", options: o) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
+			let kvo = KeyValueObserver(source: testObservable1, keyPath: "chainedObservable.chainedObservable.someProperty", options: o) { (change: [NSKeyValueChangeKey: Any], reason: KeyValueObserver.CallbackReason) -> Void in
 				results.append(change)
 			}
 			

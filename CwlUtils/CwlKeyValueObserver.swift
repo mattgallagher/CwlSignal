@@ -22,8 +22,8 @@ import Foundation
 
 /// A wrapper around key-value observing so that you:
 ///	1. don't need to implement `observeValue` yourself, you can instead handle changes in a closure
-///	2. you get a `CallbackReason` for each change which includes `valueChanged`, `pathChanged`, `targetDeleted`.
-///	3. observation is automatically cancelled if you release the KeyValueObserver or the target is released
+///	2. you get a `CallbackReason` for each change which includes `valueChanged`, `pathChanged`, `sourceDeleted`.
+///	3. observation is automatically cancelled if you release the KeyValueObserver or the source is released
 ///
 /// THREAD SAFETY:
 /// This class is memory safe even when observations are triggered concurrently from different threads.
@@ -38,7 +38,7 @@ public class KeyValueObserver: NSObject {
 	// When observing a keyPath, we use a separate KeyValueObserver for each component of the path. The `tailObserver` is the `KeyValueObserver` for the *next* element in the path.
 	private var tailObserver: KeyValueObserver?
 	
-	// This is the key that we're observing on `target`
+	// This is the key that we're observing on `source`
 	private let key: String
 	
 	// This is any path beyond the key.
@@ -50,33 +50,33 @@ public class KeyValueObserver: NSObject {
 	// Used to ensure memory safety for the callback and tailObserver.
 	private let mutex = DispatchQueue(label: "")
 	
-	// Our "deletionBlock" is called to notify us that the target is being deallocated (so we can remove the key value observation before a warning is logged) and this happens during the target's "objc_destructinstance" function. At this point, a `weak` var will be `nil` and an `unowned` will trigger a `_swift_abortRetainUnowned` failure.
-	// So we're left with `Unmanaged`. Careful cancellation before the target is deallocated is necessary to ensure we don't access an invalid memory location.
-	private let target: Unmanaged<NSObject>
+	// Our "deletionBlock" is called to notify us that the source is being deallocated (so we can remove the key value observation before a warning is logged) and this happens during the source's "objc_destructinstance" function. At this point, a `weak` var will be `nil` and an `unowned` will trigger a `_swift_abortRetainUnowned` failure.
+	// So we're left with `Unmanaged`. Careful cancellation before the source is deallocated is necessary to ensure we don't access an invalid memory location.
+	private let source: Unmanaged<NSObject>
 	
 	/// The `CallbackReason` explains the location in the path where the change occurred.
 	///
 	/// - valueChanged: the observed value changed
 	/// - pathChanged: one of the connected elements in the path changed
-	/// - targetDeleted: the observed target was deallocated
+	/// - sourceDeleted: the observed source was deallocated
 	/// - cancelled: will never be sent
 	public enum CallbackReason {
 		case valueChanged
 		case pathChanged
-		case targetDeleted
+		case sourceDeleted
 		case cancelled
 	}
 	
 	/// Establish the key value observing.
 	///
 	/// - Parameters:
-	///   - target: object on which there's a property we wish to observe
+	///   - source: object on which there's a property we wish to observe
 	///   - keyPath: a key or keyPath identifying the property we wish to observe
 	///   - options: same as for the normal `addObserver` method
 	///   - callback: will be invoked on each change with the change dictionary and the change reason
-	public init(target: NSObject, keyPath: String, options: NSKeyValueObservingOptions = NSKeyValueObservingOptions.new.union(NSKeyValueObservingOptions.initial), callback: @escaping Callback) {
+	public init(source: NSObject, keyPath: String, options: NSKeyValueObservingOptions = NSKeyValueObservingOptions.new.union(NSKeyValueObservingOptions.initial), callback: @escaping Callback) {
 		self.callback = callback
-		self.target = Unmanaged.passUnretained(target)
+		self.source = Unmanaged.passUnretained(source)
 		self.options = options
 		
 		// Look for "." indicating a key path
@@ -94,10 +94,10 @@ public class KeyValueObserver: NSObject {
 		} else {
 			self.key = keyPath
 			
-			// If we're observing a weak property, add an observer on self to the target to detect when it may be set to nil without going through the property setter
+			// If we're observing a weak property, add an observer on self to the source to detect when it may be set to nil without going through the property setter
 			var p: String? = nil
 			if let propertyName = keyPath.cString(using: String.Encoding.utf8) {
-				let property = class_getProperty(type(of: target), propertyName)
+				let property = class_getProperty(type(of: source), propertyName)
 				// Look for both the "id" and "weak" attributes.
 				if property != nil, let attributes = String(validatingUTF8: property_getAttributes(property))?.components(separatedBy: ","), attributes.filter({ $0.hasPrefix("T@") || $0 == "W" }).count == 2 {
 					p = "self"
@@ -108,23 +108,24 @@ public class KeyValueObserver: NSObject {
 		
 		super.init()
 		
-		// Detect if the target is deleted
-		let deletionBlock = OnDelete { [weak self] in self?.cancel(.targetDeleted) }
-		objc_setAssociatedObject(target, Unmanaged.passUnretained(self).toOpaque(), deletionBlock, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
+		// Detect if the source is deleted
+		let deletionBlock = OnDelete { [weak self] in self?.cancel(.sourceDeleted) }
+		print("Setting \(deletionBlock) for key \(Unmanaged.passUnretained(self).toOpaque()) on object \(source)")
+		objc_setAssociatedObject(source, Unmanaged.passUnretained(self).toOpaque(), deletionBlock, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
 		
-		// Start observing the target
+		// Start observing the source
 		if key != "self" {
 			var currentOptions = options
 			if !isObservingTail {
 				currentOptions = NSKeyValueObservingOptions.new.union(options.intersection(NSKeyValueObservingOptions.prior))
 			}
 			
-			target.addObserver(self, forKeyPath: key, options: currentOptions, context: Unmanaged.passUnretained(self).toOpaque())
+			source.addObserver(self, forKeyPath: key, options: currentOptions, context: Unmanaged.passUnretained(self).toOpaque())
 		}
 		
-		// Start observing the value of the target
+		// Start observing the value of the source
 		if tailPath != nil {
-			updateTailObserver(onValue: target.value(forKeyPath: self.key) as? NSObject, isInitial: true)
+			updateTailObserver(onValue: source.value(forKeyPath: self.key) as? NSObject, isInitial: true)
 		}
 	}
 	
@@ -139,7 +140,7 @@ public class KeyValueObserver: NSObject {
 		
 		if let _ = self.callback, let tp = tailPath, let currentValue = onValue {
 			let currentOptions = isInitial ? self.options : self.options.subtracting(NSKeyValueObservingOptions.initial)
-			self.tailObserver = KeyValueObserver(target: currentValue, keyPath: tp, options: currentOptions, callback: self.tailCallback)
+			self.tailObserver = KeyValueObserver(source: currentValue, keyPath: tp, options: currentOptions, callback: self.tailCallback)
 		}
 	}
 	
@@ -158,7 +159,7 @@ public class KeyValueObserver: NSObject {
 		switch reason {
 		case .cancelled:
 			return
-		case .targetDeleted:
+		case .sourceDeleted:
 			let c = mutex.sync(execute: { () -> Callback? in
 				updateTailObserver(onValue: nil, isInitial: false)
 				return self.callback
@@ -171,11 +172,11 @@ public class KeyValueObserver: NSObject {
 	}
 	
 	// Method must be called from *INSIDE* mutex.
-	private func targetValue() -> Any? {
+	private func sourceValue() -> Any? {
 		if let t = tailObserver, !isObservingTail {
-			return t.targetValue()
+			return t.sourceValue()
 		} else {
-			return target.takeUnretainedValue().value(forKeyPath: key)
+			return source.takeUnretainedValue().value(forKeyPath: key)
 		}
 	}
 	
@@ -185,7 +186,7 @@ public class KeyValueObserver: NSObject {
 			let value: NSObject? = newValue == NSNull() ? nil : newValue
 			updateTailObserver(onValue: value, isInitial: false)
 		} else {
-			updateTailObserver(onValue: targetValue() as? NSObject, isInitial: false)
+			updateTailObserver(onValue: sourceValue() as? NSObject, isInitial: false)
 		}
 	}
 	
@@ -213,14 +214,14 @@ public class KeyValueObserver: NSObject {
 			let tuple = mutex.sync { () -> (Callback, [NSKeyValueChangeKey: Any])? in
 				var transmittedChange: [NSKeyValueChangeKey: Any] = [:]
 				if !options.intersection(NSKeyValueObservingOptions.old).isEmpty {
-					transmittedChange[NSKeyValueChangeKey.oldKey] = tailObserver?.targetValue()
+					transmittedChange[NSKeyValueChangeKey.oldKey] = tailObserver?.sourceValue()
 				}
 				if let _ = c[NSKeyValueChangeKey.notificationIsPriorKey] as? Bool {
 					transmittedChange[NSKeyValueChangeKey.notificationIsPriorKey] = true
 				}
 				updateTailObserverGivenChangeDictionary(change: c)
 				if !options.intersection(NSKeyValueObservingOptions.new).isEmpty {
-					transmittedChange[NSKeyValueChangeKey.newKey] = tailObserver?.targetValue()
+					transmittedChange[NSKeyValueChangeKey.newKey] = tailObserver?.sourceValue()
 				}
 				if let c = callback {
 					return (c, transmittedChange)
@@ -248,9 +249,17 @@ public class KeyValueObserver: NSObject {
 			
 			// Remove the observations from this object
 			if key != "self" {
-				target.takeUnretainedValue().removeObserver(self, forKeyPath: key, context: Unmanaged.passUnretained(self).toOpaque())
+				source.takeUnretainedValue().removeObserver(self, forKeyPath: key, context: Unmanaged.passUnretained(self).toOpaque())
 			}
-			objc_setAssociatedObject(target, Unmanaged.passUnretained(self).toOpaque(), nil, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN);
+			
+			// Cancel the OnDelete object
+			let unknown = objc_getAssociatedObject(source, Unmanaged.passUnretained(self).toOpaque())
+			if let deletionObject = unknown as? OnDelete {
+				deletionObject.cancel()
+			}
+
+			// And clear the associated object
+			objc_setAssociatedObject(source, Unmanaged.passUnretained(self).toOpaque(), nil, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN);
 			
 			// Remove tail observers
 			updateTailObserver(onValue: nil, isInitial: false)
