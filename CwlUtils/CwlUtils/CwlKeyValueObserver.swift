@@ -25,6 +25,8 @@ import Foundation
 ///	2. you get a `CallbackReason` for each change which includes `valueChanged`, `pathChanged`, `sourceDeleted`.
 ///	3. observation is automatically cancelled if you release the KeyValueObserver or the source is released
 ///
+/// A majority of the complexity in this class comes from the fact that we turn key-value observing on keyPaths into a series of chained KeyValueObservers that we manage ourselves. This gives us more information when things change but we're re-implementing a number of things that Cococa key-value observing normally gives us for free. Generally in this class, anything involving the `tailPath` is managing observations of the path.
+///
 /// THREAD SAFETY:
 /// This class is memory safe even when observations are triggered concurrently from different threads.
 /// Do note though that while all changes are registered under the mutex, callbacks are invoked *outside* the mutex, so it is possible for callbacks to be invoked in a different order than the internal synchronized order.
@@ -133,7 +135,9 @@ public class KeyValueObserver: NSObject {
 		cancel()
 	}
 	
-	// Method must be called from *INSIDE* mutex (although, it must be *OUTSIDE* the tailObserver's mutex).
+	// This method is called when the key path between the source and the observed property changes. This will recursively create KeyValueObservers along the path.
+	//
+	// Mutex notes: Method must be called from *INSIDE* mutex (although, it must be *OUTSIDE* the tailObserver's mutex).
 	private func updateTailObserver(onValue: NSObject?, isInitial: Bool) {
 		tailObserver?.cancel()
 		tailObserver = nil
@@ -144,17 +148,9 @@ public class KeyValueObserver: NSObject {
 		}
 	}
 	
-	// Safe for invocation in or out of mutex
-	private var isObservingTail: Bool {
-		return tailPath == nil || tailPath == "self"
-	}
-	
-	// Safe for invocation in or out of mutex
-	private var needsWeakTailObserver: Bool {
-		return tailPath == "self"
-	}
-	
-	// Method is called *OUTSIDE* mutex since it is used as a callback function for the `tailObserver`
+	// This method is called from the `tailObserver` (representing a change in the key path, not the observed property)
+	//
+	// Mutex notes: Method is called *OUTSIDE* mutex since it is used as a callback function for the `tailObserver`
 	private func tailCallback(_ change: [NSKeyValueChangeKey: Any], reason: CallbackReason) {
 		switch reason {
 		case .cancelled:
@@ -171,7 +167,23 @@ public class KeyValueObserver: NSObject {
 		}
 	}
 	
-	// Method must be called from *INSIDE* mutex.
+	// The method returns `false` if there are subsequent `KeyValueObserver`s observing part of the path between us and the observed property and `true` if we are directly observing the property.
+	//
+	// Mutex notes: Safe for invocation in or out of mutex
+	private var isObservingTail: Bool {
+		return tailPath == nil || tailPath == "self"
+	}
+	
+	// Weak properties need `self` observed, as well as the property, to correctly detect changes.
+	//
+	// Mutex notes: Safe for invocation in or out of mutex
+	private var needsWeakTailObserver: Bool {
+		return tailPath == "self"
+	}
+	
+	// Accessor for the observed property value. This will correctly get the value from the end of the key path if we are using a tailObserver.
+	//
+	// Mutex notes: Method must be called from *INSIDE* mutex.
 	private func sourceValue() -> Any? {
 		if let t = tailObserver, !isObservingTail {
 			return t.sourceValue()
@@ -180,7 +192,9 @@ public class KeyValueObserver: NSObject {
 		}
 	}
 	
-	// Method must be called from *INSIDE* mutex.
+	// If we're observing a key path, then we need to update our chain of KeyValueObservers when part of the path changes. This starts that process from the change point.
+	//
+	// Mutex notes: Method must be called from *INSIDE* mutex.
 	private func updateTailObserverGivenChangeDictionary(change: [NSKeyValueChangeKey: Any]) {
 		if let newValue = change[NSKeyValueChangeKey.newKey] as? NSObject {
 			let value: NSObject? = newValue == NSNull() ? nil : newValue
@@ -239,7 +253,7 @@ public class KeyValueObserver: NSObject {
 		cancel(.cancelled)
 	}
 	
-	// Method is called *OUTSIDE* mutex
+	// Mutex notes: Method is called *OUTSIDE* mutex
 	private func cancel(_ reason: CallbackReason) {
 		let cb = mutex.sync { () -> Callback? in
 			guard let c = callback else { return nil }
