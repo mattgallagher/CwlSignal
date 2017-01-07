@@ -84,9 +84,9 @@ public func signalKeyValueObserving(_ target: NSObject, keyPath: String, initial
 			return
 		}
 		let options = NSKeyValueObservingOptions.new.union(initial ? NSKeyValueObservingOptions.initial : NSKeyValueObservingOptions())
-		observer = KeyValueObserver(target: t, keyPath: keyPath, options: options, callback: { (change, reason) -> Void in
+		observer = KeyValueObserver(source: t, keyPath: keyPath, options: options, callback: { (change, reason) -> Void in
 			switch (reason, change[NSKeyValueChangeKey.newKey]) {
-			case (.targetDeleted, _): i.close()
+			case (.sourceDeleted, _): i.close()
 			case (_, .some(let v)): i.send(value: v)
 			default: i.send(error: SignalObservingError.UnexpectedObservationState)
 			}
