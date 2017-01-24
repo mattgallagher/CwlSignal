@@ -20,49 +20,90 @@
 
 import Foundation
 
-/// Instances of `SignalActionTarget` can be used as the "target" of Cocoa "target-action" events and will emit the
-open class SignalActionTarget<T: AnyObject>: NSObject {
-	private let signalInput: SignalInput<T>
+/// Instances of `SignalActionTarget` can be used as the "target" of Cocoa "target-action" events and the result will be emitted as a signal.
+/// Instance of this class are owned by the output `signal` so if you're holding onto the signal, you can drop references to this class itself.
+///
+/// WARNING: when this class is `deinit`d, the `target` will likely be set to `nil` (since most target/action senders use a `weak` target). However, there are two points to be aware of:
+///	1. The `action` on the sender will not be set to `nil` so the sender may try to send to the first responder. This class uses an unusual selector name ("cwlSignalAction") so this is unlikely to be implemented by a first responder but it's something to consider.
+///	2. Some senders (e.g. `ABPeoplePickerView`) use `unowned` targets, not `weak`, so their target must be manually set to `nil`. This lifecycle management should be tied to the output signal in some way to ensure the target is correctly set to `nil` if the signal (and therefore this instance) are `deinit`d.
+open class SignalActionTarget: NSObject {
+	private var signalInput: SignalInput<Any?>? = nil
+	
+	// Ownership note: we are owned by the output signal so we only weakly retain it.
+	private weak var signalOutput: SignalMulti<Any?>? = nil
 	
 	/// The `signal` emits the actions received
-	private(set) public var signal: Signal<T>
-	
-	public override init() {
-		(self.signalInput, self.signal) = Signal<T>.create()
-
-		super.init()
-		
-		// Have the signal deliberately capture self to keep alive until the signal closes (since targets are typically weakly held by the sender)
-		self.signal = self.signal.map { (v: T) -> T in
-			withExtendedLifetime(self) {}
-			return v
+	public var signal: SignalMulti<Any?> {
+		// If there's a current signal output, return it
+		if let so = signalOutput {
+			return so
 		}
+		
+		// Otherwise, create a new one
+		let (i, s) = Signal<Any?>.create { s in
+			// Instead of using a `continuous` transform, use a `buffer` to do the same thing while capturing `self` so that we're owned by the signal.
+			s.buffer { (b: inout Array<Any?>, e: inout Error?, r: Result<Any?>) in
+				withExtendedLifetime(self) {}
+				switch r {
+				case .success(let v):
+					b.removeAll(keepingCapacity: true)
+					b.append(v)
+				case .failure(let err):
+					e = err
+				}
+			}
+		}
+		self.signalInput = i
+		self.signalOutput = s
+		return s
 	}
 	
 	/// Receiver function for the target-action events
 	///
 	/// - Parameter sender: typical target-action "sender" parameter
-	@objc public func action(_ sender: AnyObject) {
-		signalInput.send(value: sender as! T)
+	@objc public func cwlSignalAction(_ sender: Any?) {
+		_ = signalInput?.send(value: sender)
 	}
 	
 	/// Convenience accessor for `#selector(SignalActionTarget<T>.action(_:))`
-	public var selector: Selector { return #selector(SignalActionTarget<T>.action(_:)) }
+	public var selector: Selector { return #selector(SignalActionTarget.cwlSignalAction(_:)) }
 }
 
 /// Like `SignalActionTarget` but with a second action method connected to the same target. Useful for situations like NSTableView targets which send single-click and double-click to the same target.
-open class SignalDoubleActionTarget<T: AnyObject>: SignalActionTarget<T> {
-	private let secondInput: SignalInput<T>
-	private let secondSignal: Signal<T>
+open class SignalDoubleActionTarget: SignalActionTarget {
+	private var secondInput: SignalInput<Any?>? = nil
+	private weak var secondOutput: SignalMulti<Any?>? = nil
 
-	public override init() {
-		(self.secondInput, self.secondSignal) = Signal<T>.create { $0.multicast() }
-		super.init()
+	/// The `signal` emits the actions received
+	public var secondSignal: SignalMulti<Any?> {
+		// If there's a current signal output, return it
+		if let so = secondOutput {
+			return so
+		}
+		
+		// Otherwise, create a new one
+		let (i, s) = Signal<Any?>.create { s in
+			// Instead of using a `continuous` transform, use a `buffer` to do the same thing while capturing `self` so that we're owned by the signal.
+			s.buffer { (b: inout Array<Any?>, e: inout Error?, r: Result<Any?>) in
+				withExtendedLifetime(self) {}
+				switch r {
+				case .success(let v):
+					b.removeAll(keepingCapacity: true)
+					b.append(v)
+				case .failure(let err):
+					e = err
+				}
+			}
+		}
+		self.secondInput = i
+		self.secondOutput = s
+		return s
 	}
-	@objc public func secondAction(_ sender: AnyObject) {
-		secondInput.send(value: sender as! T)
+
+	@objc public func cwlSignalSecondAction(_ sender: Any?) {
+		_ = secondInput?.send(value: sender)
 	}
-	public var secondSelector: Selector { return #selector(SignalDoubleActionTarget.secondAction(_:)) }
+	public var secondSelector: Selector { return #selector(SignalDoubleActionTarget.cwlSignalSecondAction(_:)) }
 }
 
 public enum SignalObservingError: Error {
@@ -72,19 +113,19 @@ public enum SignalObservingError: Error {
 /// Observe a property via key-value-observing and emit the changes as a Signal<Any>
 ///
 /// - Parameters:
-///   - target: will have `addObserver(_:forKeyPath:options:context:)` invoked on it
+///   - source: will have `addObserver(_:forKeyPath:options:context:)` invoked on it
 ///   - keyPath: passed to `addObserver(_:forKeyPath:options:context:)`
 ///   - initial: if true, NSKeyValueObservingOptions.initial is included in the options passed to `addObserver(_:forKeyPath:options:context:)`
 /// - Returns: a signal which emits the observation results
-public func signalKeyValueObserving(_ target: NSObject, keyPath: String, initial: Bool = true) -> Signal<Any> {
+public func signalKeyValueObserving(_ source: NSObject, keyPath: String, initial: Bool = true) -> Signal<Any> {
 	var observer: KeyValueObserver?
-	return Signal<Any>.generate { [weak target] (input: SignalInput<Any>?) -> Void in
-		guard let i = input, let t = target else {
+	return Signal<Any>.generate { [weak source] (input: SignalInput<Any>?) -> Void in
+		guard let i = input, let s = source else {
 			observer = nil
 			return
 		}
 		let options = NSKeyValueObservingOptions.new.union(initial ? NSKeyValueObservingOptions.initial : NSKeyValueObservingOptions())
-		observer = KeyValueObserver(source: t, keyPath: keyPath, options: options, callback: { (change, reason) -> Void in
+		observer = KeyValueObserver(source: s, keyPath: keyPath, options: options, callback: { (change, reason) -> Void in
 			switch (reason, change[NSKeyValueChangeKey.newKey]) {
 			case (.sourceDeleted, _): i.close()
 			case (_, .some(let v)): i.send(value: v)
@@ -135,7 +176,7 @@ public func signalFromNotifications(center: NotificationCenter = NotificationCen
 	}
 }
 
-extension Signal where T: AnyObject {
+extension Signal {
 	/// Attaches a SignalEndpoint that applies all values to a target NSObject using key value coding via the supplied keyPath. The property must match the runtime type of the Signal signal values or a precondition failure will be raised.
 	///
 	/// - Parameters:
@@ -144,21 +185,8 @@ extension Signal where T: AnyObject {
 	///   - keyPath: passed to `setValue(_:forKeyPath:)`
 	/// - Returns: the `SignalEnpoint` created by this action (releasing the endpoint will cease any further setting)
 	public func kvcSetter(context: Exec, target: NSObject, keyPath: String) -> SignalEndpoint<T> {
-		var filterType: AnyClass? = nil
-		if let propertyName = keyPath.cString(using: String.Encoding.utf8) {
-			let property = class_getProperty(type(of: target), propertyName)
-			if let p = property, let attrs = String(validatingUTF8: property_getAttributes(p))?.components(separatedBy: ","), let objAttr = attrs.first(where: { $0.hasPrefix("T@") }), let classType = NSClassFromString(objAttr.substring(from: objAttr.index(objAttr.startIndex, offsetBy: 2)).trimmingCharacters(in: CharacterSet(charactersIn:"\""))) {
-				filterType = classType
-			}
-		}
-
-		weak var weakTarget: NSObject? = target
-		return subscribeValues(context: context) { (value: ValueType) -> Void in
-			switch (filterType, value) {
-			case (.some(let ft), let v as NSObjectProtocol) where v.isKind(of: ft): fallthrough
-			case (.none, _): weakTarget?.setValue(value, forKeyPath: keyPath)
-			default: preconditionFailure("kvc setter signal type \(T.self) failed to match property type \(filterType)")
-			}
+		return subscribeValues(context: context) { [weak target] (value: ValueType) -> Void in
+			target?.setValue(value, forKeyPath: keyPath)
 		}
 	}
 }
