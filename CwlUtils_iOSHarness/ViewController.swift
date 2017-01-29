@@ -45,7 +45,7 @@ class ViewController: UIViewController {
 		do {
 			let data = try NSData(contentsOfFile: path, options: .mappedIfSafe)
 			process(data: data)
-		} catch let error as NSError {
+		} catch {
 			showAlert(error: error)
 		}
 	}

@@ -112,7 +112,6 @@ public class KeyValueObserver: NSObject {
 		
 		// Detect if the source is deleted
 		let deletionBlock = OnDelete { [weak self] in self?.cancel(.sourceDeleted) }
-		print("Setting \(deletionBlock) for key \(Unmanaged.passUnretained(self).toOpaque()) on object \(source)")
 		objc_setAssociatedObject(source, Unmanaged.passUnretained(self).toOpaque(), deletionBlock, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
 		
 		// Start observing the source
