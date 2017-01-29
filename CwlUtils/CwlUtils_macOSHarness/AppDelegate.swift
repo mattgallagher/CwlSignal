@@ -21,7 +21,7 @@
 import Cocoa
 import CwlUtils
 
-func showAlert(error: NSError) {
+func showAlert(error: Error) {
 	NSAlert(error: error).runModal()
 }
 
@@ -44,7 +44,7 @@ class AppDelegate: NSResponder, NSApplicationDelegate {
 		do {
 			let data = try NSData(contentsOfFile: path, options: .mappedIfSafe)
 			process(data: data)
-		} catch let error as NSError {
+		} catch {
 			showAlert(error: error)
 		}
 	}
@@ -64,7 +64,7 @@ class AppDelegate: NSResponder, NSApplicationDelegate {
 		do {
 			try someProcessingTask2(path: "/invalid/path")
 		} catch {
-			presentError(error as NSError)
+			presentError(error)
 		}
 	}
 }

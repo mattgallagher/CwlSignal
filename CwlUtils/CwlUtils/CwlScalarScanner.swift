@@ -38,7 +38,9 @@ public enum ScalarScannerError: Error {
 	case searchFailed(wanted: String, after: Int)
 }
 
-/// A structure for traversing a `String.UnicodeScalarView`. A `context` field is provided but is not used by the scanner (it is entirely for storage by the scanner's user).
+/// A structure for traversing a `String.UnicodeScalarView`.
+///
+/// **UNICODE WARNING**: this struct ignores all Unicode combining rules and parses each scalar individually. The rules for parsing must allow combined characters to be parsed separately or better yet, forbid combining characters at critical parse locations. If your data structure does not include these types of rule then you should be iterating over the `Character` elements in a `String` rather than using this struct.
 public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeScalar, C.Index: Comparable {
 	/// The underlying storage
 	public let scalars: C
@@ -111,6 +113,22 @@ public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeSc
 		return result
 	}
 	
+	/// Consume scalars from the contained collection, up to but not including the first instance of any character in `set` found. `index` is advanced to immediately before `string`. Returns all scalars consumed prior to `string` as a `String`. Throws if no matching characters are ever found.
+	public mutating func readUntil(set inSet: Set<UnicodeScalar>) throws -> String {
+		var i = index
+		let previousConsumed = consumed
+		try skipUntil(set: inSet)
+		
+		var result = ""
+		result.reserveCapacity(consumed - previousConsumed)
+		while i != index {
+			result.unicodeScalars.append(scalars[i])
+			i = scalars.index(after: i)
+		}
+		
+		return result
+	}
+	
 	/// Peeks at the scalar at the current `index`, testing it with function `f`. If `f` returns `true`, the scalar is appended to a `String` and the `index` increased. The `String` is returned at the end.
 	public mutating func readWhile(true test: (UnicodeScalar) -> Bool) -> String {
 		var string = ""
@@ -146,6 +164,21 @@ public struct ScalarScanner<C: Collection> where C.Iterator.Element == UnicodeSc
 		}
 		if i == scalars.endIndex {
 			throw ScalarScannerError.searchFailed(wanted: String(scalar), after: consumed)
+		}
+		index = i
+		consumed += c
+	}
+	
+	/// Consume scalars from the contained collection, up to but not including the first instance of any scalar from `set` is found. `index` is advanced to immediately before `scalar`. Throws if `scalar` is never found.
+	public mutating func skipUntil(set inSet: Set<UnicodeScalar>) throws {
+		var i = index
+		var c = 0
+		while i != scalars.endIndex && !inSet.contains(scalars[i]) {
+			i = self.scalars.index(after: i)
+			c += 1
+		}
+		if i == scalars.endIndex {
+			throw ScalarScannerError.searchFailed(wanted: "One of: \(inSet.sorted())", after: consumed)
 		}
 		index = i
 		consumed += c
