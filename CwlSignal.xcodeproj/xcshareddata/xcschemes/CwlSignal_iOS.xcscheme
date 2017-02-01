@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0820"
+   LastUpgradeVersion = "0830"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C9D239B01DE99C940058610A"
+               BlueprintIdentifier = "C9DD3D7C1E41DFB600E23B15"
                BuildableName = "CwlSignal.framework"
                BlueprintName = "CwlSignal_iOS"
                ReferencedContainer = "container:CwlSignal.xcodeproj">
@@ -32,7 +32,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C9D239B81DE99C940058610A"
+               BlueprintIdentifier = "C9DD3D9B1E41DFBA00E23B15"
                BuildableName = "CwlSignal_iOSTests.xctest"
                BlueprintName = "CwlSignal_iOSTests"
                ReferencedContainer = "container:CwlSignal.xcodeproj">
@@ -42,7 +42,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C9D239B01DE99C940058610A"
+            BlueprintIdentifier = "C9DD3D7C1E41DFB600E23B15"
             BuildableName = "CwlSignal.framework"
             BlueprintName = "CwlSignal_iOS"
             ReferencedContainer = "container:CwlSignal.xcodeproj">
@@ -64,7 +64,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C9D239B01DE99C940058610A"
+            BlueprintIdentifier = "C9DD3D7C1E41DFB600E23B15"
             BuildableName = "CwlSignal.framework"
             BlueprintName = "CwlSignal_iOS"
             ReferencedContainer = "container:CwlSignal.xcodeproj">
@@ -82,7 +82,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C9D239B01DE99C940058610A"
+            BlueprintIdentifier = "C9DD3D7C1E41DFB600E23B15"
             BuildableName = "CwlSignal.framework"
             BlueprintName = "CwlSignal_iOS"
             ReferencedContainer = "container:CwlSignal.xcodeproj">
