@@ -179,6 +179,20 @@ extension Signal {
 	}
 }
 
+extension SignalCapture {
+	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
+		let (input, output) = Signal<T>.create()
+		try! join(toInput: input, resend: resend)
+		return output.subscribeValues(context: context, handler: handler)
+	}
+	
+	public func subscribeValues(resend: Bool = false, onError: @escaping (SignalCapture<T>, Error, SignalInput<T>) -> (), context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
+		let (input, output) = Signal<T>.create()
+		try! join(toInput: input, resend: resend, onError: onError)
+		return output.subscribeValues(context: context, handler: handler)
+	}
+}
+
 extension Result {
 	public var isSignalClosed: Bool {
 		if case .failure(SignalError.closed) = self {
