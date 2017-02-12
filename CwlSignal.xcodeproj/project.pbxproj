@@ -6,6 +6,20 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		C945D7C01E5038C4009AFB8E /* FetchDependencies */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = C945D7C31E5038C4009AFB8E /* Build configuration list for PBXAggregateTarget "FetchDependencies" */;
+			buildPhases = (
+				C945D7C41E5038D5009AFB8E /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = FetchDependencies;
+			productName = FetchDependencies;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		C9DD3D621E41C81800E23B15 /* CwlFrameAddress.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_45 /* CwlFrameAddress.c */; };
 		C9DD3D631E41C83200E23B15 /* CwlAddressInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* CwlAddressInfo.swift */; };
@@ -20,10 +34,8 @@
 		C9DD3D6C1E41C83200E23B15 /* CwlOnDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_36 /* CwlOnDelete.swift */; };
 		C9DD3D6E1E41C83200E23B15 /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_38 /* CwlResult.swift */; };
 		C9DD3D701E41C83200E23B15 /* CwlStackFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_40 /* CwlStackFrame.swift */; };
-		C9DD3D711E41C83200E23B15 /* CwlSysctl.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_41 /* CwlSysctl.swift */; };
 		C9DD3D731E41C83200E23B15 /* CwlWrappers.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_43 /* CwlWrappers.swift */; };
 		C9DD3D771E41CD9000E23B15 /* CwlSignal.h in Headers */ = {isa = PBXBuildFile; fileRef = C9DD3D761E41CD9000E23B15 /* CwlSignal.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C9DD3D791E41CF8100E23B15 /* CwlFrameAddress.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_47 /* CwlFrameAddress.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9DD3D7F1E41DFB600E23B15 /* CwlAddressInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* CwlAddressInfo.swift */; };
 		C9DD3D801E41DFB600E23B15 /* CwlCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* CwlCollection.swift */; };
 		C9DD3D811E41DFB600E23B15 /* CwlDebugContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_29 /* CwlDebugContext.swift */; };
@@ -43,12 +55,12 @@
 		C9DD3D8F1E41DFB600E23B15 /* CwlSignalCocoa.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* CwlSignalCocoa.swift */; };
 		C9DD3D901E41DFB600E23B15 /* CwlSignalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* CwlSignalExtensions.swift */; };
 		C9DD3D911E41DFB600E23B15 /* CwlSignalReactive.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* CwlSignalReactive.swift */; };
-		C9DD3D941E41DFB600E23B15 /* CwlFrameAddress.h in Headers */ = {isa = PBXBuildFile; fileRef = OBJ_47 /* CwlFrameAddress.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9DD3D951E41DFB600E23B15 /* CwlSignal.h in Headers */ = {isa = PBXBuildFile; fileRef = C9DD3D761E41CD9000E23B15 /* CwlSignal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9DD3D9F1E41DFBA00E23B15 /* CwlSignalCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* CwlSignalCocoaTests.swift */; };
 		C9DD3DA01E41DFBA00E23B15 /* CwlSignalReactiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* CwlSignalReactiveTests.swift */; };
 		C9DD3DA11E41DFBA00E23B15 /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlSignalTests.swift */; };
 		C9DD3DA31E41DFBA00E23B15 /* CwlSignal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_77 /* CwlSignal.framework */; };
+		C9EA79021E4ECA4100042A64 /* CwlFrameAddress.h in Headers */ = {isa = PBXBuildFile; fileRef = C9EA79011E4EC9D400042A64 /* CwlFrameAddress.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		OBJ_195 /* CwlSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* CwlSignal.swift */; };
 		OBJ_196 /* CwlSignalCocoa.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* CwlSignalCocoa.swift */; };
 		OBJ_197 /* CwlSignalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* CwlSignalExtensions.swift */; };
@@ -60,6 +72,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		C945D7C51E503910009AFB8E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C945D7C01E5038C4009AFB8E;
+			remoteInfo = FetchDependencies;
+		};
+		C945D7C71E503915009AFB8E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C945D7C01E5038C4009AFB8E;
+			remoteInfo = FetchDependencies;
+		};
 		C9DD3D601E41ACAF00E23B15 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
@@ -83,6 +109,7 @@
 		C9DD3D7B1E41D19900E23B15 /* CwlSignal.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = CwlSignal.playground; sourceTree = "<group>"; };
 		C9DD3D991E41DFB600E23B15 /* CwlSignal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CwlSignal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9DD3DA71E41DFBA00E23B15 /* CwlSignal_iOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlSignal_iOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9EA79011E4EC9D400042A64 /* CwlFrameAddress.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CwlFrameAddress.h; sourceTree = "<group>"; };
 		OBJ_10 /* CwlSignalCocoa.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalCocoa.swift; sourceTree = "<group>"; };
 		OBJ_11 /* CwlSignalExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalExtensions.swift; sourceTree = "<group>"; };
 		OBJ_12 /* CwlSignalReactive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalReactive.swift; sourceTree = "<group>"; };
@@ -99,15 +126,11 @@
 		OBJ_34 /* CwlKeyValueObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlKeyValueObserver.swift; sourceTree = "<group>"; };
 		OBJ_35 /* CwlMutex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlMutex.swift; sourceTree = "<group>"; };
 		OBJ_36 /* CwlOnDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlOnDelete.swift; sourceTree = "<group>"; };
-		OBJ_37 /* CwlRandom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlRandom.swift; sourceTree = "<group>"; };
 		OBJ_38 /* CwlResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlResult.swift; sourceTree = "<group>"; };
-		OBJ_39 /* CwlScalarScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlScalarScanner.swift; sourceTree = "<group>"; };
 		OBJ_40 /* CwlStackFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlStackFrame.swift; sourceTree = "<group>"; };
 		OBJ_41 /* CwlSysctl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSysctl.swift; sourceTree = "<group>"; };
-		OBJ_42 /* CwlUnanticipatedError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlUnanticipatedError.swift; sourceTree = "<group>"; };
 		OBJ_43 /* CwlWrappers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlWrappers.swift; sourceTree = "<group>"; };
 		OBJ_45 /* CwlFrameAddress.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = CwlFrameAddress.c; sourceTree = "<group>"; };
-		OBJ_47 /* CwlFrameAddress.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CwlFrameAddress.h; sourceTree = "<group>"; };
 		OBJ_6 /* Package.swift */ = {isa = PBXFileReference; explicitFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		OBJ_77 /* CwlSignal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CwlSignal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_78 /* CwlSignal_macOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = CwlSignal_macOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -148,6 +171,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C9EA79001E4EC9D400042A64 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9EA79011E4EC9D400042A64 /* CwlFrameAddress.h */,
+			);
+			name = include;
+			path = .build/cwl_symlinks/CwlUtils/Sources/CwlFrameAddress/include;
+			sourceTree = SOURCE_ROOT;
+		};
 		OBJ_13 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
@@ -190,12 +222,9 @@
 				OBJ_34 /* CwlKeyValueObserver.swift */,
 				OBJ_35 /* CwlMutex.swift */,
 				OBJ_36 /* CwlOnDelete.swift */,
-				OBJ_37 /* CwlRandom.swift */,
 				OBJ_38 /* CwlResult.swift */,
-				OBJ_39 /* CwlScalarScanner.swift */,
 				OBJ_40 /* CwlStackFrame.swift */,
 				OBJ_41 /* CwlSysctl.swift */,
-				OBJ_42 /* CwlUnanticipatedError.swift */,
 				OBJ_43 /* CwlWrappers.swift */,
 			);
 			name = CwlUtils;
@@ -206,19 +235,11 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_45 /* CwlFrameAddress.c */,
-				OBJ_46 /* include */,
+				C9EA79001E4EC9D400042A64 /* include */,
 			);
 			name = CwlFrameAddress;
 			path = .build/cwl_symlinks/CwlUtils/Sources/CwlFrameAddress;
 			sourceTree = SOURCE_ROOT;
-		};
-		OBJ_46 /* include */ = {
-			isa = PBXGroup;
-			children = (
-				OBJ_47 /* CwlFrameAddress.h */,
-			);
-			path = include;
-			sourceTree = "<group>";
 		};
 		OBJ_5 = {
 			isa = PBXGroup;
@@ -272,7 +293,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C9DD3D791E41CF8100E23B15 /* CwlFrameAddress.h in Headers */,
+				C9EA79021E4ECA4100042A64 /* CwlFrameAddress.h in Headers */,
 				C9DD3D771E41CD9000E23B15 /* CwlSignal.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -281,7 +302,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C9DD3D941E41DFB600E23B15 /* CwlFrameAddress.h in Headers */,
 				C9DD3D951E41DFB600E23B15 /* CwlSignal.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -293,7 +313,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = C9DD3D961E41DFB600E23B15 /* Build configuration list for PBXNativeTarget "CwlSignal_iOS" */;
 			buildPhases = (
-				C9DD3D7D1E41DFB600E23B15 /* ShellScript */,
 				C9DD3D7E1E41DFB600E23B15 /* Sources */,
 				C9DD3D921E41DFB600E23B15 /* Frameworks */,
 				C9DD3D931E41DFB600E23B15 /* Headers */,
@@ -301,6 +320,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				C945D7C81E503915009AFB8E /* PBXTargetDependency */,
 			);
 			name = CwlSignal_iOS;
 			productName = CwlSignal;
@@ -328,7 +348,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = OBJ_191 /* Build configuration list for PBXNativeTarget "CwlSignal_macOS" */;
 			buildPhases = (
-				C9DD3D611E41C7F300E23B15 /* ShellScript */,
 				OBJ_194 /* Sources */,
 				OBJ_199 /* Frameworks */,
 				C9DD3D751E41CD7100E23B15 /* Headers */,
@@ -336,6 +355,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				C945D7C61E503910009AFB8E /* PBXTargetDependency */,
 			);
 			name = CwlSignal_macOS;
 			productName = CwlSignal;
@@ -366,6 +386,13 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 9999;
+				TargetAttributes = {
+					C945D7C01E5038C4009AFB8E = {
+						CreatedOnToolsVersion = 8.2.1;
+						DevelopmentTeam = S7YQ892G6G;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = OBJ_2 /* Build configuration list for PBXProject "CwlSignal" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -379,6 +406,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				C945D7C01E5038C4009AFB8E /* FetchDependencies */,
 				OBJ_190 /* CwlSignal_macOS */,
 				OBJ_214 /* CwlSignal_macOSTests */,
 				C9DD3D7C1E41DFB600E23B15 /* CwlSignal_iOS */,
@@ -388,7 +416,7 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		C9DD3D611E41C7F300E23B15 /* ShellScript */ = {
+		C945D7C41E5038D5009AFB8E /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -400,25 +428,8 @@
 				"$(SRCROOT)/.build/cwl_symlinks/CwlUtils",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = "/usr/bin/xcrun --sdk macosx swift";
-			shellScript = "//\n//  CwlPackageFetch.swift\n//  CwlPackageFetch\n//\n//  Created by Matt Gallagher on 2017/01/31.\n//  Copyright © 2017 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.\n//\n//  Permission to use, copy, modify, and/or distribute this software for any\n//  purpose with or without fee is hereby granted, provided that the above\n//  copyright notice and this permission notice appear in all copies.\n//\n//  THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n//  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n//  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n//  SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n//  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN\n//  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR\n//  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n//\n\nimport Foundation\n\n/// Launch a process and run to completion, returning the standard out on success.\nfunc launch(_ command: String, _ arguments: [String], directory: String? = nil) -> String? {\n\tlet proc = Process()\n\tproc.launchPath = command\n\tproc.arguments = arguments\n\t_ = directory.map { proc.currentDirectoryPath = $0 }\n\tlet pipe = Pipe()\n\tproc.standardOutput = pipe\n\tproc.launch()\n\tlet result = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)!\n\tproc.waitUntilExit()\n\treturn proc.terminationStatus != 0 ? nil : result\n}\n\nlet srcRoot = ProcessInfo.processInfo.environment[\"SRCROOT\"]!\n\n// STEP 1: use `swift package fetch` to get all dependencies\nprint(launch(\"/usr/bin/swift\", [\"package\", \"fetch\"], directory: srcRoot)!)\n\n// Create a symlink only if it is not already present and pointing to the destination\nlet symlinksPath = \"\\(srcRoot)/.build/cwl_symlinks\"\nfunc createSymlink(srcRoot: String, name: String, destination: String) throws {\n\tlet location = \"\\(symlinksPath)/\\(name)\"\n\tlet link = \"../../\\(destination)\"\n\tif (try? FileManager.default.destinationOfSymbolicLink(atPath: location)) != link {\n\t\t_ = try? FileManager.default.removeItem(atPath: location)\n\t\ttry FileManager.default.createSymbolicLink(atPath: location, withDestinationPath:\n\t\t\tlink)\n\t\tprint(\"Created symbolic link: \\(location) -> \\(link)\")\n\t}\n}\n\n// Recursively parse the dependency graph JSON, creating symlinks in our own location\nfunc createSymlinks(srcRoot: String, description: Dictionary<String, Any>, topLevelPath: String) throws {\n\tguard let dependencies = description[\"dependencies\"] as? [Dictionary<String, Any>] else { return }\n\tfor dependency in dependencies {\n\t\tlet path = dependency[\"path\"] as! String\n\t\tlet relativePath = path.substring(from: path.range(of: topLevelPath)!.upperBound)\n\t\tlet name = dependency[\"name\"] as! String\n\t\ttry createSymlink(srcRoot: srcRoot, name: name, destination: relativePath)\n\t\ttry createSymlinks(srcRoot: srcRoot, description: dependency, topLevelPath: topLevelPath)\n\t}\n}\n\n// STEP 2: create symlinks from fetched locations to somewhere stable\nlet descriptionString = launch(\"/usr/bin/swift\", [\"package\", \"show-dependencies\", \"--format\", \"json\"], directory: srcRoot)!\nlet descriptionData = descriptionString.data(using: .utf8)!\nlet description = try JSONSerialization.jsonObject(with: descriptionData, options: []) as! Dictionary<String, Any>\nlet topLevelPath = (description[\"path\"] as! String) + \"/\"\ndo {\n   try FileManager.default.createDirectory(atPath: symlinksPath, withIntermediateDirectories: true, attributes: nil)\n\ttry createSymlinks(srcRoot: srcRoot, description: description, topLevelPath: topLevelPath)\n\tprint(\"Complete.\")\n} catch {\n\tprint(error)\n}\n";
-			showEnvVarsInLog = 0;
-		};
-		C9DD3D7D1E41DFB600E23B15 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/Package.swift",
-			);
-			outputPaths = (
-				"$(SRCROOT)/.build/cwl_symlinks/CwlUtils",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = "/usr/bin/xcrun --sdk macosx swift";
-			shellScript = "//\n//  CwlPackageFetch.swift\n//  CwlPackageFetch\n//\n//  Created by Matt Gallagher on 2017/01/31.\n//  Copyright © 2017 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.\n//\n//  Permission to use, copy, modify, and/or distribute this software for any\n//  purpose with or without fee is hereby granted, provided that the above\n//  copyright notice and this permission notice appear in all copies.\n//\n//  THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n//  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n//  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n//  SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n//  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN\n//  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR\n//  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n//\n\nimport Foundation\n\n/// Launch a process and run to completion, returning the standard out on success.\nfunc launch(_ command: String, _ arguments: [String], directory: String? = nil) -> String? {\n\tlet proc = Process()\n\tproc.launchPath = command\n\tproc.arguments = arguments\n\t_ = directory.map { proc.currentDirectoryPath = $0 }\n\tlet pipe = Pipe()\n\tproc.standardOutput = pipe\n\tproc.launch()\n\tlet result = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)!\n\tproc.waitUntilExit()\n\treturn proc.terminationStatus != 0 ? nil : result\n}\n\nlet srcRoot = ProcessInfo.processInfo.environment[\"SRCROOT\"]!\n\n// STEP 1: use `swift package fetch` to get all dependencies\nprint(launch(\"/usr/bin/swift\", [\"package\", \"fetch\"], directory: srcRoot)!)\n\n// Create a symlink only if it is not already present and pointing to the destination\nlet symlinksPath = \"\\(srcRoot)/.build/cwl_symlinks\"\nfunc createSymlink(srcRoot: String, name: String, destination: String) throws {\n\tlet location = \"\\(symlinksPath)/\\(name)\"\n\tlet link = \"../../\\(destination)\"\n\tif (try? FileManager.default.destinationOfSymbolicLink(atPath: location)) != link {\n\t\t_ = try? FileManager.default.removeItem(atPath: location)\n\t\ttry FileManager.default.createSymbolicLink(atPath: location, withDestinationPath:\n\t\t\tlink)\n\t\tprint(\"Created symbolic link: \\(location) -> \\(link)\")\n\t}\n}\n\n// Recursively parse the dependency graph JSON, creating symlinks in our own location\nfunc createSymlinks(srcRoot: String, description: Dictionary<String, Any>, topLevelPath: String) throws {\n\tguard let dependencies = description[\"dependencies\"] as? [Dictionary<String, Any>] else { return }\n\tfor dependency in dependencies {\n\t\tlet path = dependency[\"path\"] as! String\n\t\tlet relativePath = path.substring(from: path.range(of: topLevelPath)!.upperBound)\n\t\tlet name = dependency[\"name\"] as! String\n\t\ttry createSymlink(srcRoot: srcRoot, name: name, destination: relativePath)\n\t\ttry createSymlinks(srcRoot: srcRoot, description: dependency, topLevelPath: topLevelPath)\n\t}\n}\n\n// STEP 2: create symlinks from fetched locations to somewhere stable\nlet descriptionString = launch(\"/usr/bin/swift\", [\"package\", \"show-dependencies\", \"--format\", \"json\"], directory: srcRoot)!\nlet descriptionData = descriptionString.data(using: .utf8)!\nlet description = try JSONSerialization.jsonObject(with: descriptionData, options: []) as! Dictionary<String, Any>\nlet topLevelPath = (description[\"path\"] as! String) + \"/\"\ndo {\n   try FileManager.default.createDirectory(atPath: symlinksPath, withIntermediateDirectories: true, attributes: nil)\n\ttry createSymlinks(srcRoot: srcRoot, description: description, topLevelPath: topLevelPath)\n\tprint(\"Complete.\")\n} catch {\n\tprint(error)\n}\n";
-			showEnvVarsInLog = 0;
+			shellPath = "/usr/bin/xcrun --sdk macosx swift -target x86_64-apple-macosx10.11";
+			shellScript = "//\n//  CwlPackageFetch.swift\n//  CwlPackageFetch\n//\n//  Created by Matt Gallagher on 2017/01/31.\n//  Copyright © 2017 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.\n//\n//  Permission to use, copy, modify, and/or distribute this software for any\n//  purpose with or without fee is hereby granted, provided that the above\n//  copyright notice and this permission notice appear in all copies.\n//\n//  THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n//  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n//  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n//  SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n//  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN\n//  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR\n//  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n//\n\nimport Foundation\n\nlet buildName = \".build\"\nlet symlinksName = \"cwl_symlinks\"\n\nguard let srcRoot = ProcessInfo.processInfo.environment[\"SRCROOT\"].map({ URL(fileURLWithPath: $0) }) else {\n\tprint(\"Environment variable SRCROOT must be set\")\n\texit(1)\n}\n\n/// Launch a process and run to completion, returning the standard out on success.\nfunc launch(_ command: String, _ arguments: [String], directory: URL? = nil) -> String? {\n\tlet proc = Process()\n\tproc.launchPath = command\n\tproc.arguments = arguments\n\t_ = directory.map { proc.currentDirectoryPath = $0.path }\n\tlet pipe = Pipe()\n\tproc.standardOutput = pipe\n\tproc.launch()\n\tlet result = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? \"\"\n\tproc.waitUntilExit()\n\treturn proc.terminationStatus != 0 ? nil : result\n}\n\n// STEP 1: use `swift package fetch` to get all dependencies\nprint(\"Starting package fetch...\")\nif let fetchResult = launch(\"/usr/bin/swift\", [\"package\", \"fetch\"], directory: srcRoot) {\n\tif fetchResult == \"\" {\n\t\tprint(\"All dependencies up-to-date.\")\n\t} else {\n\t\tprint(fetchResult, terminator: \"\")\n\t}\n} else {\n\tprint(\"### swift package fetch failed\")\n\texit(1)\n}\n\n// Create a symlink only if it is not already present and pointing to the destination\nlet symlinksURL = srcRoot.appendingPathComponent(buildName).appendingPathComponent(symlinksName)\nfunc createSymlink(srcRoot: URL, name: String, destination: String) throws {\n\tlet location = symlinksURL.appendingPathComponent(name)\n\tlet link = URL(fileURLWithPath: \"../../\\(destination)\", relativeTo:location)\n\tlet current = try? FileManager.default.destinationOfSymbolicLink(atPath: location.path)\n\tif current == nil || current != link.relativePath {\n\t\t_ = try? FileManager.default.removeItem(at: location)\n\t\ttry FileManager.default.createSymbolicLink(atPath: location.path, withDestinationPath:\n\t\t\tlink.relativePath)\n\t\tprint(\"Created symbolic link: \\(location.path) -> \\(link.relativePath)\")\n\t}\n}\n\n// Recursively parse the dependency graph JSON, creating symlinks in our own location\nfunc createSymlinks(srcRoot: URL, description: Dictionary<String, Any>, topLevelPath: String) throws {\n\tguard let dependencies = description[\"dependencies\"] as? [Dictionary<String, Any>] else { return }\n\tfor dependency in dependencies {\n\t\tguard let path = dependency[\"path\"] as? String, let relativePath = (path.range(of: topLevelPath)?.upperBound).map({ path.substring(from: $0) }), let name = dependency[\"name\"] as? String else {\n\t\t\tthrow NSError(domain: \"CwlError\", code: 0, userInfo: [NSLocalizedFailureReasonErrorKey: \"Unable to parse dependency structure\"])\n\t\t}\n\t\ttry createSymlink(srcRoot: srcRoot, name: name, destination: relativePath)\n\t\ttry createSymlinks(srcRoot: srcRoot, description: dependency, topLevelPath: topLevelPath)\n\t}\n}\n\n// STEP 2: create symlinks from our stable locations to the fetched locations\nguard let descriptionString = launch(\"/usr/bin/swift\", [\"package\", \"show-dependencies\", \"--format\", \"json\"], directory: srcRoot) else {\n\tprint(\"### swift package show-dependencies failed\")\n\texit(1)\n}\ndo {\n\tguard let descriptionData = descriptionString.data(using: .utf8), let description = try JSONSerialization.jsonObject(with: descriptionData, options: []) as? Dictionary<String, Any>, let topLevelPath = (description[\"path\"] as? String).map({ $0 + \"/\" }) else {\n\t\tthrow NSError(domain: \"CwlError\", code: 0, userInfo: [NSLocalizedFailureReasonErrorKey: \"Unable to parse dependency structure\"])\n\t}\n   try FileManager.default.createDirectory(at: symlinksURL, withIntermediateDirectories: true, attributes: nil)\n\ttry createSymlinks(srcRoot: srcRoot, description: description, topLevelPath: topLevelPath)\n\tprint(\"Complete.\")\n} catch {\n\tprint(\"### symlink creation failed: \\(error)\")\n\texit(1)\n}\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -475,7 +486,6 @@
 				C9DD3D6C1E41C83200E23B15 /* CwlOnDelete.swift in Sources */,
 				C9DD3D6E1E41C83200E23B15 /* CwlResult.swift in Sources */,
 				C9DD3D701E41C83200E23B15 /* CwlStackFrame.swift in Sources */,
-				C9DD3D711E41C83200E23B15 /* CwlSysctl.swift in Sources */,
 				C9DD3D731E41C83200E23B15 /* CwlWrappers.swift in Sources */,
 				C9DD3D621E41C81800E23B15 /* CwlFrameAddress.c in Sources */,
 				OBJ_195 /* CwlSignal.swift in Sources */,
@@ -498,6 +508,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		C945D7C61E503910009AFB8E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C945D7C01E5038C4009AFB8E /* FetchDependencies */;
+			targetProxy = C945D7C51E503910009AFB8E /* PBXContainerItemProxy */;
+		};
+		C945D7C81E503915009AFB8E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C945D7C01E5038C4009AFB8E /* FetchDependencies */;
+			targetProxy = C945D7C71E503915009AFB8E /* PBXContainerItemProxy */;
+		};
 		C9DD3DAB1E41E52E00E23B15 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = C9DD3D7C1E41DFB600E23B15 /* CwlSignal_iOS */;
@@ -511,6 +531,22 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		C945D7C11E5038C4009AFB8E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEVELOPMENT_TEAM = S7YQ892G6G;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		C945D7C21E5038C4009AFB8E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEVELOPMENT_TEAM = S7YQ892G6G;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		C9DD3D971E41DFB600E23B15 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -718,6 +754,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		C945D7C31E5038C4009AFB8E /* Build configuration list for PBXAggregateTarget "FetchDependencies" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C945D7C11E5038C4009AFB8E /* Debug */,
+				C945D7C21E5038C4009AFB8E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		C9DD3D961E41DFB600E23B15 /* Build configuration list for PBXNativeTarget "CwlSignal_iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
