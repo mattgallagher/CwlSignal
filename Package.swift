@@ -9,7 +9,6 @@ let package = Package(
 		"LICENSE.txt",
 		"ReadMe.md",
 		"CwlSignal.playground",
-		"Sources/CwlPackageFetch",
 		"Sources/CwlSignal/CwlSignal.h",
 		"Sources/CwlSignal/Info.plist",
 		"Tests/CwlSignalTests/Info.plist"

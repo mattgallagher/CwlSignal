@@ -21,6 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		C9B27EAC1E51DEE600265580 /* CwlFrameAddress.h in Headers */ = {isa = PBXBuildFile; fileRef = C9EA79011E4EC9D400042A64 /* CwlFrameAddress.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9DD3D621E41C81800E23B15 /* CwlFrameAddress.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_45 /* CwlFrameAddress.c */; };
 		C9DD3D631E41C83200E23B15 /* CwlAddressInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* CwlAddressInfo.swift */; };
 		C9DD3D641E41C83200E23B15 /* CwlCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* CwlCollection.swift */; };
@@ -302,6 +303,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9B27EAC1E51DEE600265580 /* CwlFrameAddress.h in Headers */,
 				C9DD3D951E41DFB600E23B15 /* CwlSignal.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
