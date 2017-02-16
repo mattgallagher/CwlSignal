@@ -2222,7 +2222,7 @@ public class SignalJunction<T>: SignalProcessor<T, T>, Cancellable {
 	///		2. SignalError.loop (the `SignalInput` was a predecessor of the joinable handler so joining would have formed a loop in the graph)
 	///	The error is the first element of the tuple and the new `SignalInput` is the second (the old `SignalInput` was invalidated during this process).
 	///	* .succeeded – the join succeeded
-	@discardableResult
+	
 	public func join(toInput: SignalInput<T>) throws {
 		try joinFunction(processor: self, disconnect: self.disconnect, toInput: toInput, optionalErrorHandler: nil)
 	}
@@ -2236,7 +2236,7 @@ public class SignalJunction<T>: SignalProcessor<T, T>, Cancellable {
 	///	* .cancelled – if the `SignalInput` wasn't the active input for its `Signal`
 	///	* .replaced(SignalInput<T>) - Upon attempting to connect the successor to self, self was found to already have a successor connected (must have occurred on another thread between the separate "disconnect" and "join" steps performed during this function). The `toInput` parameter has been invalidated and the new input is contained in this case value.
 	///	* .succeeded – the join succeeded
-	@discardableResult
+	
 	public func join(toInput: SignalInput<T>, onError: @escaping (SignalJunction<T>, Error, SignalInput<T>) -> ()) throws {
 		try joinFunction(processor: self, disconnect: self.disconnect, toInput: toInput, optionalErrorHandler: onError)
 	}
