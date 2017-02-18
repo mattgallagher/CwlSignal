@@ -6,9 +6,9 @@
 
 ## The `combine` function
 
-Any number of `Signal` instances can be chained in series to form pipelines, allowing value transformations and other "stream processing" to be applied to values between the sender and the subscriber.
+One of the key strengths of reactive programming is the ability to integrate dependencies from different sources, potentially running in different execution contexts.
 
-While there are lots of different "operator" functions for chaining `Signal` instances together (including names like `map` and `flatMap` that you might recognize from `Sequence` and `Collection` processing in Swift) most are implemented on top of the `transform` function which works as follows:
+The underlying operator for these "multiple-input" operations is the `combine` operator. It offers an interface that closely resembles the `transform` operator, except that incoming `Result`s are wrapped in an `EitherResult`, reflecting an origin from "either" the first, the second or possibly third, fourth or fifth different input `Signal`.
 
 ---
  */
