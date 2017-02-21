@@ -388,16 +388,6 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 0830;
-				TargetAttributes = {
-					C945D7C01E5038C4009AFB8E = {
-						CreatedOnToolsVersion = 8.2.1;
-						DevelopmentTeam = S7YQ892G6G;
-						ProvisioningStyle = Automatic;
-					};
-					OBJ_190 = {
-						ProvisioningStyle = Automatic;
-					};
-				};
 			};
 			buildConfigurationList = OBJ_2 /* Build configuration list for PBXProject "CwlSignal" */;
 			compatibilityVersion = "Xcode 3.2";
