@@ -202,6 +202,46 @@ extension Signal {
 	}
 }
 
+/// A SignalMergeSet exposes the ability to close the output signal and disconnect on deactivation. For public interfaces, neither of these is really appropriate to expose. A SignalCollector provides a simple wrapper around SignalMergeSet that hides this
+public class SignalCollector<T> {
+	private let mergeSet: SignalMergeSet<T>
+	public init(mergeSet: SignalMergeSet<T>) {
+		self.mergeSet = mergeSet
+	}
+	
+	public func add(_ source: Signal<T>) {
+		mergeSet.add(source)
+	}
+	
+	public func remove(_ source: Signal<T>) {
+		mergeSet.add(source)
+	}
+}
+
+extension Signal {
+	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
+	///
+	/// - returns: the `SignalInput` and `Signal` pair
+	public static func collectorAndSignal() -> (collector: SignalCollector<T>, signal: Signal<T>) {
+		let (ms, s) = Signal<T>.mergeSetAndSignal()
+		return (SignalCollector(mergeSet: ms), s)
+	}
+	
+	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
+	///
+	/// - returns: the `SignalInput` and `Signal` pair
+	public static func collectorAndSignal<U>(compose: (Signal<T>) throws -> U) rethrows -> (collector: SignalCollector<T>, composed: U) {
+		let (a, b) = try Signal<T>.mergeSetAndSignal(compose: compose)
+		return (SignalCollector(mergeSet: a), b)
+	}
+}
+
+extension SignalInput {
+	public static func create(compose: (Signal<T>) -> Void) -> SignalInput<T> {
+		return Signal<T>.create { s in compose(s) }.input
+	}
+}
+
 extension SignalCapture {
 	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
 		let (input, output) = Signal<T>.create()
