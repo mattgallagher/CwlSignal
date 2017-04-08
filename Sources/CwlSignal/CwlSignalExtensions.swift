@@ -96,8 +96,8 @@ extension Signal {
 	/// - parameter processor:       performs work with values from this `Signal` and the `SignalMergeSet` used for output.
 	///
 	/// - returns: output of the merge set
-	public func transformFlatten<U>(context: Exec = .direct, closesImmediate: Bool = false, processor: @escaping (T, SignalMergeSet<U>) -> ()) -> Signal<U> {
-		return transformFlatten(withState: (), closesImmediate: closesImmediate, context: context, processor: { (state: inout (), value: T, mergeSet: SignalMergeSet<U>) in processor(value, mergeSet) })
+	public func transformFlatten<U>(context: Exec = .direct, closesImmediate: Bool = false, _ processor: @escaping (T, SignalMergeSet<U>) -> ()) -> Signal<U> {
+		return transformFlatten(withState: (), closesImmediate: closesImmediate, context: context, { (state: inout (), value: T, mergeSet: SignalMergeSet<U>) in processor(value, mergeSet) })
 	}
 	
 	/// A signal transform function that, instead of sending values to a `SignalNext`, outputs entire signals to a `SignalMergeSet`. The output of the merge set is then the result from this function.
@@ -110,7 +110,7 @@ extension Signal {
 	/// - parameter processor:       performs work with values from this `Signal` and the `SignalMergeSet` used for output.
 	///
 	/// - returns: output of the merge set
-	public func transformFlatten<S, U>(withState initialState: S, closesImmediate: Bool = false, context: Exec = .direct, processor: @escaping (inout S, T, SignalMergeSet<U>) -> ()) -> Signal<U> {
+	public func transformFlatten<S, U>(withState initialState: S, closesImmediate: Bool = false, context: Exec = .direct, _ processor: @escaping (inout S, T, SignalMergeSet<U>) -> ()) -> Signal<U> {
 		let (mergeSet, result) = Signal<U>.mergeSetAndSignal()
 		var closeError: Error? = nil
 		let closeSignal = transform(withState: initialState, context: context) { (state: inout S, r: Result<T>, n: SignalNext<U>) in
@@ -237,7 +237,7 @@ extension Signal {
 }
 
 extension SignalInput {
-	public static func create(compose: (Signal<T>) -> Void) -> SignalInput<T> {
+	public static func into(compose: (Signal<T>) -> Void) -> SignalInput<T> {
 		return Signal<T>.create { s in compose(s) }.input
 	}
 }
