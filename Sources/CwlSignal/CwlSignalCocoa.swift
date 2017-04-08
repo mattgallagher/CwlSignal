@@ -65,7 +65,7 @@ open class SignalActionTarget: NSObject {
 	/// Receiver function for the target-action events
 	///
 	/// - Parameter sender: typical target-action "sender" parameter
-	@objc public func cwlSignalAction(_ sender: Any?) {
+	@IBAction public func cwlSignalAction(_ sender: Any?) {
 		_ = signalInput?.send(value: sender)
 	}
 	
@@ -104,7 +104,7 @@ open class SignalDoubleActionTarget: SignalActionTarget {
 		return s
 	}
 
-	@objc public func cwlSignalSecondAction(_ sender: Any?) {
+	@IBAction public func cwlSignalSecondAction(_ sender: Any?) {
 		_ = secondInput?.send(value: sender)
 	}
 	public var secondSelector: Selector { return #selector(SignalDoubleActionTarget.cwlSignalSecondAction(_:)) }
