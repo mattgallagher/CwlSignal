@@ -2555,6 +2555,12 @@ public class SignalMergeSet<T> {
 		dw.runWork()
 	}
 	
+	public func newInput(closesOutput: Bool = false, removeOnDeactivate: Bool = false) -> SignalInput<T> {
+		return Signal<T>.create { s -> () in
+			self.add(s, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
+		}.input
+	}
+	
 	deinit {
 		guard let sig = signal else { return }
 		_ = sig.send(result: .failure(SignalError.cancelled), predecessor: nil, activationCount: sig.activationCount, activated: true)
