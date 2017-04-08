@@ -187,11 +187,11 @@ extension Signal {
 	///   - context: the execution context where the `updater` will run
 	///   - updater: run for each incoming `Result<T>` to update the buffered activation values
 	/// - Returns: a buffered `SignalMulti`
-	public final func mapBuffer<S, U>(withState: S, initialValue: U? = nil, context: Exec = .direct, updater: @escaping (_ state: inout S, _ activationValue: inout U?, _ incoming: T) throws -> U) -> SignalMulti<U> {
+	public final func mapBuffer<S, U>(withState: S, initialValue: U? = nil, context: Exec = .direct, updater: @escaping (_ state: inout S, _ activationValue: inout U?, _ incoming: T) throws -> U?) -> SignalMulti<U> {
 		// NOTE: access to this captured data is kept threadsafe due to subsequent closures being `.direct`ly invoked (and therefore synchronous with the first closure)
 		var sharedValue = initialValue
 		let syncContext = context.serialized()
-		return failableMap(withState: withState, context: syncContext) { (state: inout S, incoming: T) throws -> U in
+		return failableFilterMap(withState: withState, context: syncContext) { (state: inout S, incoming: T) throws -> U? in
 			return try updater(&state, &sharedValue, incoming)
 		}.buffer(initial: sharedValue.map { [$0] } ?? [], context: syncContext) { (values: inout Array<U>, error: inout Error?, result: Result<U>) in
 			switch result {

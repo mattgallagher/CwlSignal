@@ -495,6 +495,48 @@ extension Signal {
 		}
 	}
 
+	/// Implementation of map where the closure can throw. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over values or thrown errors.
+	///
+	/// - parameter context: the `Exec` where `processor` will be evaluated (default: .direct).
+	/// - parameter processor: for each value emitted by `self`, outputs a new `Signal`
+	/// - returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
+	public func failableFilterMap<U>(context: Exec = .direct, processor: @escaping (T) throws -> U?) -> Signal<U> {
+		return transform(context: context) { (r: Result<T>, n: SignalNext<U>) in
+			switch r {
+			case .success(let v):
+				do {
+					if let u = try processor(v) {
+						n.send(value: u)
+					}
+				} catch {
+					n.send(error: error)
+				}
+			case .failure(let e): n.send(error: e)
+			}
+		}
+	}
+
+	/// Implementation of map where the closure can throw. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over values or thrown errors.
+	///
+	/// - parameter context: the `Exec` where `processor` will be evaluated (default: .direct).
+	/// - parameter processor: for each value emitted by `self`, outputs a new `Signal`
+	/// - returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
+	public func failableFilterMap<S, U>(withState initial: S, context: Exec = .direct, processor: @escaping (inout S, T) throws -> U?) -> Signal<U> {
+		return transform(withState: initial, context: context) { (s: inout S, r: Result<T>, n: SignalNext<U>) in
+			switch r {
+			case .success(let v):
+				do {
+					if let u = try processor(&s, v) {
+						n.send(value: u)
+					}
+				} catch {
+					n.send(error: error)
+				}
+			case .failure(let e): n.send(error: e)
+			}
+		}
+	}
+
 	/// Implementation of [Reactive X operator "FlatMap"](http://reactivex.io/documentation/operators/flatmap.html)
 	///
 	/// - parameter context: the `Exec` where `processor` will be evaluated (default: .direct).
