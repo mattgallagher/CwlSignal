@@ -236,19 +236,67 @@ extension Signal {
 	}
 }
 
+/// This wrapper around `SignalEndpoint` exposes the last received value in a stream so that it can be 'polled' (read synchronously from an arbitrary execution context).
+///
+/// **WARNING**: this class should be avoided where possible since it removes the "reactive" part of reactive programming (changes in the polled value must be detected through other means, usually another subscriber to the underlying `Signal`).
+///
+/// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Since you cannot simply `Signal.combine` the delegate method with another `Signal`, you must use polling to generate a calculation involving values from another `Signal`.
+public class SignalPollingEndpoint<T> {
+	var endpoint: SignalEndpoint<T>? = nil
+	var latest: Result<T>? = nil
+	let queueContext = DispatchQueueContext()
+	
+	public init(signal: Signal<T>) {
+		endpoint = signal.subscribe(context: .custom(queueContext)) { [weak self] r in
+			self?.latest = r
+		}
+	}
+	
+	public var latestResult: Result<T>? {
+		return queueContext.queue.sync { latest }
+	}
+	
+	public var latestValue: T? {
+		return queueContext.queue.sync { latest?.value }
+	}
+}
+
+extension Signal {
+	/// Appends a `SignalPollingEndpoint` listener to the value emitted from this `Signal`. The endpoint will "activate" this `Signal` and all direct antecedents in the graph (which may start lazy operations deferred until activation).
+	public func pollingEndpoint() -> SignalPollingEndpoint<T> {
+		return SignalPollingEndpoint(signal: self)
+	}
+}
+
 extension SignalInput {
+	/// Create a `SignalInput`-`Signal` pair, returning the `SignalInput` and handling the `Signal` internally using the `compose` closure. This is a syntactic convenience for functions that require a `SignalInput` parameter.
 	public static func into(compose: (Signal<T>) -> Void) -> SignalInput<T> {
 		return Signal<T>.create { s in compose(s) }.input
 	}
 }
 
 extension SignalCapture {
+	/// A convenience version of `subscribe` that only invokes the `processor` on `Result.success`
+	///
+	/// - Parameters:
+	///   - resend: if true, captured values are sent to the new output as the first values in the stream, otherwise, captured values are not sent (default is false)
+	///   - context: the execution context where the `processor` will be invoked
+	///   - processor: will be invoked with each value received
+	/// - Returns: the `SignalEndpoint` created by this function
 	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
 		let (input, output) = Signal<T>.create()
 		try! join(toInput: input, resend: resend)
 		return output.subscribeValues(context: context, handler: handler)
 	}
 	
+	/// A convenience version of `subscribe` that only invokes the `processor` on `Result.success`
+	///
+	/// - Parameters:
+	///   - resend: if true, captured values are sent to the new output as the first values in the stream, otherwise, captured values are not sent (default is false)
+	///   - onError: if nil, errors from self will be passed through to `toInput`'s `Signal` normally. If non-nil, errors will not be sent, instead, the `Signal` will be disconnected and the `onError` function will be invoked with the disconnected `SignalCapture` and the input created by calling `disconnect` on it.
+	///   - context: the execution context where the `processor` will be invoked
+	///   - processor: will be invoked with each value received
+	/// - Returns: the `SignalEndpoint` created by this function
 	public func subscribeValues(resend: Bool = false, onError: @escaping (SignalCapture<T>, Error, SignalInput<T>) -> (), context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
 		let (input, output) = Signal<T>.create()
 		try! join(toInput: input, resend: resend, onError: onError)
