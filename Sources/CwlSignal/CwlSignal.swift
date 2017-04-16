@@ -532,16 +532,15 @@ public class Signal<T> {
 		})
 	}
 	
-	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` immediately activates its antecedents. Every time a value is received, it is passed to an "updater" which updates the array of activation values (multiple listeners can be attached to the `SignalMulti` and each new listener receives the array as a series of activation values).
-	///
-	/// PERFORMANCE NOTE: for thread safety reasons, the `updater` function is always run on a *copy* of the array. Keep this copying in mind when using this function. If you need to avoid a copy, you would need to use a `class` type for `T` (so only the reference is copied) and use serialized execution `context`s for all `Signal`s handling the reference.
+	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` immediately activates its antecedents. Every time a value is received, it is passed to an "updater" which creates an array of activation values and an error that will be used for any new listeners.
+	/// Consider this as an operator that allows the creation of a custom "bring-up-to-speed" value for new listeners.
 	///
 	/// - Parameters:
 	///   - initial: activation values used when *before* any incoming value is received (if you wan't to specify closed as well, use `preclosed` instead)
 	///   - context: the execution context where the `updater` will run
 	///   - updater: run for each incoming `Result<T>` to update the buffered activation values
 	/// - Returns: a buffered `SignalMulti`
-	public final func buffer(initial: Array<T> = [], context: Exec = .direct, updater: @escaping (_ bufferedValues: inout Array<T>, _ bufferedError: inout Error?, _ incoming: Result<T>) -> Void) -> SignalMulti<T> {
+	public final func customActivation(initial: Array<T> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<T>, _ cachedError: inout Error?, _ incoming: Result<T>) -> Void) -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
 			SignalMultiProcessor(signal: s, values: (initial, nil), isUserUpdated: true, dw: &dw, context: context) { (bufferedValues: inout Array<T>, bufferedError: inout Error?, incoming: Result<T>) -> (Array<T>, Error?) in
 				let oldActivationValues = bufferedValues
@@ -552,9 +551,16 @@ public class Signal<T> {
 		})
 	}
 	
+	/// Renamed a second time to avoid confusion with the ReactiveX operator.
+	@available(*, deprecated, message:"Use buffer(initial:context:updater:) instead")
+	public final func buffer(initial: Array<T>, context: Exec = .direct, updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) -> SignalMulti<T> {
+		return customActivation(initial: initial, context: context, updater: updater)
+	}
+	
+	/// Renamed a first time because the parameter order conflicted with other functions and `initials` was a typo.
 	@available(*, deprecated, message:"Use buffer(initial:context:updater:) instead")
 	public final func buffer(context: Exec = .direct, initials: Array<T>, updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) -> SignalMulti<T> {
-		return buffer(initial: initials, context: context, updater: updater)
+		return customActivation(initial: initials, context: context, updater: updater)
 	}
 	
 	/// Constructs a `SignalMulti` with an array of "activation" values and a closing error.

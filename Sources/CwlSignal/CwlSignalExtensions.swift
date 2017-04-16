@@ -177,29 +177,6 @@ extension Signal {
 			state.index += 1
 		}
 	}
-
-	/// A pairing of the map and buffer operations, connected so that the buffer can be updated in the same closure as the map is performed. For simplicity, the buffer is restricted to an optional value instead of an array.
-	///
-	/// NOTE: the buffer *copies* the buffered value an additional time. If this copy is a problem, you would need to box the value.
-	///
-	/// - Parameters:
-	///   - initial: activation values used when *before* any incoming value is received (if you wan't to specify closed as well, use `preclosed` instead)
-	///   - context: the execution context where the `updater` will run
-	///   - updater: run for each incoming `Result<T>` to update the buffered activation values
-	/// - Returns: a buffered `SignalMulti`
-	public final func mapBuffer<S, U>(withState: S, initialValue: U? = nil, context: Exec = .direct, updater: @escaping (_ state: inout S, _ activationValue: inout U?, _ incoming: T) throws -> U?) -> SignalMulti<U> {
-		// NOTE: access to this captured data is kept threadsafe due to subsequent closures being `.direct`ly invoked (and therefore synchronous with the first closure)
-		var sharedValue = initialValue
-		let syncContext = context.serialized()
-		return failableFilterMap(withState: withState, context: syncContext) { (state: inout S, incoming: T) throws -> U? in
-			return try updater(&state, &sharedValue, incoming)
-		}.buffer(initial: sharedValue.map { [$0] } ?? [], context: syncContext) { (values: inout Array<U>, error: inout Error?, result: Result<U>) in
-			switch result {
-			case .success: values = sharedValue.map { [$0] } ?? []
-			case .failure(let e): values = []; error = e
-			}
-		}
-	}
 }
 
 /// A SignalMergeSet exposes the ability to close the output signal and disconnect on deactivation. For public interfaces, neither of these is really appropriate to expose. A SignalCollector provides a simple wrapper around SignalMergeSet that hides this
