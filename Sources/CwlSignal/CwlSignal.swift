@@ -33,6 +33,8 @@ import CwlUtils
 ///	- signal: the sequence of `Result` instances, or individual instances of `Result` that pass through instances of `Signal`
 ///	- `signal`: when used as a parameter label, refers to an instance of `Signal` (invidivual `Result` instances are identified as `result`, `value` or `error` in parameter labels).
 ///
+/// # INTERNAL DESIGN
+///
 /// The primary design goals for this implementation are:
 ///	1. All possible actions are threadsafe
 ///	2. No possible action results in undefined, corrupt or assertion failure behavior
@@ -48,9 +50,13 @@ import CwlUtils
 /// This ensures that no problematic work is performed inside a mutex but it means that we often have "in-flight" work occurring outside a mutex that might no longer be valid. So we need to combine this work identifiers that allow us to reject out-of-date work. That's where the second point becomes important.
 /// The "activationCount" for an `Signal` changes any time a manual input control is generated (`SignalInput`/`SignalMergeSet`), any time a first predecessor is added or any time there are predecessors connected and the `delivery` state changes to or from `.disabled`. Combined with the fact that it is not possible to disconnect and re-add the same predecessor to a multi-input Signal (SignalMergeSet or SignalCombiner) this guarantees any messages from out-of-date but still in-flight deliveries are ignored.
 ///
-/// While all actions are threadsafe, there are some points to keep in mind:
-///	1. If a subsequent result is sent to a Signal while it is synchronously processing a previous result the subsequent result will be queued and handled on the previous thread once it completes processing. It is important to keep in mind that while synchronous processing *usually* occurs on the sending thread, it is not a guarantee. In this scenario, processing occurs on the previous thread which is now forced to do work for the subsequent thread.
-///	2. For the disconnectable handler components (SignalMergeSet, SignalJunction, SignalCapture) it is possible to manipulate the graph from multiple threads at once in ways that might cause in-progress actions to be cancelled (since they are superceded by manipulation from other threads). In general, multi-threaded graph manipulation should be either avoided or considered carefully to ensure sensible results are delivered.
+/// # LIMITS TO THREADSAFETY
+///
+/// While all actions on `Signal` are threadsafe, there are some points to keep in mind:
+///   1. Threadsafe means that `Signal` will remain threadsafe and it doesn't create additional thread unsafety on your data. However, if the signal `ValueType` is a shared reference, you'll still need to employ additional mutual exclusion to protect any access to the shared reference contents in your processing closures. Generally though, you should try attempt use `Signal` for communicating value types or unique slices of your data and avoid shared reference `ValueType`s.
+///   2. Synchronous pipelines are processed in nested fashion (the next stage is invoked while the previous stage is still on the call-stack). If you use a mutex on one synchronous stage, do not attempt to re-enter the mutex on subsequent stages or you risk deadlock. If you want to apply a mutex to your processing stages, you must either ensure the stages are invoked *asynchronously* (choose an async `Exec` `context`) or you should apply the mutex to the first stage and keep in mind that subsequent synchronously connected stages will still be inside the mutex.
+///	3. If a subsequent result is sent on a second thread to a Signal while it is processing a previous result on a first thread the subsequent result will be queued and handled on the first thread once it completes processing. It is important to keep in mind that while synchronous processing *usually* occurs on the sending thread, it is not a guarantee. In this scenario, processing occurs on the previous thread which is now forced to do work for the subsequent thread.
+///	4. For the disconnectable handler components (SignalMergeSet, SignalJunction, SignalCapture) it is possible to manipulate the graph from multiple threads at once in ways that might cause in-progress actions to be cancelled (since they are superceded by manipulation from other threads). In general, multi-threaded graph manipulation should be either avoided or considered carefully to ensure sensible results are delivered.
 public class Signal<T> {
 	public typealias ValueType = T
 	
