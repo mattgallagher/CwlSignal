@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		C95A622E1EA5DCC90059D152 /* CwlCancellable.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A622D1EA5DCC90059D152 /* CwlCancellable.swift */; };
+		C95A622F1EA5DCC90059D152 /* CwlCancellable.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A622D1EA5DCC90059D152 /* CwlCancellable.swift */; };
 		C9B27EAC1E51DEE600265580 /* CwlFrameAddress.h in Headers */ = {isa = PBXBuildFile; fileRef = C9EA79011E4EC9D400042A64 /* CwlFrameAddress.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9DD3D621E41C81800E23B15 /* CwlFrameAddress.c in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_45 /* CwlFrameAddress.c */; };
 		C9DD3D631E41C83200E23B15 /* CwlAddressInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* CwlAddressInfo.swift */; };
@@ -104,6 +106,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C95A622D1EA5DCC90059D152 /* CwlCancellable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlCancellable.swift; sourceTree = "<group>"; };
 		C9DD3D761E41CD9000E23B15 /* CwlSignal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CwlSignal.h; sourceTree = "<group>"; };
 		C9DD3D781E41CD9F00E23B15 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C9DD3D7A1E41D15A00E23B15 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -214,6 +217,7 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_27 /* CwlAddressInfo.swift */,
+				C95A622D1EA5DCC90059D152 /* CwlCancellable.swift */,
 				OBJ_28 /* CwlCollection.swift */,
 				OBJ_29 /* CwlDebugContext.swift */,
 				OBJ_30 /* CwlDeferredWork.swift */,
@@ -388,6 +392,11 @@
 			isa = PBXProject;
 			attributes = {
 				LastUpgradeCheck = 0830;
+				TargetAttributes = {
+					C945D7C01E5038C4009AFB8E = {
+						DevelopmentTeam = S7YQ892G6G;
+					};
+				};
 			};
 			buildConfigurationList = OBJ_2 /* Build configuration list for PBXProject "CwlSignal" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -452,6 +461,7 @@
 				C9DD3D8F1E41DFB600E23B15 /* CwlSignalCocoa.swift in Sources */,
 				C9DD3D901E41DFB600E23B15 /* CwlSignalExtensions.swift in Sources */,
 				C9DD3D911E41DFB600E23B15 /* CwlSignalReactive.swift in Sources */,
+				C95A622F1EA5DCC90059D152 /* CwlCancellable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -483,6 +493,7 @@
 				C9DD3D701E41C83200E23B15 /* CwlStackFrame.swift in Sources */,
 				C9DD3D731E41C83200E23B15 /* CwlWrappers.swift in Sources */,
 				C9DD3D621E41C81800E23B15 /* CwlFrameAddress.c in Sources */,
+				C95A622E1EA5DCC90059D152 /* CwlCancellable.swift in Sources */,
 				OBJ_195 /* CwlSignal.swift in Sources */,
 				OBJ_196 /* CwlSignalCocoa.swift in Sources */,
 				OBJ_197 /* CwlSignalExtensions.swift in Sources */,
