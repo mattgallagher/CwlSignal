@@ -477,9 +477,10 @@ class SignalReactiveTests: XCTestCase {
 		_ = Signal.fromSequence(1...20).groupBy { v in v % 3 }.subscribe { r in
 			if let v = r.value {
 				results[v.0] = Array<Result<Int>>()
-				v.1.subscribe { r in
+				v.1.subscribeAndKeepAlive { r in
 					results[v.0]!.append(r)
-				}.keepAlive()
+					return true
+				}
 			} else {
 				XCTAssert(r.isSignalClosed)
 			}
@@ -560,7 +561,10 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testScan() {
 		var results = [Result<Int>]()
-		Signal.fromSequence(1...5).scan(initial: 2) { a, v in a + v }.subscribe { r in results.append(r) }.keepAlive()
+		Signal.fromSequence(1...5).scan(initial: 2) { a, v in a + v }.subscribeAndKeepAlive { r in
+			results.append(r)
+			return true
+		}
 		XCTAssert(results.count == 6)
 		XCTAssert(results.at(0)?.value == 3)
 		XCTAssert(results.at(1)?.value == 5)
@@ -578,9 +582,10 @@ class SignalReactiveTests: XCTestCase {
 				if let v = r.value {
 					let index = results.count
 					results.append(Array<Result<Int>>())
-					v.subscribe { r in
+					v.subscribeAndKeepAlive { r in
 						results[index].append(r)
-					}.keepAlive()
+						return true
+					}
 				} else {
 					XCTAssert(r.isSignalClosed)
 				}
@@ -640,9 +645,10 @@ class SignalReactiveTests: XCTestCase {
 			if let v = r.value {
 				let index = results.count
 				results.append(Array<Result<Int>>())
-				v.subscribe { r in
+				v.subscribeAndKeepAlive { r in
 					results[index].append(r)
-				}.keepAlive()
+					return true
+				}
 			}
 			
 			if coordinator.currentTime > 500 * USEC_PER_SEC {
@@ -692,9 +698,10 @@ class SignalReactiveTests: XCTestCase {
 			if let v = r.value {
 				let index = results.count
 				results.append(Array<Result<Int>>())
-				v.subscribe { r in
+				v.subscribeAndKeepAlive { r in
 					results[index].append(r)
-				}.keepAlive()
+					return true
+				}
 			}
 		}
 		coordinator.runScheduledTasks(untilTime: 400 * USEC_PER_SEC)
@@ -734,9 +741,10 @@ class SignalReactiveTests: XCTestCase {
 			if let v = r.value {
 				let index = results.count
 				results.append(Array<Result<Int>>())
-				v.subscribe { r in
+				v.subscribeAndKeepAlive { r in
 					results[index].append(r)
-				}.keepAlive()
+					return true
+				}
 			}
 			
 			if coordinator.currentTime > 300 * USEC_PER_SEC {
@@ -779,9 +787,10 @@ class SignalReactiveTests: XCTestCase {
 			if let v = r.value {
 				let index = results.count
 				results.append(Array<Result<Int>>())
-				v.subscribe { r in
+				v.subscribeAndKeepAlive { r in
 					results[index].append(r)
-				}.keepAlive()
+					return true
+				}
 			}
 			
 			if coordinator.currentTime > 160 * USEC_PER_SEC {
@@ -1364,7 +1373,11 @@ class SignalReactiveTests: XCTestCase {
 		let (rightInput1, rightSignal1) = Signal<Double>.create()
 		let ep1 = leftSignal1.groupJoin(withRight: rightSignal1, leftEnd: { v -> Signal<()> in Signal<()>.preclosed() }, rightEnd: { v in Signal<()>.preclosed() }) { (l, r) in r.map { "\(l) \($0)" } }.subscribe {
 			switch $0 {
-			case .success(let v): v.subscribeValues { results1.append(Result<String>.success($0)) }.keepAlive()
+			case .success(let v):
+				v.subscribeValuesAndKeepAlive {
+					results1.append(Result<String>.success($0))
+					return true
+				}
 			case .failure(let e): results1.append(Result<String>.failure(e))
 			}
 		}
@@ -1388,9 +1401,10 @@ class SignalReactiveTests: XCTestCase {
 		let ep2 = leftSignal2.groupJoin(withRight: rightSignal2, leftEnd: { v in leftSignal2 }, rightEnd: { v in rightSignal2 }) { (l, r) in r.map { "\(l) \($0)" } }.subscribe {
 			switch $0 {
 			case .success(let v):
-				v.subscribeValues {
+				v.subscribeValuesAndKeepAlive {
 					results2.append(Result<String>.success($0))
-				}.keepAlive()
+					return true
+				}
 			case .failure(let e):
 				results2.append(Result<String>.failure(e))
 			}
@@ -1419,7 +1433,11 @@ class SignalReactiveTests: XCTestCase {
 		let (rightInput3, rightSignal3) = Signal<Double>.create { s in s.multicast() }
 		let ep3 = leftSignal3.groupJoin(withRight: rightSignal3, leftEnd: { v in leftSignal3.skip(1) }, rightEnd: { v in rightSignal3.skip(1) }) { (l, r) in r.map { "\(l) \($0)" } }.subscribe {
 			switch $0 {
-			case .success(let v): v.subscribeValues { results3.append(Result<String>.success($0)) }.keepAlive()
+			case .success(let v):
+				v.subscribeValuesAndKeepAlive {
+					results3.append(Result<String>.success($0))
+					return true
+				}
 			case .failure(let e): results3.append(Result<String>.failure(e))
 			}
 		}

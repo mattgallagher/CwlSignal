@@ -84,7 +84,8 @@ public class Signal<T> {
 	fileprivate final var itemProcessing: Bool = false
 	
 	// Notifications for the inverse of `delivery == .disabled`. Accessed only through the `generate` constructor. Can be used for lazy construction/commencement, resetting to initial state on graph disconnect and reconnect or cleanup after graph deletion.
-	fileprivate final var newInputSignal: Signal<SignalInput<T>?>? = nil
+	// A signal is used here instead of a simple function callback since re-entrancy-safe queueing and context delivery are needed.
+	fileprivate final var newInputSignal: (Signal<SignalInput<T>?>, SignalEndpoint<SignalInput<T>?>)? = nil
 	
 	// If there is a preceeding `Signal` in the graph, its `SignalProcessor` is stored in this variable.
 	fileprivate final var preceeding: Set<OrderedSignalPredecessor>
@@ -130,15 +131,14 @@ public class Signal<T> {
 	/// - parameter activationChange: receives inputs on activation and nil on each deactivation
 	///
 	/// - returns: the constructed `Signal`
-	public static func generate(context: Exec = .direct, activationChange: @escaping (_ input: SignalInput<T>?)-> Void) -> Signal<T> {
+	public static func generate(context: Exec = .direct, activationChange: @escaping (_ input: SignalInput<T>?) -> Void) -> Signal<T> {
 		let s = Signal<T>()
-		s.newInputSignal = Signal<SignalInput<T>?>()
-		s.newInputSignal?.subscribe(context: context) { r in
-			switch r {
-			case .success(let v): activationChange(v)
-			default: break
+		let nis = Signal<SignalInput<T>?>()
+		s.newInputSignal = (nis, nis.subscribe(context: context) { r in
+			if case .success(let v) = r {
+				activationChange(v)
 			}
-		}.keepAlive()
+		})
 		return s
 	}
 	
@@ -685,7 +685,7 @@ public class Signal<T> {
 	
 	// Need to close the `newInputSignal` and detach from all predecessors on deinit.
 	deinit {
-		_ = newInputSignal?.send(result: .failure(SignalError.cancelled), predecessor: nil, activationCount: 0, activated: true)
+		_ = newInputSignal?.0.send(result: .failure(SignalError.cancelled), predecessor: nil, activationCount: 0, activated: true)
 		
 		var dw = DeferredWork()
 		mutex.sync {
@@ -1216,14 +1216,14 @@ public class Signal<T> {
 				}
 			}
 			resumeIfPossibleInternal(dw: &dw)
-			newInputSignal?.push(values: [SignalInput(signal: self, activationCount: activationCount)], error: nil, activationCount: 0, dw: &dw)
+			newInputSignal?.0.push(values: [SignalInput(signal: self, activationCount: activationCount)], error: nil, activationCount: 0, dw: &dw)
 		case .synchronous:
 			if preceeding.count > 0 {
 				updateActivationInternal(andInvalidateAllPrevious: false, dw: &dw)
 			}
 		case .disabled:
 			updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw)
-			_ = newInputSignal?.push(values: [Optional<SignalInput<T>>.none], error: nil, activationCount: 0, dw: &dw)
+			_ = newInputSignal?.0.push(values: [Optional<SignalInput<T>>.none], error: nil, activationCount: 0, dw: &dw)
 		}
 	}
 }
@@ -2041,7 +2041,7 @@ fileprivate enum SignalEndpointReferenceLoop {
 /// This class is instantiated by calling `subscribe` on any `Signal`.
 public final class SignalEndpoint<T>: SignalHandler<T>, Cancellable {
 	private let userHandler: (Result<T>) -> Void
-	fileprivate var referenceLoop = SignalEndpointReferenceLoop.noLoop
+	private var closed = false
 	
 	/// Constructor called from `subscribe`
 	fileprivate init(signal: Signal<T>, dw: inout DeferredWork, context: Exec, handler: @escaping (Result<T>) -> Void) {
@@ -2055,54 +2055,30 @@ public final class SignalEndpoint<T>: SignalHandler<T>, Cancellable {
 		return { [userHandler] r in userHandler(r) }
 	}
 	
+	/// Deactivation closes the endpoint
+	fileprivate override func handleDeactivationInternal(dw: inout DeferredWork) {
+		closed = true
+	}
+	
 	/// A `SignalEndpoint` is active until closed (receives a `failure` signal)
 	fileprivate override var alwaysActiveInternal: Bool {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		if case .closed = self.referenceLoop {
+		if closed {
 			return false
 		} else {
 			return true
 		}
 	}
 	
-	/// Deactivation closes the endpoint
-	fileprivate override func handleDeactivationInternal(dw: inout DeferredWork) {
-		self.referenceLoop = .closed
-		dw.append { withExtendedLifetime(self) {} }
-	}
-	
 	/// A simple test for whether this endpoint has received an error, yet. Not generally needed (responding to state changes is best done through the handler function itself).
 	public var isClosed: Bool {
-		var result = true
-		sync {
-			if case .closed = self.referenceLoop {
-			} else {
-				result = false
-			}
-		}
-		return result
+		return sync { closed }
 	}
 	
 	public func cancel() {
 		var dw = DeferredWork()
-		sync {
-			if case .closed = self.referenceLoop {
-			} else {
-				deactivateInternal(dw: &dw)
-			}
-		}
+		sync { if !closed { deactivateInternal(dw: &dw) } }
 		dw.runWork()
-	}
-	
-	/// Creates a reference counted loop from this `SignalEndpoint` to itself so it will not be released until the signal closes.
-	///
-	/// WARNING: AVOID this in most cases, it is for special cases where you *know* the signal will be closed at the other end and you *can't* otherwise maintain the lifetime at the listener end. if the signal graph does not send a `Result.failure`, THIS WILL BE A MEMORY LEAK.
-	public func keepAlive() {
-		sync {
-			if case .noLoop = self.referenceLoop {
-				self.referenceLoop = .loop(self)
-			}
-		}
 	}
 }
 

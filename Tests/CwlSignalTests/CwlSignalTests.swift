@@ -58,9 +58,24 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(4)?.isSignalClosed == true)
 	}
 	
+	func testKeepAlive() {
+		var results = [Result<Int>]()
+		let (i, _) = Signal<Int>.create { $0.subscribeAndKeepAlive { r in
+			results.append(r)
+			return r.value != 7
+		} }
+		i.send(value: 5)
+		i.send(value: 7)
+		i.send(value: 9)
+		i.close()
+		XCTAssert(results.count == 2)
+		XCTAssert(results.at(0)?.value == 5)
+		XCTAssert(results.at(1)?.value == 7)
+	}
+	
 	func testLifetimes() {
 		weak var weakEndpoint1: SignalEndpoint<Int>? = nil
-		weak var weakEndpoint2: SignalEndpoint<Int>? = nil
+		weak var weakToken: NSObject? = nil
 		weak var weakSignal1: Signal<Int>? = nil
 		weak var weakSignal2: Signal<Int>? = nil
 		var results1 = [Result<Int>]()
@@ -88,25 +103,27 @@ class SignalTests: XCTestCase {
 
 			do {
 				do {
-					let endPoint = signal2.subscribe { (r: Result<Int>) in
+					let token = NSObject()
+					signal2.subscribeAndKeepAlive { (r: Result<Int>) in
+						withExtendedLifetime(token) {}
 						results2.append(r)
+						return true
 					}
-					weakEndpoint2 = endPoint
-					endPoint.keepAlive()
+					weakToken = token
 				}
 				input2.send(result: .success(5))
-				XCTAssert(weakEndpoint2 != nil)
+				XCTAssert(weakToken != nil)
 				XCTAssert(weakSignal2 != nil)
 			}
 			
-			XCTAssert(weakEndpoint2 != nil)
+			XCTAssert(weakToken != nil)
 			input2.close()
 		}
 		XCTAssert(results1.count == 1)
 		XCTAssert(results1.at(0)?.value == 5)
 		XCTAssert(weakSignal1 == nil)
 
-		XCTAssert(weakEndpoint2 == nil)
+		XCTAssert(weakToken == nil)
 
 		XCTAssert(results2.count == 2)
 		XCTAssert(results2.at(0)?.value == 5)

@@ -57,12 +57,43 @@ extension Signal {
 	///
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
-	///   - processor: will be invoked with each value received
+	///   - handler: will be invoked with each value received
 	/// - Returns: the `SignalEndpoint` created by this function
 	public func subscribeValues(context: Exec = .direct, handler: @escaping (ValueType) -> Void) -> SignalEndpoint<ValueType> {
 		return subscribe(context: context) { r in
 			if case .success(let v) = r {
 				handler(v)
+			}
+		}
+	}
+	
+	/// A version of `subscribe` that creates a reference counted loop to the `SignalEndpoint`, keeping the signal graph alive. Unlike a typical `subscribe` handler (which returns `Void`), this handler returns a `Bool` – the the `Bool` is false, the reference counted loop is broken. The reference counted loop is also broken if the signal closes.
+	///
+	/// - Parameters:
+	///   - context: the execution context where the `processor` will be invoked
+	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
+	public func subscribeAndKeepAlive(context: Exec = .direct, handler: @escaping (Result<ValueType>) -> Bool) {
+		var endpoint: SignalEndpoint<T>? = nil
+		endpoint = subscribe(context: context) { r in
+			withExtendedLifetime(endpoint) {}
+			if !handler(r) || r.isError {
+				endpoint?.cancel()
+				endpoint = nil
+			}
+		}
+	}
+	
+	/// A version of `subscribe` that creates a reference counted loop to the `SignalEndpoint`, keeping the signal graph alive. Unlike a typical `subscribe` handler (which returns `Void`), this handler returns a `Bool` – the the `Bool` is false, the reference counted loop is broken. The reference counted loop is also broken if the signal closes.
+	///
+	/// - Parameters:
+	///   - context: the execution context where the `processor` will be invoked
+	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
+	public func subscribeValuesAndKeepAlive(context: Exec = .direct, handler: @escaping (ValueType) -> Bool) {
+		subscribeAndKeepAlive(context: context) { r in
+			if case .success(let v) = r {
+				return handler(v)
+			} else {
+				return false
 			}
 		}
 	}
