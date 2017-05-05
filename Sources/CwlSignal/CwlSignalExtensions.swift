@@ -227,6 +227,10 @@ public class SignalCollector<T> {
 }
 
 extension Signal {
+	public final func join(to: SignalCollector<T>) {
+		to.add(self)
+	}
+	
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
 	///
 	/// - returns: the `SignalInput` and `Signal` pair
@@ -293,7 +297,7 @@ extension SignalCapture {
 	/// - Returns: the `SignalEndpoint` created by this function
 	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
 		let (input, output) = Signal<T>.create()
-		try! join(toInput: input, resend: resend)
+		try! join(to: input, resend: resend)
 		return output.subscribeValues(context: context, handler: handler)
 	}
 	
@@ -307,7 +311,7 @@ extension SignalCapture {
 	/// - Returns: the `SignalEndpoint` created by this function
 	public func subscribeValues(resend: Bool = false, onError: @escaping (SignalCapture<T>, Error, SignalInput<T>) -> (), context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
 		let (input, output) = Signal<T>.create()
-		try! join(toInput: input, resend: resend, onError: onError)
+		try! join(to: input, resend: resend, onError: onError)
 		return output.subscribeValues(context: context, handler: handler)
 	}
 }

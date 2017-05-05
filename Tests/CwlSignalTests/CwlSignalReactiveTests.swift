@@ -52,7 +52,7 @@ class SignalReactiveTests: XCTestCase {
 		let ep = signal.subscribe { r in results.append(r) }
 		let (values, error) = capture.activation()
 		do {
-			try capture.join(toInput: input)
+			try capture.join(to: input)
 		} catch {
 			input.send(error: error)
 		}

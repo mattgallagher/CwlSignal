@@ -256,7 +256,7 @@ extension Signal {
 		// Continuous signals don't really need the junction. Just connect it immediately and ignore it.
 		if continuous {
 			do {
-				try intervalJunction.join(toInput: initialInput)
+				try intervalJunction.join(to: initialInput)
 			} catch {
 				assertionFailure()
 				return Signal<()>.preclosed()
@@ -276,7 +276,7 @@ extension Signal {
 				} else if !continuous, let i = state.timerInput {
 					// If we're not continuous, make sure the timer is connected
 					do {
-						try intervalJunction.join(toInput: i)
+						try intervalJunction.join(to: i)
 					} catch {
 						n.send(error: error)
 					}
@@ -1701,7 +1701,7 @@ private class CatchErrorRecovery<T> {
 		if let s = recover(e) {
 			do {
 				let f: (SignalJunction<T>, Error, SignalInput<T>) -> () = self.catchErrorRejoin
-				try s.join(toInput: i, onError: f)
+				try s.join(to: i, onError: f)
 			} catch {
 				i.send(error: error)
 			}
@@ -1726,7 +1726,7 @@ private class RetryRecovery<U> {
 		if let t = shouldRetry(&state, e) {
 			timer = context.singleTimer(interval: t) {
 				do {
-					try j.join(toInput: i, onError: self.retryRejoin)
+					try j.join(to: i, onError: self.retryRejoin)
 				} catch {
 					i.send(error: error)
 				}
@@ -1745,7 +1745,7 @@ extension Signal {
 	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<T>?) -> Signal<T> {
 		let (input, signal) = Signal<T>.create()
 		do {
-			try join(toInput: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin)
+			try join(to: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin)
 		} catch {
 			input.send(error: error)
 		}
@@ -1763,7 +1763,7 @@ extension Signal {
 	public func retry<U>(_ initialState: U, context: Exec = .direct, shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?) -> Signal<T> {
 		let (input, signal) = Signal<T>.create()
 		do {
-			try join(toInput: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin)
+			try join(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin)
 		} catch {
 			input.send(error: error)
 		}
@@ -1848,7 +1848,7 @@ extension Signal {
 			if let i = input {
 				do {
 					handler()
-					try self.join(toInput: i)
+					try self.join(to: i)
 				} catch {
 					i.send(error: error)
 				}
@@ -1867,7 +1867,7 @@ extension Signal {
 		let signal = Signal<T>.generate { input in
 			if let i = input {
 				do {
-					try self.join(toInput: i)
+					try self.join(to: i)
 				} catch {
 					i.send(error: error)
 				}
@@ -1980,7 +1980,7 @@ extension Signal {
 			if let i = input {
 				do {
 					i.send(value: ())
-					try self.map { v in () }.join(toInput: i)
+					try self.map { v in () }.join(to: i)
 				} catch {
 					i.send(error: error)
 				}
@@ -2153,10 +2153,10 @@ extension Signal {
 			}
 		}
 		do {
-			try join(toInput: input) { (j: SignalJunction<T>, e: Error, i: SignalInput<T>) in
+			try join(to: input) { (j: SignalJunction<T>, e: Error, i: SignalInput<T>) in
 				do {
 					if let f = fallback {
-						try f.join(toInput: i)
+						try f.join(to: i)
 					} else {
 						i.send(error: e)
 					}
