@@ -2006,7 +2006,7 @@ fileprivate final class SignalTransformerWithState<T, U, S>: SignalProcessor<T, 
 		/// Every time the handler is recreated, the `state` value is initialized from the `initialState`.
 		var state = initialState
 		
-		return { [userHandler] r in
+		return { [userHandler, weak outputSignal] r in
 			userHandler(&state, r, next)
 			
 			if !isKnownUniquelyReferenced(&next), let s = next.blockable as? SignalTransformerWithState<T, U, S> {
@@ -2016,7 +2016,9 @@ fileprivate final class SignalTransformerWithState<T, U, S>: SignalProcessor<T, 
 				let n = next
 				s.sync {
 					n.needUnblock = true
-					next = SignalNext<U>(signal: outputSignal, predecessor: s, activationCount: ac, activated: activated, blockable: s)
+					if let os = outputSignal {
+						next = SignalNext<U>(signal: os, predecessor: s, activationCount: ac, activated: activated, blockable: s)
+					}
 					s.signal.itemContextNeedsRefresh = true
 				}
 				withExtendedLifetime(n) {}
