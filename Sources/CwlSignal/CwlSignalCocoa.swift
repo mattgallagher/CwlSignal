@@ -167,9 +167,9 @@ extension Signal {
 /// - Returns: a signal which emits the observation results
 public func signalFromNotifications(center: NotificationCenter = NotificationCenter.default, name: Notification.Name? = nil, object: AnyObject? = nil) -> Signal<Notification> {
 	var observerObject: NSObjectProtocol?
-	return Signal<Notification>.generate { input in
-		if let i = input {
-			observerObject = center.addObserver(forName: name, object: object, queue: nil) { n in
+	return Signal<Notification>.generate { [weak object] input in
+		if let i = input, let o = object {
+			observerObject = center.addObserver(forName: name, object: o, queue: nil) { n in
 				i.send(value: n)
 			}
 		} else {
