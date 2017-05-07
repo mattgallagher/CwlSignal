@@ -2518,7 +2518,7 @@ fileprivate class SignalMergeProcessor<T>: SignalProcessor<T, T> {
 }
 
 /// A merge set allows multiple `Signal`s of the same type to dynamically connect to a single output `Signal`. A merge set is analagous to a `SignalInput` in that it controls the input to a `Signal` but instead of controlling it by sending signals, it controls by connecting predecessors.
-public class SignalMergeSet<T> {
+public class SignalMergeSet<T>: Cancellable {
 	fileprivate weak var signal: Signal<T>?
 	fileprivate init(signal: Signal<T>) {
 		self.signal = signal
@@ -2566,9 +2566,13 @@ public class SignalMergeSet<T> {
 		}.input
 	}
 	
-	deinit {
+	public func cancel() {
 		guard let sig = signal else { return }
 		_ = sig.send(result: .failure(SignalError.cancelled), predecessor: nil, activationCount: sig.activationCount, activated: true)
+	}
+	
+	deinit {
+		cancel()
 	}
 }
 
