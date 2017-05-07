@@ -1432,7 +1432,12 @@ fileprivate class SignalHandler<T> {
 		handleDeactivationInternal(dw: &dw)
 		if !alwaysActiveInternal {
 			signal.changeDeliveryInternal(newDelivery: .disabled, dw: &dw)
-			dw.append { [handler] in withExtendedLifetime(handler) {} }
+			dw.append { [handler] in
+				withExtendedLifetime(handler) {}
+				
+				// Endpoints may release themselves on deactivation so we need to keep ourselves alive until outside the lock
+				withExtendedLifetime(self) {}
+			}
 			handler = initialHandlerInternal()
 		}
 	}
