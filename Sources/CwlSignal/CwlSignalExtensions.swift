@@ -211,14 +211,15 @@ extension Signal {
 }
 
 /// A SignalMergeSet exposes the ability to close the output signal and disconnect on deactivation. For public interfaces, neither of these is really appropriate to expose. A SignalCollector provides a simple wrapper around SignalMergeSet that hides this
-public class SignalCollector<T> {
+public final class SignalCollector<T> {
 	private let mergeSet: SignalMergeSet<T>
 	public init(mergeSet: SignalMergeSet<T>) {
 		self.mergeSet = mergeSet
 	}
 	
-	public func add(_ source: Signal<T>) {
-		mergeSet.add(source)
+	@discardableResult
+	public func add(_ source: Signal<T>) -> SignalJoinFailure? {
+		return mergeSet.add(source)
 	}
 	
 	public func remove(_ source: Signal<T>) {
@@ -227,8 +228,9 @@ public class SignalCollector<T> {
 }
 
 extension Signal {
-	public final func join(to: SignalCollector<T>) {
-		to.add(self)
+	@discardableResult
+	public final func join(to: SignalCollector<T>) -> SignalJoinFailure? {
+		return to.add(self)
 	}
 	
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
@@ -297,7 +299,7 @@ extension SignalCapture {
 	/// - Returns: the `SignalEndpoint` created by this function
 	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
 		let (input, output) = Signal<T>.create()
-		try! join(to: input, resend: resend)
+		join(to: input, resend: resend)
 		return output.subscribeValues(context: context, handler: handler)
 	}
 	
@@ -311,7 +313,7 @@ extension SignalCapture {
 	/// - Returns: the `SignalEndpoint` created by this function
 	public func subscribeValues(resend: Bool = false, onError: @escaping (SignalCapture<T>, Error, SignalInput<T>) -> (), context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
 		let (input, output) = Signal<T>.create()
-		try! join(to: input, resend: resend, onError: onError)
+		join(to: input, resend: resend, onError: onError)
 		return output.subscribeValues(context: context, handler: handler)
 	}
 }
