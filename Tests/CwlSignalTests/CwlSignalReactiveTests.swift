@@ -51,7 +51,9 @@ class SignalReactiveTests: XCTestCase {
 		let (input, signal) = Signal<Int>.create()
 		let ep = signal.subscribe { r in results.append(r) }
 		let (values, error) = capture.activation()
-		if let error = capture.join(to: input) {
+		do {
+			try capture.join(to: input)
+		} catch {
 			input.send(error: error)
 		}
 		withExtendedLifetime(ep) {}

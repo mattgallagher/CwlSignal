@@ -521,7 +521,11 @@ class SignalTests: XCTestCase {
 		XCTAssert(input.send(value: 5) == nil)
 
 		let (values, error) = capture.activation()
-		guard nil == capture.join(to: subsequentInput) else { XCTFail(); return }
+		do {
+			try capture.join(to: subsequentInput)
+		} catch {
+			XCTFail()
+		}
 
 		input.send(value: 3)
 		input.close()
@@ -623,12 +627,13 @@ class SignalTests: XCTestCase {
 		
 		let (values, error) = capture.activation()
 		
-		let joinError1 = capture.join(to: subsequentInput) { (c: SignalCapture<Int>, e: Error, i: SignalInput<Int>) in
-			XCTAssert(c === capture)
-			XCTAssert(e as? SignalError == .closed)
-			i.send(error: TestError.twoValue)
-		}
-		if joinError1 != nil {
+		do {
+			try capture.join(to: subsequentInput) { (c: SignalCapture<Int>, e: Error, i: SignalInput<Int>) in
+				XCTAssert(c === capture)
+				XCTAssert(e as? SignalError == .closed)
+				i.send(error: TestError.twoValue)
+			}
+		} catch {
 			XCTFail()
 		}
 
@@ -656,12 +661,13 @@ class SignalTests: XCTestCase {
 			results2.append(r)
 		}
 
-		let joinError2 = capture2.join(to: subsequentInput2, resend: true) { (c, e, i) in
-			XCTAssert(c === capture2)
-			XCTAssert(e as? TestError == .oneValue)
-			i.send(error: TestError.zeroValue)
-		}
-		if joinError2 != nil {
+		do {
+			try capture2.join(to: subsequentInput2, resend: true) { (c, e, i) in
+				XCTAssert(c === capture2)
+				XCTAssert(e as? TestError == .oneValue)
+				i.send(error: TestError.zeroValue)
+			}
+		} catch {
 			XCTFail()
 		}
 		
@@ -766,38 +772,44 @@ class SignalTests: XCTestCase {
 		}
 		
 		var results = [Result<Int>]()
-		let (i1, s) = Signal<Int>.create()
-		let ep = s.subscribe { results.append($0) }
-		let joinResult1 = sequence1.join(to: i1)
-		i1.send(value: 3)
 		
-		XCTAssert(results.count == 3)
-		XCTAssert(results.at(0)?.value == 0)
-		XCTAssert(results.at(1)?.value == 1)
-		XCTAssert(results.at(2)?.value == 2)
-		
-		if case .success(let d) = joinResult1, let i2 = d.disconnect() {
-			let joinResult2 = sequence2.join(to: i2)
-			i2.send(value: 6)
+		do {
+			let (i1, s) = Signal<Int>.create()
+			let ep = s.subscribe { results.append($0) }
+			let d = try sequence1.join(to: i1)
+			i1.send(value: 3)
 			
-			XCTAssert(results.count == 7)
-			XCTAssert(results.at(3)?.value == 3)
-			XCTAssert(results.at(4)?.value == 4)
-			XCTAssert(results.at(5)?.value == 5)
-			XCTAssert(results.at(6)?.error as? SignalError == .cancelled)
+			XCTAssert(results.count == 3)
+			XCTAssert(results.at(0)?.value == 0)
+			XCTAssert(results.at(1)?.value == 1)
+			XCTAssert(results.at(2)?.value == 2)
 			
-			if case .success(let d2) = joinResult2, let i3 = d2.disconnect() {
-				d.join(to: i3)
-				i3.send(value: 3)
+			if let i2 = d.disconnect() {
+				let d2 = try sequence2.join(to: i2)
+				i2.send(value: 6)
 				
 				XCTAssert(results.count == 7)
+				XCTAssert(results.at(3)?.value == 3)
+				XCTAssert(results.at(4)?.value == 4)
+				XCTAssert(results.at(5)?.value == 5)
+				XCTAssert(results.at(6)?.error as? SignalError == .cancelled)
+				
+				if let i3 = d2.disconnect() {
+					_ = try d.join(to: i3)
+					i3.send(value: 3)
+					
+					XCTAssert(results.count == 7)
+				} else {
+					XCTFail()
+				}
 			} else {
 				XCTFail()
 			}
-		} else {
+			withExtendedLifetime(ep) {}
+		} catch {
 			XCTFail()
 		}
-		withExtendedLifetime(ep) {}
+		
 		withExtendedLifetime(firstInput) {}
 		
 		var results2 = [Result<Int>]()
@@ -805,12 +817,13 @@ class SignalTests: XCTestCase {
 			results2.append($0)
 		} }
 
-		let joinResult2 = sequence3.join(to: i4) { d, e, i in
-			XCTAssert(e as? SignalError == .cancelled)
-			i.send(value: 7)
-			i.close()
-		}
-		if joinResult2.error != nil {
+		do {
+			try sequence3.join(to: i4) { d, e, i in
+				XCTAssert(e as? SignalError == .cancelled)
+				i.send(value: 7)
+				i.close()
+			}
+		} catch {
 			XCTFail()
 		}
 	
@@ -897,10 +910,13 @@ class SignalTests: XCTestCase {
 				case .result2(let r): looped.append(r)
 				}
 			}.transform { r, n in n.send(result: r) }.continuous()
-			if case .failure(let error as SignalJoinError<Int>) = combined.join(to: input2), case .loop = error.reason, let i = error.replacementInput {
-				input2 = i
-				weakInput3 = i
-			} else {
+			do {
+				try combined.join(to: input2)
+				XCTFail()
+			} catch SignalJoinError<Int>.loop(let i) where i != nil {
+				input2 = i!
+				weakInput3 = i!
+			} catch {
 				XCTFail()
 			}
 			let ep2 = combined.subscribe { r in
@@ -1214,51 +1230,52 @@ class SignalTests: XCTestCase {
 	}
 
 	func testMergeSet() {
-		var results = [Result<Int>]()
-		let (mergeSet, mergeSignal) = Signal<Int>.mergeSetAndSignal()
-		let (input, ep) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
-		let joinResult = mergeSignal.join(to: input)
-		
-		let (input1, signal1) = Signal<Int>.create { $0.cacheUntilActive() }
-		let (input2, signal2) = Signal<Int>.create { $0.cacheUntilActive() }
-		let (input3, signal3) = Signal<Int>.create { $0.cacheUntilActive() }
-		let (input4, signal4) = Signal<Int>.create { $0.cacheUntilActive() }
-		mergeSet.add(signal1, closesOutput: false, removeOnDeactivate: false)
-		mergeSet.add(signal2, closesOutput: true, removeOnDeactivate: false)
-		mergeSet.add(signal3, closesOutput: false, removeOnDeactivate: true)
-		mergeSet.add(signal4, closesOutput: false, removeOnDeactivate: false)
-		
-		input1.send(value: 3)
-		input2.send(value: 4)
-		input3.send(value: 5)
-		input4.send(value: 9)
-		input1.close()
-		
-		guard case .success(let disconnector) = joinResult else { XCTFail(); return }
-		let reconnectable = disconnector.disconnect()
-		if let _ = reconnectable.flatMap({ disconnector.join(to: $0) }) {
+		do {
+			var results = [Result<Int>]()
+			let (mergeSet, mergeSignal) = Signal<Int>.mergeSetAndSignal()
+			let (input, ep) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
+			let disconnector = try mergeSignal.join(to: input)
+			
+			let (input1, signal1) = Signal<Int>.create { $0.cacheUntilActive() }
+			let (input2, signal2) = Signal<Int>.create { $0.cacheUntilActive() }
+			let (input3, signal3) = Signal<Int>.create { $0.cacheUntilActive() }
+			let (input4, signal4) = Signal<Int>.create { $0.cacheUntilActive() }
+			mergeSet.add(signal1, closesOutput: false, removeOnDeactivate: false)
+			mergeSet.add(signal2, closesOutput: true, removeOnDeactivate: false)
+			mergeSet.add(signal3, closesOutput: false, removeOnDeactivate: true)
+			mergeSet.add(signal4, closesOutput: false, removeOnDeactivate: false)
+			
+			input1.send(value: 3)
+			input2.send(value: 4)
+			input3.send(value: 5)
+			input4.send(value: 9)
+			input1.close()
+			
+			let reconnectable = disconnector.disconnect()
+			try reconnectable.map { _ = try disconnector.join(to: $0) }
+			
+			mergeSet.remove(signal4)
+			
+			input1.send(value: 6)
+			input2.send(value: 7)
+			input3.send(value: 8)
+			input4.send(value: 10)
+			input2.close()
+			input3.close()
+
+			XCTAssert(results.count == 7)
+			XCTAssert(results.at(0)?.value == 3)
+			XCTAssert(results.at(1)?.value == 4)
+			XCTAssert(results.at(2)?.value == 5)
+			XCTAssert(results.at(3)?.value == 9)
+			XCTAssert(results.at(4)?.value == 7)
+			XCTAssert(results.at(5)?.value == 8)
+			XCTAssert(results.at(6)?.isSignalClosed == true)
+			
+			withExtendedLifetime(ep) {}
+		} catch {
 			XCTFail()
 		}
-		
-		mergeSet.remove(signal4)
-		
-		input1.send(value: 6)
-		input2.send(value: 7)
-		input3.send(value: 8)
-		input4.send(value: 10)
-		input2.close()
-		input3.close()
-
-		XCTAssert(results.count == 7)
-		XCTAssert(results.at(0)?.value == 3)
-		XCTAssert(results.at(1)?.value == 4)
-		XCTAssert(results.at(2)?.value == 5)
-		XCTAssert(results.at(3)?.value == 9)
-		XCTAssert(results.at(4)?.value == 7)
-		XCTAssert(results.at(5)?.value == 8)
-		XCTAssert(results.at(6)?.isSignalClosed == true)
-		
-		withExtendedLifetime(ep) {}
 	}
 	
 	func testCombine2() {
@@ -1988,7 +2005,7 @@ class SignalTests: XCTestCase {
 					}
 					DispatchQueue.main.async { allEndpoints[double(j, i)] = ep }
 					_ = junction.disconnect()
-					junction.join(to: input)
+					_ = try? junction.join(to: input)
 				}
 			}
 		}

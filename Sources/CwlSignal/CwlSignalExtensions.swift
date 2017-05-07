@@ -218,18 +218,18 @@ public final class SignalCollector<T> {
 	}
 	
 	@discardableResult
-	public func add(_ source: Signal<T>) -> SignalJoinFailure? {
+	public func add(_ source: Signal<T>) -> SignalJoinError<T>? {
 		return mergeSet.add(source)
 	}
 	
 	public func remove(_ source: Signal<T>) {
-		mergeSet.add(source)
+		mergeSet.remove(source)
 	}
 }
 
 extension Signal {
 	@discardableResult
-	public final func join(to: SignalCollector<T>) -> SignalJoinFailure? {
+	public final func join(to: SignalCollector<T>) -> SignalJoinError<T>? {
 		return to.add(self)
 	}
 	
@@ -299,7 +299,7 @@ extension SignalCapture {
 	/// - Returns: the `SignalEndpoint` created by this function
 	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
 		let (input, output) = Signal<T>.create()
-		join(to: input, resend: resend)
+		try! join(to: input, resend: resend)
 		return output.subscribeValues(context: context, handler: handler)
 	}
 	
@@ -313,7 +313,7 @@ extension SignalCapture {
 	/// - Returns: the `SignalEndpoint` created by this function
 	public func subscribeValues(resend: Bool = false, onError: @escaping (SignalCapture<T>, Error, SignalInput<T>) -> (), context: Exec = .direct, handler: @escaping (T) -> Void) -> SignalEndpoint<T> {
 		let (input, output) = Signal<T>.create()
-		join(to: input, resend: resend, onError: onError)
+		try! join(to: input, resend: resend, onError: onError)
 		return output.subscribeValues(context: context, handler: handler)
 	}
 }

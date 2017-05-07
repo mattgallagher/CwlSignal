@@ -255,8 +255,11 @@ extension Signal {
 
 		// Continuous signals don't really need the junction. Just connect it immediately and ignore it.
 		if continuous {
-			if let error = intervalJunction.join(to: initialInput) {
-				return Signal<()>.preclosed(error: error)
+			do {
+				try intervalJunction.join(to: initialInput)
+			} catch {
+				assertionFailure()
+				return Signal<()>.preclosed()
 			}
 		}
 		
@@ -272,7 +275,9 @@ extension Signal {
 					send = true
 				} else if !continuous, let i = state.timerInput {
 					// If we're not continuous, make sure the timer is connected
-					if let error = intervalJunction.join(to: i) {
+					do {
+						try intervalJunction.join(to: i)
+					} catch {
 						n.send(error: error)
 					}
 				}
@@ -1694,8 +1699,10 @@ private class CatchErrorRecovery<T> {
 	}
 	fileprivate func catchErrorRejoin(j: SignalJunction<T>, e: Error, i: SignalInput<T>) {
 		if let s = recover(e) {
-			let f: (SignalJunction<T>, Error, SignalInput<T>) -> () = self.catchErrorRejoin
-			if case .failure(let error) = s.join(to: i, onError: f) {
+			do {
+				let f: (SignalJunction<T>, Error, SignalInput<T>) -> () = self.catchErrorRejoin
+				try s.join(to: i, onError: f)
+			} catch {
 				i.send(error: error)
 			}
 		} else {
@@ -1718,7 +1725,9 @@ private class RetryRecovery<U> {
 	fileprivate func retryRejoin<T>(j: SignalJunction<T>, e: Error, i: SignalInput<T>) {
 		if let t = shouldRetry(&state, e) {
 			timer = context.singleTimer(interval: t) {
-				if let error = j.join(to: i, onError: self.retryRejoin) {
+				do {
+					try j.join(to: i, onError: self.retryRejoin)
+				} catch {
 					i.send(error: error)
 				}
 			}
@@ -1735,7 +1744,9 @@ extension Signal {
 	/// - returns: a signal that emits the values from `self` until an error is received and then, if `recover` returns non-`nil` emits the values from `recover` and then emits the error from `recover`, otherwise if `recover` returns `nil`, emits the `ErrorType` from `self`.
 	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<T>?) -> Signal<T> {
 		let (input, signal) = Signal<T>.create()
-		if case .failure(let error) = join(to: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin) {
+		do {
+			try join(to: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin)
+		} catch {
 			input.send(error: error)
 		}
 		return signal
@@ -1751,7 +1762,9 @@ extension Signal {
 	/// - returns: a signal that emits the values from `self` until an error is received and then, if `shouldRetry` returns non-`nil`, disconnects from `self`, delays by the number of seconds returned from `shouldRetry`, and reconnects to `self` (triggering re-activation), otherwise if `shouldRetry` returns `nil`, emits the `ErrorType` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
 	public func retry<U>(_ initialState: U, context: Exec = .direct, shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?) -> Signal<T> {
 		let (input, signal) = Signal<T>.create()
-		if case .failure(let error) = join(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin) {
+		do {
+			try join(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin)
+		} catch {
 			input.send(error: error)
 		}
 		return signal
@@ -1833,8 +1846,10 @@ extension Signal {
 	public func onActivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<T> {
 		let signal = Signal<T>.generate { input in
 			if let i = input {
-				handler()
-				if case .failure(let error) = self.join(to: i) {
+				do {
+					handler()
+					try self.join(to: i)
+				} catch {
 					i.send(error: error)
 				}
 			}
@@ -1851,7 +1866,9 @@ extension Signal {
 	public func onDeactivate(context: Exec = .direct, f: @escaping () -> ()) -> Signal<T> {
 		let signal = Signal<T>.generate { input in
 			if let i = input {
-				if case .failure(let error) = self.join(to: i) {
+				do {
+					try self.join(to: i)
+				} catch {
 					i.send(error: error)
 				}
 			} else {
@@ -1961,8 +1978,10 @@ extension Signal {
 	public func timeInterval(context: Exec = .direct) -> Signal<Double> {
 		let signal = Signal<()>.generate { input in
 			if let i = input {
-				i.send(value: ())
-				if case .failure(let error) = self.map({ v in () }).join(to: i) {
+				do {
+					i.send(value: ())
+					try self.map { v in () }.join(to: i)
+				} catch {
 					i.send(error: error)
 				}
 			}
@@ -2133,16 +2152,19 @@ extension Signal {
 				return v
 			}
 		}
-		let onError = { (j: SignalJunction<T>, e: Error, i: SignalInput<T>) in
-			if let f = fallback {
-				if case .failure(let error) = f.join(to: i) {
+		do {
+			try join(to: input) { (j: SignalJunction<T>, e: Error, i: SignalInput<T>) in
+				do {
+					if let f = fallback {
+						try f.join(to: i)
+					} else {
+						i.send(error: e)
+					}
+				} catch {
 					i.send(error: error)
 				}
-			} else {
-				i.send(error: e)
 			}
-		}
-		if case .failure(let error) = join(to: input, onError: onError) {
+		} catch {
 			input.send(error: error)
 		}
 		return signal
