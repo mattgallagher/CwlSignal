@@ -145,8 +145,8 @@ public class Signal<T> {
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
 	///
 	/// - returns: the `SignalInput` and `Signal` pair
-	public static func mergeSetAndSignal<S: Sequence>(_ initialInputs: S, closesOutput: Bool = false, removeOnDeactivate: Bool = false) -> (mergeSet: SignalMergeSet<T>, signal: Signal<T>) where S.Iterator.Element: Signal<T> {
-		let (mergeSet, signal) = Signal<T>.mergeSetAndSignal()
+	public static func createMergeSet<S: Sequence>(_ initialInputs: S, closesOutput: Bool = false, removeOnDeactivate: Bool = false) -> (mergeSet: SignalMergeSet<T>, signal: Signal<T>) where S.Iterator.Element: Signal<T> {
+		let (mergeSet, signal) = Signal<T>.createMergeSet()
 		for i in initialInputs {
 			mergeSet.add(i, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
 		}
@@ -156,8 +156,8 @@ public class Signal<T> {
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
 	///
 	/// - returns: the `SignalInput` and `Signal` pair
-	public static func mergeSetAndSignal<S: Sequence, U>(_ initialInputs: S, closesOutput: Bool = false, removeOnDeactivate: Bool = false, compose: (Signal<T>) throws -> U) rethrows -> (mergeSet: SignalMergeSet<T>, composed: U) where S.Iterator.Element: Signal<T> {
-		let (mergeSet, signal) = try Signal<T>.mergeSetAndSignal(compose: compose)
+	public static func createMergeSet<S: Sequence, U>(_ initialInputs: S, closesOutput: Bool = false, removeOnDeactivate: Bool = false, compose: (Signal<T>) throws -> U) rethrows -> (mergeSet: SignalMergeSet<T>, composed: U) where S.Iterator.Element: Signal<T> {
+		let (mergeSet, signal) = try Signal<T>.createMergeSet(compose: compose)
 		for i in initialInputs {
 			mergeSet.add(i, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
 		}
@@ -167,7 +167,7 @@ public class Signal<T> {
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
 	///
 	/// - returns: the `SignalInput` and `Signal` pair
-	public static func mergeSetAndSignal() -> (mergeSet: SignalMergeSet<T>, signal: Signal<T>) {
+	public static func createMergeSet() -> (mergeSet: SignalMergeSet<T>, signal: Signal<T>) {
 		let s = Signal<T>()
 		var dw = DeferredWork()
 		s.mutex.sync { s.updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw) }
@@ -178,8 +178,8 @@ public class Signal<T> {
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
 	///
 	/// - returns: the `SignalInput` and `Signal` pair
-	public static func mergeSetAndSignal<U>(compose: (Signal<T>) throws -> U) rethrows -> (mergeSet: SignalMergeSet<T>, composed: U) {
-		let (m, s) = mergeSetAndSignal()
+	public static func createMergeSet<U>(compose: (Signal<T>) throws -> U) rethrows -> (mergeSet: SignalMergeSet<T>, composed: U) {
+		let (m, s) = createMergeSet()
 		return (m, try compose(s))
 	}
 	

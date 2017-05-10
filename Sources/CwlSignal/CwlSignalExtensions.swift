@@ -142,7 +142,7 @@ extension Signal {
 	///
 	/// - returns: output of the merge set
 	public func transformFlatten<S, U>(withState initialState: S, closesImmediate: Bool = false, context: Exec = .direct, _ processor: @escaping (inout S, T, SignalMergeSet<U>) -> ()) -> Signal<U> {
-		let (mergeSet, result) = Signal<U>.mergeSetAndSignal()
+		let (mergeSet, result) = Signal<U>.createMergeSet()
 		var closeError: Error? = nil
 		let closeSignal = transform(withState: initialState, context: context) { (state: inout S, r: Result<T>, n: SignalNext<U>) in
 			switch r {
@@ -210,7 +210,8 @@ extension Signal {
 	}
 }
 
-/// A SignalMergeSet exposes the ability to close the output signal and disconnect on deactivation. For public interfaces, neither of these is really appropriate to expose. A SignalCollector provides a simple wrapper around SignalMergeSet that hides this
+/// A SignalMergeSet exposes the ability to close the output signal and disconnect on deactivation. For public interfaces, neither of these is really appropriate to expose. A SignalCollector provides a simple wrapper around SignalMergeSet that forces `closesOutput` and `removeOnDeactivate` to be *false* for all inputs created through this interface.
+/// NOTE: it is possible to create the underlying `SignalMergeSet` and privately add inputs with other properties, if you wish.
 public final class SignalCollector<T> {
 	private let mergeSet: SignalMergeSet<T>
 	public init(mergeSet: SignalMergeSet<T>) {
@@ -236,16 +237,16 @@ extension Signal {
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
 	///
 	/// - returns: the `SignalInput` and `Signal` pair
-	public static func collectorAndSignal() -> (collector: SignalCollector<T>, signal: Signal<T>) {
-		let (ms, s) = Signal<T>.mergeSetAndSignal()
+	public static func createCollector() -> (collector: SignalCollector<T>, signal: Signal<T>) {
+		let (ms, s) = Signal<T>.createMergeSet()
 		return (SignalCollector(mergeSet: ms), s)
 	}
 	
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
 	///
 	/// - returns: the `SignalInput` and `Signal` pair
-	public static func collectorAndSignal<U>(compose: (Signal<T>) throws -> U) rethrows -> (collector: SignalCollector<T>, composed: U) {
-		let (a, b) = try Signal<T>.mergeSetAndSignal(compose: compose)
+	public static func createCollector<U>(compose: (Signal<T>) throws -> U) rethrows -> (collector: SignalCollector<T>, composed: U) {
+		let (a, b) = try Signal<T>.createMergeSet(compose: compose)
 		return (SignalCollector(mergeSet: a), b)
 	}
 }

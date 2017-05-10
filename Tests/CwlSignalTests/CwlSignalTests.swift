@@ -1190,7 +1190,7 @@ class SignalTests: XCTestCase {
 			case .failure: n.send(error: TestError.oneValue)
 			}
 		}
-		let (_, ep) = Signal<Int>.mergeSetAndSignal([left, signal], closesOutput: true) { s in s.subscribe { r in results.append(r) } }
+		let (_, ep) = Signal<Int>.createMergeSet([left, signal], closesOutput: true) { s in s.subscribe { r in results.append(r) } }
 		input.send(value: 3)
 		input.send(value: 5)
 		input.close()
@@ -1207,7 +1207,7 @@ class SignalTests: XCTestCase {
 	func testClosedTriangleGraphRight() {
 		var results = [Result<Int>]()
 		let (input, signal) = Signal<Int>.create { s in s.multicast() }
-		let (mergeSet, signal2) = Signal<Int>.mergeSetAndSignal([signal], closesOutput: true)
+		let (mergeSet, signal2) = Signal<Int>.createMergeSet([signal], closesOutput: true)
 		let ep = signal2.subscribe { r in results.append(r) }
 		let right = signal.transform { (r: Result<Int>, n: SignalNext<Int>) in
 			switch r {
@@ -1232,7 +1232,7 @@ class SignalTests: XCTestCase {
 	func testMergeSet() {
 		do {
 			var results = [Result<Int>]()
-			let (mergeSet, mergeSignal) = Signal<Int>.mergeSetAndSignal()
+			let (mergeSet, mergeSignal) = Signal<Int>.createMergeSet()
 			let (input, ep) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
 			let disconnector = try mergeSignal.join(to: input)
 			

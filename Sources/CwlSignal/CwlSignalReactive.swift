@@ -1344,7 +1344,7 @@ extension Signal {
 	/// - parameter sources: an `Array` where `signal` is merged into the result.
 	/// - returns: a signal that emits every value from every `sources` input `signal`.
 	public static func merge<S: Sequence>(_ sources: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
-		let (_, signal) = Signal<T>.mergeSetAndSignal(sources)
+		let (_, signal) = Signal<T>.createMergeSet(sources)
 		return signal
 	}
 	
@@ -2067,7 +2067,7 @@ extension Signal {
 	///
 	/// - returns: connects to all inputs then emits the full set of values from the first of these to emit a value
 	public static func amb<S: Sequence>(inputs: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
-		let (mergeSet, signal) = Signal<(Int, Result<T>)>.mergeSetAndSignal()
+		let (mergeSet, signal) = Signal<(Int, Result<T>)>.createMergeSet()
 		inputs.enumerated().forEach { s in
 			mergeSet.add(s.element.transform { r, n in
 				n.send(value: (s.offset, r))
