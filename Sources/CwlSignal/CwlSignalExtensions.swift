@@ -226,6 +226,10 @@ public final class SignalCollector<T> {
 	public func remove(_ source: Signal<T>) {
 		mergeSet.remove(source)
 	}
+
+	public func input() -> SignalInput<T> {
+		return Signal<T>.create { s -> () in self.add(s) }.input
+	}
 }
 
 extension Signal {

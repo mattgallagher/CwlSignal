@@ -2570,7 +2570,7 @@ public class SignalMergeSet<T>: Cancellable {
 		dw.runWork()
 	}
 	
-	public func newInput(closesOutput: Bool = false, removeOnDeactivate: Bool = false) -> SignalInput<T> {
+	public func input(closesOutput: Bool = false, removeOnDeactivate: Bool = false) -> SignalInput<T> {
 		return Signal<T>.create { s -> () in
 			self.add(s, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
 		}.input
