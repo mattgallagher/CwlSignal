@@ -21,6 +21,7 @@
 import Foundation
 import XCTest
 import CwlSignal
+import CwlPreconditionTesting
 
 #if SWIFT_PACKAGE
 import CwlUtils
@@ -883,68 +884,25 @@ class SignalTests: XCTestCase {
 	}
 
 	func testGraphLoop() {
-		var results = [Result<Int>]()
-		var looped = [Result<Int>]()
-		weak var weakInput1: SignalInput<Int>? = nil
-		weak var weakInput2: SignalInput<Int>? = nil
-		weak var weakInput3: SignalInput<Int>? = nil
-		weak var weakSignal1: Signal<Int>? = nil
-		weak var weakSignal2: Signal<Int>? = nil
-		weak var weakEndpoint: SignalEndpoint<Int>? = nil
 		do {
 			let (input1, signal1) = Signal<Int>.create()
-			var (input2, signal2) = Signal<Int>.create()
-			weakInput1 = input1
-			weakInput2 = input2
-			weakSignal1 = signal1
-			weakSignal2 = signal2
-			
-			XCTAssert(weakInput1 != nil)
-			XCTAssert(weakInput2 != nil)
-			XCTAssert(weakSignal1 != nil)
-			XCTAssert(weakSignal2 != nil)
+			let (input2, signal2) = Signal<Int>.create()
 
 			let combined = signal1.combine(second: signal2) { (cr: EitherResult2<Int, Int>, next: SignalNext<Int>) in
 				switch cr {
 				case .result1(let r): next.send(result: r)
-				case .result2(let r): looped.append(r)
+				case .result2(let r): next.send(result: r)
 				}
 			}.transform { r, n in n.send(result: r) }.continuous()
-			do {
-				try combined.join(to: input2)
-				XCTFail()
-			} catch SignalJoinError<Int>.loop(let i) where i != nil {
-				input2 = i!
-				weakInput3 = i!
-			} catch {
+			
+			
+			let ex = catchBadInstruction {
+				_ = try? combined.join(to: input2)
 				XCTFail()
 			}
-			let ep2 = combined.subscribe { r in
-				input2.send(result: r)
-			}
-			let ep = combined.subscribe { (r: Result<Int>) in
-				results.append(r)
-			}
-			weakEndpoint = ep
-			XCTAssert(weakEndpoint != nil)
-			input1.send(value: 5)
-			input1.close()
-			withExtendedLifetime(ep) {}
-			withExtendedLifetime(ep2) {}
+			XCTAssert(ex != nil)
+			withExtendedLifetime(input1) {}
 		}
-		XCTAssert(results.count == 2)
-		XCTAssert(results.at(0)?.value == 5)
-		XCTAssert(results.at(1)?.error as? SignalError == .closed)
-
-		XCTAssert(looped.count == 1)
-		XCTAssert(looped.at(0)?.value == 5)
-		
-		XCTAssert(weakInput1 == nil)
-		XCTAssert(weakInput2 == nil)
-		XCTAssert(weakInput3 == nil)
-		XCTAssert(weakSignal1 == nil)
-		XCTAssert(weakSignal2 == nil)
-		XCTAssert(weakEndpoint == nil)
 	}
 	
 	func testTransform() {

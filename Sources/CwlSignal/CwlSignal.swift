@@ -1657,7 +1657,7 @@ fileprivate class SignalProcessor<T, U>: SignalHandler<T>, SignalPredecessor {
 	///
 	/// - parameter param: usually a closure.
 	fileprivate func handleParamFromSuccessor(param: Any) {
-		preconditionFailure()
+		fatalError()
 	}
 	
 	/// Typical processors *don't* need to check their predecessors for a loop (only junctions do)
@@ -1689,7 +1689,10 @@ fileprivate class SignalProcessor<T, U>: SignalHandler<T>, SignalPredecessor {
 				// Don't need to traverse sortedPreceeding (unsorted is fine for an ancestor check)
 				for p in signal.preceeding {
 					if p.base.precessorsSuccessorInternal(contains: predecessor) {
-						preconditionFailure("Signals must not be joined in a loop.")
+						// Just throw a dummy error here and trigger the preconditionFailure outside the lock (otherwise precondition catching tests may deadlock).
+						error = SignalJoinError<T>.cancelled
+						dw.append { preconditionFailure("Signals must not be joined in a loop.") }
+						return
 					}
 				}
 			}
