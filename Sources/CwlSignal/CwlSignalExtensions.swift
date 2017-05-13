@@ -287,8 +287,8 @@ extension Signal {
 
 extension SignalInput {
 	/// Create a `SignalInput`-`Signal` pair, returning the `SignalInput` and handling the `Signal` internally using the `compose` closure. This is a syntactic convenience for functions that require a `SignalInput` parameter.
-	public static func into(compose: (Signal<T>) -> Void) -> SignalInput<T> {
-		return Signal<T>.create { s in compose(s) }.input
+	public static func into(_ compose: (Signal<T>) throws -> Void) rethrows -> SignalInput<T> {
+		return try Signal<T>.create { s in try compose(s) }.input
 	}
 }
 
