@@ -148,7 +148,7 @@ public class Signal<T> {
 	public static func createMergeSet<S: Sequence>(_ initialInputs: S, closesOutput: Bool = false, removeOnDeactivate: Bool = false) -> (mergeSet: SignalMergeSet<T>, signal: Signal<T>) where S.Iterator.Element: Signal<T> {
 		let (mergeSet, signal) = Signal<T>.createMergeSet()
 		for i in initialInputs {
-			mergeSet.add(i, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
+			try! mergeSet.add(i, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
 		}
 		return (mergeSet, signal)
 	}
@@ -159,7 +159,7 @@ public class Signal<T> {
 	public static func createMergeSet<S: Sequence, U>(_ initialInputs: S, closesOutput: Bool = false, removeOnDeactivate: Bool = false, compose: (Signal<T>) throws -> U) rethrows -> (mergeSet: SignalMergeSet<T>, composed: U) where S.Iterator.Element: Signal<T> {
 		let (mergeSet, signal) = try Signal<T>.createMergeSet(compose: compose)
 		for i in initialInputs {
-			mergeSet.add(i, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
+			try! mergeSet.add(i, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
 		}
 		return (mergeSet, signal)
 	}
@@ -2530,25 +2530,16 @@ public class SignalMergeSet<T>: Cancellable {
 	/// - parameter source:             the predecessor
 	/// - parameter sourceClosesOutput: if true, then errors sent via this `Signal` will pass through to the output, closing the output. If false, then if this source sends an error, it will be removed from the merge set without the error being sent through to the output.
 	/// - parameter removeOnDeactivate: if true, then when the output is deactivated, this source will be removed from the merge set. If false, then the source will remain connected through deactivation.
-	@discardableResult
-	public func add(_ source: Signal<T>, closesOutput: Bool = false, removeOnDeactivate: Bool = false) -> SignalJoinError<T>? {
-		guard let sig = signal else { return SignalJoinError<T>.cancelled }
+	public func add(_ source: Signal<T>, closesOutput: Bool = false, removeOnDeactivate: Bool = false) throws {
+		guard let sig = signal else { throw SignalJoinError<T>.cancelled }
 		let processor = source.attach { (s, dw) -> SignalMergeProcessor<T> in
 			SignalMergeProcessor<T>(signal: s, sourceClosesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate, mergeSet: self, dw: &dw)
 		}
 		var dw = DeferredWork()
-		var possibleError: SignalJoinError<T>? = nil
-		sig.mutex.sync {
-			do {
-				try sig.addPreceedingInternal(processor, param: nil, dw: &dw)
-			} catch let e as SignalJoinError<T> {
-				possibleError = e
-			} catch {
-				fatalError()
-			}
+		try sig.mutex.sync {
+			try sig.addPreceedingInternal(processor, param: nil, dw: &dw)
 		}
 		dw.runWork()
-		return possibleError
 	}
 	
 	/// Removes a predecessor from the merge set
@@ -2572,7 +2563,7 @@ public class SignalMergeSet<T>: Cancellable {
 	
 	public func input(closesOutput: Bool = false, removeOnDeactivate: Bool = false) -> SignalInput<T> {
 		return Signal<T>.create { s -> () in
-			self.add(s, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
+			_ = try? self.add(s, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
 		}.input
 	}
 	
@@ -2587,9 +2578,8 @@ public class SignalMergeSet<T>: Cancellable {
 }
 
 extension Signal {
-	@discardableResult
-	public final func join(to: SignalMergeSet<T>, closesOutput: Bool = false, removeOnDeactivate: Bool = false) -> SignalJoinError<T>? {
-		return to.add(self, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
+	public final func join(to: SignalMergeSet<T>, closesOutput: Bool = false, removeOnDeactivate: Bool = false) throws {
+		try to.add(self, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
 	}
 }
 

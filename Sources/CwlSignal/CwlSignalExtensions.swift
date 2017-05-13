@@ -154,7 +154,7 @@ extension Signal {
 		}
 		
 		// Keep the merge set alive at least as long as self
-		mergeSet.add(closeSignal, closesOutput: closesImmediate)
+		_ = try? mergeSet.add(closeSignal, closesOutput: closesImmediate)
 		
 		// On close, emit the error from self rather than the error from the merge set (which is usually `SignalError.cancelled` when `closesImmediate` is false.
 		return result.transform(withState: nil) { (onDelete: inout OnDelete?, r: Result<U>, n: SignalNext<U>) in
@@ -204,7 +204,7 @@ extension Signal {
 				}
 			}
 
-			mergeSet.add(prefixedInnerSignal)
+			_ = try? mergeSet.add(prefixedInnerSignal)
 			state.index += 1
 		}
 	}
@@ -218,9 +218,8 @@ public final class SignalCollector<T> {
 		self.mergeSet = mergeSet
 	}
 	
-	@discardableResult
-	public func add(_ source: Signal<T>) -> SignalJoinError<T>? {
-		return mergeSet.add(source)
+	public func add(_ source: Signal<T>) throws {
+		try mergeSet.add(source)
 	}
 	
 	public func remove(_ source: Signal<T>) {
@@ -228,14 +227,13 @@ public final class SignalCollector<T> {
 	}
 
 	public func input() -> SignalInput<T> {
-		return Signal<T>.create { s -> () in self.add(s) }.input
+		return Signal<T>.create { s -> () in _ = try? self.add(s) }.input
 	}
 }
 
 extension Signal {
-	@discardableResult
-	public final func join(to: SignalCollector<T>) -> SignalJoinError<T>? {
-		return to.add(self)
+	public final func join(to: SignalCollector<T>) throws {
+		try to.add(self)
 	}
 	
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.

@@ -544,7 +544,7 @@ extension Signal {
 	/// - returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func flatMap<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> Signal<U> {
 		return transformFlatten(context: context) { (v: T, mergeSet: SignalMergeSet<U>) in
-			mergeSet.add(processor(v), removeOnDeactivate: true)
+			_ = try? mergeSet.add(processor(v), removeOnDeactivate: true)
 		}
 	}
 	
@@ -556,7 +556,7 @@ extension Signal {
 	public func flatMapFirst<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> Signal<U> {
 		return transformFlatten(withState: false, context: context) { (s: inout Bool, v: T, mergeSet: SignalMergeSet<U>) in
 			if !s {
-				mergeSet.add(processor(v), removeOnDeactivate: true)
+				_ = try? mergeSet.add(processor(v), removeOnDeactivate: true)
 				s = true
 			}
 		}
@@ -575,7 +575,7 @@ extension Signal {
 				mergeSet.remove(existing)
 			}
 			let next = processor(v)
-			mergeSet.add(next, removeOnDeactivate: true)
+			_ = try? mergeSet.add(next, removeOnDeactivate: true)
 			s = next
 		}
 	}
@@ -587,7 +587,7 @@ extension Signal {
 	/// - returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func flatMap<U, V>(withState initial: V, context: Exec = .direct, _ processor: @escaping (inout V, T) -> Signal<U>) -> Signal<U> {
 		return transformFlatten(withState: initial, context: context) { (s: inout V, v: T, mergeSet: SignalMergeSet<U>) in
-			mergeSet.add(processor(&s, v), removeOnDeactivate: true)
+			_ = try? mergeSet.add(processor(&s, v), removeOnDeactivate: true)
 		}
 	}
 	
@@ -598,7 +598,7 @@ extension Signal {
 	/// - returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func concatMap<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> Signal<U> {
 		return transformFlatten(withState: 0, context: context) { (index: inout Int, v: T, mergeSet: SignalMergeSet<(Int, Result<U>)>) in
-			mergeSet.add(processor(v).transform { (r: Result<U>, n: SignalNext<Result<U>>) in
+			_ = try? mergeSet.add(processor(v).transform { (r: Result<U>, n: SignalNext<Result<U>>) in
 				switch r {
 				case .success:
 					n.send(value: r)
@@ -1394,7 +1394,7 @@ extension Signal {
 				mergeSet.remove(l)
 			}
 			latest = next
-			mergeSet.add(next, closesOutput: false, removeOnDeactivate: true)
+			_ = try? mergeSet.add(next, closesOutput: false, removeOnDeactivate: true)
 		}
 	}
 
@@ -2069,7 +2069,7 @@ extension Signal {
 	public static func amb<S: Sequence>(inputs: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
 		let (mergeSet, signal) = Signal<(Int, Result<T>)>.createMergeSet()
 		inputs.enumerated().forEach { s in
-			mergeSet.add(s.element.transform { r, n in
+			_ = try? mergeSet.add(s.element.transform { r, n in
 				n.send(value: (s.offset, r))
 			})
 		}

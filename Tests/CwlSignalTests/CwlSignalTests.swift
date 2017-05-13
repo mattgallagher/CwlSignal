@@ -1215,7 +1215,11 @@ class SignalTests: XCTestCase {
 			case .failure: n.send(error: TestError.oneValue)
 			}
 		}
-		mergeSet.add(right, closesOutput: true)
+		do {
+			try mergeSet.add(right, closesOutput: true)
+		} catch {
+			XCTFail()
+		}
 		input.send(value: 3)
 		input.send(value: 5)
 		input.close()
@@ -1240,10 +1244,14 @@ class SignalTests: XCTestCase {
 			let (input2, signal2) = Signal<Int>.create { $0.cacheUntilActive() }
 			let (input3, signal3) = Signal<Int>.create { $0.cacheUntilActive() }
 			let (input4, signal4) = Signal<Int>.create { $0.cacheUntilActive() }
-			mergeSet.add(signal1, closesOutput: false, removeOnDeactivate: false)
-			mergeSet.add(signal2, closesOutput: true, removeOnDeactivate: false)
-			mergeSet.add(signal3, closesOutput: false, removeOnDeactivate: true)
-			mergeSet.add(signal4, closesOutput: false, removeOnDeactivate: false)
+			do {
+				try mergeSet.add(signal1, closesOutput: false, removeOnDeactivate: false)
+				try mergeSet.add(signal2, closesOutput: true, removeOnDeactivate: false)
+				try mergeSet.add(signal3, closesOutput: false, removeOnDeactivate: true)
+				try mergeSet.add(signal4, closesOutput: false, removeOnDeactivate: false)
+			} catch {
+				XCTFail()
+			}
 			
 			input1.send(value: 3)
 			input2.send(value: 4)
