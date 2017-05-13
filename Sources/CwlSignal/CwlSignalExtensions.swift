@@ -210,7 +210,8 @@ extension Signal {
 	}
 }
 
-/// A SignalMergeSet exposes the ability to close the output signal and disconnect on deactivation. For public interfaces, neither of these is really appropriate to expose. A SignalCollector provides a simple wrapper around SignalMergeSet that forces `closesOutput` and `removeOnDeactivate` to be *false* for all inputs created through this interface.
+/// A `SignalMergeSet` exposes the ability to close the output signal and disconnect on deactivation. For public interfaces, neither of these is really appropriate to expose. A `SignalCollector` provides a simple wrapper around `SignalMergeSet` that forces `closesOutput` and `removeOnDeactivate` to be *false* for all inputs created through this interface.
+/// A `SignalCollector` also hides details about the output from the input. Forcing `removeOnDeactivate` is one part of this but the other part is that `SignalCollector` does not `throw` from its `add` or `Signal.join` functions.
 /// NOTE: it is possible to create the underlying `SignalMergeSet` and privately add inputs with other properties, if you wish.
 public final class SignalCollector<T> {
 	private let mergeSet: SignalMergeSet<T>
@@ -218,8 +219,8 @@ public final class SignalCollector<T> {
 		self.mergeSet = mergeSet
 	}
 	
-	public func add(_ source: Signal<T>) throws {
-		try mergeSet.add(source)
+	public func add(_ source: Signal<T>) {
+		_ = try? mergeSet.add(source)
 	}
 	
 	public func remove(_ source: Signal<T>) {
@@ -227,13 +228,13 @@ public final class SignalCollector<T> {
 	}
 
 	public func input() -> SignalInput<T> {
-		return Signal<T>.create { s -> () in _ = try? self.add(s) }.input
+		return Signal<T>.create { s -> () in self.add(s) }.input
 	}
 }
 
 extension Signal {
-	public final func join(to: SignalCollector<T>) throws {
-		try to.add(self)
+	public final func join(to: SignalCollector<T>) {
+		to.add(self)
 	}
 	
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
