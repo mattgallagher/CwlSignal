@@ -259,7 +259,7 @@ extension Signal {
 /// **WARNING**: this class should be avoided where possible since it removes the "reactive" part of reactive programming (changes in the polled value must be detected through other means, usually another subscriber to the underlying `Signal`).
 ///
 /// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Since you cannot simply `Signal.combine` the delegate method with another `Signal`, you must use polling to generate a calculation involving values from another `Signal`.
-public class SignalPollingEndpoint<T> {
+public final class SignalPollingEndpoint<T> {
 	var endpoint: SignalEndpoint<T>? = nil
 	var latest: Result<T>? = nil
 	let queueContext = DispatchQueueContext()
