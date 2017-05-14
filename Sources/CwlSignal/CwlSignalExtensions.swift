@@ -292,24 +292,26 @@ extension SignalInput {
 		return try Signal<T>.create { s in try compose(s) }.input
 	}
 	
-	/// Create a `SignalInput`-`Signal` pair and immediately join the `Signal` end to the supplied `SignalInput`, mapped using the `via` closure.
-	public static func into<U>(_ destination: SignalInput<U>, via: @escaping (T) -> U) -> SignalInput<T> {
-		return Signal<T>.create { s in try! s.map(via).join(to: destination) }.input
+	/// Creates a new `SignalInput`-`Signal` pair, appends a `map` transform to the `Signal` and then the transformed `Signal` is `join(to:)` self. The `SignalInput` from the pair is returned.
+	public func viaMap<U>(_ map: @escaping (U) -> T) throws -> SignalInput<U> {
+		return try .into { s in try s.map(map).join(to: self) }
 	}
 	
-	/// Create a `SignalInput`-`Signal` pair and immediately join the `Signal` end to the supplied `SignalCollector`, mapped using the `via` closure.
-	public static func into<U>(_ destination: SignalCollector<U>, via: @escaping (T) -> U) -> SignalInput<T> {
-		return Signal<T>.create { s in s.map(via).join(to: destination) }.input
+	/// Creates a new `SignalInput`-`Signal` pair, appends a `map` transform to the `Signal` and then the transformed `Signal` is `join(to:)` self. The `SignalInput` from the pair is returned.
+	public func via<U>(_ compose: (Signal<U>) -> Signal<T>) throws -> SignalInput<U> {
+		return try .into { s in try compose(s).join(to: self) }
 	}
-	
-	/// Create a `SignalInput`-`Signal` pair and immediately join the `Signal` end to the supplied `SignalInput`, filterMapped using the `via` closure.
-	public static func filterInto<U>(_ destination: SignalInput<U>, via: @escaping (T) -> U?) -> SignalInput<T> {
-		return Signal<T>.create { s in try! s.filterMap(via).join(to: destination) }.input
-	}
+}
 
-	/// Create a `SignalInput`-`Signal` pair and immediately join the `Signal` end to the supplied `SignalCollector`, filterMapped using the `via` closure.
-	public static func filterInto<U>(_ destination: SignalCollector<U>, via: @escaping (T) -> U?) -> SignalInput<T> {
-		return Signal<T>.create { s in s.filterMap(via).join(to: destination) }.input
+extension SignalCollector {
+	/// Creates a new `SignalInput`-`Signal` pair, appends a `map` transform to the `Signal` and then the transformed `Signal` is `join(to:)` self. The `SignalInput` from the pair is returned.
+	public func viaMap<U>(_ map: @escaping (U) -> T) -> SignalInput<U> {
+		return .into { s in s.map(map).join(to: self) }
+	}
+	
+	/// Creates a new `SignalInput`-`Signal` pair, appends a `map` transform to the `Signal` and then the transformed `Signal` is `join(to:)` self. The `SignalInput` from the pair is returned.
+	public func via<U>(_ compose: (Signal<U>) -> Signal<T>) -> SignalInput<U> {
+		return .into { s in compose(s).join(to: self) }
 	}
 }
 
