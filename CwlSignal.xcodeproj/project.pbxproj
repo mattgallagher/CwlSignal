@@ -69,6 +69,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		C95D21751EC824960082A31E /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlSignalTests.swift */; };
 		C997C38D1EC7510800F67C3B /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C997C38C1EC7510800F67C3B /* CwlUtils.framework */; };
 		C997C38E1EC7510800F67C3B /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C997C38C1EC7510800F67C3B /* CwlUtils.framework */; };
 		C997C3901EC7511500F67C3B /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C997C38F1EC7511500F67C3B /* CwlCatchException.framework */; };
@@ -93,7 +94,6 @@
 		OBJ_198 /* CwlSignalReactive.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* CwlSignalReactive.swift */; };
 		OBJ_219 /* CwlSignalCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* CwlSignalCocoaTests.swift */; };
 		OBJ_220 /* CwlSignalReactiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* CwlSignalReactiveTests.swift */; };
-		OBJ_221 /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlSignalTests.swift */; };
 		OBJ_230 /* CwlSignal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_77 /* CwlSignal.framework */; };
 /* End PBXBuildFile section */
 
@@ -580,9 +580,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
+				C95D21751EC824960082A31E /* CwlSignalTests.swift in Sources */,
 				OBJ_219 /* CwlSignalCocoaTests.swift in Sources */,
 				OBJ_220 /* CwlSignalReactiveTests.swift in Sources */,
-				OBJ_221 /* CwlSignalTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -828,7 +828,6 @@
 				ENABLE_TESTABILITY = YES;
 				INFOPLIST_FILE = Sources/CwlSignal/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks @loader_path/Frameworks";
-				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlSignal-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = macosx;
@@ -934,7 +933,6 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
-				OTHER_SWIFT_FLAGS = "-DOMIT_STACK_FRAME";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				SWIFT_VERSION = 3.0;
@@ -978,6 +976,7 @@
 				C997C3A51EC754BC00F67C3B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
 		};
 		C997C3AB1EC7552E00F67C3B /* Build configuration list for PBXAggregateTarget "CwlPreconditionTesting_iOS" */ = {
 			isa = XCConfigurationList;
@@ -986,6 +985,7 @@
 				C997C3AD1EC7552E00F67C3B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
 		};
 		C9DD3D961E41DFB600E23B15 /* Build configuration list for PBXNativeTarget "CwlSignal_iOS" */ = {
 			isa = XCConfigurationList;
