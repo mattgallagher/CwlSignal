@@ -1295,7 +1295,7 @@ class SignalReactiveTests: XCTestCase {
 		var results1 = [Result<String>]()
 		let (leftInput1, leftSignal1) = Signal<Int>.create()
 		let (rightInput1, rightSignal1) = Signal<Double>.create()
-		let ep1 = leftSignal1.join(withRight: rightSignal1, leftEnd: { v -> Signal<()> in Signal<()>.preclosed() }, rightEnd: { v in Signal<()>.preclosed() }) { (l, r) in return "Unexpected \(l) \(r)" }.subscribe {
+		let ep1 = leftSignal1.join(withRight: rightSignal1, leftEnd: { v -> Signal<()> in Signal<()>.preclosed() }, rightEnd: { v in Signal<()>.preclosed() }) { tuple in return "Unexpected \(tuple.0) \(tuple.1)" }.subscribe {
 			results1.append($0)
 		}
 		leftInput1.send(value: 0)
@@ -1315,7 +1315,7 @@ class SignalReactiveTests: XCTestCase {
 		var results2 = [Result<String>]()
 		let (leftInput2, leftSignal2) = Signal<Int>.create { s in s.multicast() }
 		let (rightInput2, rightSignal2) = Signal<Double>.create { s in s.multicast() }
-		let ep2 = leftSignal2.join(withRight: rightSignal2, leftEnd: { v in leftSignal2 }, rightEnd: { v in rightSignal2 }) { (l, r) in return "\(l) \(r)" }.subscribe {
+		let ep2 = leftSignal2.join(withRight: rightSignal2, leftEnd: { v in leftSignal2 }, rightEnd: { v in rightSignal2 }) { tuple in return "\(tuple.0) \(tuple.1)" }.subscribe {
 			results2.append($0)
 		}
 		leftInput2.send(value: 0)
@@ -1340,7 +1340,7 @@ class SignalReactiveTests: XCTestCase {
 		var results3 = [Result<String>]()
 		let (leftInput3, leftSignal3) = Signal<Int>.create { s in s.multicast() }
 		let (rightInput3, rightSignal3) = Signal<Double>.create { s in s.multicast() }
-		let ep3 = leftSignal3.join(withRight: rightSignal3, leftEnd: { v in leftSignal3.skip(1) }, rightEnd: { v in rightSignal3.skip(1) }) { (l, r) in return "\(l) \(r)" }.subscribe {
+		let ep3 = leftSignal3.join(withRight: rightSignal3, leftEnd: { v in leftSignal3.skip(1) }, rightEnd: { v in rightSignal3.skip(1) }) { tuple in return "\(tuple.0) \(tuple.1)" }.subscribe {
 			results3.append($0)
 		}
 		leftInput3.send(value: 0)
@@ -1371,7 +1371,7 @@ class SignalReactiveTests: XCTestCase {
 		var results1 = [Result<String>]()
 		let (leftInput1, leftSignal1) = Signal<Int>.create()
 		let (rightInput1, rightSignal1) = Signal<Double>.create()
-		let ep1 = leftSignal1.groupJoin(withRight: rightSignal1, leftEnd: { v -> Signal<()> in Signal<()>.preclosed() }, rightEnd: { v in Signal<()>.preclosed() }) { (l, r) in r.map { "\(l) \($0)" } }.subscribe {
+		let ep1 = leftSignal1.groupJoin(withRight: rightSignal1, leftEnd: { v -> Signal<()> in Signal<()>.preclosed() }, rightEnd: { v in Signal<()>.preclosed() }) { tuple in tuple.1.map { "\(tuple.0) \($0)" } }.subscribe {
 			switch $0 {
 			case .success(let v):
 				v.subscribeValuesAndKeepAlive {
@@ -1398,7 +1398,7 @@ class SignalReactiveTests: XCTestCase {
 		var results2 = [Result<String>]()
 		let (leftInput2, leftSignal2) = Signal<Int>.create { s in s.multicast() }
 		let (rightInput2, rightSignal2) = Signal<Double>.create { s in s.multicast() }
-		let ep2 = leftSignal2.groupJoin(withRight: rightSignal2, leftEnd: { v in leftSignal2 }, rightEnd: { v in rightSignal2 }) { (l, r) in r.map { "\(l) \($0)" } }.subscribe {
+		let ep2 = leftSignal2.groupJoin(withRight: rightSignal2, leftEnd: { v in leftSignal2 }, rightEnd: { v in rightSignal2 }) { tuple in tuple.1.map { "\(tuple.0) \($0)" } }.subscribe {
 			switch $0 {
 			case .success(let v):
 				v.subscribeValuesAndKeepAlive {
@@ -1431,7 +1431,7 @@ class SignalReactiveTests: XCTestCase {
 		var results3 = [Result<String>]()
 		let (leftInput3, leftSignal3) = Signal<Int>.create { s in s.multicast() }
 		let (rightInput3, rightSignal3) = Signal<Double>.create { s in s.multicast() }
-		let ep3 = leftSignal3.groupJoin(withRight: rightSignal3, leftEnd: { v in leftSignal3.skip(1) }, rightEnd: { v in rightSignal3.skip(1) }) { (l, r) in r.map { "\(l) \($0)" } }.subscribe {
+		let ep3 = leftSignal3.groupJoin(withRight: rightSignal3, leftEnd: { v in leftSignal3.skip(1) }, rightEnd: { v in rightSignal3.skip(1) }) { tuple in tuple.1.map { "\(tuple.0) \($0)" } }.subscribe {
 			switch $0 {
 			case .success(let v):
 				v.subscribeValuesAndKeepAlive {

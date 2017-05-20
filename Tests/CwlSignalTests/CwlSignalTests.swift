@@ -688,7 +688,7 @@ class SignalTests: XCTestCase {
 		weak var lifetimeCheck: Box<()>? = nil
 		var nilCount = 0
 		do {
-			let closureLifetime = Box<()>()
+			let closureLifetime = Box<()>(())
 			lifetimeCheck = closureLifetime
 			let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 			let s = Signal<Int>.generate(context: context) { input in
@@ -1759,7 +1759,7 @@ class SignalTests: XCTestCase {
 			// Override the test parameters when running in Debug.
 			#if DEBUG
 				sequenceLength = 10_000
-				expected = 0.02
+				expected = 0.2
 			#endif
 			
 			let t1 = mach_absolute_time()

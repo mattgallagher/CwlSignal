@@ -27,7 +27,7 @@ import CwlUtils
 #endif
 
 class Target: NSObject {
-	dynamic var property = NSObject()
+	@objc dynamic var property = NSObject()
 	init(property: NSObject) {
 		self.property = property
 	}

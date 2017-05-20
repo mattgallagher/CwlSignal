@@ -3,3 +3,4 @@ project.xcworkspace/
 xcuserdata/
 .build
 Package.pins
+Package.resolved

@@ -24,6 +24,13 @@ import Foundation
 import CwlUtils
 #endif
 
+#if swift(>=4)
+#else
+public protocol Numeric: IntegerArithmetic, ExpressibleByIntegerLiteral {
+}
+public typealias BinaryInteger = Numeric
+#endif
+
 extension Signal {
 	/// - Note: the [Reactive X operator "Create"](http://reactivex.io/documentation/operators/create.html) is considered unnecessary, given the `CwlSignal.Signal.generate` and `CwlSignal.Signal.create` methods.
 	
@@ -346,9 +353,9 @@ extension Signal {
 				}
 				buffers.removeAll()
 				next.send(error: e)
-			case .result2(.success((let index, .some))):
+			case .result2(.success(let index, .some)):
 				buffers[index] = []
-			case .result2(.success((let index, .none))):
+			case .result2(.success(let index, .none)):
 				if let b = buffers[index] {
 					next.send(value: b)
 					buffers.removeValue(forKey: index)
@@ -668,7 +675,7 @@ extension Signal {
 				}
 			case .failure(let e):
 				n.send(error: e)
-				outputs.forEach { (u, o) in o.send(error: e) }
+				outputs.forEach { tuple in tuple.value.send(error: e) }
 			}
 		}
 	}
@@ -764,11 +771,11 @@ extension Signal {
 				}
 			case .result1(.failure(let e)):
 				next.send(error: e)
-			case .result2(.success((let index, .some))):
+			case .result2(.success(let index, .some)):
 				let (i, s) = Signal<T>.create()
 				children[index] = i
 				next.send(value: s)
-			case .result2(.success((let index, .none))):
+			case .result2(.success(let index, .none)):
 				if let c = children[index] {
 					c.close()
 					children.removeValue(forKey: index)
@@ -1287,22 +1294,23 @@ extension Signal {
 	/// - parameter context: the `Exec` where `processor` will be evaluated (default: .direct).
 	/// - parameter processor: invoked with the corresponding `left` and `right` values when a `left` value is emitted during a `right`->`rightEnd` window or a `right` value is received during a `left`->`leftEnd` window
 	/// - returns: a signal that emits the values from the processor and closes when any of the last of the observed windows closes.
-	public func join<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (T) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping (T, U) -> X) -> Signal<X> {
+	public func join<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (T) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((T, U)) -> X) -> Signal<X> {
 		let leftDurations = valueDurations(duration: { t in leftEnd(t).takeWhile { _ in false } })
 		let rightDurations = withRight.valueDurations(duration: { u in rightEnd(u).takeWhile { _ in false } })
-		return leftDurations.combine(withState: ([Int: T](), [Int: U]()), second: rightDurations) { (state: inout (activeLeft: [Int: T], activeRight: [Int: U]), cr: EitherResult2<(Int, T?), (Int, U?)>, next: SignalNext<(T, U)>) in
+		let a = leftDurations.combine(withState: ([Int: T](), [Int: U]()), second: rightDurations) { (state: inout (activeLeft: [Int: T], activeRight: [Int: U]), cr: EitherResult2<(Int, T?), (Int, U?)>, next: SignalNext<(T, U)>) in
 			switch cr {
-			case .result1(.success((let leftIndex, .some(let leftValue)))):
+			case .result1(.success(let leftIndex, .some(let leftValue))):
 				state.activeLeft[leftIndex] = leftValue
-				state.activeRight.sorted { $0.0 < $1.0 }.forEach { (i, r) in next.send(value: (leftValue, r)) }
+				state.activeRight.sorted { $0.0 < $1.0 }.forEach { tuple in next.send(value: (leftValue, tuple.value)) }
 			case .result2(.success(let rightIndex, .some(let rightValue))):
 				state.activeRight[rightIndex] = rightValue
-				state.activeLeft.sorted { $0.0 < $1.0 }.forEach { (i, l) in next.send(value: (l, rightValue)) }
+				state.activeLeft.sorted { $0.0 < $1.0 }.forEach { tuple in next.send(value: (tuple.value, rightValue)) }
 			case .result1(.success(let leftIndex, .none)): state.activeLeft.removeValue(forKey: leftIndex)
 			case .result2(.success(let rightIndex, .none)): state.activeRight.removeValue(forKey: rightIndex)
 			default: next.close()
 			}
-		}.map(context: context, processor)
+		}
+		return a.map(context: context, processor)
 	}
 	
 	/// Implementation of [Reactive X operator "groupJoin"](http://reactivex.io/documentation/operators/join.html)
@@ -1314,19 +1322,19 @@ extension Signal {
 	/// - parameter context: the `Exec` where `processor` will be evaluated (default: .direct).
 	/// - parameter processor: when a `left` value is received, this function is invoked with the `left` value and a `Signal` that will emit all the `right` values encountered until the `left`->`leftEnd` window closes. The value returned by this function will be emitted as part of the `Signal` returned from `groupJoin`.
 	/// - returns: a signal that emits the values from the processor and closes when any of the last of the observed windows closes.
-	public func groupJoin<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (T) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping (T, Signal<U>) -> X) -> Signal<X> {
+	public func groupJoin<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (T) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((T, Signal<U>)) -> X) -> Signal<X> {
 		let leftDurations = valueDurations(duration: { u in leftEnd(u).takeWhile { _ in false } })
 		let rightDurations = withRight.valueDurations(duration: { u in rightEnd(u).takeWhile { _ in false } })
 		return leftDurations.combine(withState: ([Int: SignalInput<U>](), [Int: U]()), second: rightDurations) { (state: inout (activeLeft: [Int: SignalInput<U>], activeRight: [Int: U]), cr: EitherResult2<(Int, T?), (Int, U?)>, next: SignalNext<(T, Signal<U>)>) in
 			switch cr {
-			case .result1(.success((let leftIndex, .some(let leftValue)))):
+			case .result1(.success(let leftIndex, .some(let leftValue))):
 				let (li, ls) = Signal<U>.create()
 				state.activeLeft[leftIndex] = li
 				next.send(value: (leftValue, ls))
-				state.activeRight.sorted { $0.0 < $1.0 }.forEach { (i, r) in li.send(value: r) }
+				state.activeRight.sorted { $0.0 < $1.0 }.forEach { tuple in li.send(value: tuple.value) }
 			case .result2(.success(let rightIndex, .some(let rightValue))):
 				state.activeRight[rightIndex] = rightValue
-				state.activeLeft.sorted { $0.0 < $1.0 }.forEach { (i, si) in si.send(value: rightValue) }
+				state.activeLeft.sorted { $0.0 < $1.0 }.forEach { tuple in tuple.value.send(value: rightValue) }
 			case .result1(.success(let leftIndex, .none)):
 				_ = state.activeLeft[leftIndex]?.close()
 				state.activeLeft.removeValue(forKey: leftIndex)
@@ -2352,7 +2360,7 @@ extension Signal {
 	}
 }
 
-extension Signal where T: IntegerArithmetic, T: ExpressibleByIntegerLiteral {
+extension Signal where T: BinaryInteger {
 	/// Implementation of [Reactive X operator "Average"](http://reactivex.io/documentation/operators/average.html)
 	///
 	/// - returns: a signal that emits a single value... the sum of all values emitted by `self`
@@ -2375,7 +2383,9 @@ extension Signal {
 			case (.result1(.success(let v)), _):
 				n.send(value: v)
 			case (.result1(.failure(let e1)), _):
-				state.secondValues.forEach { n.send(value: $0) }
+				for v in state.secondValues {
+					n.send(value: v)
+				}
 				if let e2 = state.secondError {
 					n.send(error: e2)
 				} else {
@@ -2438,7 +2448,7 @@ extension Signal {
 	}
 }
 
-extension Signal where T: IntegerArithmetic, T: ExpressibleByIntegerLiteral {
+extension Signal where T: Numeric {
 	/// Implementation of [Reactive X operator "Sum"](http://reactivex.io/documentation/operators/sum.html)
 	///
 	/// - returns: a signal that emits the sum of all values emitted by self
