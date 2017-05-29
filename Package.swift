@@ -3,7 +3,7 @@ import PackageDescription
 let package = Package(
 	name: "CwlSignal",
 	dependencies: [
-		.Package(url: "/Users/matt/Projects/CwlUtils", Version(1, 1, 4)),
+		.Package(url: "https://github.com/mattgallagher/CwlUtils.git", Version(1, 1, 0, prereleaseIdentifiers: ["beta", "1"])),
 	],
 	exclude: [
 		"LICENSE.txt",
