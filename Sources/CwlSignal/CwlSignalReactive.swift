@@ -850,7 +850,7 @@ extension Signal {
 	///
 	/// - parameter seconds: the duration over which to drop values.
 	/// - returns: a signal where values are emitted after a `timespan` but only if no another value occurs during that `timespan`.
-	public func debounce(interval: DispatchTimeInterval, context: Exec = .direct) -> Signal<T> {
+	public func debounce(interval: DispatchTimeInterval, flushOnClose: Bool = true, context: Exec = .direct) -> Signal<T> {
 		let serialContext = context.serialized()
 		var timerInput: SignalInput<T>? = nil
 		let timerSignal = Signal<T>.generate(context: serialContext) { input in
@@ -867,9 +867,15 @@ extension Signal {
 				state.timer = serialContext.singleTimer(interval: interval) {
 					if let l = last {
 						_ = timerInput?.send(value: l)
+						last = nil
 					}
 				}
-			case .result2(.failure(let e)): n.send(error: e)
+			case .result2(.failure(let e)):
+				if flushOnClose, let l = last {
+					_ = timerInput?.send(value: l)
+					last = nil
+				}
+				n.send(error: e)
 			case .result1(.success(let v)): n.send(value: v)
 			case .result1(.failure(let e)): n.send(error: e)
 			}
@@ -1099,6 +1105,22 @@ extension Signal {
 			case (.result1(.success(let v)), _): last = v
 			case (.result1(.failure(let e)), _): n.send(error: e)
 			case (.result2(.success), .some(let l)): n.send(value: l)
+			case (.result2(.success), _): break
+			case (.result2(.failure(let e)), _): n.send(error: e)
+			}
+		}.continuous()
+	}
+
+	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output also includes the value from the trigger signal.
+	///
+	/// - parameter trigger: instructs the result to emit the last value from `self`
+	/// - returns: a signal that, when a value is received from `trigger`, emits the last value (if any) received from `self`.
+	public func sampleCombine<U>(_ trigger: Signal<U>) -> Signal<(T, U)> {
+		return combine(withState: nil, second: trigger, context: .direct) { (last: inout T?, c: EitherResult2<T, U>, n: SignalNext<(T, U)>) -> Void in
+			switch (c, last) {
+			case (.result1(.success(let v)), _): last = v
+			case (.result1(.failure(let e)), _): n.send(error: e)
+			case (.result2(.success(let trigger)), .some(let l)): n.send(value: (l, trigger))
 			case (.result2(.success), _): break
 			case (.result2(.failure(let e)), _): n.send(error: e)
 			}
