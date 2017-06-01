@@ -1077,6 +1077,24 @@ extension Signal {
 		}
 	}
 	
+	/// Implementation of [Reactive X operator "ignoreElements"](http://reactivex.io/documentation/operators/ignoreelements.html)
+	///
+	/// - returns: a signal that emits the input error, when received, otherwise ignores all values.
+	public func ignoreElements<S: Sequence>(endWith: @escaping (Error) -> (S, Error)?) -> Signal<S.Iterator.Element> {
+		return transform() { (r: Result<T>, n: SignalNext<S.Iterator.Element>) in
+			switch r {
+			case .success: break
+			case .failure(let e):
+				if let (sequence, err) = endWith(e) {
+					sequence.forEach { n.send(value: $0) }
+					n.send(error: err)
+				} else {
+					n.send(error: e)
+				}
+			}
+		}
+	}
+	
 	/// Implementation of [Reactive X operator "last"](http://reactivex.io/documentation/operators/last.html)
 	///
 	/// - parameter context: the `Exec` where `matching` will be evaluated (default: .direct).
@@ -1375,6 +1393,21 @@ extension Signal {
 	/// - returns: a signal that emits every value from every `sources` input `signal`.
 	public static func merge<S: Sequence>(_ sources: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
 		let (_, signal) = Signal<T>.createMergeSet(sources)
+		return signal
+	}
+	
+	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
+	///
+	/// NOTE: the signal closes as `SignalError.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
+	///
+	/// - parameter sources: an `Array` where `signal` is merged into the result.
+	/// - returns: a signal that emits every value from every `sources` input `signal`.
+	public func mergeWith(_ sources: Signal<T>...) -> Signal<T> {
+		let (mergeSet, signal) = Signal<T>.createMergeSet()
+		try! mergeSet.add(self)
+		for s in sources {
+			try! mergeSet.add(s)
+		}
 		return signal
 	}
 	
