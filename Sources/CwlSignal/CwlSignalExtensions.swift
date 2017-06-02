@@ -53,6 +53,21 @@ extension SignalSender {
 }
 
 extension Signal {
+	/// A version of `generate` that retains the latest `input` so it doesn't automatically close the signal when the input falls out of scope. This enables a generator that never closes (lives until deactivation).
+	///
+	/// - Parameters:
+	/// - parameter context:          the `activationChange` will be invoked in this context
+	/// - parameter activationChange: receives inputs on activation and nil on each deactivation
+	/// - returns: the constructed `Signal`
+	public static func retainedGenerate(context: Exec = .direct, activationChange: @escaping (SignalInput<T>?) -> Void) -> Signal<T> {
+		var latestInput: SignalInput<T>? = nil
+		return .generate(context: context) { input in
+			latestInput = input
+			withExtendedLifetime(latestInput) {}
+			activationChange(input)
+		}
+	}
+
 	/// A convenience version of `subscribe` that only invokes the `processor` on `Result.success`
 	///
 	/// - Parameters:

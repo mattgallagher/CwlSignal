@@ -64,19 +64,13 @@ extension Signal {
 				i.send(error: e)
 			}
 		} else {
-			var latestInput: SignalInput<T>? = nil
-			return generate(context: context) { input in
-				if let i = input {
-					for v in values {
-						if let _ = i.send(value: v) {
-							break
-						}
+			return retainedGenerate(context: context) { input in
+				guard let i = input else { return }
+				for v in values {
+					if let _ = i.send(value: v) {
+						break
 					}
 				}
-				
-				// Retain the input via the closure to avoid implicit "cancellation"
-				latestInput = input
-				withExtendedLifetime(latestInput) {}
 			}
 		}
 	}
