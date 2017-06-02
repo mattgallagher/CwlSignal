@@ -9,7 +9,7 @@ An implementation of reactive programming. For details, see the article on [Coco
 3. Click on your project in the file tree to access project settings and click on the target to which you want to add CwlSignal.
 4. Click on the "Build Phases" tab
 5. If you don't already have a "Copy Files" build phase with a "Destination: Frameworks", add one using the "+" in the top left of the tab.
-6. Click the "+" button for the "Copy Files, Destination: Frameworks" build phase and add the "CwlSignal.framework". NOTE: there may be multiple "CwlSignal.framework" files in the list, including one for macOS and one for iOS. You should select the "CwlSignal.framework" that appears *above* the corresponding CwlSignal macOS or iOS testing target.
+6. Click the "+" button within the "Copy Files, Destination: Frameworks" build phase and add the "CwlSignal.framework". NOTE: there may be multiple "CwlSignal.framework" files in the list, including one for macOS and one for iOS. You should select the "CwlSignal.framework" that appears *above* the corresponding CwlSignal macOS or iOS testing target.
 7. You'll also need to add the "CwlUtils.framework" to the "Copy Files, Destination: Frameworks" build phase. It won't intially appear if you hit the "+" button on the build phase. Instead, expand the CwlSignal.xcodeproj -> Dependencies folder in the project file tree and drag the "CwlUtils.framework" that you find there onto the "Copy Files, Destination: Frameworks" build phase (the name will likely be red – that's not a problem).
 
 In Swift files where you want to use CwlSignal code, write `import CwlSignal` at the top.
