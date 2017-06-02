@@ -26,9 +26,8 @@ import CwlUtils
 
 #if swift(>=4)
 #else
-public protocol Numeric: IntegerArithmetic, ExpressibleByIntegerLiteral {
-}
-public typealias BinaryInteger = Numeric
+public typealias Numeric = IntegerArithmetic & ExpressibleByIntegerLiteral
+public typealias BinaryInteger = IntegerArithmetic & ExpressibleByIntegerLiteral
 #endif
 
 extension Signal {
@@ -44,29 +43,47 @@ extension Signal {
 	///
 	/// - returns: a non-sending, non-closing signal of the desired type
 	public static func never() -> Signal<T> {
-		var input: SignalInput<T>? = nil
-		return Signal<T>.generate { i in
-			// Retain the input via the closure to avoid implicit "cancellation"
-			input = i
-			withExtendedLifetime(input) {}
-		}
+		return .from(values: [], error: nil)
 	}
 
 	/// Implementation of [Reactive X operator "From"](http://reactivex.io/documentation/operators/from.html) in the context of the Swift `Sequence`
 	///
 	/// - parameter values: A Swift `Sequence` that generates the signal values.
+	/// - parameter error: The error with which to close the sequence. Can be `nil` to leave the sequence open.
 	/// - parameter context: the `Exec` where the `SequenceType` will be enumerated (default: .direct).
 	/// - returns: a signal that emits `values` and then closes
-	public static func fromSequence<S: Sequence>(_ values: S, context: Exec = .direct) -> Signal<T> where S.Iterator.Element == T {
-		return generate(context: context) { input in
-			guard let i = input else { return }
-			for v in values {
-				if let _ = i.send(value: v) {
-					break
+	public static func from<S: Sequence>(values: S, error: Error? = SignalError.closed, context: Exec = .direct) -> Signal<T> where S.Iterator.Element == T {
+		if let e = error {
+			return generate(context: context) { input in
+				guard let i = input else { return }
+				for v in values {
+					if let _ = i.send(value: v) {
+						break
+					}
 				}
+				i.send(error: e)
 			}
-			i.close()
+		} else {
+			var latestInput: SignalInput<T>? = nil
+			return generate(context: context) { input in
+				if let i = input {
+					for v in values {
+						if let _ = i.send(value: v) {
+							break
+						}
+					}
+				}
+				
+				// Retain the input via the closure to avoid implicit "cancellation"
+				latestInput = input
+				withExtendedLifetime(latestInput) {}
+			}
 		}
+	}
+
+	@available(*, deprecated, message:"Use from(values:error:context:) instead")
+	public static func fromSequence<S: Sequence>(_ values: S, context: Exec = .direct) -> Signal<T> where S.Iterator.Element == T {
+		return from(values: values, context: context)
 	}
 	
 	/// Implementation of [Reactive X operator "To"](http://reactivex.io/documentation/operators/to.html) in the context of the Swift `Sequence`
@@ -851,6 +868,16 @@ extension Signal {
 	/// - parameter seconds: the duration over which to drop values.
 	/// - returns: a signal where values are emitted after a `timespan` but only if no another value occurs during that `timespan`.
 	public func debounce(interval: DispatchTimeInterval, flushOnClose: Bool = true, context: Exec = .direct) -> Signal<T> {
+		// The topology of this construction is particularly weird.
+		// Basically...
+		//
+		//     -> incoming signal -> combiner -> post delay emission ->
+		//                           ^      \
+		//                           \______/
+		//               delayed values held by `singleTimer`
+		//                  closure, sent to `timerInput`
+		//
+		// The weird structure of the loopback (using an input pulled from a `generate` function) is so that the overall function remains robust under deactivation and reactivation. The mutable `timerInput` is protected by the serialized `context`, shared between the `generate` and the `combine`.
 		let serialContext = context.serialized()
 		var timerInput: SignalInput<T>? = nil
 		let timerSignal = Signal<T>.generate(context: serialContext) { input in

@@ -558,13 +558,13 @@ public class Signal<T> {
 	}
 	
 	/// Renamed a second time to avoid confusion with the ReactiveX operator.
-	@available(*, deprecated, message:"Use buffer(initial:context:updater:) instead")
+	@available(*, deprecated, message:"Use customActivation(initial:context:updater:) instead")
 	public final func buffer(initial: Array<T>, context: Exec = .direct, updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) -> SignalMulti<T> {
 		return customActivation(initial: initial, context: context, updater: updater)
 	}
 	
 	/// Renamed a first time because the parameter order conflicted with other functions and `initials` was a typo.
-	@available(*, deprecated, message:"Use buffer(initial:context:updater:) instead")
+	@available(*, deprecated, message:"Use customActivation(initial:context:updater:) instead")
 	public final func buffer(context: Exec = .direct, initials: Array<T>, updater: @escaping (_ activationValues: inout Array<T>, _ preclosed: inout Error?, _ result: Result<T>) -> Void) -> SignalMulti<T> {
 		return customActivation(initial: initials, context: context, updater: updater)
 	}
