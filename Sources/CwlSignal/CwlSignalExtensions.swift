@@ -252,6 +252,14 @@ extension Signal {
 		to.add(self)
 	}
 	
+	public final func cancellableJoin(to: SignalCollector<T>) -> Cancellable {
+		to.add(self)
+		return OnDelete { [weak to, weak self] in
+			guard let t = to, let s = self else { return }
+			t.remove(s)
+		}
+	}
+	
 	/// Create a manual input/output pair where values sent to the `input` are passed through the `signal` output.
 	///
 	/// - returns: the `SignalInput` and `Signal` pair

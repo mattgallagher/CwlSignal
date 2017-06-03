@@ -2243,7 +2243,7 @@ struct SignalCaptureParam<T> {
 
 /// A "capture" handler separates activation signals (those sent immediately on connection) from normal signals. This allows activation signals to be handled separately or removed from the stream entirely.
 /// NOTE: this handler *blocks* delivery between capture and connecting to the output. Signals sent in the meantime are queued.
-public final class SignalCapture<T>: SignalProcessor<T, T> {
+public final class SignalCapture<T>: SignalProcessor<T, T>, Cancellable {
 	private var sendAsNormal: Bool = false
 	private var capturedError: Error? = nil
 	private var capturedValues: [T] = []
@@ -2382,6 +2382,10 @@ public final class SignalCapture<T>: SignalProcessor<T, T> {
 		}?.newInput(forDisconnector: self)
 		withExtendedLifetime(previous) {}
 		return result
+	}
+
+	public func cancel() {
+		_ = self.disconnect()
 	}
 	
 	/// The `disconnectOnError` needs to be set inside the mutex, if-and-only-if a successor connects successfully. To allow this to work, the desired `disconnectOnError` function is passed into this function via the `outputAddedSuccessorInternal` called from `addPreceedingInternal` in the `joinFunction`.
@@ -2564,6 +2568,14 @@ extension Signal {
 	/// - Throws: a `SignalJoinError` if the connection is not made (see that type for details)
 	public final func join(to: SignalMergeSet<T>, closesOutput: Bool = false, removeOnDeactivate: Bool = false) throws {
 		try to.add(self, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
+	}
+
+	public final func cancellableJoin(to: SignalMergeSet<T>, closesOutput: Bool = false, removeOnDeactivate: Bool = false) throws -> Cancellable {
+		try to.add(self, closesOutput: closesOutput, removeOnDeactivate: removeOnDeactivate)
+		return OnDelete { [weak to, weak self] in
+			guard let t = to, let s = self else { return }
+			t.remove(s)
+		}
 	}
 }
 
