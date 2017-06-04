@@ -171,7 +171,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		6897F6581EE436CB00B7714C /* CwlSignal.podspec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CwlSignal.podspec; sourceTree = "<group>"; };
 		C997C38C1EC7510800F67C3B /* CwlUtils.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CwlUtils.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C997C38F1EC7511500F67C3B /* CwlCatchException.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CwlCatchException.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C997C3921EC7511A00F67C3B /* CwlPreconditionTesting.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CwlPreconditionTesting.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -268,7 +267,6 @@
 		OBJ_5 = {
 			isa = PBXGroup;
 			children = (
-				6897F6581EE436CB00B7714C /* CwlSignal.podspec */,
 				C9DD3D7B1E41D19900E23B15 /* CwlSignal.playground */,
 				OBJ_6 /* Package.swift */,
 				OBJ_7 /* Sources */,
