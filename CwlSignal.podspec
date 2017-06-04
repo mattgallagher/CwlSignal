@@ -11,6 +11,5 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = "9.0"
   s.osx.deployment_target = "10.12"
   s.source        = { :git => "https://github.com/xjki/CwlSignal.git", :tag => "#{s.version}" }
-  s.source_files  = "CwlSignal/*.{swift,h}", "CwlUtils/CwlUtils/*.{swift,c,h}"
-  s.exclude_files = "CwlUtils/CwlUtils/{CwlRandom,CwlScalarScanner,CwlSysctl,CwlUnanticipatedError}.swift", "CwlUtils/CwlUtils/CwlUtils.h"
+  s.source_files  = "Sources/CwlSignal/*.{swift,h}"
 end
