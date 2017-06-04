@@ -15,6 +15,6 @@ Pod::Spec.new do |s|
   
   s.dependency 'CwlUtils'
   
-  s.source        = { :git => "https://github.com/xjki/CwlSignal.git", :tag => "#{s.version}" }
-  s.source_files  = "Sources/CwlSignal/*.{swift,h}"
+  s.source        = { :git => "https://github.com/mattgallagher/CwlSignal.git", :tag => "#{s.version}" }
+  s.source_files  = "Sources/**/*.{swift,h}"
 end
