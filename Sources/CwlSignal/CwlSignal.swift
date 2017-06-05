@@ -872,11 +872,12 @@ public class Signal<T> {
 	/// The `itemContext` holds information uniquely used by the currently processing item so it can be read outside the mutex. This may only be called immediately before calling `blockInternal` to start a processing item (e.g. from `send` or `resume`.
 	///
 	/// - Returns: false if the `signalHandler` was `nil`, true otherwise.
-	fileprivate final func refreshItemContextInternal() -> Bool {
+	fileprivate final func refreshItemContextInternal(_ dw: inout DeferredWork) -> Bool {
 		assert(mutex.unbalancedTryLock() == false)
 		assert(holdCount == 0 && itemProcessing == false)
 		if itemContextNeedsRefresh {
 			if let h = signalHandler {
+				dw.append { [itemContext] in withExtendedLifetime(itemContext) {} }
 				itemContext = ItemContext(activationCount: activationCount, context: h.context, synchronous: delivery.isSynchronous, handler: h.handler)
 				itemContextNeedsRefresh = false
 			} else {
@@ -944,13 +945,26 @@ public class Signal<T> {
 			return SignalError.inactive
 		}
 		
-		if !refreshItemContextInternal() {
-			mutex.unbalancedUnlock()
-			return SignalError.inactive
-		}
-		
 		assert(holdCount == 0 && itemProcessing == false)
-		itemProcessing = true
+
+		if itemContextNeedsRefresh {
+			var dw = DeferredWork()
+			let hasHandler = refreshItemContextInternal(&dw)
+			if hasHandler {
+				itemProcessing = true
+			}
+			mutex.unbalancedUnlock()
+
+			// We need to be extremely careful that any previous handlers, replaced in the `refreshItemContextInternal` function are released *here* if we're going to re-enter the lock and that we've *already* acquired the `itemProcessing` Bool. There's a little bit of dancing around in this `if itemContextNeedsRefresh` block to ensure these two things are true.
+			dw.runWork()
+
+			if !hasHandler {
+				return SignalError.inactive
+			}
+			mutex.unbalancedLock()
+		} else {
+			itemProcessing = true
+		}
 		
 		mutex.unbalancedUnlock()
 		
@@ -1189,7 +1203,7 @@ public class Signal<T> {
 	// If the holdCount is zero and there are queued items, increments the hold count immediately and starts processing in the deferred work.
 	fileprivate final func resumeIfPossibleInternal(dw: inout DeferredWork) {
 		if holdCount == 0, itemProcessing == false, !queue.isEmpty {
-			if !refreshItemContextInternal() {
+			if !refreshItemContextInternal(&dw) {
 				preconditionFailure("Handler should not be nil if queue is not empty")
 			}
 			itemProcessing = true

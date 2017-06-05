@@ -1989,4 +1989,25 @@ class SignalTests: XCTestCase {
 		XCTAssert(e1.isSignalClosed == false)
 		XCTAssert(e2.isSignalClosed == true)
 	}
+
+	func testReactivateDeadlockBug() {
+		// This bug exercises the `if itemContextNeedsRefresh` branch in `send(result:predecessor:activationCount:activated:)` and deadlocks if the previous handler is released incorrectly.
+		var results = [Result<String?>]()
+		let sig1 = Signal<String?>.create { s in s.continuous(initial: "hello") }
+		let sig2 = sig1.composed.startWith(["boop"])
+		for _ in 1...3 {
+			let ep = sig2.subscribe(context: .main) { r in results.append(r) }
+			ep.cancel()
+		}
+		
+		XCTAssert(results.count == 6)
+		XCTAssert(results.at(0)?.value.flatMap { $0 } == "boop")
+		XCTAssert(results.at(1)?.value.flatMap { $0 } == "hello")
+		XCTAssert(results.at(2)?.value.flatMap { $0 } == "boop")
+		XCTAssert(results.at(3)?.value.flatMap { $0 } == "hello")
+		XCTAssert(results.at(4)?.value.flatMap { $0 } == "boop")
+		XCTAssert(results.at(5)?.value.flatMap { $0 } == "hello")
+		withExtendedLifetime(sig1.input) {}
+	}
+	
 }
