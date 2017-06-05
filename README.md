@@ -22,6 +22,6 @@ Note about step (2): Adding the "CwlSignal.xcodeproj" file to your project's fil
 
 If you've used a previous build of CwlSignal and you're now seeing a runtime error "Library not loaded: @rpath/CwlUtils.framework/CwlUtils", then please read this.
 
-The latest master versions (including builds tagged 2.0.0-beta.1 and 2.0.0-beta.2) no longer copy the CwlUtils.framework inside the CwlSignal.framework. This avoids duplicate inclusion of the framework and other potential problems but it means that you need to copy CwlUtils.framework into your build as part of your Copy Files (Frameworks) build phase (in the same way that you're already copying the CwlSignal.framework).
+The latest master versions (including any of the builds tagged 2.0.0-beta and newer) no longer copy the CwlUtils.framework inside the CwlSignal.framework. This avoids duplicate inclusion of the framework and other potential problems but it means that you need to copy CwlUtils.framework into your build as part of your Copy Files (Frameworks) build phase (in the same way that you're already copying the CwlSignal.framework).
 
 To copy the CwlUtils.framework, expand the CwlSignal.xcodeproj -> Dependencies folder. You should see three frameworks there. They may be red (depending on whether you've build the Mac debug build) but that doesn't matter. Drag the CwlUtils.framework onto the Copy Files (Frameworks) build phase where you've already got CwlSignal.framework. You don't need the other two frameworks (they're used by the CwlSignal testing target, not the main build).
