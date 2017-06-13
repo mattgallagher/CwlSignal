@@ -19,10 +19,7 @@
 //
 
 import Foundation
-
-#if SWIFT_PACKAGE
 import CwlUtils
-#endif
 
 extension SignalSender {
 	/// A convenience version of `send` that wraps a value in `Result.success` before sending

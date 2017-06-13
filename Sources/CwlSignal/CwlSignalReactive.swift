@@ -19,10 +19,7 @@
 //
 
 import Foundation
-
-#if SWIFT_PACKAGE
 import CwlUtils
-#endif
 
 #if swift(>=4)
 #else
