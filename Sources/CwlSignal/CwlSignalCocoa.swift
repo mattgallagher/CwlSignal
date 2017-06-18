@@ -62,7 +62,7 @@ open class SignalActionTarget: NSObject {
 		_ = signalInput?.send(value: sender)
 	}
 	
-	/// Convenience accessor for `#selector(SignalActionTarget<T>.action(_:))`
+	/// Convenience accessor for `#selector(SignalActionTarget<T>.cwlSignalAction(_:))`
 	public var selector: Selector { return #selector(SignalActionTarget.cwlSignalAction(_:)) }
 }
 
@@ -97,14 +97,22 @@ open class SignalDoubleActionTarget: SignalActionTarget {
 		return s
 	}
 
+	/// Receiver function for "secondary" target-action events
+	///
+	/// - Parameter sender: typical target-action "sender" parameter
 	@IBAction public func cwlSignalSecondAction(_ sender: Any?) {
 		_ = secondInput?.send(value: sender)
 	}
+	
+	/// Convenience accessor for `#selector(SignalDoubleActionTarget<T>.cwlSignalSecondAction(_:))`
 	public var secondSelector: Selector { return #selector(SignalDoubleActionTarget.cwlSignalSecondAction(_:)) }
 }
 
+/// This enum contains errors that might be emitted by `signalKeyValueObserving`
+///
+/// - missingChangeDictionary: the observation failed to supply a change dictionary
 public enum SignalObservingError: Error {
-	case UnexpectedObservationState
+	case missingChangeDictionary
 }
 
 /// Observe a property via key-value-observing and emit the changes as a Signal<Any>
@@ -126,16 +134,11 @@ public func signalKeyValueObserving(_ source: NSObject, keyPath: String, initial
 			switch (reason, change[NSKeyValueChangeKey.newKey]) {
 			case (.sourceDeleted, _): i.close()
 			case (_, .some(let v)): i.send(value: v)
-			default: i.send(error: SignalObservingError.UnexpectedObservationState)
+			default: i.send(error: SignalObservingError.missingChangeDictionary)
 			}
 		})
 		withExtendedLifetime(observer) {}
 	}
-}
-
-@available(*, deprecated, message:"Use signalKeyValueObserving(_:keyPath:initial:) instead")
-public func signalObserving(target: NSObject, keyPath: String, initial: Bool = true) -> Signal<Any> {
-	return signalKeyValueObserving(target, keyPath: keyPath, initial: initial)
 }
 
 extension Signal {

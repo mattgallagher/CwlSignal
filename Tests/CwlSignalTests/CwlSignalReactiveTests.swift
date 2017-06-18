@@ -87,7 +87,7 @@ class SignalReactiveTests: XCTestCase {
 	func testInterval() {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
-		let ep = intervalSignal(interval: .fromSeconds(0.01), context: coordinator.direct).subscribe { r in
+		let ep = intervalSignal(.fromSeconds(0.01), context: coordinator.direct).subscribe { r in
 			results.append(r)
 			if let v = r.value, v == 3 {
 				coordinator.stop()
@@ -216,7 +216,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<[Int]>]()
 		let coordinator = DebugContextCoordinator()
 		let (input, signal) = Signal<Int>.create()
-		let ep = signal.buffer(timespan: .fromSeconds(2), timeshift: .fromSeconds(5), context: coordinator.direct).subscribe { r in
+		let ep = signal.buffer(interval: .fromSeconds(2), timeshift: .fromSeconds(5), context: coordinator.direct).subscribe { r in
 			results.append(r)
 			if results.count == 3 {
 				coordinator.stop()
@@ -260,9 +260,7 @@ class SignalReactiveTests: XCTestCase {
 				}
 				i.close()
 			}
-		}.subscribe { r in
-			results.append(r)
-		}
+		}.subscribe { r in results.append(r) }
 		XCTAssert(results.count == 33)
 		XCTAssert(results.at(0)?.value == 0)
 		XCTAssert(results.at(1)?.value == 1)
@@ -298,10 +296,105 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(31)?.value == 11)
 		XCTAssert(results.at(32)?.error as? SignalError == .closed)
 	}
+
+	func testFlatMapOuterError() {
+		var results1 = [Result<Int>]()
+		let (i1, s1) = Signal<Int>.create()
+		let (i2, s2) = Signal<Int>.create()
+		let (i3, ep1) = Signal<Signal<Int>>.create { $0.flatMap { $0 }.subscribe { results1.append($0) } }
+		i3.send(value: s1)
+		i1.send(value: 0)
+		i1.send(value: 1)
+		i3.send(value: s2)
+		i2.send(value: 2)
+		i2.send(value: 3)
+		i1.send(value: 4)
+		i1.send(value: 5)
+		i1.close()
+		i2.send(value: 6)
+		i3.send(error: TestError.twoValue)
+		i2.send(value: 7)
+		i2.close()
+		
+		XCTAssert(results1.count == 8)
+		XCTAssert(results1.at(0)?.value == 0)
+		XCTAssert(results1.at(1)?.value == 1)
+		XCTAssert(results1.at(2)?.value == 2)
+		XCTAssert(results1.at(3)?.value == 3)
+		XCTAssert(results1.at(4)?.value == 4)
+		XCTAssert(results1.at(5)?.value == 5)
+		XCTAssert(results1.at(6)?.value == 6)
+		XCTAssert(results1.at(7)?.error as? TestError == .twoValue)
+		
+		ep1.cancel()
+	}
+
+	func testFlatMapInnerClosing() {
+		var results1 = [Result<Int>]()
+		let (i1, s1) = Signal<Int>.create()
+		let (i2, s2) = Signal<Int>.create()
+		let (i3, ep1) = Signal<Signal<Int>>.create { $0.flatMap { $0 }.subscribe { results1.append($0) } }
+		i3.send(value: s1)
+		i1.send(value: 0)
+		i1.send(value: 1)
+		i3.send(value: s2)
+		i2.send(value: 2)
+		i2.send(value: 3)
+		i1.send(value: 4)
+		i1.send(value: 5)
+		i1.close()
+		i2.send(value: 6)
+		i3.close()
+		i2.send(value: 7)
+		i2.close()
+		
+		XCTAssert(results1.count == 9)
+		XCTAssert(results1.at(0)?.value == 0)
+		XCTAssert(results1.at(1)?.value == 1)
+		XCTAssert(results1.at(2)?.value == 2)
+		XCTAssert(results1.at(3)?.value == 3)
+		XCTAssert(results1.at(4)?.value == 4)
+		XCTAssert(results1.at(5)?.value == 5)
+		XCTAssert(results1.at(6)?.value == 6)
+		XCTAssert(results1.at(7)?.value == 7)
+		XCTAssert(results1.at(8)?.error as? SignalError == .closed)
+		
+		ep1.cancel()
+	}
+
+	func testFlatMapInnerErrors() {
+		var results2 = [Result<Int>]()
+		let (i4, s4) = Signal<Int>.create()
+		let (i5, s5) = Signal<Int>.create()
+		let (i6, ep2) = Signal<Signal<Int>>.create { $0.flatMap { $0 }.subscribe { results2.append($0) } }
+		i6.send(value: s4)
+		i4.send(value: 0)
+		i4.send(value: 1)
+		i6.send(value: s5)
+		i5.send(value: 2)
+		i5.send(value: 3)
+		i4.send(value: 4)
+		i4.send(value: 5)
+		i4.send(error: TestError.zeroValue)
+		i5.send(value: 6)
+		i5.send(value: 7)
+		i6.send(error: TestError.oneValue)
+		
+		XCTAssert(results2.count == 7)
+		XCTAssert(results2.at(0)?.value == 0)
+		XCTAssert(results2.at(1)?.value == 1)
+		XCTAssert(results2.at(2)?.value == 2)
+		XCTAssert(results2.at(3)?.value == 3)
+		XCTAssert(results2.at(4)?.value == 4)
+		XCTAssert(results2.at(5)?.value == 5)
+		XCTAssert(results2.at(6)?.error as? TestError == .zeroValue)
+		
+		ep2.cancel()
+	}
 	
 	func testFlatMapWithState() {
 		var results = [Result<Int>]()
-		_ = Signal.from(values: [1, 3, 5, 7, 11]).flatMap(withState: 0) { (state: inout Int, v: Int) -> Signal<Int> in
+		_ = Signal.from(values: [1, 3, 5, 7, 11]).flatMap(initialState: 0) { (state: inout Int, v: Int) -> Signal<Int> in
 			state += 1
 			return Signal<Int>.generate(context: .direct) { [state] input in
 				guard let i = input else { return }
@@ -437,7 +530,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.count == 4)
 
 		input.send(value: 3)
-		input.send(error: TestError.oneValue)
+		input.close()
 
 		XCTAssert(results.count == 4)
 		
@@ -467,7 +560,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(10)?.value == "k")
 		XCTAssert(results.at(11)?.value == "l")
 		XCTAssert(results.at(12)?.value == "m")
-		XCTAssert(results.at(13)?.error as? TestError == TestError.oneValue)
+		XCTAssert(results.at(13)?.error as? TestError == TestError.twoValue)
 
 		withExtendedLifetime(ep) { }
 	}
@@ -546,7 +639,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testMapWithState() {
 		var results = [Result<Int>]()
-		_ = Signal.from(values: 1...5).map(withState: 0) { (state: inout Int, v: Int) -> Int in
+		_ = Signal.from(values: 1...5).map(initialState: 0) { (state: inout Int, v: Int) -> Int in
 			state += 1
 			return v * 2 + state
 		}.subscribe { r in results.append(r) }
@@ -561,7 +654,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testScan() {
 		var results = [Result<Int>]()
-		Signal.from(values: 1...5).scan(initial: 2) { a, v in a + v }.subscribeAndKeepAlive { r in
+		Signal.from(values: 1...5).scan(initialState: 2) { a, v in a + v }.subscribeAndKeepAlive { r in
 			results.append(r)
 			return true
 		}
@@ -637,8 +730,8 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(interval: .fromSeconds(0.03), context: coordinator.default)
-		let windowedSignal = baseSignal.window(windows: intervalSignal(interval: .fromSeconds(0.2), initialInterval: .fromSeconds(0.05), context: coordinator.default).map { _ in
+		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.default)
+		let windowedSignal = baseSignal.window(windows: intervalSignal(.fromSeconds(0.2), initial: .fromSeconds(0.05), context: coordinator.default).map { _ in
 			Signal<()>.timer(interval: .fromSeconds(0.1), context: coordinator.default)
 		})
 		let ep = windowedSignal.subscribe { r in
@@ -692,8 +785,8 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(interval: .fromSeconds(0.03), context: coordinator.default).timeout(interval: .fromSeconds(0.34), resetOnValue: false, context: coordinator.default)
-		let windowedSignal = baseSignal.window(timespan: .fromSeconds(0.091), timeshift: .fromSeconds(0.151), context: coordinator.default)
+		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.default).timeout(interval: .fromSeconds(0.34), resetOnValue: false, context: coordinator.default)
+		let windowedSignal = baseSignal.window(interval: .fromSeconds(0.091), timeshift: .fromSeconds(0.151), context: coordinator.default)
 		let ep = windowedSignal.subscribe { r in
 			if let v = r.value {
 				let index = results.count
@@ -735,7 +828,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(interval: .fromSeconds(0.03), context: coordinator.default)
+		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.default)
 		let windowedSignal = baseSignal.window(count: 3, skip: 5)
 		let ep = windowedSignal.subscribe { r in
 			if let v = r.value {
@@ -781,7 +874,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(interval: .fromSeconds(0.03), context: coordinator.default)
+		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.default)
 		let windowedSignal = baseSignal.window(count: 3)
 		let ep = windowedSignal.subscribe { r in
 			if let v = r.value {
@@ -1532,6 +1625,7 @@ class SignalReactiveTests: XCTestCase {
 		input4.send(value: 30)
 		input4.send(value: 31)
 		input4.send(value: 32)
+		input4.close()
 		input1.send(value: 8)
 		input1.send(value: 9)
 		input.close()
@@ -1776,7 +1870,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
 		var times = [UInt64]()
-		let ep = Signal<Int>.from(values: 0..<5).delay(withState: 5, context: coordinator.direct) { (offset: inout Int, v: Int) -> DispatchTimeInterval in
+		let ep = Signal<Int>.from(values: 0..<5).delay(initialState: 5, context: coordinator.direct) { (offset: inout Int, v: Int) -> DispatchTimeInterval in
 			return DispatchTimeInterval.fromSeconds(Double(offset - v) * 0.05)
 		}.subscribe { (r: Result<Int>) in
 			results.append(r)
@@ -1806,7 +1900,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
 		var times = [UInt64]()
-		let ep = intervalSignal(interval: .seconds(1), initialInterval: .seconds(0), context: coordinator.default).timeout(interval: .seconds(5), resetOnValue: false, context: coordinator.default).delay(interval: .seconds(5), context: coordinator.default).subscribe { (r: Result<Int>) in
+		let ep = intervalSignal(.seconds(1), initial: .seconds(0), context: coordinator.default).timeout(interval: .seconds(5), resetOnValue: false, context: coordinator.default).delay(interval: .seconds(5), context: coordinator.default).subscribe { (r: Result<Int>) in
 			results.append(r)
 			times.append(coordinator.currentTime)
 		}
@@ -2202,7 +2296,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testSkipWhileWithState() {
 		var results = [Result<Int>]()
-		let (input, ep) = Signal<Int>.create { s in s.skipWhile(withState: 0) { (state: inout Int, v: Int) -> Bool in
+		let (input, ep) = Signal<Int>.create { s in s.skipWhile(initialState: 0) { (state: inout Int, v: Int) -> Bool in
 			state += v
 			return (v + state) != 9
 		}.subscribe { r in results.append(r) } }
@@ -2270,7 +2364,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testTakeWhileWithState() {
 		var results = [Result<Int>]()
-		let (input, ep) = Signal<Int>.create { s in s.takeWhile(withState: 0) { (state: inout Int, v: Int) -> Bool in
+		let (input, ep) = Signal<Int>.create { s in s.takeWhile(initialState: 0) { (state: inout Int, v: Int) -> Bool in
 			state += v
 			return (v + state) != 9
 		}.subscribe { r in results.append(r) } }
