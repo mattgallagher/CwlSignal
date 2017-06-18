@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<playground version='6.0' target-platform='macos' display-mode='rendered'>
+<playground version='6.0' target-platform='macos' display-mode='raw'>
     <pages>
         <page name='Introduction'/>
         <page name='Basic channel'/>
         <page name='Serial pipelines - transform'/>
         <page name='Serial pipelines - map'/>
         <page name='Parallel composition - combine'/>
-        <page name='Parallel composition - operators'/>
         <page name='Advanced behaviors - continuous'/>
         <page name='Advanced behaviors - lazy generation'/>
         <page name='Advanced behaviors - capturing'/>
+        <page name='Advanced composition - nested operators'/>
         <page name='App scenario - threadsafe key-value storage'/>
         <page name='App scenario - dynamic view properties'/>
+        <page name='Play area'/>
     </pages>
 </playground>

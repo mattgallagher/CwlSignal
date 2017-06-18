@@ -13,14 +13,17 @@ The `generate` function's closure will also be invoke with a `nil` value when th
 */
 import CwlSignal
 
-// Create an output immediately but only create the input as needed
+// Create an output immediately but only start creating data to feed into the pipeline after a listener connects.
 let output = Signal<Int>.generate { input in
    if let i = input {
+		print("Generation has started")
       i.send(value: 1)
       i.send(value: 2)
       i.send(value: 3)
    }
 }
+
+print("We're just about to subscribe.")
 
 // Subscribe to listen to the values output by the channel
 let endpoint = output.subscribeValues { value in print(value) }

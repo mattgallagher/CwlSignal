@@ -20,8 +20,12 @@ let (input, output) = Signal<Int>.create { signal in signal.continuous() }
 input.send(value: 1)
 input.send(value: 2)
 
+print("We just sent a two but we weren't listening. Now let's subscribe and get the last value.")
+
 // Subscribe to listen to the values output by the channel
 let endpoint = output.subscribeValues { value in print(value) }
+
+print("We're already listening so the next value will be immediately delivered to us.")
 
 // Send a value after a subscriber exists
 input.send(value: 3)
@@ -36,5 +40,5 @@ endpoint.cancel()
 
 [Next page: Parallel composition - operators](@next)
 
-[Previous page: Advanced behaviors - lazy generation](@previous)
+[Previous page: Parallel composition - combine](@previous)
 */
