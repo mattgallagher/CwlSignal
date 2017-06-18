@@ -14,6 +14,7 @@
 				C945D7C41E5038D5009AFB8E /* ShellScript */,
 			);
 			dependencies = (
+				C9BFD1281EF6192900F13410 /* PBXTargetDependency */,
 			);
 			name = FetchDependencies;
 			productName = FetchDependencies;
@@ -153,6 +154,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = C997C3AA1EC7552E00F67C3B;
 			remoteInfo = CwlPreconditionTesting_iOS;
+		};
+		C9BFD1271EF6192900F13410 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C96BA3C11EF611F00046D38A;
+			remoteInfo = "Additional clean steps";
 		};
 		C9DD3D601E41ACAF00E23B15 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -330,6 +338,23 @@
 		};
 /* End PBXHeadersBuildPhase section */
 
+/* Begin PBXLegacyTarget section */
+		C96BA3C11EF611F00046D38A /* Additional clean steps */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "-c 'if [ -z $ACTION ]; then exit; fi; if [ $ACTION == \"clean\" ]; then rm -Rf \"$BUILT_PRODUCTS_DIR/CwlUtils.framework\"; rm -Rf \"$BUILT_PRODUCTS_DIR/CwlPreconditionTesting.framework\"; rm -Rf \"$BUILT_PRODUCTS_DIR/CwlCatchException.framework\"; fi'";
+			buildConfigurationList = C96BA3C41EF611F00046D38A /* Build configuration list for PBXLegacyTarget "Additional clean steps" */;
+			buildPhases = (
+			);
+			buildToolPath = /bin/sh;
+			buildWorkingDirectory = "";
+			dependencies = (
+			);
+			name = "Additional clean steps";
+			passBuildSettingsInEnvironment = 1;
+			productName = Clean;
+		};
+/* End PBXLegacyTarget section */
+
 /* Begin PBXNativeTarget section */
 		C9DD3D7C1E41DFB600E23B15 /* CwlSignal_iOS */ = {
 			isa = PBXNativeTarget;
@@ -414,6 +439,10 @@
 					C945D7C01E5038C4009AFB8E = {
 						DevelopmentTeam = S7YQ892G6G;
 					};
+					C96BA3C11EF611F00046D38A = {
+						CreatedOnToolsVersion = 9.0;
+						DevelopmentTeam = S7YQ892G6G;
+					};
 					C997C3271EC6DB3B00F67C3B = {
 						CreatedOnToolsVersion = 8.3.2;
 						DevelopmentTeam = S7YQ892G6G;
@@ -454,6 +483,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				C96BA3C11EF611F00046D38A /* Additional clean steps */,
 				C945D7C01E5038C4009AFB8E /* FetchDependencies */,
 				C997C3A21EC754BC00F67C3B /* CwlPreconditionTesting_macOS */,
 				C997C3AA1EC7552E00F67C3B /* CwlPreconditionTesting_iOS */,
@@ -477,11 +507,11 @@
 				"$(SRCROOT)/Package.swift",
 			);
 			outputPaths = (
-				"$(OBJROOT)/cwl_symlinks/CwlUtils",
+				"$(OBJROOT)/workspace-state.json",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/usr/bin/xcrun --sdk macosx swift -target x86_64-apple-macosx10.11";
-			shellScript = "//\n//  CwlPackageFetch.swift\n//  CwlPackageFetch\n//\n//  Created by Matt Gallagher on 2017/01/31.\n//  Copyright © 2017 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.\n//\n//  Permission to use, copy, modify, and/or distribute this software for any\n//  purpose with or without fee is hereby granted, provided that the above\n//  copyright notice and this permission notice appear in all copies.\n//\n//  THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n//  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n//  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n//  SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n//  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN\n//  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR\n//  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n//\n\nimport Foundation\n\nif let carthage = ProcessInfo.processInfo.environment[\"CARTHAGE\"], carthage == \"YES\" {\n\tprint(\"Disabling swift package manager dependency management in favor of Carthage.\")\n\texit(0)\n}\n\nguard let srcRoot = ProcessInfo.processInfo.environment[\"SRCROOT\"].map({ URL(fileURLWithPath: $0) }) else {\n\tprint(\"!!! Environment variable SRCROOT (the root of the source tree) must be set\")\n\texit(1)\n}\nguard let buildDir = ProcessInfo.processInfo.environment[\"OBJROOT\"] else {\n\tprint(\"!!! Environment variable OBJROOT (the build intermediates directory) must be set\")\n\texit(1)\n}\n\n// Avoid downloading a further copy during an archive build.\nlet buildDirUrl = URL(fileURLWithPath: buildDir)\nlet nonArchiveBuildDir: String\nlet pathOffset: String\nif buildDirUrl.lastPathComponent == \"IntermediateBuildFilesPath\" && buildDirUrl.deletingLastPathComponent().deletingLastPathComponent().lastPathComponent == \"ArchiveIntermediates\" {\n\tnonArchiveBuildDir = buildDirUrl.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().path\n\tpathOffset = \"../../../../\"\n} else {\n\tnonArchiveBuildDir = buildDir\n\tpathOffset = \"../\"\n}\n\n// Launch a process and run to completion, returning the standard out on success.\nfunc launch(_ command: String, _ arguments: [String], directory: URL? = nil) -> String? {\n\tlet proc = Process()\n\tproc.launchPath = command\n\tproc.arguments = arguments\n\t_ = directory.map { proc.currentDirectoryPath = $0.path }\n\tlet pipe = Pipe()\n\tproc.standardOutput = pipe\n\tproc.launch()\n\tlet result = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? \"\"\n\tproc.waitUntilExit()\n\treturn proc.terminationStatus != 0 ? nil : result\n}\n\n// STEP 0: if the `Package.swift` file doesn't exist, create it.\n// For anything *except* a CwlViews project, you'll need to customize this before it is useful.\nlet packageURL = srcRoot.appendingPathComponent(\"Package.swift\")\nprint(\"### Testing existence of \\(packageURL.path)\")\nif !FileManager.default.fileExists(atPath: packageURL.path) {\n\tguard let projectName = ProcessInfo.processInfo.environment[\"PROJECT_NAME\"] else {\n\t\tprint(\"!!! If Package.swift not present, environment variable PROJECT_NAME must be set (will be used as the main target name)\")\n\t\texit(1)\n\t}\n\tlet defaultPackageManifest = \"\"\"\n\t\t// swift-tools-version:4.0\n\t\timport PackageDescription\n\t\tlet package = Package(\n\t\t\tname: \"\\(projectName)\",\n\t\t\tdependencies: [.package(url: \"https://github.com/mattgallagher/CwlViews.git\", .branch(\"swift4\"))],\n\t\t)\n\t\t\"\"\"\n\tif let _ = try? defaultPackageManifest.write(to: packageURL, atomically: true, encoding: .utf8) {\n\t\tprint(\"Wrote default Package.swift file to \\(packageURL.path)\")\n\t} else {\n\t\tprint(\"!!! Unable to write manifest file.\")\n\t\texit(1)\n\t}\n}\n\n// STEP 1: use `swift package update` to get all dependencies\nprint(\"### Starting package fetch...\")\nif let fetchResult = launch(\"/usr/bin/swift\", [\"package\", \"--build-path\", \"\\(nonArchiveBuildDir)\", \"resolve\"], directory: srcRoot) {\n\tif fetchResult == \"\" {\n\t\tprint(\"### All dependencies up-to-date.\")\n\t} else {\n\t\tprint(fetchResult, terminator: \"\")\n\t}\n} else {\n\tprint(\"!!! swift package update failed\")\n\texit(1)\n}\n\n// Create a symlink only if it is not already present and pointing to the destination\nlet symlinksName = \"cwl_symlinks\"\nlet symlinksURL = URL(fileURLWithPath: buildDir).appendingPathComponent(symlinksName)\nfunc createSymlink(srcRoot: URL, name: String, destination: String) throws {\n\tlet location = symlinksURL.appendingPathComponent(name)\n\tlet link = URL(fileURLWithPath: \"\\(pathOffset)\\(destination)\", relativeTo:location)\n\tlet current = try? FileManager.default.destinationOfSymbolicLink(atPath: location.path)\n\tif current == nil || current != link.relativePath {\n\t\t_ = try? FileManager.default.removeItem(at: location)\n\t\ttry FileManager.default.createSymbolicLink(atPath: location.path, withDestinationPath:\n\t\t\tlink.relativePath)\n\t\tprint(\"Created symbolic link: \\(location.path) -> \\(link.relativePath)\")\n\t}\n}\n\n// Recursively parse the dependency graph JSON, creating symlinks in our own location\nfunc createSymlinks(srcRoot: URL, description: Dictionary<String, Any>, topLevelPath: String) throws {\n\tguard let dependencies = description[\"dependencies\"] as? [Dictionary<String, Any>] else { return }\n\tfor dependency in dependencies {\n\t\tguard let path = dependency[\"path\"] as? String, let relativePath = (path.range(of: topLevelPath)?.upperBound).map({ path.substring(from: $0) }), let name = dependency[\"name\"] as? String else {\n\t\t\tthrow NSError(domain: \"CwlError\", code: 0, userInfo: [NSLocalizedFailureReasonErrorKey: \"Unable to parse dependency structure\"])\n\t\t}\n\t\ttry createSymlink(srcRoot: srcRoot, name: name, destination: relativePath)\n\t\ttry createSymlinks(srcRoot: srcRoot, description: dependency, topLevelPath: topLevelPath)\n\t}\n}\n\n// STEP 2: create symlinks from our stable locations to the fetched locations\nguard let descriptionString = launch(\"/usr/bin/swift\", [\"package\", \"--build-path\", \"\\(nonArchiveBuildDir)\", \"show-dependencies\", \"--format\", \"json\"], directory: srcRoot) else {\n\tprint(\"!!! swift package show-dependencies failed\")\n\texit(1)\n}\ndo {\n\tguard let descriptionData = descriptionString.data(using: .utf8), let description = try JSONSerialization.jsonObject(with: descriptionData, options: []) as? Dictionary<String, Any> else {\n\t\tthrow NSError(domain: \"CwlError\", code: 0, userInfo: [NSLocalizedFailureReasonErrorKey: \"Unable to parse dependency structure\"])\n\t}\n   try FileManager.default.createDirectory(at: symlinksURL, withIntermediateDirectories: true, attributes: nil)\n\ttry createSymlinks(srcRoot: srcRoot, description: description, topLevelPath: nonArchiveBuildDir + \"/\")\n\tprint(\"### Complete.\")\n} catch {\n\tprint(\"!!! symlink creation failed: \\(error)\")\n\tprint(\"!!! Package description was...\")\n\tprint(descriptionString)\n\texit(1)\n}\n\n";
+			shellScript = "//\n//  CwlPackageFetch.swift\n//  CwlPackageFetch\n//\n//  Created by Matt Gallagher on 2017/01/31.\n//  Copyright © 2017 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.\n//\n//  Permission to use, copy, modify, and/or distribute this software for any\n//  purpose with or without fee is hereby granted, provided that the above\n//  copyright notice and this permission notice appear in all copies.\n//\n//  THE SOFTWARE IS PROVIDED \"AS IS\" AND THE AUTHOR DISCLAIMS ALL WARRANTIES\n//  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF\n//  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY\n//  SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES\n//  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN\n//  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR\n//  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.\n//\n\nimport Foundation\n\nif let carthage = ProcessInfo.processInfo.environment[\"CARTHAGE\"], carthage == \"YES\" {\n\tprint(\"Disabling swift package manager dependency management in favor of Carthage.\")\n\texit(0)\n}\n\nguard let srcRoot = ProcessInfo.processInfo.environment[\"SRCROOT\"].map({ URL(fileURLWithPath: $0) }) else {\n\tprint(\"!!! Environment variable SRCROOT (the root of the source tree) must be set\")\n\texit(1)\n}\nguard let buildDir = ProcessInfo.processInfo.environment[\"OBJROOT\"] else {\n\tprint(\"!!! Environment variable OBJROOT (the build intermediates directory) must be set\")\n\texit(1)\n}\n\n// Avoid downloading a further copy during an archive build.\nlet buildDirUrl = URL(fileURLWithPath: buildDir)\nlet nonArchiveBuildDir: String\nlet pathOffset: String\nif buildDirUrl.lastPathComponent == \"IntermediateBuildFilesPath\" && buildDirUrl.deletingLastPathComponent().deletingLastPathComponent().lastPathComponent == \"ArchiveIntermediates\" {\n\tnonArchiveBuildDir = buildDirUrl.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().path\n\tpathOffset = \"../../../../\"\n} else {\n\tnonArchiveBuildDir = buildDir\n\tpathOffset = \"../\"\n}\n\n// Launch a process and run to completion, returning the standard out on success.\nfunc launch(_ command: String, _ arguments: [String], directory: URL? = nil) -> String? {\n\tlet proc = Process()\n\tproc.launchPath = command\n\tproc.arguments = arguments\n\t_ = directory.map { proc.currentDirectoryPath = $0.path }\n\tlet pipe = Pipe()\n\tproc.standardOutput = pipe\n\tproc.launch()\n\tlet result = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? \"\"\n\tproc.waitUntilExit()\n\treturn proc.terminationStatus != 0 ? nil : result\n}\n\n// STEP 0: if the `Package.swift` file doesn't exist, create it.\n// For anything *except* a CwlViews project, you'll need to customize this before it is useful.\nlet packageURL = srcRoot.appendingPathComponent(\"Package.swift\")\nprint(\"### Testing existence of \\(packageURL.path)\")\nif !FileManager.default.fileExists(atPath: packageURL.path) {\n\tguard let projectName = ProcessInfo.processInfo.environment[\"PROJECT_NAME\"] else {\n\t\tprint(\"!!! If Package.swift not present, environment variable PROJECT_NAME must be set (will be used as the main target name)\")\n\t\texit(1)\n\t}\n\t#if swift(>=4)\n\t\tlet defaultPackageManifest = \"\"\"\n\t\t\t// swift-tools-version:4.0\n\t\t\timport PackageDescription\n\t\t\tlet package = Package(\n\t\t\t\tname: \"\\(projectName)\",\n\t\t\t\tdependencies: [.package(url: \"https://github.com/mattgallagher/CwlViews.git\", .branch(\"swift4\"))],\n\t\t\t)\n\t\t\t\"\"\"\n\t#else\n\t\tlet defaultPackageManifest = \"import PackageDescription\\n\\nlet package = Package(\\n\\tname: \\\"\\(projectName)\\\",\\n\\tdependencies: [.Package(url: \\\"https://github.com/mattgallagher/CwlViews.git\\\", majorVersion: 0]\\n)\\n\"\n\t#endif\n\tif let _ = try? defaultPackageManifest.write(to: packageURL, atomically: true, encoding: .utf8) {\n\t\tprint(\"Wrote default Package.swift file to \\(packageURL.path)\")\n\t} else {\n\t\tprint(\"!!! Unable to write manifest file.\")\n\t\texit(1)\n\t}\n}\n\n// STEP 1: use `swift package update` to get all dependencies\nprint(\"### Starting package fetch...\")\nif let fetchResult = launch(\"/usr/bin/swift\", [\"package\", \"--build-path\", \"\\(nonArchiveBuildDir)\", \"resolve\"], directory: srcRoot) {\n\tif fetchResult == \"\" {\n\t\tprint(\"### All dependencies up-to-date.\")\n\t} else {\n\t\tprint(fetchResult, terminator: \"\")\n\t}\n} else {\n\tprint(\"!!! swift package update failed\")\n\texit(1)\n}\n\n// Create a symlink only if it is not already present and pointing to the destination\nlet symlinksName = \"cwl_symlinks\"\nlet symlinksURL = URL(fileURLWithPath: buildDir).appendingPathComponent(symlinksName)\nfunc createSymlink(srcRoot: URL, name: String, destination: String) throws {\n\tlet location = symlinksURL.appendingPathComponent(name)\n\tlet link = URL(fileURLWithPath: \"\\(pathOffset)\\(destination)\", relativeTo:location)\n\tlet current = try? FileManager.default.destinationOfSymbolicLink(atPath: location.path)\n\tif current == nil || current != link.relativePath {\n\t\t_ = try? FileManager.default.removeItem(at: location)\n\t\ttry FileManager.default.createSymbolicLink(atPath: location.path, withDestinationPath:\n\t\t\tlink.relativePath)\n\t\tprint(\"Created symbolic link: \\(location.path) -> \\(link.relativePath)\")\n\t}\n}\n\n// Recursively parse the dependency graph JSON, creating symlinks in our own location\nfunc createSymlinks(srcRoot: URL, description: Dictionary<String, Any>, topLevelPath: String) throws {\n\tguard let dependencies = description[\"dependencies\"] as? [Dictionary<String, Any>] else { return }\n\tfor dependency in dependencies {\n\t\tguard let path = dependency[\"path\"] as? String, let relativePath = (path.range(of: topLevelPath)?.upperBound).map({ path.substring(from: $0) }), let name = dependency[\"name\"] as? String else {\n\t\t\tthrow NSError(domain: \"CwlError\", code: 0, userInfo: [NSLocalizedFailureReasonErrorKey: \"Unable to parse dependency structure\"])\n\t\t}\n\t\ttry createSymlink(srcRoot: srcRoot, name: name, destination: relativePath)\n\t\ttry createSymlinks(srcRoot: srcRoot, description: dependency, topLevelPath: topLevelPath)\n\t}\n}\n\n// STEP 2: create symlinks from our stable locations to the fetched locations\nguard let descriptionString = launch(\"/usr/bin/swift\", [\"package\", \"--build-path\", \"\\(nonArchiveBuildDir)\", \"show-dependencies\", \"--format\", \"json\"], directory: srcRoot) else {\n\tprint(\"!!! swift package show-dependencies failed\")\n\texit(1)\n}\ndo {\n\t// Note that despite asking for JSON formatting, there may be log information on STDOUT before the JSON starts.\n\tguard let jsonStartIndex = descriptionString.characters.index(of: \"{\"), let descriptionData = descriptionString.substring(from: jsonStartIndex).data(using: .utf8), let description = try JSONSerialization.jsonObject(with: descriptionData, options: []) as? Dictionary<String, Any> else {\n\t\tthrow NSError(domain: \"CwlError\", code: 0, userInfo: [NSLocalizedFailureReasonErrorKey: \"Unable to parse dependency structure\"])\n\t}\n   try FileManager.default.createDirectory(at: symlinksURL, withIntermediateDirectories: true, attributes: nil)\n\ttry createSymlinks(srcRoot: srcRoot, description: description, topLevelPath: nonArchiveBuildDir + \"/\")\n\tprint(\"### Complete.\")\n} catch {\n\tprint(\"!!! symlink creation failed: \\(error)\")\n\tprint(\"!!! Package description was...\")\n\tprint(descriptionString)\n\texit(1)\n}\n";
 		};
 		C997C32D1EC6DB5900F67C3B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -496,7 +526,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ $CARTHAGE == \"YES\" ]; then exit; fi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtils_macOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\"";
+			shellScript = "if [ $CARTHAGE == \"YES\" ]; then exit; fi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtils_macOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
 		};
 		C997C39D1EC751EF00F67C3B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -527,7 +557,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ $CARTHAGE == \"YES\" ]; then exit; fi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj\" -target CwlPreconditionTesting_macOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\"";
+			shellScript = "if [ $CARTHAGE == \"YES\" ]; then exit; fi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj\" -target CwlPreconditionTesting_macOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
 		};
 		C997C3AE1EC7553700F67C3B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -543,7 +573,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ $CARTHAGE == \"YES\" ]; then exit; fi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj\" -target CwlPreconditionTesting_iOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\"";
+			shellScript = "if [ $CARTHAGE == \"YES\" ]; then exit; fi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj\" -target CwlPreconditionTesting_iOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -633,6 +663,11 @@
 			target = C997C3AA1EC7552E00F67C3B /* CwlPreconditionTesting_iOS */;
 			targetProxy = C997C3B31EC755CA00F67C3B /* PBXContainerItemProxy */;
 		};
+		C9BFD1281EF6192900F13410 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C96BA3C11EF611F00046D38A /* Additional clean steps */;
+			targetProxy = C9BFD1271EF6192900F13410 /* PBXContainerItemProxy */;
+		};
 		C9DD3DAB1E41E52E00E23B15 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = C9DD3D7C1E41DFB600E23B15 /* CwlSignal_iOS */;
@@ -658,6 +693,56 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEVELOPMENT_TEAM = S7YQ892G6G;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		C96BA3C21EF611F00046D38A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				DEBUGGING_SYMBOLS = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = S7YQ892G6G;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MTL_ENABLE_DEBUG_INFO = YES;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		C96BA3C31EF611F00046D38A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = S7YQ892G6G;
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -975,6 +1060,15 @@
 			buildConfigurations = (
 				C945D7C11E5038C4009AFB8E /* Debug */,
 				C945D7C21E5038C4009AFB8E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C96BA3C41EF611F00046D38A /* Build configuration list for PBXLegacyTarget "Additional clean steps" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C96BA3C21EF611F00046D38A /* Debug */,
+				C96BA3C31EF611F00046D38A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
