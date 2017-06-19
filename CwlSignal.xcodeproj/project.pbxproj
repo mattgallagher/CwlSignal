@@ -507,7 +507,7 @@
 				"$(SRCROOT)/Package.swift",
 			);
 			outputPaths = (
-				"$(OBJROOT)/workspace-state.json",
+				"$(OBJROOT)/checkouts",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/usr/bin/xcrun --sdk macosx swift -target x86_64-apple-macosx10.11";
@@ -519,14 +519,14 @@
 			files = (
 			);
 			inputPaths = (
-				"$(OBJROOT)/workspace-state.json",
+				"$(OBJROOT)/checkouts",
 			);
 			outputPaths = (
 				"$(BUILT_PRODUCTS_DIR)/CwlUtils.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ $CARTHAGE == \"YES\" ]; then exit; fi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtils_macOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
+			shellScript = "if [ $CARTHAGE == \"YES\" ]; then\n  cp -R \"$SRCROOT/Carthage/Build/Mac/CwlUtils.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  exit\nfi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtils_macOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
 		};
 		C997C39D1EC751EF00F67C3B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -534,14 +534,14 @@
 			files = (
 			);
 			inputPaths = (
-				"$(OBJROOT)/workspace-state.json",
+				"$(OBJROOT)/checkouts",
 			);
 			outputPaths = (
 				"$(BUILT_PRODUCTS_DIR)/CwlUtils.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ $CARTHAGE == \"YES\" ]; then exit; fi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtils_iOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
+			shellScript = "if [ $CARTHAGE == \"YES\" ]; then\n  cp -R \"$SRCROOT/Carthage/Build/iOS/CwlUtils.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  exit\nfi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtils_iOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
 		};
 		C997C3A71EC754D400F67C3B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -549,7 +549,7 @@
 			files = (
 			);
 			inputPaths = (
-				"$(OBJROOT)/workspace-state.json",
+				"$(OBJROOT)/checkouts",
 			);
 			outputPaths = (
 				"$(BUILT_PRODUCTS_DIR)/CwlPreconditionTesting.framework",
@@ -557,7 +557,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ $CARTHAGE == \"YES\" ]; then exit; fi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj\" -target CwlPreconditionTesting_macOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
+			shellScript = "if [ $CARTHAGE == \"YES\" ]; then\n  cp -R \"$SRCROOT/Carthage/Build/Mac/CwlPreconditionTesting.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  cp -R \"$SRCROOT/Carthage/Build/Mac/CwlCatchException.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  exit\nfi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj\" -target CwlPreconditionTesting_macOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
 		};
 		C997C3AE1EC7553700F67C3B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -565,7 +565,7 @@
 			files = (
 			);
 			inputPaths = (
-				"$(OBJROOT)/workspace-state.json",
+				"$(OBJROOT)/checkouts",
 			);
 			outputPaths = (
 				"$(BUILT_PRODUCTS_DIR)/CwlPreconditionTesting.framework",
@@ -573,7 +573,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ $CARTHAGE == \"YES\" ]; then exit; fi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj\" -target CwlPreconditionTesting_iOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
+			shellScript = "if [ $CARTHAGE == \"YES\" ]; then\n  cp -R \"$SRCROOT/Carthage/Build/iOS/CwlPreconditionTesting.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  cp -R \"$SRCROOT/Carthage/Build/iOS/CwlCatchException.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  exit\nfi\n/usr/bin/xcodebuild -project \"$OBJROOT/cwl_symlinks/CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj\" -target CwlPreconditionTesting_iOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -828,7 +828,6 @@
 				DEFINES_MODULE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/Carthage/Build/iOS";
 				INFOPLIST_FILE = Sources/CwlSignal/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @loader_path/Frameworks";
@@ -849,7 +848,6 @@
 				DEFINES_MODULE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/Carthage/Build/iOS";
 				INFOPLIST_FILE = Sources/CwlSignal/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @loader_path/Frameworks";
@@ -905,7 +903,6 @@
 				DEVELOPMENT_TEAM = "";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/Carthage/Build/Mac";
 				INFOPLIST_FILE = Sources/CwlSignal/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks @loader_path/Frameworks";
 				OTHER_SWIFT_FLAGS = "$(inherited)";
@@ -926,7 +923,6 @@
 				DEVELOPMENT_TEAM = "";
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_TESTABILITY = YES;
-				FRAMEWORK_SEARCH_PATHS = "${PROJECT_DIR}/Carthage/Build/Mac";
 				INFOPLIST_FILE = Sources/CwlSignal/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlSignal-macOS";

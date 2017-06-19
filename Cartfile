@@ -1,1 +1,1 @@
-git "file:///Users/matt/Projects/CwlUtils" "swift4"
+git "https://github.com/mattgallagher/CwlUtils.git" "master"
