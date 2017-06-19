@@ -2006,7 +2006,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(2)?.value?.value == 2)
 		XCTAssert(results.at(3)?.value?.value == 3)
 		XCTAssert(results.at(4)?.value?.isSignalClosed == true)
-		XCTAssert(results.at(5)?.error as? SignalError == .cancelled)
+		XCTAssert(results.at(5)?.error as? SignalError == .closed)
 	}
 	
 	func testDematerialize() {

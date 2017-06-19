@@ -318,7 +318,7 @@ class SignalTests: XCTestCase {
 	func testSignalContinuousWithinitial() {
 		// Create a signal
 		let (input, s) = Signal<Int>.create()
-		let signal = s.continuous(initialState: 5)
+		let signal = s.continuous(initialValue: 5)
 		
 		// Subscribe twice
 		var results1 = [Result<Int>]()
@@ -452,7 +452,7 @@ class SignalTests: XCTestCase {
 		// Create a signal
 		let (input, s) = Signal<Int>.create()
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let signal = s.customActivation(initialState: [3, 4], context: context) { (activationValues: inout Array<Int>, preclosed: inout Error?, result: Result<Int>) -> Void in
+		let signal = s.customActivation(initialValues: [3, 4], context: context) { (activationValues: inout Array<Int>, preclosed: inout Error?, result: Result<Int>) -> Void in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			if case .success(6) = result {
 				activationValues = [7]
@@ -2012,7 +2012,7 @@ class SignalTests: XCTestCase {
 	func testReactivateDeadlockBug() {
 		// This bug exercises the `if itemContextNeedsRefresh` branch in `send(result:predecessor:activationCount:activated:)` and deadlocks if the previous handler is released incorrectly.
 		var results = [Result<String?>]()
-		let sig1 = Signal<String?>.create { s in s.continuous(initialState: "hello") }
+		let sig1 = Signal<String?>.create { s in s.continuous(initialValue: "hello") }
 		let sig2 = sig1.composed.startWith(["boop"])
 		for _ in 1...3 {
 			let ep = sig2.subscribe(context: .main) { r in results.append(r) }

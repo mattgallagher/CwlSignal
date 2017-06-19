@@ -18,7 +18,6 @@
 //
 
 import Foundation
-import CwlUtils
 
 /// A composable one-way communication channel that delivers a sequence of `Result<T>` items to a `handler` function running in a potentially different execution context. Delivery is serial (FIFO) queuing as required.
 ///
@@ -503,12 +502,12 @@ public class Signal<T> {
 	
 	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` immediately activates its antecedents and is "continuous" (multiple listeners can be attached to the `SignalMulti` and each new listener immediately receives the most recently sent value on "activation").
 	///
-	/// - parameter initial: the immediate value sent to any listeners that connect *before* the first value is sent through this `Signal`
+	/// - parameter initialValues: the immediate value sent to any listeners that connect *before* the first value is sent through this `Signal`
 	///
 	/// - returns: a continuous `SignalMulti`
-	public final func continuous(initialState: T) -> SignalMulti<T> {
+	public final func continuous(initialValue: T) -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: ([initialState], nil), userUpdated: false, alwaysActive: true, dw: &dw, context: .direct, updater: { a, p, r -> (Array<T>, Error?) in
+			SignalMultiProcessor(signal: s, values: ([initialValue], nil), userUpdated: false, alwaysActive: true, dw: &dw, context: .direct, updater: { a, p, r -> (Array<T>, Error?) in
 				let previous: (Array<T>, Error?) = (a, p)
 				switch r {
 				case .success(let v): a = [v]
@@ -588,13 +587,13 @@ public class Signal<T> {
 	/// Consider this as an operator that allows the creation of a custom "bring-up-to-speed" value for new listeners.
 	///
 	/// - Parameters:
-	///   - initial: activation values used when *before* any incoming value is received (if you wan't to specify closed as well, use `preclosed` instead)
+	///   - initialValues: activation values used when *before* any incoming value is received (if you wan't to specify closed as well, use `preclosed` instead)
 	///   - context: the execution context where the `updater` will run
 	///   - updater: run for each incoming `Result<T>` to update the buffered activation values
 	/// - Returns: a `SignalMulti` with custom activation
-	public final func customActivation(initialState: Array<T> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<T>, _ cachedError: inout Error?, _ incoming: Result<T>) -> Void) -> SignalMulti<T> {
+	public final func customActivation(initialValues: Array<T> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<T>, _ cachedError: inout Error?, _ incoming: Result<T>) -> Void) -> SignalMulti<T> {
 		return SignalMulti<T>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: (initialState, nil), userUpdated: true, alwaysActive: true, dw: &dw, context: context) { (bufferedValues: inout Array<T>, bufferedError: inout Error?, incoming: Result<T>) -> (Array<T>, Error?) in
+			SignalMultiProcessor(signal: s, values: (initialValues, nil), userUpdated: true, alwaysActive: true, dw: &dw, context: context) { (bufferedValues: inout Array<T>, bufferedError: inout Error?, incoming: Result<T>) -> (Array<T>, Error?) in
 				let oldActivationValues = bufferedValues
 				let oldError = bufferedError
 				updater(&bufferedValues, &bufferedError, incoming)

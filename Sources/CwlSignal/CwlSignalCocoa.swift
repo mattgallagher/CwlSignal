@@ -18,9 +18,6 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-import Foundation
-import CwlUtils
-
 /// Instances of `SignalActionTarget` can be used as the "target" of Cocoa "target-action" events and the result will be emitted as a signal.
 /// Instance of this class are owned by the output `signal` so if you're holding onto the signal, you can drop references to this class itself.
 open class SignalActionTarget: NSObject {

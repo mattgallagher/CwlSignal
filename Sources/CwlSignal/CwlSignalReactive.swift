@@ -18,9 +18,6 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-import Foundation
-import CwlUtils
-
 #if swift(>=4)
 #else
 	public typealias Numeric = IntegerArithmetic & ExpressibleByIntegerLiteral
