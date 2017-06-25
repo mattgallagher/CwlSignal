@@ -17,8 +17,6 @@
 //  OF THIS SOFTWARE.
 //
 
-import Foundation
-
 /// A composable one-way communication channel that delivers a sequence of `Result<T>` items to a `handler` function running in a potentially different execution context. Delivery is serial (FIFO) queuing as required.
 ///
 /// The intended use case is as a serialized asynchronous change propagation framework.
@@ -204,6 +202,8 @@ public class Signal<T> {
 	}
 	
 	/// A version of `subscribe` that retains the `SignalEndpoint` internally, keeping the signal graph alive. The `SignalEndpoint` is cancelled and released if the signal closes or if the handler returns `false` after any signal.
+	///
+	/// NOTE: this subscriber deliberately creates a reference counted loop. If the signal is never closed, it will result in a memory leak. This function should be used only when `self` is guaranteed to close.
 	///
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
@@ -672,6 +672,7 @@ public class Signal<T> {
 		if let r = result {
 			return r
 		} else {
+			assertionFailure("Single listener `Signal` consumed multiple times.")
 			return Signal<T>.preclosed(error: SignalError.duplicate).attach(constructor: constructor)
 		}
 	}

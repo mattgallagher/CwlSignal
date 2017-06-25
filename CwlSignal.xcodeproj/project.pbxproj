@@ -67,6 +67,19 @@
 			name = CwlPreconditionTesting_iOS;
 			productName = CwlPreconditionTesting_iOS;
 		};
+		C9A380371EFF923A00BFF2E5 /* CwlSignalConcat */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = C9A3803A1EFF923A00BFF2E5 /* Build configuration list for PBXAggregateTarget "CwlSignalConcat" */;
+			buildPhases = (
+				C9A3803D1EFF924700BFF2E5 /* ShellScript */,
+				C9A3803E1EFF92AA00BFF2E5 /* ShellScript */,
+			);
+			dependencies = (
+				C9A3803C1EFF924300BFF2E5 /* PBXTargetDependency */,
+			);
+			name = CwlSignalConcat;
+			productName = CwlSignalConcat;
+		};
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
@@ -154,6 +167,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = C997C3AA1EC7552E00F67C3B;
 			remoteInfo = CwlPreconditionTesting_iOS;
+		};
+		C9A3803B1EFF924300BFF2E5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C945D7C01E5038C4009AFB8E;
+			remoteInfo = FetchDependencies;
 		};
 		C9BFD1271EF6192900F13410 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -463,6 +483,10 @@
 						DevelopmentTeam = S7YQ892G6G;
 						ProvisioningStyle = Automatic;
 					};
+					C9A380371EFF923A00BFF2E5 = {
+						CreatedOnToolsVersion = 9.0;
+						DevelopmentTeam = S7YQ892G6G;
+					};
 					C9DD3D7C1E41DFB600E23B15 = {
 						LastSwiftMigration = 0900;
 					};
@@ -493,6 +517,7 @@
 				OBJ_214 /* CwlSignal_macOSTests */,
 				C9DD3D7C1E41DFB600E23B15 /* CwlSignal_iOS */,
 				C9DD3D9B1E41DFBA00E23B15 /* CwlSignal_iOSTests */,
+				C9A380371EFF923A00BFF2E5 /* CwlSignalConcat */,
 			);
 		};
 /* End PBXProject section */
@@ -574,6 +599,32 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "if [ $CARTHAGE == \"YES\" ]; then\n  cp -R \"$SRCROOT/Carthage/Build/iOS/CwlPreconditionTesting.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  cp -R \"$SRCROOT/Carthage/Build/iOS/CwlCatchException.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  exit\nfi\n\"$DEVELOPER_BIN_DIR/xcodebuild\" -project \"$OBJROOT/cwl_symlinks/CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj\" -target CwlPreconditionTesting_iOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
+		};
+		C9A3803D1EFF924700BFF2E5 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"$DEVELOPER_BIN_DIR/xcodebuild\" -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtilsConcat -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\"";
+		};
+		C9A3803E1EFF92AA00BFF2E5 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "MI=\"//\n//  This is part of a \\\"three file\\\" build of the CwlSignal framework with\n//  internal interfaces for static inclusion in projects where external\n//  frameworks are undesireable. The files:\n//     CwlUtils_internal.swift\n//     CwlSignal_internal.swift\n//     CwlSignalExtensions_internal.swift\n//  should all be included at the same time.\n//  For details, visit: https://github.com/mattgallagher/CwlSignal\n//\n\"\n\n\"$BUILT_PRODUCTS_DIR/CwlUtilsConcat\" internal \"$BUILT_PRODUCTS_DIR/CwlSignal_internal.swift\" -m \"$MI\" -t \"import Foundation\" \"$SRCROOT/Sources/CwlSignal/CwlSignal.swift\"\n\"$BUILT_PRODUCTS_DIR/CwlUtilsConcat\" internal \"$BUILT_PRODUCTS_DIR/CwlSignalExtensions_internal.swift\" -m \"$MI\" -t \"import Foundation\" -x \"$SRCROOT/Sources/CwlSignal/CwlSignal.swift\" \"$SRCROOT/Sources/CwlSignal\"\n\nMP=\"//\n//  This is part of a \\\"three file\\\" build of the CwlSignal framework with\n//  public interfaces for inclusion in Swift Playgrounds \\\"Sources\\\" folders.\n//  The files:\n//     CwlUtils_public.swift\n//     CwlSignal_public.swift\n//     CwlSignalExtensions_public.swift\n//  should all be included at the same time.\n//  For details, visit: https://github.com/mattgallagher/CwlSignal\n//\n\"\n\n\"$BUILT_PRODUCTS_DIR/CwlUtilsConcat\" public \"$BUILT_PRODUCTS_DIR/CwlSignal_public.swift\" -m \"$MP\" -t \"import Foundation\" \"$SRCROOT/Sources/CwlSignal/CwlSignal.swift\"\n\"$BUILT_PRODUCTS_DIR/CwlUtilsConcat\" public \"$BUILT_PRODUCTS_DIR/CwlSignalExtensions_public.swift\" -m \"$MP\" -t \"import Foundation\" -x \"$SRCROOT/Sources/CwlSignal/CwlSignal.swift\" \"$SRCROOT/Sources/CwlSignal\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -662,6 +713,11 @@
 			isa = PBXTargetDependency;
 			target = C997C3AA1EC7552E00F67C3B /* CwlPreconditionTesting_iOS */;
 			targetProxy = C997C3B31EC755CA00F67C3B /* PBXContainerItemProxy */;
+		};
+		C9A3803C1EFF924300BFF2E5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C945D7C01E5038C4009AFB8E /* FetchDependencies */;
+			targetProxy = C9A3803B1EFF924300BFF2E5 /* PBXContainerItemProxy */;
 		};
 		C9BFD1281EF6192900F13410 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -818,6 +874,22 @@
 				DEVELOPMENT_TEAM = S7YQ892G6G;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+			};
+			name = Release;
+		};
+		C9A380381EFF923A00BFF2E5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEVELOPMENT_TEAM = S7YQ892G6G;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		C9A380391EFF923A00BFF2E5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEVELOPMENT_TEAM = S7YQ892G6G;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
 		};
@@ -1100,6 +1172,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
+		};
+		C9A3803A1EFF923A00BFF2E5 /* Build configuration list for PBXAggregateTarget "CwlSignalConcat" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9A380381EFF923A00BFF2E5 /* Debug */,
+				C9A380391EFF923A00BFF2E5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		C9DD3D961E41DFB600E23B15 /* Build configuration list for PBXNativeTarget "CwlSignal_iOS" */ = {
 			isa = XCConfigurationList;
