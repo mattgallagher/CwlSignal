@@ -2034,7 +2034,7 @@ extension Signal {
 	///   - context: where the handler will be invoked
 	///   - handler: invoked when self is deactivated
 	/// - Returns: a signal that emits the same outputs as self
-	public func onDeactivate(context: Exec = .direct, f: @escaping () -> ()) -> Signal<T> {
+	public func onDeactivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<T> {
 		let signal = Signal<T>.generate { input in
 			if let i = input {
 				do {
@@ -2043,7 +2043,7 @@ extension Signal {
 					i.send(error: error)
 				}
 			} else {
-				f()
+				handler()
 			}
 		}
 		return signal
