@@ -267,7 +267,7 @@ public class Signal<T> {
 	/// Appends a disconnected `SignalJunction` to this `Signal` so outputs can be repeatedly joined and disconnected from this graph in the future.
 	///
 	/// - Returns: the `SignalJunction<T>`
-	@discardableResult public final func junction() -> SignalJunction<T> {
+	public final func junction() -> SignalJunction<T> {
 		return attach { (s, dw) -> SignalJunction<T> in
 			return SignalJunction<T>(signal: s, dw: &dw)
 		}
@@ -276,7 +276,7 @@ public class Signal<T> {
 	/// Appends a connected `SignalJunction` to this `Signal` so the graph can be disconnected in the future.
 	///
 	/// - Returns: the `SignalJunction<T>` and the connected `Signal` as a pair
-	@discardableResult public final func junctionSignal() -> (SignalJunction<T>, Signal<T>) {
+	public final func junctionSignal() -> (SignalJunction<T>, Signal<T>) {
 		let (input, signal) = Signal<T>.create()
 		let j = try! self.join(to: input)
 		return (j, signal)
@@ -285,7 +285,7 @@ public class Signal<T> {
 	/// Appends a connected `SignalJunction` to this `Signal` so the graph can be disconnected in the future.
 	///
 	/// - Returns: the `SignalJunction<T>` and the connected `Signal` as a pair
-	@discardableResult public final func junctionSignal(onError: @escaping (SignalJunction<T>, Error, SignalInput<T>) -> ()) -> (SignalJunction<T>, Signal<T>) {
+	public final func junctionSignal(onError: @escaping (SignalJunction<T>, Error, SignalInput<T>) -> ()) -> (SignalJunction<T>, Signal<T>) {
 		let (input, signal) = Signal<T>.create()
 		let j = try! self.join(to: input, onError: onError)
 		return (j, signal)
