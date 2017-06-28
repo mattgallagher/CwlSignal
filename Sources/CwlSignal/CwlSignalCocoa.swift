@@ -34,17 +34,15 @@ open class SignalActionTarget: NSObject {
 		}
 		
 		// Otherwise, create a new one
-		let (i, s) = Signal<Any?>.create { s in
 			// Instead of using a `continuous` transform, use a `customActivation` to do the same thing while capturing `self` so that we're owned by the signal.
-			s.customActivation { (b: inout Array<Any?>, e: inout Error?, r: Result<Any?>) in
-				withExtendedLifetime(self) {}
-				switch r {
-				case .success(let v):
-					b.removeAll(keepingCapacity: true)
-					b.append(v)
-				case .failure(let err):
-					e = err
-				}
+		let (i, s) = Signal<Any?>.channel().customActivation { (b: inout Array<Any?>, e: inout Error?, r: Result<Any?>) in
+			withExtendedLifetime(self) {}
+			switch r {
+			case .success(let v):
+				b.removeAll(keepingCapacity: true)
+				b.append(v)
+			case .failure(let err):
+				e = err
 			}
 		}
 		self.signalInput = i
@@ -76,17 +74,14 @@ open class SignalDoubleActionTarget: SignalActionTarget {
 		}
 		
 		// Otherwise, create a new one
-		let (i, s) = Signal<Any?>.create { s in
-			// Instead of using a `continuous` transform, use a `customActivation` to do the same thing while capturing `self` so that we're owned by the signal.
-			s.customActivation { (b: inout Array<Any?>, e: inout Error?, r: Result<Any?>) in
-				withExtendedLifetime(self) {}
-				switch r {
-				case .success(let v):
-					b.removeAll(keepingCapacity: true)
-					b.append(v)
-				case .failure(let err):
-					e = err
-				}
+		let (i, s) = Signal<Any?>.channel().customActivation { (b: inout Array<Any?>, e: inout Error?, r: Result<Any?>) in
+			withExtendedLifetime(self) {}
+			switch r {
+			case .success(let v):
+				b.removeAll(keepingCapacity: true)
+				b.append(v)
+			case .failure(let err):
+				e = err
 			}
 		}
 		self.secondInput = i
