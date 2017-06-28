@@ -281,7 +281,9 @@ public final class SignalCollector<T> {
 	///
 	/// - Returns: a new `SignalInput` that feeds into the collector
 	public func input() -> SignalInput<T> {
-		return Signal<T>.create { s -> () in self.add(s) }.input
+		let (i, s) = Signal<T>.create()
+		self.add(s)
+		return i
 	}
 }
 
@@ -385,53 +387,6 @@ extension Signal {
 	/// Internally creates a polling endpoint which is polled once for the latest Result<T> and then discarded.
 	public var poll: Result<T>? {
 		return SignalPollingEndpoint(signal: self).latestResult
-	}
-}
-
-extension SignalInput {
-	/// Create a `SignalInput`-`Signal` pair, returning the `SignalInput` and handling the `Signal` internally using the `compose` closure. This is a syntactic convenience for functions that require a `SignalInput` parameter.
-	///
-	/// - Parameter compose: a function that works with the `Signal` half of the newly created pair
-	/// - Returns: the `SignalInput` half of the newly created pair
-	/// - Throws: rethrows any error raised in the `compose` function
-	public static func into(_ compose: (Signal<T>) throws -> Void) rethrows -> SignalInput<T> {
-		return try Signal<T>.create { s in try compose(s) }.input
-	}
-	
-	/// Creates a new `SignalInput`-`Signal` pair, appends a `map` transform to the `Signal` and then the transformed `Signal` is `join(to:)` self. The `SignalInput` from the pair is returned.
-	///
-	/// - Parameter map: a function used to map the pair's type onto the `ValueType` of `self`
-	/// - Returns: the `SignalInput` half of the newly created pair
-	/// - Throws: rethrows any error raised in the `compose` function
-	public func viaMap<U>(_ map: @escaping (U) -> T) throws -> SignalInput<U> {
-		return try .into { s in try s.map(map).join(to: self) }
-	}
-	
-	/// Creates a new `SignalInput`-`Signal` pair, composes an arbitrary transform to the `Signal` and then the transformed `Signal` is `join(to:)` self. The `SignalInput` from the pair is returned.
-	///
-	/// - Parameter compose: a function that works with the `Signal` half of the newly created pair and transforms it into the desired signal to `join` to `self`
-	/// - Returns: the `SignalInput` half of the newly created pair
-	/// - Throws: rethrows any error raised in the `compose` function
-	public func via<U>(_ compose: (Signal<U>) -> Signal<T>) throws -> SignalInput<U> {
-		return try .into { s in try compose(s).join(to: self) }
-	}
-}
-
-extension SignalCollector {
-	/// Creates a new `SignalInput`-`Signal` pair, appends a `map` transform to the `Signal` and then the transformed `Signal` is `join(to:)` self. The `SignalInput` from the pair is returned.
-	///
-	/// - Parameter map: a function used to map the pair's type onto the `ValueType` of `self`
-	/// - Returns: the `SignalInput` half of the newly created pair
-	public func viaMap<U>(_ map: @escaping (U) -> T) -> SignalInput<U> {
-		return .into { s in s.map(map).join(to: self) }
-	}
-	
-	/// Creates a new `SignalInput`-`Signal` pair, appends a `map` transform to the `Signal` and then the transformed `Signal` is `join(to:)` self. The `SignalInput` from the pair is returned.
-	///
-	/// - Parameter compose: a function that works with the `Signal` half of the newly created pair and transforms it into the desired signal to `join` to `self`
-	/// - Returns: the `SignalInput` half of the newly created pair
-	public func via<U>(_ compose: (Signal<U>) -> Signal<T>) -> SignalInput<U> {
-		return .into { s in compose(s).join(to: self) }
 	}
 }
 
