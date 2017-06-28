@@ -1481,6 +1481,21 @@ extension Signal {
 		return signal
 	}
 	
+	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
+	///
+	/// NOTE: the signal closes as `SignalError.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
+	///
+	/// - Parameter sources: a variable parameter list of `Signal<T>` instances that are merged with `self` to form the result.
+	/// - Returns: a signal that emits every value from every `sources` input `signal`.
+	public func mergeWith(sources: [Signal<T>]) -> Signal<T> {
+		let (mergeSet, signal) = Signal<T>.createMergeSet()
+		try! mergeSet.add(self, closePropagation: .errors)
+		for s in sources {
+			try! mergeSet.add(s, closePropagation: .errors)
+		}
+		return signal
+	}
+	
 	/// Implementation of [Reactive X operator "startWith"](http://reactivex.io/documentation/operators/startwith.html)
 	///
 	/// - Parameter sequence: a sequence of values.
