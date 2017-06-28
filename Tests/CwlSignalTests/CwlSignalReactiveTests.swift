@@ -1797,8 +1797,10 @@ class SignalReactiveTests: XCTestCase {
 		var results1 = [Result<Int>]()
 		let signal1 = Signal<Int>.from(values: 0..<10)
 		let signal2 = Signal<Int>.from(values: 10..<20)
+		var alternateAvailable = true
 		_ = signal1.catchError { e -> Signal<Int>? in
-			if e as? SignalError == .closed {
+			if e as? SignalError == .closed, alternateAvailable {
+				alternateAvailable = false
 				return signal2
 			} else {
 				return nil
@@ -1810,7 +1812,7 @@ class SignalReactiveTests: XCTestCase {
 		for i in 0..<20 {
 			XCTAssert(results1.at(i)?.value == i)
 		}
-		XCTAssert(results1.at(20)?.error as? SignalError == .duplicate)
+		XCTAssert(results1.at(20)?.error as? SignalError == .closed)
 		
 		var results2 = [Result<Int>]()
 		let signal3 = Signal<Int>.from(values: 0..<10)

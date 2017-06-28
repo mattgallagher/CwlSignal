@@ -169,11 +169,21 @@ class SignalTests: XCTestCase {
 		// Ensure we don't immediately receive anything
 		XCTAssert(results.count == 0)
 		
-		// Adding a second subscriber cancels the first
-		var results2 = [Result<Int>]()
-		let ep2 = signal.subscribe { r in results2.append(r) }
-		XCTAssert(results2.count == 1)
-		XCTAssert(results2.at(0)?.error as? SignalError == SignalError.duplicate)
+		// Adding a second subscriber results in an assertion failure at DEBUG time or a SignalError.duplicate otherwise
+		let e = catchBadInstruction {
+			var results2 = [Result<Int>]()
+			let ep2 = signal.subscribe { r in results2.append(r) }
+			#if DEBUG
+				XCTFail()
+			#else
+				XCTAssert(results2.count == 1)
+				XCTAssert(results2.at(0)?.error as? SignalError == SignalError.duplicate)
+			#endif
+			withExtendedLifetime(ep2) {}
+		}
+		#if DEBUG
+			XCTAssert(e != nil)
+		#endif
 		
 		// Send a value and close
 		XCTAssert(input.send(result: .success(123)) == nil)
@@ -188,7 +198,6 @@ class SignalTests: XCTestCase {
 		XCTAssert(input.send(result: .success(234)) == SignalError.cancelled)
 		
 		withExtendedLifetime(ep1) {}
-		withExtendedLifetime(ep2) {}
 	}
 	
 	func testSignalPassthrough() {
@@ -421,15 +430,25 @@ class SignalTests: XCTestCase {
 			XCTAssert(results1.at(0)?.value == 5)
 			
 			// Subscribe again
-			var results2 = [Result<Int>]()
-			let ep2 = signal.subscribe { r in results2.append(r) }
-			
-			// Ensure error received
-			XCTAssert(results2.count == 1)
-			XCTAssert(results2.at(0)?.error as? SignalError == SignalError.duplicate)
+			let e = catchBadInstruction {
+				var results2 = [Result<Int>]()
+				let ep2 = signal.subscribe { r in results2.append(r) }
+				
+				#if DEBUG
+					XCTFail()
+				#else
+					// Ensure error received
+					XCTAssert(results2.count == 1)
+					XCTAssert(results2.at(0)?.error as? SignalError == SignalError.duplicate)
+				#endif
+				
+				withExtendedLifetime(ep2) {}
+			}
+			#if DEBUG
+				XCTAssert(e != nil)
+			#endif
 			
 			withExtendedLifetime(ep1) {}
-			withExtendedLifetime(ep2) {}
 		}
 		
 		// Send a value again
@@ -1675,8 +1694,8 @@ class SignalTests: XCTestCase {
 	#if !SWIFT_PACKAGE
 		func testSinglePerformance() {
 			var sequenceLength = 10_000_000
-			var expected = 3.25 // +/- 0.4
-			var upperThreshold = 4.0
+			var expected = 4.3 // +/- 0.4
+			var upperThreshold = 5.0
 			
 			// Override the test parameters when running in Debug.
 			#if DEBUG
@@ -1724,8 +1743,8 @@ class SignalTests: XCTestCase {
 		
 		func testSyncMapPerformance() {
 			var sequenceLength = 10_000_000
-			var expected = 7.3 // +/- 0.4
-			var upperThreshold = 8.0
+			var expected = 10.0 // +/- 0.4
+			var upperThreshold = 12.0
 			
 			// Override the test parameters when running in Debug.
 			#if DEBUG
