@@ -21,6 +21,8 @@ Signal<String>.generate { input in
 	}
 }.subscribeValuesAndKeepAlive {
 	print($0);
+	
+	// Stop immediately after the orange "pouting face"
 	return $0 == "😡" ? false : true
 }
 
