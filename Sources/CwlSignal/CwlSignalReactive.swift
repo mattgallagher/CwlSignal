@@ -422,7 +422,7 @@ extension Signal {
 	
 	/// Implementation of [Reactive X operator "Buffer"](http://reactivex.io/documentation/operators/buffer.html) for non-overlapping buffers of fixed length.
 	///
-	/// - Note: this is just a convenience wrapper around `buffer(count:skip:behavior)` where `skip` equals `count`.
+	/// - Note: this is just a convenience wrapper around `buffer(count:skip:)` where `skip` equals `count`.
 	///
 	/// - Parameter count: the number of separate values to accumulate before emitting an array of values
 	/// - Returns: a signal where the values are arrays of values from `self`, accumulated according to `count`
