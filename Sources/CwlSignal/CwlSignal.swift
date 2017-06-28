@@ -109,16 +109,6 @@ public class Signal<T> {
 		return (SignalInput(signal: s, activationCount: s.activationCount), s)
 	}
 	
-	/// Like `create` but also provides a trailing closure to transform the `Signal` normally returned from `create` and in its place, return the result of the transformation.
-	///
-	/// - Parameter compose: a trailing closure which receices the `Signal` as a parameter and any result is returned as the second tuple parameter from this function
-	/// - Returns: a (`SignalInput`, U) tuple where `SignalInput` is the input to the signal graph and `U` is the return value from the `compose` function.
-	/// - Throws: rethrows any error from the closure
-	public static func create<U>(compose: (Signal<T>) throws -> U) rethrows -> (input: SignalInput<T>, composed: U) {
-		let (i, s) = create()
-		return (i, try compose(s))
-	}
-	
 	/// Similar to `create`, in that it creates a "head" for the graph but rather than immediately providing a `SignalInput`, this function calls the `activationChange` function when the signal graph is activated and provides the newly created `SignalInput` at that time. When the graph deactivates, `nil` is sent to the `activationChange` function. If a subsequent reactivation occurs, the new `SignalInput` for the re-activation is provided.
 	///
 	/// - Parameters:
@@ -134,38 +124,6 @@ public class Signal<T> {
 			}
 		})
 		return s
-	}
-	
-	/// Similar to `create` but uses a `SignalMergeSet` as the input to the signal pipeline instead of a `SignalInput`. A `SignalMergeSet` can accept multiple, changing inputs with different "on-error/on-close" behaviors.
-	///
-	/// - Parameters:
-	///   - initialInputs: any initial signals to be used as inputs to the `SignalMergeSet`.
-	///   - closePropagation: close and error propagation behavior to be used for each of `initialInputs`
-	///   - removeOnDeactivate: deactivate behavior to be used for each of `initialInputs`
-	/// - Returns: the (mergeSet, signal)
-	public static func createMergeSet<S: Sequence>(_ initialInputs: S, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> (mergeSet: SignalMergeSet<T>, signal: Signal<T>) where S.Iterator.Element: Signal<T> {
-		let (mergeSet, signal) = Signal<T>.createMergeSet()
-		for i in initialInputs {
-			try! mergeSet.add(i, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
-		}
-		return (mergeSet, signal)
-	}
-	
-	/// Similar to `create` but uses a `SignalMergeSet` as the input to the signal pipeline instead of a `SignalInput`. A `SignalMergeSet` can accept multiple, changing inputs with different "on-error/on-close" behaviors.
-	///
-	/// - Parameters:
-	///   - initialInputs: any initial signals to be used as inputs to the `SignalMergeSet`.
-	///   - closePropagation: close and error propagation behavior to be used for each of `initialInputs`
-	///   - removeOnDeactivate: deactivate behavior to be used for each of `initialInputs`
-	///   - compose: a trailing closure which receices the `Signal` as a parameter and any result is returned as the second tuple parameter from this function
-	/// - Returns: a (`SignalMergeSet`, U) tuple where `SignalMergeSet` is the input to the signal graph and `U` is the return value from the `compose` function.
-	/// - Throws: rethrows any error from the closure
-	public static func createMergeSet<S: Sequence, U>(_ initialInputs: S, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false, compose: (Signal<T>) throws -> U) rethrows -> (mergeSet: SignalMergeSet<T>, composed: U) where S.Iterator.Element: Signal<T> {
-		let (mergeSet, signal) = try Signal<T>.createMergeSet(compose: compose)
-		for i in initialInputs {
-			try! mergeSet.add(i, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
-		}
-		return (mergeSet, signal)
 	}
 	
 	/// A simplified version of `createMergeSet` that creates no initial inputs.
@@ -1286,7 +1244,6 @@ public final class SignalMulti<T>: Signal<T> {
 		}
 	}
 }
-
 
 /// Used to provide a light abstraction over the `SignalInput` and `SignalNext` types.
 /// In general, the only real purpose of this protocol is to enable the `send(value:)`, `send(error:)`, `close()` extensions in "SignalExternsions.swift"
