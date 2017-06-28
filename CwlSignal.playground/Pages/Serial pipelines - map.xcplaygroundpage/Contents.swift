@@ -40,14 +40,14 @@ input.close()
 // In reactive programming, blocking is normally "bad" but we need to block or the playground will finish before the background work.
 semaphore.wait()
 
-// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 endpoint.cancel()
 /*:
 ---
 
 *This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
-[Next page: Parallel composition - combine](@next)
+[Next page: Serial pipelines - channel](@next)
 
 [Previous page: Serial pipelines - transform](@previous)
 */

@@ -32,17 +32,17 @@ import PlaygroundSupport
 
 // Create an instance of our view controller
 let controller = ViewController(nibName: nil, bundle: nil)!
-
+	
 PlaygroundPage.current.liveView = controller.view
 
 // This is a dummy Login class. Every 1.5 seconds, it toggles login on the background thread
 class Login {
-	let signal = intervalSignal(interval: .fromSeconds(1.5)).map { v in v % 2 == 0 }.continuous(initial: false)
+	let signal = intervalSignal(.fromSeconds(1.5)).map { v in v % 2 == 0 }.continuous(initialValue: false)
 }
 
 // This is a FileSelection class. Every 0.5 seconds, it changes the number of selected files on the main thread
 class FileSelection {
-	let signal = intervalSignal(interval: .fromSeconds(0.5), context: .main).map { v in Array<Int>(repeating: 0, count: v % 3) }.continuous(initial: Array<Int>())
+	let signal = intervalSignal(.fromSeconds(0.5), context: .main).map { v in Array<Int>(repeating: 0, count: v % 3) }.continuous(initialValue: Array<Int>())
 }
 
 class ViewController: NSViewController {

@@ -14,7 +14,7 @@ import CwlSignal
 // Create an input/output pair, making the output continuous before returning
 //
 // SOMETHING TO TRY: replace `continuous` with `playback`
-let (input, output) = Signal<Int>.create { signal in signal.continuous() }
+let (input, output) = Signal<Int>.channel().continuous()
 
 // Send values before a subscriber exists
 input.send(value: 1)
@@ -30,7 +30,7 @@ print("We're already listening so the next value will be immediately delivered t
 // Send a value after a subscriber exists
 input.send(value: 3)
 
-// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 endpoint.cancel()
 
 /*:

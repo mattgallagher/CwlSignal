@@ -40,7 +40,7 @@ let endpoint = intSignal.combine(second: doubleSignal) { (eitherResult: EitherRe
 // In reactive programming, blocking is normally "bad" but we need to block or the playground will finish before the background work.
 semaphore.wait()
 
-// You'd normally store the endpoint in a parent and let ARC control its lifetime.
+// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 endpoint.cancel()
 /*:
 ---
@@ -49,5 +49,5 @@ endpoint.cancel()
 
 [Next page: Advanced behaviors - continuous](@next)
 
-[Previous page: Serial pipelines - map](@previous)
+[Previous page: Serial pipelines - channel](@previous)
 */

@@ -2638,7 +2638,9 @@ fileprivate class SignalMergeProcessor<T>: SignalProcessor<T, T> {
 }
 
 /// A merge set allows multiple `Signal`s of the same type to dynamically connect to a single output `Signal`. A merge set is analagous to a `SignalInput` in that it controls the input to a `Signal` but instead of controlling it by sending signals, it controls by connecting predecessors.
-public class SignalMergeSet<T>: Cancellable {
+public class SignalMergeSet<T>: Cancellable, SignalSender {
+	public typealias ValueType = T
+
 	fileprivate weak var signal: Signal<T>?
 	
 	// Constructs a `SignalMergeSet` (typically called from `Signal<T>.createMergeSet`)
@@ -2698,6 +2700,16 @@ public class SignalMergeSet<T>: Cancellable {
 		}.input
 	}
 	
+	/// The primary signal sending function
+	///
+	/// NOTE: on `SignalMergeSet` this is a low performance convenience method; it creates a new `input()` on each send
+	///
+	/// - Parameter result: the value or error to send, composed as a `Result`
+	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.cancelled` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
+	@discardableResult public func send(result: Result<ValueType>) -> SignalError? {
+		return input().send(result: result)
+	}
+
 	/// Implementation of `Cancellable` immediately sends a `SignalError.cancelled` to the `SignalMergeSet` destination.
 	public func cancel() {
 		guard let sig = signal else { return }

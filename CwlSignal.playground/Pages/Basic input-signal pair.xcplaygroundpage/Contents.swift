@@ -1,5 +1,5 @@
 /*:
-# Basic channel
+# Basic input-signal pair
 
 > **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
 
@@ -32,7 +32,7 @@ input.send(value: 2)
 input.send(value: 3)
 input.close()
 
-// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 endpoint.cancel()
 /*:
 ---

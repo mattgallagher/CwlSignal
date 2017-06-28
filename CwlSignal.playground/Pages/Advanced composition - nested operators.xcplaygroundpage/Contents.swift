@@ -17,36 +17,27 @@ The `switchLatest` function is used to abandon previous connection attempts. The
 import CwlSignal
 import Foundation
 
-// This `Service` class shows a number of piecese of logic built together. This can be a little tricky to read since a straight path through the signal pipeline jumps into and out of code syntax nestings. Here's how it looks:
-// 1. When `runWithTimeout` is called, a new timeout value is sent to `input`. This value travels into the signal pipeline formed by `create` so the timeout value passes into the `create` function's trailing closure via the `s` parameter (i.e. `s` is a `Signal<DispatchTimeInterval>` carrying the latest timeout value).
-// 2. Every value `v` that passes through the `s` signal is `map`ped onto (the mathematical way of saying "turned into") a new `connect` signal with a trailing `timeout` transformation. This is the primary connection with timeout logic: either the connect completes first or the timeout fires and closes the connection.
-// 3. The entire connection pipeline logic is wrapped in `switchLatest` so that the `runWithTimeout` function can be called repeatedly and any previous connection attempt will simply be abandoned without consequence.
+// This `Service` class takes a `connect` function on construction that attempts a new connection each time it is called – the result of the connect is emitted as a `Signal`.
+// The `connect` signal is created every time a new value is sent to `newConnectionWithTimeout` and the value is used to apply a `timeout` to the `connect` signal.
+// Additionally, the `Service` can handle multiple connection attempts and all previous connection attempts are discarded..
 class Service {
-   private let input: SignalInput<DispatchTimeInterval>
-   
-   // Instead of "handler" callbacks, output is now via this signal
-   let signal: SignalMulti<Result<String>>
+   let newConnectionWithTimeout: SignalMultiInput<DispatchTimeInterval>
+   let resultSignal: SignalMulti<Result<String>>
 	
-	// The behavior of this class is is encapsulated in the signal, constructed on `init`.
    init(connect: @escaping () -> Signal<String>) {
-      (self.input, self.signal) = Signal<DispatchTimeInterval>.create { s in
-			Signal<Result<String>>.switchLatest(
-				s.map { v in connect().timeout(interval: v).materialize() }
-			).multicast()
-      }
-   }
-
-   // Calling connect just sends the timeout value to the existing signal input
-   func runWithTimeout(seconds: Double) {
-      input.send(value: .fromSeconds(seconds))
+		(self.newConnectionWithTimeout, self.resultSignal) = Signal<DispatchTimeInterval>.multiInputChannel().map { seconds in
+			connect().timeout(interval: seconds).materialize()
+		}.nextStage { allConnectionAttempts in
+			Signal<Result<String>>.switchLatest(allConnectionAttempts)
+		}.multicast()
    }
 }
 
-// Create an instance of the service
+// Our "connection" is a timer that will return a string after a fixed delay
 let service = Service { Signal<String>.timer(interval: .fromSeconds(2), value: "Hello, world!") }
 
 // Subscribe to the output of the service
-let endpoint = service.signal.subscribe { result in
+let endpoint = service.resultSignal.subscribe { result in
 	switch result {
 	case .success(.success(let message)): print("Connected with message: \(message)")
 	case .success(.failure(SignalError.closed)): print("Connection closed successfully")
@@ -59,12 +50,12 @@ let endpoint = service.signal.subscribe { result in
 // If this number is greater than the `.fromSeconds` value above, the "Hello, world!" response will be sent.
 // If this number is smaller than the `.fromSeconds` value above, the timeout behavior will occur.
 // SOMETHING TO TRY: replace 3.0 seconds with 1.0
-service.runWithTimeout(seconds: 3.0)
+service.newConnectionWithTimeout.send(value: .seconds(3))
 
-// Let everything run for a 10 seconds.
+// Let everything run for 10 seconds.
 RunLoop.current.run(until: Date(timeIntervalSinceNow: 10.0))
 
-// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 endpoint.cancel()
 /*:
 ---

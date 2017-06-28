@@ -23,7 +23,19 @@ c. select the "Build Phases" tab
 d. if you don't already have a "Copy File" build phase with a "Destination: Frameworks", add one using the "+" button in the top left of the tab
 e. click the "+" within the "Copy File (Frameworks)" phase and from the list that appears, select the "CwlSignal.framework" (if there are multiple frameworks with the same name, look for the one that appears *above* the corresponding macOS or iOS CwlSignal testing target).
 
-When building using this approach, the "FetchDependencies" target will use the Swift Package Manager to download the "CwlUtils" project from github. The download is stored in the "Build intermediates" directory for your project. Normally, you can ignore its existence but if you get any errors from the "FetchDependencies" target, you might need to clean the build folder (Hold "Option" key while selecting "Product" &rarr; "Clean Build Folder..." from the Xcode menubar). In some rare cases when switching between Xcode 8 and Xcode 9, you might need to delete the Package.pins file in the CwlSignal directory.
+#### Swift Package Manager related problems and errors
+
+When building using this approach, the "FetchDependencies" target will use the Swift Package Manager to download the "CwlUtils" project from github. The checkout is placed in the "Build intermediates" directory for your project. Normally, you can ignore its existence but if you get any errors from the "FetchDependencies" target, you might need to clean the build folder (Hold "Option" key while selecting "Product" &rarr; "Clean Build Folder..." from the Xcode menubar). In some rare cases when switching between Xcode 8 and Xcode 9, you might need to delete the Package.pins file in the CwlSignal directory.
+
+In particular, when jumping around between Swift versions or checking out different repository versions, you may see:
+
+> swift-package: error: unsatisfiable
+
+or
+
+> !!! swift package show-dependencies failed
+
+as errors in the build log. Make certain to clean the build folder and remove the Package.pins file from the CwlSignal directory, as described above.
 
 If you want to download dependencies manually (instead of using this behind-the-scenes use of the Swift package manager), you should delete the "FetchDependencies" target and replace the "CwlUtils" targets with alternatives that build the dependencies in accordance with your manual download.
 

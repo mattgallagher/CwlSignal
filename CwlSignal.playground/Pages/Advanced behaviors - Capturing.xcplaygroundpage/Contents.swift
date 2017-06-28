@@ -7,12 +7,14 @@
 
 SignalCapture allows activation values to be pulled synchronously from a signal. This provides potential solutions to scenarios where code cannot proceed without being able to obtain an immediate value. Simply put: activation in CwlSignal provides pull-based synchronous behaviors, whereas typical reactive programming is push-based and potentially asynchronous.
 
+The `poll` property on `Signal` and `SignalPollableEndpoint` provide slightly different semantics but can also be used to synchronously obtain values from a stream when interface constraints demands this.
+
 ---
 */
 import CwlSignal
 
 // Create an input/output pair, transforming the output before returning
-let (input, output) = Signal<Int>.create { signal in signal.continuous() }
+let (input, output) = Signal<Int>.channel().continuous()
 
 // The `continuous` signal will cache the most recently sent value
 input.send(value: 1)
@@ -30,7 +32,7 @@ input.send(value: 4)
 // Subscribing unblocks the signal so the "3" and the "4" will now be sent through.
 let ep = capture.subscribeValues { value in print("Regular value: \(value)") }
 
-// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 ep.cancel()
 /*:
 ---

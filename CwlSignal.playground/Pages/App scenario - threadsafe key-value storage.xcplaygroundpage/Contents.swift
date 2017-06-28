@@ -29,7 +29,7 @@ dv.setValue("Hi, there.", forKey: "Oh!")
 dv.removeValue(forKey: "Oh!")
 dv.setValue("World", forKey: "Hello")
 
-// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 ep.cancel()
 
 /// A threadsafe key-value storage using reactive programming
@@ -44,19 +44,16 @@ class DocumentValues {
 
    init() {
       // Actual values storage is encapsulated within the signal
-      (self.input, self.signal) = Signal<Tuple>.create {
-         $0.map(withState: [:]) { (state: inout Dict, update: Tuple) in
-            
-            // All updates pass through this single, common function.
-            switch update {
-            case (let key, .some(let value)): state[key] = value
-            case (let key, .none): state.removeValue(forKey: key)
-            }
-            return state
-         
-         // Convert single `Signal` into multi-subscribable `SignalMulti` with `continuous`
-         }.continuous(initial: [:])
-      }
+      (self.input, self.signal) = Signal<Tuple>.channel().map(initialState: [:]) { (state: inout Dict, update: Tuple) in
+			// All updates pass through this single, common function.
+			switch update {
+			case (let key, .some(let value)): state[key] = value
+			case (let key, .none): state.removeValue(forKey: key)
+			}
+			return state
+			
+		// Convert single `Signal` into multi-subscribable `SignalMulti` with `continuous`
+		}.continuous(initialValue: [:])
    }
    
 	func removeValue(forKey key: AnyHashable) {

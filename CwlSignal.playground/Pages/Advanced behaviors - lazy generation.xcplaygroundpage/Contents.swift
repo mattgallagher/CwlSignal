@@ -28,7 +28,7 @@ print("We're just about to subscribe.")
 // Subscribe to listen to the values output by the channel
 let endpoint = output.subscribeValues { value in print(value) }
 
-// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 endpoint.cancel()
 
 /*:

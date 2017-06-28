@@ -1534,7 +1534,7 @@ extension Signal {
 	///
 	/// See also: `flatMapLatest` (emits values from the latest `Signal` to start emitting)
 	///
-	/// NOTE: ideally, this would not be a static function but a "same type" conditional extension. In a future Swift release this will probably change.
+	/// NOTE: ideally, this would not be a static function but a T == Signal<U> conditional extension. Without higher-kinded types, this is difficult to express. In a future Swift release this will probably change.
 	///
 	/// - Parameter signal: each of the inner signals emitted by this outer signal is observed, with the most recent signal emitted from the result
 	/// - Returns: a signal that emits the values from the latest `Signal` emitted by `signal`

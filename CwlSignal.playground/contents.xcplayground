@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<playground version='6.0' target-platform='macos' display-mode='rendered'>
+<playground version='6.0' target-platform='macos' display-mode='raw'>
     <pages>
         <page name='Introduction'/>
-        <page name='Basic channel'/>
+        <page name='Basic input-signal pair'/>
         <page name='Serial pipelines - transform'/>
         <page name='Serial pipelines - map'/>
+        <page name='Serial pipelines - channel'/>
         <page name='Parallel composition - combine'/>
         <page name='Advanced behaviors - continuous'/>
         <page name='Advanced behaviors - lazy generation'/>

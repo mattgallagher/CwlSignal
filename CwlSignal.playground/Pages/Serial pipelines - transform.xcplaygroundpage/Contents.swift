@@ -30,7 +30,7 @@ let endpoint = o.transform { (result: Result<Int>, next: SignalNext<String>) in
 i.send(value: 3)
 i.close()
 
-// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 endpoint.cancel()
 /*:
 ---
