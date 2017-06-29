@@ -6,9 +6,9 @@
 
 ## The `combine` function
 
-One of the key strengths of reactive programming is the ability to integrate dependencies from different sources, potentially running in different execution contexts.
+Another strength of reactive programming is the ability to integrate dependencies from different sources in a thread-safe manner.
 
-The underlying operator for these "multiple-input" operations is the `combine` operator. It offers an interface that closely resembles the `transform` operator, except that incoming `Result`s are wrapped in an `EitherResult`, reflecting an origin from "either" the first, the second or possibly third, fourth or fifth different input `Signal`.
+CwlSignal offers the `combine` operator which has an interface close to that of the `transform` operator, except that incoming `Result`s are wrapped in an `EitherResult`, reflecting an origin from "either" the first, the second or possibly third, fourth or fifth different input `Signal`.
 
 ---
  */
@@ -49,5 +49,5 @@ endpoint.cancel()
 
 [Next page: Advanced behaviors - continuous](@next)
 
-[Previous page: Serial pipelines - channel](@previous)
+[Previous page: Serial pipelines - asynchronous](@previous)
 */

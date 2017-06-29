@@ -30,8 +30,20 @@ import Cocoa
 import CwlSignal
 import PlaygroundSupport
 
-// Create an instance of our view controller
-let controller = ViewController(nibName: nil, bundle: nil)!
+// Create an instance of our view controller and handle a few other Swift 3/4 differences on macOS.
+#if swift(>=4)
+	let controller = ViewController(nibName: nil, bundle: nil)
+	let center = NSStackView.Gravity.center
+	let required = NSLayoutConstraint.Priority.required
+	let onState = NSControl.StateValue.on
+	let offState = NSControl.StateValue.off
+#else
+	let controller = ViewController(nibName: nil, bundle: nil)!
+	let center = NSStackViewGravity.center
+	let required = NSLayoutPriorityRequired
+	let onState = NSOnState
+	let offState = NSOffState
+#endif
 	
 PlaygroundPage.current.liveView = controller.view
 
@@ -62,17 +74,17 @@ class ViewController: NSViewController {
 		
 		// Set static properties
 		view.orientation = .vertical
-		view.setHuggingPriority(NSLayoutPriorityRequired, for: .horizontal)
+		view.setHuggingPriority(required, for: .horizontal)
 
 		// Construct the view tree
-		view.addView(addToFavoritesButton, in: NSStackViewGravity.center)
-		view.addView(loggedInStatusButton, in: NSStackViewGravity.center)
-		view.addView(filesSelectedLabel, in: NSStackViewGravity.center)
+		view.addView(addToFavoritesButton, in: center)
+		view.addView(loggedInStatusButton, in: center)
+		view.addView(filesSelectedLabel, in: center)
 		view.layoutSubtreeIfNeeded()
 		
 		// Configure dynamic properties
 		endpoints += login.signal.subscribe(context: .main) { r in
-			self.loggedInStatusButton.state = (r.value ?? false) ? NSOnState : NSOffState
+			self.loggedInStatusButton.state = (r.value ?? false) ? onState : offState
 		}
 		endpoints += fileSelection.signal.subscribe(context: .main) { r in
 			self.filesSelectedLabel.stringValue = "Selected file count: \(r.value?.count ?? 0)"

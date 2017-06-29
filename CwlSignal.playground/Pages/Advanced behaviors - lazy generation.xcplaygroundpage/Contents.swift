@@ -16,20 +16,30 @@ import CwlSignal
 // Create an output immediately but only start creating data to feed into the pipeline after a listener connects.
 let output = Signal<Int>.generate { input in
    if let i = input {
-		print("Generation has started")
-      i.send(value: 1)
-      i.send(value: 2)
-      i.send(value: 3)
-   }
+		print("Signal has activated")
+      i.send(values: 1, 2, 3)
+   } else {
+		print("Signal has deactivated")
+	}
 }
 
 print("We're just about to subscribe.")
 
 // Subscribe to listen to the values output by the channel
-let endpoint = output.subscribeValues { value in print(value) }
+let endpoint = output.subscribe { result in
+	switch result {
+	case .success(let value): print("Value: \(value)")
+	case .failure(let error): print("End of signal: \(error)")
+	}
+}
 
-// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
+print("We're just about to cancel the endpoint")
+
+// The signal will already be cancelled before we reach this point because we didn't hold onto the `input` in the `generate` function and it cancelled itself when it reached the end of the scope.
+// SOMETHING TO TRY: replace the `generate` with `retainedGenerate` and the `input` will be automatically held until all endpoints are cancelled.
 endpoint.cancel()
+
+print("Done")
 
 /*:
 ---

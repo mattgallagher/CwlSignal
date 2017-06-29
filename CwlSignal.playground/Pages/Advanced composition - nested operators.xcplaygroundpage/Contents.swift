@@ -19,37 +19,38 @@ import Foundation
 
 // This `Service` class takes a `connect` function on construction that attempts a new connection each time it is called – the result of the connect is emitted as a `Signal`.
 // The `connect` signal is created every time a new value is sent to `newConnectionWithTimeout` and the value is used to apply a `timeout` to the `connect` signal.
-// Additionally, the `Service` can handle multiple connection attempts and all previous connection attempts are discarded..
+// Additionally, the `Service` can handle multiple connection attempts and `switchLatest` will ignore all but the most recent attempt.
 class Service {
    let newConnectionWithTimeout: SignalMultiInput<DispatchTimeInterval>
-   let resultSignal: SignalMulti<Result<String>>
+   let signal: SignalMulti<Result<String>>
 	
    init(connect: @escaping () -> Signal<String>) {
-		(self.newConnectionWithTimeout, self.resultSignal) = Signal<DispatchTimeInterval>.multiInputChannel().map { seconds in
-			connect().timeout(interval: seconds).materialize()
-		}.nextStage { allConnectionAttempts in
-			Signal<Result<String>>.switchLatest(allConnectionAttempts)
-		}.multicast()
+		(newConnectionWithTimeout, signal) = Signal<DispatchTimeInterval>.multiInputChannel()
+			.map { seconds in
+				connect().timeout(interval: seconds).materialize()
+			}.next { allConnectionAttempts in
+				Signal<Result<String>>.switchLatest(allConnectionAttempts)
+			}.multicast()
    }
 }
 
 // Our "connection" is a timer that will return a string after a fixed delay
 let service = Service { Signal<String>.timer(interval: .fromSeconds(2), value: "Hello, world!") }
 
-// Subscribe to the output of the service
-let endpoint = service.resultSignal.subscribe { result in
+// Subscribe to the output of the service. Since we've used `materialize`, we'll get the values *and* the errors from the child `connect()` signals wrapped in `.success` cases of the enclosing `Service.signal`.
+let endpoint = service.signal.subscribe { result in
 	switch result {
 	case .success(.success(let message)): print("Connected with message: \(message)")
 	case .success(.failure(SignalError.closed)): print("Connection closed successfully")
 	case .success(.failure(SignalError.timeout)): print("Connection failed with timeout")
-	default: print("Service end (\(result)). Service was probably released.")
+	default: print(result)
 	}
 }
 
 // Try to connect.
 // If this number is greater than the `.fromSeconds` value above, the "Hello, world!" response will be sent.
 // If this number is smaller than the `.fromSeconds` value above, the timeout behavior will occur.
-// SOMETHING TO TRY: replace 3.0 seconds with 1.0
+// SOMETHING TO TRY: replace 3 seconds with 1
 service.newConnectionWithTimeout.send(value: .seconds(3))
 
 // Let everything run for 10 seconds.

@@ -14,6 +14,7 @@ The `poll` property on `Signal` and `SignalPollableEndpoint` provide slightly di
 import CwlSignal
 
 // Create an input/output pair, transforming the output before returning
+// SOMETHING TO TRY: replace `.continuous()` with `.playback()`
 let (input, output) = Signal<Int>.channel().continuous()
 
 // The `continuous` signal will cache the most recently sent value
@@ -23,14 +24,18 @@ input.send(value: 2)
 // Capture the "2" activation value cached by the `continuous` signal
 let capture = output.capture()
 let (values, error) = capture.activation()
+
 print("Activation values: \(values)")
 
 // Capturing blocks signal delivery so *both* of these will be queued for later
 input.send(value: 3)
 input.send(value: 4)
 
+print("Values sent during capture are paused until we subscribe.")
+
 // Subscribing unblocks the signal so the "3" and the "4" will now be sent through.
-let ep = capture.subscribeValues { value in print("Regular value: \(value)") }
+// SOMETHING TO TRY: replace `subscribeValues` with `subscribeValues(resend: true)`
+let ep = capture.subscribeValues { value in print("Value: \(value)") }
 
 // We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 ep.cancel()

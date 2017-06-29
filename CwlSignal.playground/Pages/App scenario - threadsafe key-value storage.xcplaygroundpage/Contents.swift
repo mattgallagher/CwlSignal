@@ -36,7 +36,7 @@ ep.cancel()
 class DocumentValues {
    typealias Dict = Dictionary<AnyHashable, Any>
    typealias Tuple = (AnyHashable, Any?)
-
+	
    private let input: SignalInput<Tuple>
    
    // Access to the data is via the signal.

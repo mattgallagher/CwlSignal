@@ -5,11 +5,11 @@
 
 ## The create function
 
-The CwlSignal library is centered around the Signal type; a one-way communication channel.
+The CwlSignal library is centered around one-way communication channels built from the `Signal` type (and a few related friends). The input to a channel is usually a `SignalInput`, there's a number of `Signal` stages in the middle to transform and process the data and then the channel ends with a `SignalEndpoint`.
 
-The `(SignalInput, Signal)` pair returned from `create` are the two ends of the channel and can be passed around your program to locations where values are emitted or where values are needed.
+The `(SignalInput, Signal)` pair returned from `create` lets you start building a channel from the initial input and the first intermediate `Signal`.
 
-The `subscribe` function creates a `SignalEndpoint` which allows us to extract values from the channel. The endpoint maintains the lifetime of the channel – when the endpoint is released, the channel will be closed and all resources cleaned up.
+The `subscribe` function creates a `SignalEndpoint` which allows us to extract values from the channel. An endpoint isn't just a point to extract signal values; it also maintains the lifetime of the channel. The signal only becomes "active" (ready for receiving values) when a `SignalEndpoint` is connected. When all endpoints are released, the channel will be closed and all resources cleaned up.
 
 ---
 */
