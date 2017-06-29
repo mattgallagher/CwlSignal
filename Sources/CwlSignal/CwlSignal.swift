@@ -103,9 +103,7 @@ public class Signal<T> {
 	/// - returns: a (`SignalInput`, `Signal`) tuple being the input and output for this stage in the signal pipeline.
 	public static func create() -> (input: SignalInput<T>, signal: Signal<T>) {
 		let s = Signal<T>()
-		var dw = DeferredWork()
-		s.mutex.sync { s.updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw) }
-		dw.runWork()
+		s.activationCount = 1
 		return (SignalInput(signal: s, activationCount: s.activationCount), s)
 	}
 	
