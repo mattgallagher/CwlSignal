@@ -2145,7 +2145,7 @@ class SignalReactiveTests: XCTestCase {
 		let (input1, signal1) = Signal<Int>.create()
 		let (input2, signal2) = Signal<Int>.create()
 		let (input3, signal3) = Signal<Int>.create()
-		let ep = Signal<Int>.amb(inputs: [signal1, signal2, signal3]).subscribe { (r: Result<Int>) in
+		let ep = Signal<Int>.amb([signal1, signal2, signal3]).subscribe { (r: Result<Int>) in
 			results.append(r)
 		}
 		input2.send(value: 0)

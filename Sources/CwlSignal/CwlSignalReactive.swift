@@ -1462,7 +1462,18 @@ extension Signal {
 	///
 	/// - Parameter sources: an `Array` where `signal` is merged into the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
-	public static func merge<S: Sequence>(_ sources: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
+	public static func merge<S: Sequence>(_ sequence: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
+		let (_, signal) = Signal<T>.createMergeSet(sequence)
+		return signal
+	}
+	
+	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
+	///
+	/// NOTE: the signal closes as `SignalError.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
+	///
+	/// - Parameter sources: an `Array` where `signal` is merged into the result.
+	/// - Returns: a signal that emits every value from every `sources` input `signal`.
+	public static func merge(_ sources: Signal<T>...) -> Signal<T> {
 		let (_, signal) = Signal<T>.createMergeSet(sources)
 		return signal
 	}
@@ -1473,10 +1484,10 @@ extension Signal {
 	///
 	/// - Parameter sources: a variable parameter list of `Signal<T>` instances that are merged with `self` to form the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
-	public func mergeWith(_ sources: Signal<T>...) -> Signal<T> {
+	public func mergeWith<S: Sequence>(_ sequence: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
 		let (mergeSet, signal) = Signal<T>.createMergeSet()
 		try! mergeSet.add(self, closePropagation: .errors)
-		for s in sources {
+		for s in sequence {
 			try! mergeSet.add(s, closePropagation: .errors)
 		}
 		return signal
@@ -1488,7 +1499,7 @@ extension Signal {
 	///
 	/// - Parameter sources: a variable parameter list of `Signal<T>` instances that are merged with `self` to form the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
-	public func mergeWith(sources: [Signal<T>]) -> Signal<T> {
+	public func mergeWith(_ sources: Signal<T>...) -> Signal<T> {
 		let (mergeSet, signal) = Signal<T>.createMergeSet()
 		try! mergeSet.add(self, closePropagation: .errors)
 		for s in sources {
@@ -2232,7 +2243,7 @@ extension Signal {
 	///
 	/// - Parameter inputs: a set of inputs
 	/// - Returns: connects to all inputs then emits the full set of values from the first of these to emit a value
-	public static func amb<S: Sequence>(inputs: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
+	public static func amb<S: Sequence>(_ inputs: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
 		let (mergeSet, signal) = Signal<(Int, Result<T>)>.createMergeSet()
 		inputs.enumerated().forEach { s in
 			_ = try? mergeSet.add(s.element.transform { r, n in
