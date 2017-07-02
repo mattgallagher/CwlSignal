@@ -2692,7 +2692,7 @@ public class SignalMergeSet<T>: Cancellable, SignalSender {
 	///   - closePropagation: passed to `add(_:closePropagation:removeOnDeactivate:) internally
 	///   - removeOnDeactivate: passed to `add(_:closePropagation:removeOnDeactivate:) internally
 	/// - Returns: the `SignalInput` that will now feed into this `SignalMergeSet`.
-	public func input(closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> SignalInput<T> {
+	public func newInput(closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> SignalInput<T> {
 		return Signal<T>.create { s -> () in
 			_ = try? self.add(s, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		}.input
@@ -2700,12 +2700,12 @@ public class SignalMergeSet<T>: Cancellable, SignalSender {
 	
 	/// The primary signal sending function
 	///
-	/// NOTE: on `SignalMergeSet` this is a low performance convenience method; it creates a new `input()` on each send
+	/// NOTE: on `SignalMergeSet` this is a low performance convenience method; it calls `newInput()` on each send. If you plan to send multiple results, it is more efficient to call `newInput()`, retain the `SignalInput` that creates and call `SignalInput` on that single input.
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
 	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.cancelled` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
 	@discardableResult public func send(result: Result<ValueType>) -> SignalError? {
-		return input().send(result: result)
+		return newInput().send(result: result)
 	}
 
 	/// Implementation of `Cancellable` immediately sends a `SignalError.cancelled` to the `SignalMergeSet` destination.

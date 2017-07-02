@@ -310,7 +310,7 @@ public final class SignalMultiInput<T>: SignalSender {
 	/// Equivalent to `input()` on `SignalMergeSet` with default parameters
 	///
 	/// - Returns: a new `SignalInput` that feeds into the collector
-	public func input() -> SignalInput<T> {
+	public func newInput() -> SignalInput<T> {
 		let (i, s) = Signal<T>.create()
 		self.add(s)
 		return i
@@ -318,12 +318,12 @@ public final class SignalMultiInput<T>: SignalSender {
 
 	/// The primary signal sending function
 	///
-	/// NOTE: on `SignalMultiInput` this is a low performance convenience method; it creates a new `input()` on each send
+	/// NOTE: on `SignalMultiInput` this is a low performance convenience method; it calls `newInput()` on each send. If you plan to send multiple results, it is more efficient to call `newInput()`, retain the `SignalInput` that creates and call `SignalInput` on that single input.
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
 	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.cancelled` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
 	@discardableResult public func send(result: Result<ValueType>) -> SignalError? {
-		return input().send(result: result)
+		return newInput().send(result: result)
 	}
 }
 
