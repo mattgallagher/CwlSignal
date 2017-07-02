@@ -1193,23 +1193,55 @@ extension Signal {
 			case (.result2(.success), _): break
 			case (.result2(.failure(let e)), _): n.send(error: e)
 			}
-		}.continuous()
+		}
 	}
 	
 	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output also includes the value from the trigger signal.
 	///
 	/// - Parameter trigger: instructs the result to emit the last value from `self`
 	/// - Returns: a signal that, when a value is received from `trigger`, emits the last value (if any) received from `self`.
-	public func sampleCombine<U>(_ trigger: Signal<U>) -> Signal<(T, U)> {
-		return combine(initialState: nil, second: trigger, context: .direct) { (last: inout T?, c: EitherResult2<T, U>, n: SignalNext<(T, U)>) -> Void in
+	public func sampleCombine<U>(_ trigger: Signal<U>) -> Signal<(sample: T, trigger: U)> {
+		return combine(initialState: nil, second: trigger, context: .direct) { (last: inout T?, c: EitherResult2<T, U>, n: SignalNext<(sample: T, trigger: U)>) -> Void in
 			switch (c, last) {
 			case (.result1(.success(let v)), _): last = v
 			case (.result1(.failure(let e)), _): n.send(error: e)
-			case (.result2(.success(let trigger)), .some(let l)): n.send(value: (l, trigger))
+			case (.result2(.success(let t)), .some(let l)): n.send(value: (sample: l, trigger: t))
 			case (.result2(.success), _): break
 			case (.result2(.failure(let e)), _): n.send(error: e)
 			}
-		}.continuous()
+		}
+	}
+	
+	/// Implementation of [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html)
+	///
+	/// - Parameter source: the latest value is emitted when `self` emits
+	/// - Returns: a signal that, when a value is received from `self`, emits the last value (if any) received from `source`.
+	public func latest<U>(_ source: Signal<U>) -> Signal<U> {
+		return source.combine(initialState: nil as U?, second: self, context: .direct) { (last: inout U?, c: EitherResult2<U, T>, n: SignalNext<U>) -> Void in
+			switch (c, last) {
+			case (.result1(.success(let v)), _): last = v
+			case (.result1(.failure(let e)), _): n.send(error: e)
+			case (.result2(.success), .some(let l)): n.send(value: l)
+			case (.result2(.success), _): break
+			case (.result2(.failure(let e)), _): n.send(error: e)
+			}
+		}
+	}
+	
+	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output also includes the value from the trigger signal.
+	///
+	/// - Parameter source: the latest value is emitted when `self` emits
+	/// - Returns: a signal that, when a value is received from `self`, emits the last value (if any) received from `source`.
+	public func latestCombine<U>(_ source: Signal<U>) -> Signal<(trigger: T, sample: U)> {
+		return source.combine(initialState: nil as U?, second: self, context: .direct) { (last: inout U?, c: EitherResult2<U, T>, n: SignalNext<(trigger: T, sample: U)>) -> Void in
+			switch (c, last) {
+			case (.result1(.success(let v)), _): last = v
+			case (.result1(.failure(let e)), _): n.send(error: e)
+			case (.result2(.success(let t)), .some(let l)): n.send(value: (trigger: t, sample: l))
+			case (.result2(.success), _): break
+			case (.result2(.failure(let e)), _): n.send(error: e)
+			}
+		}
 	}
 	
 	/// Implementation of [Reactive X operator "skip"](http://reactivex.io/documentation/operators/skip.html)

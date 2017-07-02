@@ -398,11 +398,19 @@ extension SignalChannel {
 	
 	public func sample(_ trigger: Signal<()>) -> SignalChannel<I, T> {
 		return next { $0.sample(trigger) }
-		}
+	}
 	
-	public func sampleCombine<U>(_ trigger: Signal<U>) -> SignalChannel<I, (T, U)> {
+	public func sampleCombine<U>(_ trigger: Signal<U>) -> SignalChannel<I, (sample: T, trigger: U)> {
 		return next { $0.sampleCombine(trigger) }
-		}
+	}
+	
+	public func latest<U>(_ source: Signal<U>) -> SignalChannel<I, U> {
+		return next { $0.latest(source) }
+	}
+	
+	public func latestCombine<U>(_ source: Signal<U>) -> SignalChannel<I, (trigger: T, sample: U)> {
+		return next { $0.latestCombine(source) }
+	}
 	
 	public func skip(_ count: Int) -> SignalChannel<I, T> {
 		return next { $0.skip(count) }
