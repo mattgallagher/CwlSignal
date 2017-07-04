@@ -4,11 +4,21 @@ An implementation of reactive programming. For details, see the article on [Coco
 
 ## Adding to your project
 
-This project can be used by manual inclusion in your projects or through any of the Swift Package Manager, CocoaPods or Carthage.
+This project can be included in your projects in a number of different ways:
+   
+   * [Manually included framework](#manual-framework-inclusion)
+   * [Statically included files](#statically-included-files)
+   * [Swift Package Manager](#swift-package-manager)
+   * [CocoaPods](#cocoapods)
+   * [Carthage](#carthage)
+
+The standard restrictions for each of these approaches apply so you'll need to pick an approach based on your situation and preferences.
 
 Minimum requirements are iOS 8 (simulator-only) or macOS 10.9. The project includes tvOS 9 and POSIX targets but these aren't regularly tested.
 
-### Manual inclusion
+## Manual framework inclusion
+
+> This approach will work for Mac/iOS app projects but might not work for App Extensions, Swift Playgrounds and other non-framework scenarios.
 
 1. In a subdirectory of your project's directory, run `git clone https://github.com/mattgallagher/CwlSignal.git`
 2. Drag the "CwlSignal.xcodeproj" file from the Finder into your own project's file tree in Xcode
@@ -39,7 +49,29 @@ as errors in the build log. Make certain to clean the build folder and remove th
 
 If you want to download dependencies manually (instead of using this behind-the-scenes use of the Swift package manager), you should delete the "FetchDependencies" target and replace the "CwlUtils" targets with alternatives that build the dependencies in accordance with your manual download.
 
-### Swift Package Manager
+## Statically included files
+
+This approach generates three concatenated files (CwlUtils.swift, CwlSignal.swift and CwlSignalExtensions.swift) file that can simply be added to another project (no dynamic frameworks, libraries or other settings required).
+
+1. Get the latest version of CwlSignal by running `git clone https://github.com/mattgallagher/CwlSignal.git` on the command-line.
+2. Open the CwlSignal.xcodeproject and select the CwlSignalConcat scheme with a destination of "My Mac" (choose from the Scheme popup in the toolbar or from the "Product" &rarr; "Scheme" and "Product" &rarr; "Destination" menus in the menubar.
+3. Build the scheme (Command-B or "Product" &rarr; "Build")
+
+Look in the build folder. The easist way to access the build folder is to right-click (or Control-click) on the "Products" folder in the project's file tree in Xcode and select "Show in Finder" and open the "Debug" folder in the "Products" folder that this reveals.
+
+Inside a folder located "Concat_internal" should be three files:
+
+* CwlUtils_internal.swift
+* CwlSignal_internal.swift
+* CwlSignalExtensions_internal.swift
+
+You can copy these three files and include them in any of your own projects like any other files.
+
+A folder named "Concat_public" should also be present. This version is almost identical to the "Concat_internal" version except that `public` and `open` specifiers have been stripped from the "Concat_internal" version but they remain in the "Concat_public" version. This allows the "Concat_public" version to be use in the "Sources" folder of Swift playgrounds or otherwise used where the features need to be exported from a module.
+
+> NOTE: this approach will pull CwlUtils from github using the Swift Package Manager. If you get errors from the FetchDependencies build step, see the note in the [Manually included framework](#manual-framework-inclusion) section on cleaning the build folder and .pins files.
+
+## Swift Package Manager
 
 Add the following to the `dependencies` array in your "Package.swift" file:
 
@@ -49,14 +81,14 @@ Or, if you're using the `swift-tools-version:4.0` package manager, add the follo
 
     .package(url: "https://github.com/mattgallagher/CwlSignal.git", majorVersion: 1)
 
-### CocoaPods
+## CocoaPods
 
 Add the following lines to your target in your "Podfile":
 
     pod 'CwlSignal', :git => 'https://github.com/mattgallagher/CwlSignal.git'
     pod 'CwlUtils', :git => 'https://github.com/mattgallagher/CwlUtils.git'
 
-### Carthage
+## Carthage
 
 Add the following line to your Cartfile:
 
