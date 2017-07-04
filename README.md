@@ -18,8 +18,6 @@ Minimum requirements are iOS 8 or macOS 10.10.
 
 ## Manual framework inclusion
 
-> This approach will work for Mac/iOS app projects but might not work for App Extensions, Swift Playgrounds and other non-framework scenarios.
-
 1. In a subdirectory of your project's directory, run `git clone https://github.com/mattgallagher/CwlSignal.git`
 2. Drag the "CwlSignal.xcodeproj" file from the Finder to somewhere your in own project's file tree in Xcode
 3. Drag the "CwlSignal.framework" and CwlUtils.framework" from the "Products" folder of the "CwlSignal" project to the "Copy Files (Frameworks)" build phases of any target that you want to include this module.
