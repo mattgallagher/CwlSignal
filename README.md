@@ -25,10 +25,11 @@ Minimum requirements are iOS 8 or macOS 10.10.
 That third step is a little tricky if you're unfamiliar with Xcode but it involves:
 
 1. click on your project in the file tree
-2. click on the target to whih you want to add this module
+2. click on the target to which you want to add this module
 3. select the "Build Phases" tab
 4. if you don't already have a "Copy File" build phase with a "Destination: Frameworks", add one using the "+" button in the top left of the tab
-5. click the "+" within the "Copy File (Frameworks)" phase and from the list that appears, select the "CwlSignal.framework". There will probably be two frameworks with the same name – macOS and iOS versions – so look for the CwlSignal.framework that appears immediately *above* the corresponding macOS or iOS CwlSignal testing target and the CwlUtils.framework that appears immediately above that.
+5. click the "+" within the "Copy File (Frameworks)" phase and from the list that appears, select the "CwlSignal.framework". There will probably be two frameworks with the same name – macOS and iOS versions – so look for the "CwlSignal.framework" that appears immediately *above* the corresponding macOS or iOS CwlSignal testing target
+6. repeat the previous step for "CwlUtils.framework"
 
 #### Swift Package Manager related problems and errors
 

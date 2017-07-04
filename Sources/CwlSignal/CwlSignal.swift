@@ -17,6 +17,11 @@
 //  OF THIS SOFTWARE.
 //
 
+#if SWIFT_PACKAGE
+	import Foundation
+	import CwlUtils
+#endif
+
 /// A composable one-way communication channel that delivers a sequence of `Result<T>` items to a `handler` function running in a potentially different execution context. Delivery is serial (FIFO) queuing as required.
 ///
 /// The intended use case is as a serialized asynchronous change propagation framework.

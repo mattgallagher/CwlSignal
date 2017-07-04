@@ -21,7 +21,7 @@ let completionContext = Exec.asyncQueue()
 
 // Create an input/output pair
 let (input, endpoint) = Signal<Int>.channel()
-	.map(context: .default) { value in
+	.map(context: .global) { value in
 		// Perform the background work
 		return sqrt(Double(value)) }
 	.subscribe(context: completionContext) { result in

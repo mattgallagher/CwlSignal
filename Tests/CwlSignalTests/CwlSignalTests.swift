@@ -1811,7 +1811,7 @@ class SignalTests: XCTestCase {
 				for v in 0..<sequenceLength {
 					_ = i.send(value: v)
 				}
-			}.map(context: .default) { v in v }.subscribeValues(context: .main) { v in
+			}.map(context: .global) { v in v }.subscribeValues(context: .main) { v in
 				count1 += 1
 				if count1 == sequenceLength {
 					ex.fulfill()
@@ -1941,7 +1941,7 @@ class SignalTests: XCTestCase {
 		let ex = expectation(description: "Waiting for thread completions")
 		
 		for j in 0..<threadCount {
-			Exec.default.invoke {
+			Exec.global.invoke {
 				for i in 0..<iterations {
 					let (input, s) = Signal<Int>.create()
 					var signal = s.transform(initialState: 0) { (count: inout Int, r: Result<Int>, n: SignalNext<(thread: Int, iteration: Int, value: Int)>) in
@@ -1952,7 +1952,7 @@ class SignalTests: XCTestCase {
 					}
 					
 					for d in 0..<depth {
-						signal = signal.transform(initialState: 0, context: .default) { (state: inout Int, r: Result<(thread: Int, iteration: Int, value: Int)>, n: SignalNext<(thread: Int, iteration: Int, value: Int)>) in
+						signal = signal.transform(initialState: 0, context: .global) { (state: inout Int, r: Result<(thread: Int, iteration: Int, value: Int)>, n: SignalNext<(thread: Int, iteration: Int, value: Int)>) in
 							switch r {
 							case .success(let v):
 								if v.value != state {

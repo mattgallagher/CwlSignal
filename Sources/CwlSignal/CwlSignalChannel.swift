@@ -17,6 +17,11 @@
 //  OF THIS SOFTWARE.
 //
 
+#if SWIFT_PACKAGE
+	import Foundation
+	import CwlUtils
+#endif
+
 /// A basic wrapper around a `Signal` and an input which feeds input into it (usually a `SignalInput` but possibly also a `SignalMergeSet`, `SignalMultiInput`).
 ///
 /// You don't generally hold onto a `SignalChannel`; it exists for syntactic convenience when building a series of pipeline stages.

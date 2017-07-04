@@ -730,9 +730,9 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.default)
-		let windowedSignal = baseSignal.window(windows: intervalSignal(.fromSeconds(0.2), initial: .fromSeconds(0.05), context: coordinator.default).map { _ in
-			Signal<()>.timer(interval: .fromSeconds(0.1), context: coordinator.default)
+		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.global)
+		let windowedSignal = baseSignal.window(windows: intervalSignal(.fromSeconds(0.2), initial: .fromSeconds(0.05), context: coordinator.global).map { _ in
+			Signal<()>.timer(interval: .fromSeconds(0.1), context: coordinator.global)
 		})
 		let ep = windowedSignal.subscribe { r in
 			if let v = r.value {
@@ -785,8 +785,8 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.default).timeout(interval: .fromSeconds(0.34), resetOnValue: false, context: coordinator.default)
-		let windowedSignal = baseSignal.window(interval: .fromSeconds(0.091), timeshift: .fromSeconds(0.151), context: coordinator.default)
+		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.global).timeout(interval: .fromSeconds(0.34), resetOnValue: false, context: coordinator.global)
+		let windowedSignal = baseSignal.window(interval: .fromSeconds(0.091), timeshift: .fromSeconds(0.151), context: coordinator.global)
 		let ep = windowedSignal.subscribe { r in
 			if let v = r.value {
 				let index = results.count
@@ -828,7 +828,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.default)
+		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.global)
 		let windowedSignal = baseSignal.window(count: 3, skip: 5)
 		let ep = windowedSignal.subscribe { r in
 			if let v = r.value {
@@ -874,7 +874,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.default)
+		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.global)
 		let windowedSignal = baseSignal.window(count: 3)
 		let ep = windowedSignal.subscribe { r in
 			if let v = r.value {
@@ -1902,7 +1902,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
 		var times = [UInt64]()
-		let ep = intervalSignal(.seconds(1), initial: .seconds(0), context: coordinator.default).timeout(interval: .seconds(5), resetOnValue: false, context: coordinator.default).delay(interval: .seconds(5), context: coordinator.default).subscribe { (r: Result<Int>) in
+		let ep = intervalSignal(.seconds(1), initial: .seconds(0), context: coordinator.global).timeout(interval: .seconds(5), resetOnValue: false, context: coordinator.global).delay(interval: .seconds(5), context: coordinator.global).subscribe { (r: Result<Int>) in
 			results.append(r)
 			times.append(coordinator.currentTime)
 		}
@@ -1931,7 +1931,7 @@ class SignalReactiveTests: XCTestCase {
 		let coordinator = DebugContextCoordinator()
 		var times = [UInt64]()
 		let ep = Signal<Int>.from(values: 0..<5).delay(context: coordinator.direct) { (v: Int) -> Signal<()> in
-			return Signal<()>.timer(interval: .fromSeconds(Double(6 - v) * 0.05), context: coordinator.default)
+			return Signal<()>.timer(interval: .fromSeconds(Double(6 - v) * 0.05), context: coordinator.global)
 		}.subscribe { (r: Result<Int>) in
 			results.append(r)
 			times.append(coordinator.currentTime)
@@ -2035,11 +2035,11 @@ class SignalReactiveTests: XCTestCase {
 		var delayedInputs = [Cancellable]()
 		let delays: [Int] = [20, 80, 150, 250, 300]
 		for i in 0..<delays.count {
-			delayedInputs.append(coordinator.default.singleTimer(interval: .milliseconds(delays[i])) {
+			delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(delays[i])) {
 				input.send(value: i)
 			})
 		}
-		delayedInputs.append(coordinator.default.singleTimer(interval: .milliseconds(350)) {
+		delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(350)) {
 			input.close()
 		})
 
@@ -2070,11 +2070,11 @@ class SignalReactiveTests: XCTestCase {
 		var delayedInputs = [Cancellable]()
 		let delays: [Int] = [20, 80, 150, 250, 300]
 		for i in 0..<delays.count {
-			delayedInputs.append(coordinator.default.singleTimer(interval: .milliseconds(delays[i])) {
+			delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(delays[i])) {
 				input.send(value: i)
 			})
 		}
-		delayedInputs.append(coordinator.default.singleTimer(interval: .milliseconds(350)) {
+		delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(350)) {
 			input.close()
 		})
 
@@ -2103,11 +2103,11 @@ class SignalReactiveTests: XCTestCase {
 		var delayedInputs = [Cancellable]()
 		let delays: [Int] = [20, 80, 150, 250, 300]
 		for i in 0..<delays.count {
-			delayedInputs.append(coordinator.default.singleTimer(interval: .milliseconds(delays[i])) {
+			delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(delays[i])) {
 				input.send(value: i)
 			})
 		}
-		delayedInputs.append(coordinator.default.singleTimer(interval: .milliseconds(350)) {
+		delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(350)) {
 			input.close()
 		})
 
