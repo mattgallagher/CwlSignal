@@ -13,20 +13,33 @@ The `generate` function's closure will also be invoke with a `nil` value when th
 */
 import CwlSignal
 
-// Create an output immediately but only create the input as needed
+// Create an output immediately but only start creating data to feed into the pipeline after a listener connects.
 let output = Signal<Int>.generate { input in
    if let i = input {
-      i.send(value: 1)
-      i.send(value: 2)
-      i.send(value: 3)
-   }
+		print("Signal has activated")
+      i.send(values: 1, 2, 3)
+   } else {
+		print("Signal has deactivated")
+	}
 }
 
-// Subscribe to listen to the values output by the channel
-let endpoint = output.subscribeValues { value in print(value) }
+print("We're just about to subscribe.")
 
-// You'd normally store the endpoint in a parent and let ARC automatically control its lifetime.
+// Subscribe to listen to the values output by the channel
+let endpoint = output.subscribe { result in
+	switch result {
+	case .success(let value): print("Value: \(value)")
+	case .failure(let error): print("End of signal: \(error)")
+	}
+}
+
+print("We're just about to cancel the endpoint")
+
+// The signal will already be cancelled before we reach this point because we didn't hold onto the `input` in the `generate` function and it cancelled itself when it reached the end of the scope.
+// SOMETHING TO TRY: replace the `generate` with `retainedGenerate` and the `input` will be automatically held until all endpoints are cancelled.
 endpoint.cancel()
+
+print("Done")
 
 /*:
 ---

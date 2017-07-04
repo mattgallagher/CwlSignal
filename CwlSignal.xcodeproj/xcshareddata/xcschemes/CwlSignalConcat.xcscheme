@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C9DD3D7C1E41DFB600E23B15"
-               BuildableName = "CwlSignal.framework"
-               BlueprintName = "CwlSignal_iOS"
+               BlueprintIdentifier = "C9A380371EFF923A00BFF2E5"
+               BuildableName = "CwlSignalConcat"
+               BlueprintName = "CwlSignalConcat"
                ReferencedContainer = "container:CwlSignal.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -26,28 +26,10 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      language = ""
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C9DD3D9B1E41DFBA00E23B15"
-               BuildableName = "CwlSignal_iOSTests.xctest"
-               BlueprintName = "CwlSignal_iOSTests"
-               ReferencedContainer = "container:CwlSignal.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C9DD3D7C1E41DFB600E23B15"
-            BuildableName = "CwlSignal.framework"
-            BlueprintName = "CwlSignal_iOS"
-            ReferencedContainer = "container:CwlSignal.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </TestAction>
@@ -55,6 +37,7 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      language = ""
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -64,9 +47,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C9DD3D7C1E41DFB600E23B15"
-            BuildableName = "CwlSignal.framework"
-            BlueprintName = "CwlSignal_iOS"
+            BlueprintIdentifier = "C9A380371EFF923A00BFF2E5"
+            BuildableName = "CwlSignalConcat"
+            BlueprintName = "CwlSignalConcat"
             ReferencedContainer = "container:CwlSignal.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -82,9 +65,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C9DD3D7C1E41DFB600E23B15"
-            BuildableName = "CwlSignal.framework"
-            BlueprintName = "CwlSignal_iOS"
+            BlueprintIdentifier = "C9A380371EFF923A00BFF2E5"
+            BuildableName = "CwlSignalConcat"
+            BlueprintName = "CwlSignalConcat"
             ReferencedContainer = "container:CwlSignal.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

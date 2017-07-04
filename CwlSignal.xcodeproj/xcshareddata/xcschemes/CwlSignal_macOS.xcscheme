@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0810"
+   LastUpgradeVersion = "0900"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C9D239941DE99C820058610A"
+               BlueprintIdentifier = "OBJ_190"
                BuildableName = "CwlSignal.framework"
                BlueprintName = "CwlSignal_macOS"
                ReferencedContainer = "container:CwlSignal.xcodeproj">
@@ -32,7 +32,7 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C9D2399C1DE99C830058610A"
+               BlueprintIdentifier = "OBJ_214"
                BuildableName = "CwlSignal_macOSTests.xctest"
                BlueprintName = "CwlSignal_macOSTests"
                ReferencedContainer = "container:CwlSignal.xcodeproj">
@@ -42,7 +42,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C9D239941DE99C820058610A"
+            BlueprintIdentifier = "OBJ_190"
             BuildableName = "CwlSignal.framework"
             BlueprintName = "CwlSignal_macOS"
             ReferencedContainer = "container:CwlSignal.xcodeproj">
@@ -59,13 +59,12 @@
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
-      stopOnEveryThreadSanitizerIssue = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C9D239941DE99C820058610A"
+            BlueprintIdentifier = "OBJ_190"
             BuildableName = "CwlSignal.framework"
             BlueprintName = "CwlSignal_macOS"
             ReferencedContainer = "container:CwlSignal.xcodeproj">
@@ -83,7 +82,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C9D239941DE99C820058610A"
+            BlueprintIdentifier = "OBJ_190"
             BuildableName = "CwlSignal.framework"
             BlueprintName = "CwlSignal_macOS"
             ReferencedContainer = "container:CwlSignal.xcodeproj">

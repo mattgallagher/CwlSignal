@@ -6,9 +6,9 @@
 
 ## The `combine` function
 
-Any number of `Signal` instances can be chained in series to form pipelines, allowing value transformations and other "stream processing" to be applied to values between the sender and the subscriber.
+Another strength of reactive programming is the ability to integrate dependencies from different sources in a thread-safe manner.
 
-While there are lots of different "operator" functions for chaining `Signal` instances together (including names like `map` and `flatMap` that you might recognize from `Sequence` and `Collection` processing in Swift) most are implemented on top of the `transform` function which works as follows:
+CwlSignal offers the `combine` operator which has an interface close to that of the `transform` operator, except that incoming `Result`s are wrapped in an `EitherResult`, reflecting an origin from "either" the first, the second or possibly third, fourth or fifth different input `Signal`.
 
 ---
  */
@@ -17,8 +17,8 @@ import CwlSignal
 let semaphore = DispatchSemaphore(value: 0)
 
 // Two signals compete, over time
-let intSignal = Signal<Int>.timer(interval: .fromSeconds(1), value: 1)
-let doubleSignal = Signal<Double>.timer(interval: .fromSeconds(0.5), value: 0.5)
+let intSignal = Signal<Int>.timer(interval: .fromSeconds(1), value: 1234)
+let doubleSignal = Signal<Double>.timer(interval: .fromSeconds(0.5), value: 0.1234)
 
 // The signals are combined – first to send a value wins
 let endpoint = intSignal.combine(second: doubleSignal) { (eitherResult: EitherResult2<Int, Double>, next: SignalNext<String>) in
@@ -32,7 +32,7 @@ let endpoint = intSignal.combine(second: doubleSignal) { (eitherResult: EitherRe
 	next.close()
 }.subscribe { result in
 	switch result {
-	case .success(let v): print("The smaller value is: \(v)")
+	case .success(let v): print("The first value received is: \(v)")
 	case .failure: print("Signal complete"); semaphore.signal()
 	}
 }
@@ -40,14 +40,14 @@ let endpoint = intSignal.combine(second: doubleSignal) { (eitherResult: EitherRe
 // In reactive programming, blocking is normally "bad" but we need to block or the playground will finish before the background work.
 semaphore.wait()
 
-// You'd normally store the endpoint in a parent and let ARC control its lifetime.
+// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 endpoint.cancel()
 /*:
 ---
 
 *This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
-[Next page: Parallel composition - operators](@next)
+[Next page: Advanced behaviors - continuous](@next)
 
-[Previous page: Serial pipelines - map](@previous)
+[Previous page: Serial pipelines - asynchronous](@previous)
 */
