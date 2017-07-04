@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name          = "CwlSignal"
-  s.version       = "1.0.0"
+  s.version       = "2.0.0"
   
   s.summary       = "A Swift framework for reactive programming."
   s.description   = <<-DESC
@@ -10,8 +10,8 @@ Pod::Spec.new do |s|
   s.license       = { :type => "ISC", :file => "LICENSE.txt" }
   s.author        = "Matt Gallagher"
   
-  s.ios.deployment_target = "9.0"
-  s.osx.deployment_target = "10.12"
+  s.ios.deployment_target = "8.0"
+  s.osx.deployment_target = "10.10"
   
   s.dependency 'CwlUtils'
   
