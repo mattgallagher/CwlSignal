@@ -21,9 +21,8 @@ Minimum requirements are iOS 8 (simulator-only) or macOS 10.9. The project inclu
 > This approach will work for Mac/iOS app projects but might not work for App Extensions, Swift Playgrounds and other non-framework scenarios.
 
 1. In a subdirectory of your project's directory, run `git clone https://github.com/mattgallagher/CwlSignal.git`
-2. Drag the "CwlSignal.xcodeproj" file from the Finder into your own project's file tree in Xcode
-3. Add the "CwlSignal.framework" to the "Copy Files (Frameworks)" build phases of any target that you want to include this module.
-4. Drag the "CwlUtils.framework" from the "Dependencies" group (within the CwlSignal project's file tree) onto the same "Copy Files (Frameworks)" build phase (this item may be red but that shouldn't be a problem).
+2. Drag the "CwlSignal.xcodeproj" file from the Finder to somewhere your in own project's file tree in Xcode
+3. Drag the "CwlSignal.framework" and CwlUtils.framework" from the "Products" folder of the "CwlSignal" project to the "Copy Files (Frameworks)" build phases of any target that you want to include this module.
 
 That third step is a little tricky if you're unfamiliar with Xcode but it involves:
 
@@ -31,11 +30,11 @@ That third step is a little tricky if you're unfamiliar with Xcode but it involv
 2. click on the target to whih you want to add this module
 3. select the "Build Phases" tab
 4. if you don't already have a "Copy File" build phase with a "Destination: Frameworks", add one using the "+" button in the top left of the tab
-5. click the "+" within the "Copy File (Frameworks)" phase and from the list that appears, select the "CwlSignal.framework" (if there are multiple frameworks with the same name, look for the one that appears *above* the corresponding macOS or iOS CwlSignal testing target).
+5. click the "+" within the "Copy File (Frameworks)" phase and from the list that appears, select the "CwlSignal.framework". There will probably be two frameworks with the same name – macOS and iOS versions – so look for the CwlSignal.framework that appears immediately *above* the corresponding macOS or iOS CwlSignal testing target and the CwlUtils.framework that appears immediately above that.
 
 #### Swift Package Manager related problems and errors
 
-When building using this approach, the "FetchDependencies" target will use the Swift Package Manager to download the "CwlUtils" project from github. The checkout is placed in the "Build intermediates" directory for your project. Normally, you can ignore its existence but if you get any errors from the "FetchDependencies" target, you might need to clean the build folder (Hold "Option" key while selecting "Product" &rarr; "Clean Build Folder..." from the Xcode menubar). In some rare cases when switching between Xcode 8 and Xcode 9, you might need to delete the Package.pins file in the CwlSignal directory.
+When building using this approach, the "FetchDependencies" target will use the Swift Package Manager to download the "CwlUtils" project from github. The checkout is placed in the "Build intermediates" directory for your project. Normally, you can ignore its existence but if you get any errors from the "FetchDependencies" target, you might need to take some appropriate steps.
 
 In particular, when jumping around between Swift versions or checking out different repository versions, you may see:
 
@@ -45,7 +44,9 @@ or
 
 > !!! swift package show-dependencies failed
 
-as errors in the build log. Make certain to clean the build folder and remove the Package.pins file from the CwlSignal directory, as described above.
+as errors in the build log.
+
+In this case, try deleting the "Package.pins" file in the root directory of CwlSignal. If this doesn't help, try cleaning the build folder. (Hold "Option" key while selecting "Product" &rarr; "Clean Build Folder..." from the Xcode menubar).
 
 If you want to download dependencies manually (instead of using this behind-the-scenes use of the Swift package manager), you should delete the "FetchDependencies" target and replace the "CwlUtils" targets with alternatives that build the dependencies in accordance with your manual download.
 
@@ -54,10 +55,9 @@ If you want to download dependencies manually (instead of using this behind-the-
 This approach generates three concatenated files (CwlUtils.swift, CwlSignal.swift and CwlSignalExtensions.swift) file that can simply be added to another project (no dynamic frameworks, libraries or other settings required).
 
 1. Get the latest version of CwlSignal by running `git clone https://github.com/mattgallagher/CwlSignal.git` on the command-line.
-2. Open the CwlSignal.xcodeproject and select the CwlSignalConcat scheme with a destination of "My Mac" (choose from the Scheme popup in the toolbar or from the "Product" &rarr; "Scheme" and "Product" &rarr; "Destination" menus in the menubar.
+2. Open the CwlSignal.xcodeproj in Xcode and select the CwlSignalConcat scheme with a destination of "My Mac" (choose from the Scheme popup in the toolbar or from the "Product" &rarr; "Scheme" and "Product" &rarr; "Destination" menus in the menubar.
 3. Build the scheme (Command-B or "Product" &rarr; "Build")
-
-Look in the build folder. The easist way to access the build folder is to right-click (or Control-click) on the "Products" folder in the project's file tree in Xcode and select "Show in Finder" and open the "Debug" folder in the "Products" folder that this reveals.
+4. Open the "Products" folder by right-clicking (or Control-click) on the "Products" folder in the project's file tree in Xcode and select "Show in Finder" and open the "Debug" folder in the "Products" folder that this reveals.
 
 Inside a folder located "Concat_internal" should be three files:
 
@@ -67,9 +67,9 @@ Inside a folder located "Concat_internal" should be three files:
 
 You can copy these three files and include them in any of your own projects like any other files.
 
-A folder named "Concat_public" should also be present. This version is almost identical to the "Concat_internal" version except that `public` and `open` specifiers have been stripped from the "Concat_internal" version but they remain in the "Concat_public" version. This allows the "Concat_public" version to be use in the "Sources" folder of Swift playgrounds or otherwise used where the features need to be exported from a module.
+A folder named "Concat_public" should also be present. This version is almost identical to the "Concat_internal" version except that where the "Concat_internal" version strips `public` and `open` specifiers from files, the "Concat_public" version leaves these in-place. This allows the "Concat_public" version to be use in the "Sources" folder of Swift playgrounds or otherwise used where the features need to be exported from a module.
 
-> NOTE: this approach will pull CwlUtils from github using the Swift Package Manager. If you get errors from the FetchDependencies build step, see the note in the [Manually included framework](#manual-framework-inclusion) section on cleaning the build folder and .pins files.
+> NOTE: this approach will pull CwlUtils from github using the Swift Package Manager, as with the [Manually included framework](#manual-framework-inclusion) instructions. If you get errors from the FetchDependencies build step, see the note in the [Manually included framework](#manual-framework-inclusion) section on cleaning the build folder and .pins files.
 
 ## Swift Package Manager
 
