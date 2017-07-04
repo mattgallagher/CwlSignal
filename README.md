@@ -14,7 +14,7 @@ This project can be included in your projects in a number of different ways:
 
 The standard restrictions for each of these approaches apply so you'll need to pick an approach based on your situation and preferences.
 
-Minimum requirements are iOS 8 (simulator-only) or macOS 10.9. The project includes tvOS 9 and POSIX targets but these aren't regularly tested.
+Minimum requirements are iOS 8 or macOS 10.10.
 
 ## Manual framework inclusion
 
