@@ -52,10 +52,10 @@ public struct SignalChannel<I, T> {
 	public func next<U>(_ compose: (Signal<T>) throws -> Signal<U>) rethrows -> SignalChannel<I, U> {
 		return try SignalChannel<I, U>(input: input, signal: compose(signal))
 	}
-	public func final<U>(_ compose: (Signal<T>) throws -> U) rethrows -> (I, U) {
+	public func final<U>(_ compose: (Signal<T>) throws -> U) rethrows -> (input: I, output: U) {
 		return try (input, compose(signal))
 	}
-	public var pair: (I, Signal<T>) { return (input, signal) }
+	public var pair: (input: I, signal: Signal<T>) { return (input, signal) }
 }
 
 func channel<T>() -> SignalChannel<SignalInput<T>, T> {
@@ -75,38 +75,36 @@ extension Signal {
 	public static func multiInputChannel() -> SignalChannel<SignalMultiInput<T>, T> {
 		return SignalChannel<SignalMultiInput<T>, T>(Signal<T>.createMultiInput())
 	}
+	public static func variable() -> (input: SignalMultiInput<T>, signal: SignalMulti<T>) {
+		return SignalChannel<SignalMultiInput<T>, T>(Signal<T>.createMultiInput()).continuous()
+	}
+	public static func variable(initialValue: T) -> (input: SignalMultiInput<T>, signal: SignalMulti<T>) {
+		return SignalChannel<SignalMultiInput<T>, T>(Signal<T>.createMultiInput()).continuous(initialValue: initialValue)
+	}
 }
 
 // Implementation of Signal.swift
 extension SignalChannel {
-	public func subscribe(context: Exec = .direct, handler: @escaping (Result<T>) -> Void) -> (I, SignalEndpoint<T>) {
-		return final { $0.subscribe(context: context, handler: handler) }
+	public func subscribe(context: Exec = .direct, handler: @escaping (Result<T>) -> Void) -> (input: I, endpoint: SignalEndpoint<T>) {
+		let tuple = final { $0.subscribe(context: context, handler: handler) }
+		return (input: tuple.input, endpoint: tuple.output)
 	}
 	
 	public func subscribeAndKeepAlive(context: Exec = .direct, handler: @escaping (Result<T>) -> Bool) -> I {
-		return final { $0.subscribeAndKeepAlive(context: context, handler: handler) }.0
+		return final { $0.subscribeAndKeepAlive(context: context, handler: handler) }.input
 	}
 	
 	public func join(to: SignalInput<T>) throws -> I {
-		return try final { try $0.join(to: to) }.0
+		return try final { try $0.join(to: to) }.input
 	}
 	
 	public func join(to: SignalInput<T>, onError: @escaping (SignalJunction<T>, Error, SignalInput<T>) -> ()) throws -> I {
-		return try final { try $0.join(to: to, onError: onError) }.0
+		return try final { try $0.join(to: to, onError: onError) }.input
 	}
 	
-	public func junction() -> (I, SignalJunction<T>) {
-		return final { $0.junction() }
-	}
-	
-	public func junctionSignal() -> SignalChannel<(I, SignalJunction<T>), T> {
-		let (junction, s) = signal.junctionSignal()
-		return SignalChannel<(I, SignalJunction<T>), T>(input: (input, junction), signal: s)
-	}
-	
-	public func junctionSignal(onError: @escaping (SignalJunction<T>, Error, SignalInput<T>) -> ()) -> SignalChannel<(I, SignalJunction<T>), T> {
-		let (junction, s) = signal.junctionSignal(onError: onError)
-		return SignalChannel<(I, SignalJunction<T>), T>(input: (input, junction), signal: s)
+	public func junction() -> (input: I, junction: SignalJunction<T>) {
+		let tuple = final { $0.junction() }
+		return (input: tuple.input, junction: tuple.output)
 	}
 	
 	public func transform<U>(context: Exec = .direct, handler: @escaping (Result<T>, SignalNext<U>) -> Void) -> SignalChannel<I, U> {
@@ -149,43 +147,52 @@ extension SignalChannel {
 		return next { $0.combine(initialState: initialState, second: second, third: third, fourth: fourth, fifth: fifth, context: context, handler: handler) }
 	}
 	
-	public func continuous(initialValue: T) -> (I, SignalMulti<T>) {
-		return final { $0.continuous(initialValue: initialValue) }
+	public func continuous(initialValue: T) -> (input: I, signal: SignalMulti<T>) {
+		let tuple = final { $0.continuous(initialValue: initialValue) }
+		return (input: tuple.input, signal: tuple.output)
 	}
 	
-	public func continuous() -> (I, SignalMulti<T>) {
-		return final { $0.continuous() }
+	public func continuous() -> (input: I, signal: SignalMulti<T>) {
+		let tuple = final { $0.continuous() }
+		return (input: tuple.input, signal: tuple.output)
 	}
 	
-	public func continuousWhileActive() -> (I, SignalMulti<T>) {
-		return final { $0.continuousWhileActive() }
+	public func continuousWhileActive() -> (input: I, signal: SignalMulti<T>) {
+		let tuple = final { $0.continuousWhileActive() }
+		return (input: tuple.input, signal: tuple.output)
 	}
 	
-	public func playback() -> (I, SignalMulti<T>) {
-		return final { $0.playback() }
+	public func playback() -> (input: I, signal: SignalMulti<T>) {
+		let tuple = final { $0.playback() }
+		return (input: tuple.input, signal: tuple.output)
 	}
 	
-	public func cacheUntilActive() -> (I, SignalMulti<T>) {
-		return final { $0.playback() }
+	public func cacheUntilActive() -> (input: I, signal: SignalMulti<T>) {
+		let tuple = final { $0.playback() }
+		return (input: tuple.input, signal: tuple.output)
 	}
 	
-	public func multicast() -> (I, SignalMulti<T>) {
-		return final { $0.playback() }
+	public func multicast() -> (input: I, signal: SignalMulti<T>) {
+		let tuple = final { $0.playback() }
+		return (input: tuple.input, signal: tuple.output)
 	}
 	
-	public func capture() -> (I, SignalCapture<T>) {
-		return final { $0.capture() }
+	public func capture() -> (input: I, capture: SignalCapture<T>) {
+		let tuple = final { $0.capture() }
+		return (input: tuple.input, capture: tuple.output)
 	}
 	
-	public func customActivation(initialValues: Array<T> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<T>, _ cachedError: inout Error?, _ incoming: Result<T>) -> Void) -> (I, SignalMulti<T>) {
-		return final { $0.customActivation(initialValues: initialValues, context: context, updater: updater) }
+	public func customActivation(initialValues: Array<T> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<T>, _ cachedError: inout Error?, _ incoming: Result<T>) -> Void) -> (input: I, signal: SignalMulti<T>) {
+		let tuple = final { $0.customActivation(initialValues: initialValues, context: context, updater: updater) }
+		return (input: tuple.input, signal: tuple.output)
 	}
 }
 
 // Implementation of SignalExtensions.swift
 extension SignalChannel {
-	public func subscribeValues(context: Exec = .direct, handler: @escaping (T) -> Void) -> (I, SignalEndpoint<T>) {
-		return final { $0.subscribeValues(context: context, handler: handler) }
+	public func subscribeValues(context: Exec = .direct, handler: @escaping (T) -> Void) -> (input: I, endpoint: SignalEndpoint<T>) {
+		let tuple = final { $0.subscribeValues(context: context, handler: handler) }
+		return (input: tuple.input, endpoint: tuple.output)
 	}
 	
 	public func subscribeValuesAndKeepAlive(context: Exec = .direct, handler: @escaping (ValueType) -> Bool) -> I {
@@ -218,20 +225,28 @@ extension SignalChannel {
 		return input
 	}
 	
-	public func cancellableJoin(to: SignalMergeSet<T>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) throws -> (I, Cancellable) {
-		return try final { try $0.cancellableJoin(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate) }
+	public func cancellableJoin(to: SignalMergeSet<T>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) throws -> (input: I, cancellable: Cancellable) {
+		let tuple = try final { try $0.cancellableJoin(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate) }
+		return (input: tuple.input, cancellable: tuple.output)
 	}
-		
+	
 	public func join(to: SignalMultiInput<T>) -> I {
-		return final { $0.join(to: to) }.0
+		return final { $0.join(to: to) }.input
 	}
 	
-	public func cancellableJoin(to: SignalMultiInput<T>) -> (I, Cancellable) {
-		return final { $0.cancellableJoin(to: to) }
+	public func cancellableJoin(to: SignalMultiInput<T>) -> (input: I, cancellable: Cancellable) {
+		let tuple = final { $0.cancellableJoin(to: to) }
+		return (input: tuple.input, cancellable: tuple.output)
 	}
 	
-	public func pollingEndpoint() -> (I, SignalPollableEndpoint<T>) {
-		return final { SignalPollableEndpoint(signal: $0) }
+	public func pollingEndpoint() -> (input: I, endpoint: SignalPollingEndpoint<T>) {
+		let tuple = final { SignalPollingEndpoint(signal: $0) }
+		return (input: tuple.input, endpoint: tuple.output)
+	}
+	
+	public func toggle(initialState: Bool = false) -> (input: I, signal: SignalMulti<Bool>) {
+		let tuple = final { $0.toggle(initialState: initialState) }
+		return (input: tuple.input, signal: tuple.output)
 	}
 }
 
@@ -243,115 +258,115 @@ extension SignalChannel {
 	
 	public func buffer<U>(windows: Signal<Signal<U>>) -> SignalChannel<I, [T]> {
 		return next { $0.buffer(windows: windows) }
-		}
+	}
 	
 	public func buffer(count: UInt, skip: UInt) -> SignalChannel<I, [T]> {
 		return next { $0.buffer(count: count, skip: skip) }
-		}
+	}
 	
 	public func buffer(interval: DispatchTimeInterval, count: Int = Int.max, continuous: Bool = true, context: Exec = .direct) -> SignalChannel<I, [T]> {
 		return next { $0.buffer(interval: interval, count: count, continuous: continuous, context: context) }
-		}
+	}
 	
 	public func buffer(count: UInt) -> SignalChannel<I, [T]> {
 		return next { $0.buffer(count: count, skip: count) }
-		}
+	}
 	
 	public func buffer(interval: DispatchTimeInterval, timeshift: DispatchTimeInterval, context: Exec = .direct) -> SignalChannel<I, [T]> {
 		return next { $0.buffer(interval: interval, timeshift: timeshift, context: context) }
-		}
+	}
 	
 	public func filterMap<U>(context: Exec = .direct, _ processor: @escaping (T) -> U?) -> SignalChannel<I, U> {
 		return next { $0.filterMap(context: context, processor) }
-		}
+	}
 	
 	public func filterMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, T) -> U?) -> SignalChannel<I, U> {
 		return next { $0.filterMap(initialState: initialState, context: context, processor) }
-		}
+	}
 	
 	public func failableMap<U>(context: Exec = .direct, _ processor: @escaping (T) throws -> U) -> SignalChannel<I, U> {
 		return next { $0.failableMap(context: context, processor) }
-		}
+	}
 	
 	public func failableMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, T) throws -> U) -> SignalChannel<I, U> {
 		return next { $0.failableMap(initialState: initialState, context: context, processor) }
-		}
+	}
 	
 	public func failableFilterMap<U>(context: Exec = .direct, _ processor: @escaping (T) throws -> U?) -> SignalChannel<I, U> {
 		return next { $0.failableFilterMap(context: context, processor) }
-		}
+	}
 	
 	public func failableFilterMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, T) -> U?) throws -> SignalChannel<I, U> {
 		return next { $0.failableFilterMap(initialState: initialState, context: context, processor) }
-		}
+	}
 	
 	public func flatMap<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> SignalChannel<I, U> {
 		return next { $0.flatMap(context: context, processor) }
-		}
+	}
 	
 	public func flatMapFirst<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> SignalChannel<I, U> {
 		return next { $0.flatMapFirst(context: context, processor) }
-		}
+	}
 	
 	public func flatMapLatest<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> SignalChannel<I, U> {
 		return next { $0.flatMapLatest(context: context, processor) }
-		}
+	}
 	
 	public func flatMap<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, T) -> Signal<U>) -> SignalChannel<I, U> {
 		return next { $0.flatMap(initialState: initialState, context: context, processor) }
-		}
+	}
 	
 	public func concatMap<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> SignalChannel<I, U> {
 		return next { $0.concatMap(context: context, processor) }
-		}
+	}
 	
 	public func groupBy<U: Hashable>(context: Exec = .direct, _ processor: @escaping (T) -> U) -> SignalChannel<I, (U, Signal<T>)> {
 		return next { $0.groupBy(context: context, processor) }
-		}
+	}
 	
 	public func map<U>(context: Exec = .direct, _ processor: @escaping (T) -> U) -> SignalChannel<I, U> {
 		return next { $0.map(context: context, processor) }
-		}
+	}
 	
 	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, T) -> U) -> SignalChannel<I, U> {
 		return next { $0.map(initialState: initialState, context: context, processor) }
-		}
+	}
 	
 	public func scan<U>(initialState: U, context: Exec = .direct, _ processor: @escaping (U, T) -> U) -> SignalChannel<I, U> {
 		return next { $0.scan(initialState: initialState, context: context, processor) }
-		}
+	}
 	
 	public func window<U>(boundaries: Signal<U>) -> SignalChannel<I, Signal<T>> {
 		return next { $0.window(boundaries: boundaries) }
-		}
+	}
 	
 	public func window<U>(windows: Signal<Signal<U>>) -> SignalChannel<I, Signal<T>> {
 		return next { $0.window(windows: windows) }
-		}
+	}
 	
 	public func window(count: UInt, skip: UInt) -> SignalChannel<I, Signal<T>> {
 		return next { $0.window(count: count, skip: skip) }
-		}
+	}
 	
 	public func window(interval: DispatchTimeInterval, count: Int = Int.max, continuous: Bool = true, context: Exec = .direct) -> SignalChannel<I, Signal<T>> {
 		return next { $0.window(interval: interval, count: count, continuous: continuous, context: context) }
-		}
+	}
 	
 	public func window(count: UInt) -> SignalChannel<I, Signal<T>> {
 		return next { $0.window(count: count, skip: count) }
-		}
+	}
 	
 	public func window(interval: DispatchTimeInterval, timeshift: DispatchTimeInterval, context: Exec = .direct) -> SignalChannel<I, Signal<T>> {
 		return next { $0.window(interval: interval, timeshift: timeshift, context: context) }
-		}
+	}
 	
 	public func debounce(interval: DispatchTimeInterval, flushOnClose: Bool = true, context: Exec = .direct) -> SignalChannel<I, T> {
 		return next { $0.debounce(interval: interval, flushOnClose: flushOnClose, context: context) }
-		}
+	}
 	
 	public func throttleFirst(interval: DispatchTimeInterval, context: Exec = .direct) -> SignalChannel<I, T> {
 		return next { $0.throttleFirst(interval: interval, context: context) }
-		}
+	}
 }
 
 extension SignalChannel where T: Hashable {
@@ -361,7 +376,7 @@ extension SignalChannel where T: Hashable {
 	
 	public func distinctUntilChanged() -> SignalChannel<I, T> {
 		return next { $0.distinctUntilChanged() }
-		}
+	}
 }
 
 extension SignalChannel {
@@ -371,35 +386,39 @@ extension SignalChannel {
 	
 	public func elementAt(_ index: UInt) -> SignalChannel<I, T> {
 		return next { $0.elementAt(index) }
-		}
+	}
 	
 	public func filter(context: Exec = .direct, matching: @escaping (T) -> Bool) -> SignalChannel<I, T> {
 		return next { $0.filter(context: context, matching: matching) }
-		}
+	}
 	
 	public func ofType<U>(_ type: U.Type) -> SignalChannel<I, U> {
 		return next { $0.ofType(type) }
-		}
+	}
 	
 	public func first(context: Exec = .direct, matching: @escaping (T) -> Bool = { _ in true }) -> SignalChannel<I, T> {
 		return next { $0.first(context: context, matching: matching) }
-		}
+	}
 	
 	public func single(context: Exec = .direct, matching: @escaping (T) -> Bool = { _ in true }) -> SignalChannel<I, T> {
 		return next { $0.single(context: context, matching: matching) }
-		}
+	}
 	
 	public func ignoreElements() -> SignalChannel<I, T> {
 		return next { $0.ignoreElements() }
-		}
+	}
 	
 	public func ignoreElements<S: Sequence>(endWith: @escaping (Error) -> (S, Error)?) -> SignalChannel<I, S.Iterator.Element> {
 		return next { $0.ignoreElements(endWith: endWith) }
-		}
+	}
+	
+	public func ignoreElements<U>(endWith value: U, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<I, U> {
+		return next { $0.ignoreElements(endWith: value, conditional: conditional) }
+	}
 	
 	public func last(context: Exec = .direct, matching: @escaping (T) -> Bool = { _ in true }) -> SignalChannel<I, T> {
 		return next { $0.last(context: context, matching: matching) }
-		}
+	}
 	
 	public func sample(_ trigger: Signal<()>) -> SignalChannel<I, T> {
 		return next { $0.sample(trigger) }
@@ -419,19 +438,19 @@ extension SignalChannel {
 	
 	public func skip(_ count: Int) -> SignalChannel<I, T> {
 		return next { $0.skip(count) }
-		}
+	}
 	
 	public func skipLast(_ count: Int) -> SignalChannel<I, T> {
 		return next { $0.skipLast(count) }
-		}
+	}
 	
 	public func take(_ count: Int) -> SignalChannel<I, T> {
 		return next { $0.take(count) }
-		}
+	}
 	
 	public func takeLast(_ count: Int) -> SignalChannel<I, T> {
 		return next { $0.takeLast(count) }
-		}
+	}
 }
 
 
@@ -443,59 +462,63 @@ extension SignalChannel {
 	
 	public func combineLatest<U, V, W>(second: Signal<U>, third: Signal<V>, context: Exec = .direct, _ processor: @escaping (T, U, V) -> W) -> SignalChannel<I, W> {
 		return next { $0.combineLatest(second: second, third: third, context: context, processor) }
-		}
+	}
 	
 	public func combineLatest<U, V, W, X>(second: Signal<U>, third: Signal<V>, fourth: Signal<W>, context: Exec = .direct, _ processor: @escaping (T, U, V, W) -> X) -> SignalChannel<I, X> {
 		return next { $0.combineLatest(second: second, third: third, fourth: fourth, context: context, processor) }
-		}
+	}
 	
 	public func combineLatest<U, V, W, X, Y>(second: Signal<U>, third: Signal<V>, fourth: Signal<W>, fifth: Signal<X>, context: Exec = .direct, _ processor: @escaping (T, U, V, W, X) -> Y) -> SignalChannel<I, Y> {
 		return next { $0.combineLatest(second: second, third: third, fourth: fourth, fifth: fifth, context: context, processor) }
-		}
+	}
 	
 	public func join<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (T) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((T, U)) -> X) -> SignalChannel<I, X> {
 		return next { $0.join(withRight: withRight, leftEnd: leftEnd, rightEnd: rightEnd, context: context, processor) }
-		}
+	}
 	
 	public func groupJoin<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (T) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((T, Signal<U>)) -> X) -> SignalChannel<I, X> {
 		return next { $0.groupJoin(withRight: withRight, leftEnd: leftEnd, rightEnd: rightEnd, context: context, processor) }
-		}
+	}
 	
 	public func mergeWith(_ sources: Signal<T>...) -> SignalChannel<I, T> {
 		return next { $0.mergeWith(sources) }
-		}
+	}
 	
 	public func mergeWith<S: Sequence>(_ sequence: S) -> SignalChannel<I, T> where S.Iterator.Element == Signal<T> {
 		return next { $0.mergeWith(sequence) }
-		}
+	}
 	
 	public func startWith<S: Sequence>(_ sequence: S) -> SignalChannel<I, T> where S.Iterator.Element == T {
 		return next { $0.startWith(sequence) }
-		}
+	}
 	
 	public func endWith<U: Sequence>(_ sequence: U, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<I, T> where U.Iterator.Element == T {
 		return next { $0.endWith(sequence, conditional: conditional) }
-		}
+	}
+	
+	func endWith(_ value: T, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<I, T> {
+		return next { $0.endWith(value, conditional: conditional) }
+	}
 	
 	public func zip<U>(second: Signal<U>) -> SignalChannel<I, (T, U)> {
 		return next { $0.zip(second: second) }
-		}
+	}
 	
 	public func zip<U, V>(second: Signal<U>, third: Signal<V>) -> SignalChannel<I, (T, U, V)> {
 		return next { $0.zip(second: second, third: third) }
-		}
+	}
 	
 	public func zip<U, V, W>(second: Signal<U>, third: Signal<V>, fourth: Signal<W>) -> SignalChannel<I, (T, U, V, W)> {
 		return next { $0.zip(second: second, third: third, fourth: fourth) }
-		}
+	}
 	
 	public func zip<U, V, W, X>(second: Signal<U>, third: Signal<V>, fourth: Signal<W>, fifth: Signal<X>) -> SignalChannel<I, (T, U, V, W, X)> {
 		return next { $0.zip(second: second, third: third, fourth: fourth, fifth: fifth) }
-		}
+	}
 	
 	public func catchError<S: Sequence>(context: Exec = .direct, recover: @escaping (Error) -> (S, Error)) -> SignalChannel<I, T> where S.Iterator.Element == T {
 		return next { $0.catchError(context: context, recover: recover) }
-		}
+	}
 }
 
 extension SignalChannel {
@@ -505,51 +528,51 @@ extension SignalChannel {
 	
 	public func retry<U>(_ initialState: U, context: Exec = .direct, shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?) -> SignalChannel<I, T> {
 		return next { $0.retry(initialState, context: context, shouldRetry: shouldRetry) }
-		}
+	}
 	
 	public func retry(count: Int, delayInterval: DispatchTimeInterval, context: Exec = .direct) -> SignalChannel<I, T> {
 		return next { $0.retry(count: count, delayInterval: delayInterval, context: context) }
-		}
+	}
 	
 	public func delay<U>(initialState: U, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, offset: @escaping (inout U, T) -> DispatchTimeInterval) -> SignalChannel<I, T> {
 		return next { $0.delay(initialState: initialState, closePropagation: closePropagation, context: context, offset: offset) }
-		}
+	}
 	
 	public func delay(interval: DispatchTimeInterval, context: Exec = .direct) -> SignalChannel<I, T> {
 		return next { $0.delay(interval: interval, context: context) }
-		}
+	}
 	
 	public func delay<U>(closePropagation: SignalClosePropagation = .none, context: Exec = .direct, offset: @escaping (T) -> Signal<U>) -> SignalChannel<I, T> {
 		return next { $0.delay(closePropagation: closePropagation, context: context, offset: offset) }
-		}
+	}
 	
 	public func delay<U, V>(initialState: V, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, offset: @escaping (inout V, T) -> Signal<U>) -> SignalChannel<I, T> {
 		return next { $0.delay(initialState: initialState, closePropagation: closePropagation, context: context, offset: offset) }
-		}
+	}
 	
 	public func onActivate(context: Exec = .direct, handler: @escaping () -> ()) -> SignalChannel<I, T> {
 		return next { $0.onActivate(context: context, handler: handler) }
-		}
+	}
 	
 	public func onDeactivate(context: Exec = .direct, handler: @escaping () -> ()) -> SignalChannel<I, T> {
 		return next { $0.onDeactivate(context: context, handler: handler) }
-		}
+	}
 	
 	public func onResult(context: Exec = .direct, handler: @escaping (Result<T>) -> ()) -> SignalChannel<I, T> {
 		return next { $0.onResult(context: context, handler: handler) }
-		}
+	}
 	
 	public func onValue(context: Exec = .direct, handler: @escaping (T) -> ()) -> SignalChannel<I, T> {
 		return next { $0.onValue(context: context, handler: handler) }
-		}
+	}
 	
 	public func onError(context: Exec = .direct, handler: @escaping (Error) -> ()) -> SignalChannel<I, T> {
 		return next { $0.onError(context: context, handler: handler) }
-		}
+	}
 	
 	public func materialize() -> SignalChannel<I, Result<T>> {
 		return next { $0.materialize() }
-		}
+	}
 }
 
 
@@ -561,11 +584,11 @@ extension SignalChannel {
 	
 	public func timeout(interval: DispatchTimeInterval, resetOnValue: Bool = true, context: Exec = .direct) -> SignalChannel<I, T> {
 		return next { $0.timeout(interval: interval, resetOnValue: resetOnValue, context: context) }
-		}
+	}
 	
 	public func timestamp(context: Exec = .direct) -> SignalChannel<I, (T, DispatchTime)> {
 		return next { $0.timestamp(context: context) }
-		}
+	}
 }
 
 
@@ -577,7 +600,7 @@ extension SignalChannel {
 	
 	public func some(context: Exec = .direct, test: @escaping (T) -> Bool) -> SignalChannel<I, Bool> {
 		return next { $0.some(context: context, test: test) }
-		}
+	}
 }
 
 extension SignalChannel where T: Equatable {
@@ -595,7 +618,7 @@ extension SignalChannel {
 	
 	public func switchIfEmpty(alternate: Signal<T>) -> SignalChannel<I, T> {
 		return next { $0.switchIfEmpty(alternate: alternate) }
-		}
+	}
 }
 
 extension SignalChannel where T: Equatable {
@@ -613,27 +636,27 @@ extension SignalChannel {
 	
 	public func skipWhile(context: Exec = .direct, condition: @escaping (T) -> Bool) -> SignalChannel<I, T> {
 		return next { $0.skipWhile(context: context, condition: condition) }
-		}
+	}
 	
 	public func skipWhile<U>(initialState initial: U, context: Exec = .direct, condition: @escaping (inout U, T) -> Bool) -> SignalChannel<I, T> {
 		return next { $0.skipWhile(initialState: initial, context: context, condition: condition) }
-		}
+	}
 	
 	public func takeUntil<U>(_ other: Signal<U>) -> SignalChannel<I, T> {
 		return next { $0.takeUntil(other) }
-		}
+	}
 	
 	public func takeWhile(context: Exec = .direct, condition: @escaping (T) -> Bool) -> SignalChannel<I, T> {
 		return next { $0.takeWhile(context: context, condition: condition) }
-		}
+	}
 	
 	public func takeWhile<U>(initialState initial: U, context: Exec = .direct, condition: @escaping (inout U, T) -> Bool) -> SignalChannel<I, T> {
 		return next { $0.takeWhile(initialState: initial, context: context, condition: condition) }
-		}
+	}
 	
 	public func foldAndFinalize<U, V>(_ initial: V, context: Exec = .direct, finalize: @escaping (V) -> U?, fold: @escaping (V, T) -> V) -> SignalChannel<I, U> {
 		return next { $0.foldAndFinalize(initial, context: context, finalize: finalize, fold: fold) }
-		}
+	}
 }
 
 extension SignalChannel where T: BinaryInteger {
@@ -651,7 +674,7 @@ extension SignalChannel {
 	
 	public func count() -> SignalChannel<I, Int> {
 		return next { $0.count() }
-		}
+	}
 }
 
 extension SignalChannel where T: Comparable {
@@ -662,7 +685,7 @@ extension SignalChannel where T: Comparable {
 	
 	public func max() -> SignalChannel<I, T> {
 		return next { $0.max() }
-		}
+	}
 }
 
 extension SignalChannel {

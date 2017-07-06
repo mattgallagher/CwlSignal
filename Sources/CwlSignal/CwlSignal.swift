@@ -2640,7 +2640,9 @@ fileprivate class SignalMergeProcessor<T>: SignalProcessor<T, T> {
 	}
 }
 
-/// A merge set allows multiple `Signal`s of the same type to dynamically connect to a single output `Signal`. A merge set is analagous to a `SignalInput` in that it controls the input to a `Signal` but instead of controlling it by sending signals, it controls by connecting predecessors.
+/// A merge set unifies multiple `Signal`s of the same type – that may dynamically connect and disconnect – into a single output `Signal`.
+/// A merge set implements `SignalSender` so you can view it as analagous to a `SignalInput` in that it controls the input to a `Signal` but instead of controlling it by sending signals, it controls by connecting predecessors.
+/// Direct use of `SignalMergeSet` is not particularly common – use it when you need precise control over the interaction of merged signals and the output. Use of the `SignalMultiInput` type is more common – it is a wrapper around `SignalMergeSet` that uses common "safe" settings.
 public class SignalMergeSet<T>: Cancellable, SignalSender {
 	public typealias ValueType = T
 

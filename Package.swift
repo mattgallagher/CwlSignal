@@ -5,12 +5,5 @@ let package = Package(
 	dependencies: [
 		.Package(url: "https://github.com/mattgallagher/CwlUtils.git", Version(1, 1, 0, prereleaseIdentifiers: ["beta", "16"])),
 	],
-	exclude: [
-		"LICENSE.txt",
-		"ReadMe.md",
-		"CwlSignal.playground",
-		"Sources/CwlSignal/CwlSignal.h",
-		"Sources/CwlSignal/Info.plist",
-		"Tests/CwlSignalTests/Info.plist"
-	]
+	exclude: []
 )

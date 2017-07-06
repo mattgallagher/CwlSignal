@@ -282,6 +282,17 @@ extension Signal {
 			state.index += 1
 		}
 	}
+	
+	/// A continuous signal which alternates between true and false values each time it receives a value.
+	///
+	/// - Parameter initialState: before receiving the first value
+	/// - Returns: the alternating, continuous signal
+	public func toggle(initialState: Bool = false) -> SignalMulti<Bool> {
+		return map(initialState: initialState) { (state: inout Bool, toggle: ValueType) -> Bool in
+			state = !state
+			return state
+		}.continuous(initialValue: initialState)
+	}
 }
 
 /// A `SignalMergeSet` exposes the ability to close the output signal and disconnect on deactivation. For public interfaces, neither of these is really appropriate to expose. A `SignalMultiInput` provides a simple wrapper around `SignalMergeSet` that forces `closesOutput` and `removeOnDeactivate` to be *false* for all inputs created through this interface.
@@ -403,7 +414,7 @@ extension Signal {
 /// **WARNING**: this class should be avoided where possible since it removes the "reactive" part of reactive programming (changes in the polled value must be detected through other means, usually another subscriber to the underlying `Signal`).
 ///
 /// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Since you cannot simply `Signal.combine` the delegate method with another `Signal`, you must use polling to generate a calculation involving values from another `Signal`.
-public final class SignalPollableEndpoint<T> {
+public final class SignalPollingEndpoint<T> {
 	var endpoint: SignalEndpoint<T>? = nil
 	var latest: Result<T>? = nil
 	let queueContext = DispatchQueueContext()
@@ -424,14 +435,14 @@ public final class SignalPollableEndpoint<T> {
 }
 
 extension Signal {
-	/// Appends a `SignalPollableEndpoint` listener to the value emitted from this `Signal`. The endpoint will "activate" this `Signal` and all direct antecedents in the graph (which may start lazy operations deferred until activation).
-	public func pollingEndpoint() -> SignalPollableEndpoint<T> {
-		return SignalPollableEndpoint(signal: self)
+	/// Appends a `SignalPollingEndpoint` listener to the value emitted from this `Signal`. The endpoint will "activate" this `Signal` and all direct antecedents in the graph (which may start lazy operations deferred until activation).
+	public func pollingEndpoint() -> SignalPollingEndpoint<T> {
+		return SignalPollingEndpoint(signal: self)
 	}
 	
 	/// Internally creates a polling endpoint which is polled once for the latest Result<T> and then discarded.
-	public var poll: Result<T>? {
-		return SignalPollableEndpoint(signal: self).latestResult
+	public var poll: T? {
+		return SignalPollingEndpoint(signal: self).latestValue
 	}
 }
 

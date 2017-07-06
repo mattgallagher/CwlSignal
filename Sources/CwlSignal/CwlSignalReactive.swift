@@ -1165,6 +1165,24 @@ extension Signal {
 		}
 	}
 	
+	/// Implementation of [Reactive X operator "ignoreElements"](http://reactivex.io/documentation/operators/ignoreelements.html)
+	///
+	/// - Returns: a signal that emits the input error, when received, otherwise ignores all values.
+	public func ignoreElements<U>(endWith value: U, conditional: @escaping (Error) -> Error? = { $0 }) -> Signal<U> {
+		return transform() { (r: Result<T>, n: SignalNext<U>) in
+			switch r {
+			case .success: break
+			case .failure(let e):
+				if let err = conditional(e) {
+					n.send(value: value)
+					n.send(error: err)
+				} else {
+					n.send(error: e)
+				}
+			}
+		}
+	}
+	
 	/// Implementation of [Reactive X operator "last"](http://reactivex.io/documentation/operators/last.html)
 	///
 	/// - Parameters:
@@ -1570,6 +1588,24 @@ extension Signal {
 			case .failure(let e):
 				if let newEnd = conditional(e) {
 					sequence.forEach { n.send(value: $0) }
+					n.send(error: newEnd)
+				} else {
+					n.send(error: e)
+				}
+			}
+		}
+	}
+	
+	/// Implementation of [Reactive X operator "endWith"](http://reactivex.io/documentation/operators/endwith.html)
+	///
+	/// - Returns: a signal that emits every value from `sequence` on activation and then mirrors `self`.
+	public func endWith(_ value: T, conditional: @escaping (Error) -> Error? = { e in e }) -> Signal<T> {
+		return transform() { (r: Result<T>, n: SignalNext<T>) in
+			switch r {
+			case .success(let v): n.send(value: v)
+			case .failure(let e):
+				if let newEnd = conditional(e) {
+					n.send(value: value)
 					n.send(error: newEnd)
 				} else {
 					n.send(error: e)
