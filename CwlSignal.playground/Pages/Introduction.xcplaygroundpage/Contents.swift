@@ -14,7 +14,7 @@ Failure to follow these steps correctly will result in a "Playground execution f
 
 ## Playground pages
 
-1. [Basic input-signal pair](Basic%20channel)
+1. [Basic input-signal pair](Basic%20input-signal%20pair)
 2. [Serial pipelines - transform](Serial%20pipelines%20-%20transform)
 3. [Serial pipelines - map](Serial%20pipelines%20-%20map)
 4. [Serial pipelines - channel](Serial%20pipelines%20-%20channel)

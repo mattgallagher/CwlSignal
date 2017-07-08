@@ -815,7 +815,8 @@ class SignalTests: XCTestCase {
 		do {
 			let (i1, s) = Signal<Int>.create()
 			let ep = s.subscribe { results.append($0) }
-			let d = try sequence1.join(to: i1)
+			let d = sequence1.junction()
+			try d.join(to: i1)
 			i1.send(value: 3)
 			
 			XCTAssert(results.count == 3)
@@ -824,7 +825,8 @@ class SignalTests: XCTestCase {
 			XCTAssert(results.at(2)?.value == 2)
 			
 			if let i2 = d.disconnect() {
-				let d2 = try sequence2.join(to: i2)
+				let d2 = sequence2.junction()
+				try d2.join(to: i2)
 				i2.send(value: 6)
 				
 				XCTAssert(results.count == 7)
@@ -857,7 +859,7 @@ class SignalTests: XCTestCase {
 		} }
 		
 		do {
-			try sequence3.join(to: i4) { d, e, i in
+			try sequence3.junction().join(to: i4) { d, e, i in
 				XCTAssert(e as? SignalError == .cancelled)
 				i.send(value: 7)
 				i.close()
@@ -880,7 +882,8 @@ class SignalTests: XCTestCase {
 		
 		do {
 			let signal = Signal<Int>.generate { i in _ = i?.send(value: 5) }
-			let (_, output) = signal.junctionSignal { (j, err, input) in
+			let (junctionInput, output) = Signal<Int>.create()
+			try! signal.junction().join(to: junctionInput) { (j, err, input) in
 				XCTAssert(err as? SignalError == SignalError.cancelled)
 				input.close()
 			}
@@ -904,7 +907,9 @@ class SignalTests: XCTestCase {
 					}
 				}
 			}
-			let (junction, output) = signal.junctionSignal()
+			let (junctionInput, output) = Signal<Int>.create()
+			let junction = signal.junction()
+			try! junction.join(to: junctionInput)
 			endpoints += output.subscribe { r in results += r }
 			XCTAssert(results.count == 1)
 			XCTAssert(results.at(0)?.value == 5)
@@ -933,9 +938,8 @@ class SignalTests: XCTestCase {
 				}
 			}.transform { r, n in n.send(result: r) }.continuous()
 			
-			
 			let ex = catchBadInstruction {
-				_ = try? combined.join(to: input2)
+				combined.join(to: input2)
 				XCTFail()
 			}
 			XCTAssert(ex != nil)
@@ -1186,7 +1190,10 @@ class SignalTests: XCTestCase {
 			case .failure: n.send(error: TestError.oneValue)
 			}
 		}
-		let (_, ep) = Signal<Int>.createMergeSet([left, signal], closePropagation: .all) { s in s.subscribe { r in results.append(r) } }
+		let (mergedInput, mergedSignal) = Signal<Int>.createMergedInput()
+		mergedInput.add(left, closePropagation: .all)
+		mergedInput.add(signal, closePropagation: .all)
+		let ep = mergedSignal.subscribe { r in results.append(r) }
 		input.send(value: 3)
 		input.send(value: 5)
 		input.close()
@@ -1203,19 +1210,16 @@ class SignalTests: XCTestCase {
 	func testClosedTriangleGraphRight() {
 		var results = [Result<Int>]()
 		let (input, signal) = Signal<Int>.create { s in s.multicast() }
-		let (mergeSet, signal2) = Signal<Int>.createMergeSet([signal], closePropagation: .all)
-		let ep = signal2.subscribe { r in results.append(r) }
+		let (mergedInput, mergedSignal) = Signal<Int>.createMergedInput()
+		mergedInput.add(signal, closePropagation: .all)
+		let ep = mergedSignal.subscribe { r in results.append(r) }
 		let right = signal.transform { (r: Result<Int>, n: SignalNext<Int>) in
 			switch r {
 			case .success(let v): n.send(value: v * 10)
 			case .failure: n.send(error: TestError.oneValue)
 			}
 		}
-		do {
-			try mergeSet.add(right, closePropagation: .all)
-		} catch {
-			XCTFail()
-		}
+		mergedInput.add(right, closePropagation: .all)
 		input.send(value: 3)
 		input.send(value: 5)
 		input.close()
@@ -1232,41 +1236,38 @@ class SignalTests: XCTestCase {
 	func testMergeSet() {
 		do {
 			var results = [Result<Int>]()
-			let (mergeSet, mergeSignal) = Signal<Int>.createMergeSet()
+			let (mergedInput, mergeSignal) = Signal<Int>.createMergedInput()
 			let (input, ep) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
-			let disconnector = try mergeSignal.join(to: input)
-			
+			let disconnector = mergeSignal.junction()
+			try disconnector.join(to: input)
+		
 			let (input1, signal1) = Signal<Int>.create { $0.cacheUntilActive() }
 			let (input2, signal2) = Signal<Int>.create { $0.cacheUntilActive() }
 			let (input3, signal3) = Signal<Int>.create { $0.cacheUntilActive() }
 			let (input4, signal4) = Signal<Int>.create { $0.cacheUntilActive() }
-			do {
-				try mergeSet.add(signal1, closePropagation: .none, removeOnDeactivate: false)
-				try mergeSet.add(signal2, closePropagation: .all, removeOnDeactivate: false)
-				try mergeSet.add(signal3, closePropagation: .none, removeOnDeactivate: true)
-				try mergeSet.add(signal4, closePropagation: .none, removeOnDeactivate: false)
-			} catch {
-				XCTFail()
-			}
-			
+			mergedInput.add(signal1, closePropagation: .none, removeOnDeactivate: false)
+			mergedInput.add(signal2, closePropagation: .all, removeOnDeactivate: false)
+			mergedInput.add(signal3, closePropagation: .none, removeOnDeactivate: true)
+			mergedInput.add(signal4, closePropagation: .none, removeOnDeactivate: false)
+		
 			input1.send(value: 3)
 			input2.send(value: 4)
 			input3.send(value: 5)
 			input4.send(value: 9)
 			input1.close()
-			
+		
 			let reconnectable = disconnector.disconnect()
-			try reconnectable.map { _ = try disconnector.join(to: $0) }
-			
-			mergeSet.remove(signal4)
-			
+			try reconnectable.map { try disconnector.join(to: $0) }
+		
+			mergedInput.remove(signal4)
+		
 			input1.send(value: 6)
 			input2.send(value: 7)
 			input3.send(value: 8)
 			input4.send(value: 10)
 			input2.close()
 			input3.close()
-			
+		
 			XCTAssert(results.count == 7)
 			XCTAssert(results.at(0)?.value == 3)
 			XCTAssert(results.at(1)?.value == 4)
@@ -1275,7 +1276,7 @@ class SignalTests: XCTestCase {
 			XCTAssert(results.at(4)?.value == 7)
 			XCTAssert(results.at(5)?.value == 8)
 			XCTAssert(results.at(6)?.isSignalClosed == true)
-			
+		
 			withExtendedLifetime(ep) {}
 		} catch {
 			XCTFail()
@@ -1943,7 +1944,7 @@ class SignalTests: XCTestCase {
 		for j in 0..<threadCount {
 			Exec.global.invoke {
 				for i in 0..<iterations {
-					let (input, s) = Signal<Int>.create()
+					let (input, s) = Signal<Int>.createMergedInput()
 					var signal = s.transform(initialState: 0) { (count: inout Int, r: Result<Int>, n: SignalNext<(thread: Int, iteration: Int, value: Int)>) in
 						switch r {
 						case .success(let v): n.send(value: (thread: j, iteration: i, value: v))
@@ -2004,7 +2005,7 @@ class SignalTests: XCTestCase {
 					}
 					DispatchQueue.main.async { allEndpoints[double(j, i)] = ep }
 					_ = junction.disconnect()
-					_ = try? junction.join(to: input)
+					_ = try? junction.join(to: input, closePropagation: .all)
 				}
 			}
 		}

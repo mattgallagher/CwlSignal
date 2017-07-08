@@ -7,7 +7,7 @@
 
 SignalCapture allows activation values to be pulled synchronously from a signal. This provides potential solutions to scenarios where code cannot proceed without being able to obtain an immediate value. Simply put: activation in CwlSignal provides pull-based synchronous behaviors, whereas typical reactive programming is push-based and potentially asynchronous.
 
-The `poll` property on `Signal` and `SignalPollableEndpoint` provide slightly different semantics but can also be used to synchronously obtain values from a stream when interface constraints demands this.
+The `poll` property on `Signal` and `SignalPollingEndpoint` provides slightly different semantics but can also be used to synchronously obtain values from a stream when interface constraints demands this.
 
 ---
 */

@@ -15,7 +15,7 @@ Here's the example from the previous page, using `Signal<Int>.channel()` instead
 */
 import CwlSignal
 
-// Create an input/output pair
+// A `channel` lets us construct this on a single line, rather than needing to create the `endpoint` on the next line.
 let (input, endpoint) = Signal<Int>.channel().map { $0 * 2 }.subscribeValues { print("Value received: \($0)") }
 
 // Send values to the input end

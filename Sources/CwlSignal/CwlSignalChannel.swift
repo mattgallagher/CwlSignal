@@ -22,7 +22,7 @@
 	import CwlUtils
 #endif
 
-/// A basic wrapper around a `Signal` and an input which feeds input into it (usually a `SignalInput` but possibly also a `SignalMergeSet`, `SignalMultiInput`).
+/// A basic wrapper around a `Signal` and an input which feeds input into it (usually a `SignalInput` but possibly also a `SignalMergedInput`, `SignalMultiInput`).
 ///
 /// You don't generally hold onto a `SignalChannel`; it exists for syntactic convenience when building a series of pipeline stages.
 /// e.g.:
@@ -66,14 +66,11 @@ extension Signal {
 	public static func channel() -> SignalChannel<SignalInput<T>, T> {
 		return SignalChannel<SignalInput<T>, T>(Signal<T>.create())
 	}
-	public static func mergeSetChannel<S: Sequence>(_ initialInputs: S, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> SignalChannel<SignalMergeSet<T>, T> where S.Iterator.Element: Signal<T> {
-		return SignalChannel<SignalMergeSet<T>, T>(Signal<T>.createMergeSet(initialInputs, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate))
-	}
-	public static func mergeSetChannel() -> SignalChannel<SignalMergeSet<T>, T> {
-		return SignalChannel<SignalMergeSet<T>, T>(Signal<T>.createMergeSet())
-	}
-	public static func multiInputChannel() -> SignalChannel<SignalMultiInput<T>, T> {
+	public static func multiChannel() -> SignalChannel<SignalMultiInput<T>, T> {
 		return SignalChannel<SignalMultiInput<T>, T>(Signal<T>.createMultiInput())
+	}
+	public static func mergedChannel() -> SignalChannel<SignalMergedInput<T>, T> {
+		return SignalChannel<SignalMergedInput<T>, T>(Signal<T>.createMergedInput())
 	}
 	public static func variable() -> (input: SignalMultiInput<T>, signal: SignalMulti<T>) {
 		return SignalChannel<SignalMultiInput<T>, T>(Signal<T>.createMultiInput()).continuous()
@@ -94,12 +91,8 @@ extension SignalChannel {
 		return final { $0.subscribeAndKeepAlive(context: context, handler: handler) }.input
 	}
 	
-	public func join(to: SignalInput<T>) throws -> I {
-		return try final { try $0.join(to: to) }.input
-	}
-	
-	public func join(to: SignalInput<T>, onError: @escaping (SignalJunction<T>, Error, SignalInput<T>) -> ()) throws -> I {
-		return try final { try $0.join(to: to, onError: onError) }.input
+	public func join(to: SignalInput<T>) -> I {
+		return final { $0.join(to: to) }.input
 	}
 	
 	public func junction() -> (input: I, junction: SignalJunction<T>) {
@@ -204,11 +197,11 @@ extension SignalChannel {
 		return next { $0.stride(count: count, initialSkip: initialSkip) }
 	}
 	
-	public func transformFlatten<U>(closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ processor: @escaping (T, SignalMergeSet<U>) -> ()) -> SignalChannel<I, U> {
+	public func transformFlatten<U>(closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ processor: @escaping (T, SignalMergedInput<U>) -> ()) -> SignalChannel<I, U> {
 		return next { $0.transformFlatten(closePropagation: closePropagation, context: context, processor) }
 	}
 	
-	public func transformFlatten<S, U>(initialState: S, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ processor: @escaping (inout S, T, SignalMergeSet<U>) -> ()) -> SignalChannel<I, U> {
+	public func transformFlatten<S, U>(initialState: S, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ processor: @escaping (inout S, T, SignalMergedInput<U>) -> ()) -> SignalChannel<I, U> {
 		return next { $0.transformFlatten(initialState: initialState, closePropagation: closePropagation, context: context, processor) }
 	}
 	
@@ -220,13 +213,13 @@ extension SignalChannel {
 		return next { $0.valueDurations(initialState: initialState, closePropagation: closePropagation, context: context, duration: duration) }
 	}
 	
-	public func join(to: SignalMergeSet<T>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) throws -> I {
-		try signal.join(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
+	public func join(to: SignalMergedInput<T>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> I {
+		signal.join(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return input
 	}
 	
-	public func cancellableJoin(to: SignalMergeSet<T>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) throws -> (input: I, cancellable: Cancellable) {
-		let tuple = try final { try $0.cancellableJoin(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate) }
+	public func cancellableJoin(to: SignalMergedInput<T>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> (input: I, cancellable: Cancellable) {
+		let tuple = final { $0.cancellableJoin(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate) }
 		return (input: tuple.input, cancellable: tuple.output)
 	}
 	
@@ -708,20 +701,16 @@ extension SignalInput {
 		return Signal<T>.channel().subscribeAndKeepAlive(context: context, handler: handler)
 	}
 	
-	public static func join(to: SignalInput<T>) throws -> SignalInput<T> {
-		return try Signal<T>.channel().join(to: to)
-	}
-	
-	public static func join(to: SignalInput<T>, onError: @escaping (SignalJunction<T>, Error, SignalInput<T>) -> ()) throws -> SignalInput<T> {
-		return try Signal<T>.channel().join(to: to, onError: onError)
+	public static func join(to: SignalInput<T>) -> SignalInput<T> {
+		return Signal<T>.channel().join(to: to)
 	}
 	
 	public static func subscribeValuesAndKeepAlive(context: Exec = .direct, handler: @escaping (ValueType) -> Bool) -> SignalInput<T> {
 		return Signal<T>.channel().subscribeValuesAndKeepAlive(context: context, handler: handler)
 	}
 	
-	public static func join(to: SignalMergeSet<T>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) throws -> SignalInput<T> {
-		return try Signal<T>.channel().join(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
+	public static func join(to: SignalMergedInput<T>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> SignalInput<T> {
+		return Signal<T>.channel().join(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 	}
 	
 	public static func join(to: SignalMultiInput<T>) -> SignalInput<T> {

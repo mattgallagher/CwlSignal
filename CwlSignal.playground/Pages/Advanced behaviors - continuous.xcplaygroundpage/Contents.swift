@@ -5,7 +5,7 @@
 
 ## Continuous
 
-The basic `Signal` type in CwlSignal is "single listener". This means that it is an error to try and subscribe or transform it more than once. The primary reason for this is that once you're allow to add multiple listeners, you need to decide how to bring each listener "up to speed" with the signal so far.
+The basic `Signal` type in CwlSignal is "single listener". This means that it is a *precondition failure* to try and subscribe or transform it more than once. The primary reason for this is that once you're allow to add multiple listeners, you need to decide how to bring each listener "up to speed" with the signal so far.
 
 The `SignalMulti` type supports multiple listeners and the simplest way to get a `SignalMulti` is to call `continuous()` on any `Signal`. When a new listener joins a `continuous` signal, it will immediately receive the most recent value. In CwlSignal this "up to speed" data is called the "activation" signal and it is sent synchronously, even if the signal is otherwise configured for asychronous processing.
 

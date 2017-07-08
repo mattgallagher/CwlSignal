@@ -36,7 +36,7 @@ spookeys.concat(animals).concat(smileys).subscribeValuesAndKeepAlive {
 //: Since `multiInput` is intended to be exposed in interfaces, it does not propagate errors (it merely disconnects the joined signal).
 //: SOMETHING TO TRY: replace `multiInputChannel` with `channel` (so you get a regular `SignalInput` instead), write `_ = try? ` in front of the three `join` statements (so the code compiles) and see how the input is consumed by the first `join` causing the remaining use of the input to send no signal data (returns an error).
 print("\n\nSignalMultiInput:")
-let multiInput = Signal<String>.multiInputChannel().subscribeValuesAndKeepAlive {
+let multiInput = Signal<String>.multiChannel().subscribeValuesAndKeepAlive {
 	print($0, terminator: "")
 	return true
 }
@@ -50,7 +50,7 @@ multiInput.send(value: " End")
 //: Notice that in this first case, the closed at the end of the `spookeys` sequence closes the whole stream and neither animals nor `End` are emitted.
 //: SOMETHING TO TRY: replace the `.all` parameters with `.errors` or `.none`.
 print("\n\nSignalMergeSet:")
-let mergeSet = Signal<String>.mergeSetChannel().subscribeValuesAndKeepAlive {
+let mergeSet = Signal<String>.mergedChannel().subscribeValuesAndKeepAlive {
 	print($0, terminator: "")
 	return true
 }

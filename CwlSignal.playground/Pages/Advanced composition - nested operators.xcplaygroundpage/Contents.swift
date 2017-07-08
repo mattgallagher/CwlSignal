@@ -25,7 +25,7 @@ class Service {
    let signal: SignalMulti<Result<String>>
 	
    init(connect: @escaping () -> Signal<String>) {
-		(newConnectionWithTimeout, signal) = Signal<DispatchTimeInterval>.multiInputChannel()
+		(newConnectionWithTimeout, signal) = Signal<DispatchTimeInterval>.multiChannel()
 			.map { seconds in
 				connect().timeout(interval: seconds).materialize()
 			}.next { allConnectionAttempts in

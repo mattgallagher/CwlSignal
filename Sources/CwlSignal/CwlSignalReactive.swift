@@ -277,12 +277,8 @@ extension Signal {
 		
 		// Continuous signals don't really need the junction. Just connect it immediately and ignore it.
 		if continuous {
-			do {
-				try intervalJunction.join(to: initialInput)
-			} catch {
-				assertionFailure()
-				return Signal<()>.preclosed()
-			}
+			// Both `intervalJunction` and `initialInput` are newly created so this can't be an error
+			try! intervalJunction.join(to: initialInput)
 		}
 		
 		return combine(initialState: (0, nil), second: signal) { (state: inout (count: Int, timerInput: SignalInput<Int>?), cr: EitherResult2<T, Int>, n: SignalNext<()>) in
@@ -580,8 +576,8 @@ extension Signal {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func flatMap<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> Signal<U> {
-		return transformFlatten(closePropagation: .errors, context: context) { (v: T, mergeSet: SignalMergeSet<U>) in
-			_ = try? mergeSet.add(processor(v), closePropagation: .errors, removeOnDeactivate: true)
+		return transformFlatten(closePropagation: .errors, context: context) { (v: T, mergedInput: SignalMergedInput<U>) in
+			mergedInput.add(processor(v), closePropagation: .errors, removeOnDeactivate: true)
 		}
 	}
 	
@@ -592,9 +588,9 @@ extension Signal {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func flatMapFirst<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> Signal<U> {
-		return transformFlatten(initialState: false, closePropagation: .errors, context: context) { (s: inout Bool, v: T, mergeSet: SignalMergeSet<U>) in
+		return transformFlatten(initialState: false, closePropagation: .errors, context: context) { (s: inout Bool, v: T, mergedInput: SignalMergedInput<U>) in
 			if !s {
-				_ = try? mergeSet.add(processor(v), closePropagation: .errors, removeOnDeactivate: true)
+				mergedInput.add(processor(v), closePropagation: .errors, removeOnDeactivate: true)
 				s = true
 			}
 		}
@@ -609,12 +605,12 @@ extension Signal {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func flatMapLatest<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> Signal<U> {
-		return transformFlatten(initialState: nil, closePropagation: .errors, context: context) { (s: inout Signal<U>?, v: T, mergeSet: SignalMergeSet<U>) in
+		return transformFlatten(initialState: nil, closePropagation: .errors, context: context) { (s: inout Signal<U>?, v: T, mergedInput: SignalMergedInput<U>) in
 			if let existing = s {
-				mergeSet.remove(existing)
+				mergedInput.remove(existing)
 			}
 			let next = processor(v)
-			_ = try? mergeSet.add(next, closePropagation: .errors, removeOnDeactivate: true)
+			mergedInput.add(next, closePropagation: .errors, removeOnDeactivate: true)
 			s = next
 		}
 	}
@@ -627,8 +623,8 @@ extension Signal {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func flatMap<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, T) -> Signal<U>) -> Signal<U> {
-		return transformFlatten(initialState: initialState, closePropagation: .errors, context: context) { (s: inout V, v: T, mergeSet: SignalMergeSet<U>) in
-			_ = try? mergeSet.add(processor(&s, v), closePropagation: .errors, removeOnDeactivate: true)
+		return transformFlatten(initialState: initialState, closePropagation: .errors, context: context) { (s: inout V, v: T, mergedInput: SignalMergedInput<U>) in
+			mergedInput.add(processor(&s, v), closePropagation: .errors, removeOnDeactivate: true)
 		}
 	}
 	
@@ -639,8 +635,8 @@ extension Signal {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is serially concatenated into a single stream
 	public func concatMap<U>(context: Exec = .direct, _ processor: @escaping (T) -> Signal<U>) -> Signal<U> {
-		return transformFlatten(initialState: 0, closePropagation: .errors, context: context) { (index: inout Int, v: T, mergeSet: SignalMergeSet<(Int, Result<U>)>) in
-			_ = try? mergeSet.add(processor(v).transform { (r: Result<U>, n: SignalNext<Result<U>>) in
+		return transformFlatten(initialState: 0, closePropagation: .errors, context: context) { (index: inout Int, v: T, mergedInput: SignalMergedInput<(Int, Result<U>)>) in
+			mergedInput.add(processor(v).transform { (r: Result<U>, n: SignalNext<Result<U>>) in
 				switch r {
 				case .success:
 					n.send(value: r)
@@ -1518,7 +1514,10 @@ extension Signal {
 	/// - Parameter sources: an `Array` where `signal` is merged into the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public static func merge<S: Sequence>(_ sequence: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
-		let (_, signal) = Signal<T>.createMergeSet(sequence)
+		let (mergedInput, signal) = Signal<T>.createMergedInput()
+		for s in sequence {
+			mergedInput.add(s, closePropagation: .errors)
+		}
 		return signal
 	}
 	
@@ -1529,7 +1528,10 @@ extension Signal {
 	/// - Parameter sources: an `Array` where `signal` is merged into the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public static func merge(_ sources: Signal<T>...) -> Signal<T> {
-		let (_, signal) = Signal<T>.createMergeSet(sources)
+		let (mergedInput, signal) = Signal<T>.createMergedInput()
+		for s in sources {
+			mergedInput.add(s, closePropagation: .errors)
+		}
 		return signal
 	}
 	
@@ -1540,10 +1542,10 @@ extension Signal {
 	/// - Parameter sources: a variable parameter list of `Signal<T>` instances that are merged with `self` to form the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func mergeWith<S: Sequence>(_ sequence: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
-		let (mergeSet, signal) = Signal<T>.createMergeSet()
-		try! mergeSet.add(self, closePropagation: .errors)
+		let (mergedInput, signal) = Signal<T>.createMergedInput()
+		mergedInput.add(self, closePropagation: .errors)
 		for s in sequence {
-			try! mergeSet.add(s, closePropagation: .errors)
+			mergedInput.add(s, closePropagation: .errors)
 		}
 		return signal
 	}
@@ -1555,10 +1557,10 @@ extension Signal {
 	/// - Parameter sources: a variable parameter list of `Signal<T>` instances that are merged with `self` to form the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func mergeWith(_ sources: Signal<T>...) -> Signal<T> {
-		let (mergeSet, signal) = Signal<T>.createMergeSet()
-		try! mergeSet.add(self, closePropagation: .errors)
+		let (mergedInput, signal) = Signal<T>.createMergedInput()
+		mergedInput.add(self, closePropagation: .errors)
 		for s in sources {
-			try! mergeSet.add(s, closePropagation: .errors)
+			mergedInput.add(s, closePropagation: .errors)
 		}
 		return signal
 	}
@@ -1623,12 +1625,12 @@ extension Signal {
 	/// - Parameter signal: each of the inner signals emitted by this outer signal is observed, with the most recent signal emitted from the result
 	/// - Returns: a signal that emits the values from the latest `Signal` emitted by `signal`
 	public static func switchLatest<T>(_ signal: Signal<Signal<T>>) -> Signal<T> {
-		return signal.transformFlatten(initialState: nil, closePropagation: .errors) { (latest: inout Signal<T>?, next: Signal<T>, mergeSet: SignalMergeSet<T>) in
+		return signal.transformFlatten(initialState: nil, closePropagation: .errors) { (latest: inout Signal<T>?, next: Signal<T>, mergedInput: SignalMergedInput<T>) in
 			if let l = latest {
-				mergeSet.remove(l)
+				mergedInput.remove(l)
 			}
 			latest = next
-			_ = try? mergeSet.add(next, closePropagation: .errors, removeOnDeactivate: true)
+			mergedInput.add(next, closePropagation: .errors, removeOnDeactivate: true)
 		}
 	}
 	
@@ -1946,7 +1948,7 @@ private class CatchErrorRecovery<T> {
 		if let s = recover(e) {
 			do {
 				let f: (SignalJunction<T>, Error, SignalInput<T>) -> () = self.catchErrorRejoin
-				try s.join(to: i, onError: f)
+				try s.junction().join(to: i, onError: f)
 			} catch {
 				i.send(error: error)
 			}
@@ -1991,11 +1993,8 @@ extension Signal {
 	/// - Returns: a signal that emits the values from `self` until an error is received and then, if `recover` returns non-`nil` emits the values from `recover` and then emits the error from `recover`, otherwise if `recover` returns `nil`, emits the `ErrorType` from `self`.
 	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<T>?) -> Signal<T> {
 		let (input, signal) = Signal<T>.create()
-		do {
-			try join(to: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin)
-		} catch {
-			input.send(error: error)
-		}
+		// Both `junction` and `input` are newly created so this can't be an error
+		try! junction().join(to: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin)
 		return signal
 	}
 	
@@ -2010,11 +2009,8 @@ extension Signal {
 	/// - Returns: a signal that emits the values from `self` until an error is received and then, if `shouldRetry` returns non-`nil`, disconnects from `self`, delays by the number of seconds returned from `shouldRetry`, and reconnects to `self` (triggering re-activation), otherwise if `shouldRetry` returns `nil`, emits the `ErrorType` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
 	public func retry<U>(_ initialState: U, context: Exec = .direct, shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?) -> Signal<T> {
 		let (input, signal) = Signal<T>.create()
-		do {
-			try join(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin)
-		} catch {
-			input.send(error: error)
-		}
+		// Both `junction` and `input` are newly created so this can't be an error
+		try! junction().join(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin)
 		return signal
 	}
 	
@@ -2102,12 +2098,8 @@ extension Signal {
 	public func onActivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<T> {
 		let signal = Signal<T>.generate { input in
 			if let i = input {
-				do {
-					handler()
-					try self.join(to: i)
-				} catch {
-					i.send(error: error)
-				}
+				handler()
+				self.join(to: i)
 			}
 		}
 		return signal
@@ -2122,11 +2114,7 @@ extension Signal {
 	public func onDeactivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<T> {
 		let signal = Signal<T>.generate { input in
 			if let i = input {
-				do {
-					try self.join(to: i)
-				} catch {
-					i.send(error: error)
-				}
+				self.join(to: i)
 			} else {
 				handler()
 			}
@@ -2185,7 +2173,7 @@ extension Signal {
 	
 	/// Implementation of [Reactive X operator "materialize"](http://reactivex.io/documentation/operators/materialize-dematerialize.html)
 	///
-	/// WARNING: in CwlSignal, this operator will emit a `SignalError.closed` into the output signal immediately after emitting the first wrapped error. Within the "first error closes signal" behavior of CwlSignal, this is the only behavior that makes sense (since no further upstream values will be received), however, it does limit the usefulness of `materialize` to constructions where the `materialize` signal immediately outputs into a `SignalMergeSet` (including abstractions built on top, like `switchLatest` or child signals of a `flatMap`) that ignore non-error close conditions from the source signal.
+	/// WARNING: in CwlSignal, this operator will emit a `SignalError.closed` into the output signal immediately after emitting the first wrapped error. Within the "first error closes signal" behavior of CwlSignal, this is the only behavior that makes sense (since no further upstream values will be received), however, it does limit the usefulness of `materialize` to constructions where the `materialize` signal immediately outputs into a `SignalMergedInput` (including abstractions built on top, like `switchLatest` or child signals of a `flatMap`) that ignore non-error close conditions from the source signal.
 	///
 	/// - Returns: a signal where each `Result` emitted from self is further wrapped in a Result.success.
 	public func materialize() -> Signal<Result<T>> {
@@ -2230,12 +2218,8 @@ extension Signal {
 	public func timeInterval(context: Exec = .direct) -> Signal<Double> {
 		let signal = Signal<()>.generate { input in
 			if let i = input {
-				do {
-					i.send(value: ())
-					try self.map { v in () }.join(to: i)
-				} catch {
-					i.send(error: error)
-				}
+				i.send(value: ())
+				self.map { v in () }.join(to: i)
 			}
 		}.transform(initialState: nil, context: context) { (lastTime: inout DispatchTime?, r: Result<()>, n: SignalNext<Double>) in
 			switch r {
@@ -2259,7 +2243,10 @@ extension Signal {
 	///   - context: timestamps will be added based on the time in this context
 	/// - Returns: a mirror of self unless a timeout occurs, in which case it will closed by a SignalError.timeout
 	public func timeout(interval: DispatchTimeInterval, resetOnValue: Bool = true, context: Exec = .direct) -> Signal<T> {
-		let (junction, signal) = Signal<()>.timer(interval: interval, context: context).junctionSignal()
+		let (input, signal) = Signal<()>.create()
+		let junction = Signal<()>.timer(interval: interval, context: context).junction()
+		// Both `junction` and `input` are newly created so this can't be an error
+		try! junction.join(to: input)
 		return self.combine(second: signal, context: context) { (cr: EitherResult2<T, ()>, n: SignalNext<T>) in
 			switch cr {
 			case .result1(let r):
@@ -2317,9 +2304,9 @@ extension Signal {
 	/// - Parameter inputs: a set of inputs
 	/// - Returns: connects to all inputs then emits the full set of values from the first of these to emit a value
 	public static func amb<S: Sequence>(_ inputs: S) -> Signal<T> where S.Iterator.Element == Signal<T> {
-		let (mergeSet, signal) = Signal<(Int, Result<T>)>.createMergeSet()
+		let (mergedInput, signal) = Signal<(Int, Result<T>)>.createMergedInput()
 		inputs.enumerated().forEach { s in
-			_ = try? mergeSet.add(s.element.transform { r, n in
+			mergedInput.add(s.element.transform { r, n in
 				n.send(value: (s.offset, r))
 			}, closePropagation: .errors)
 		}
@@ -2399,20 +2386,13 @@ extension Signal {
 			return t
 		}
 		
-		do {
-			try join(to: input) { (j: SignalJunction<T>, e: Error, i: SignalInput<T>) in
-				do {
-					if let f = fallback {
-						try f.join(to: i)
-					} else {
-						i.send(error: e)
-					}
-				} catch {
-					i.send(error: error)
-				}
+		// Both `junction` and `input` are newly created so this can't be an error
+		try! junction().join(to: input) { (j: SignalJunction<T>, e: Error, i: SignalInput<T>) in
+			if let f = fallback {
+				f.join(to: i)
+			} else {
+				i.send(error: e)
 			}
-		} catch {
-			input.send(error: error)
 		}
 		return signal
 	}
