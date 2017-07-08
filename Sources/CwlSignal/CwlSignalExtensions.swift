@@ -256,9 +256,14 @@ extension Signal {
 	/// - Parameter initialState: before receiving the first value
 	/// - Returns: the alternating, continuous signal
 	public func toggle(initialState: Bool = false) -> SignalMulti<Bool> {
-		return map(initialState: initialState) { (state: inout Bool, toggle: ValueType) -> Bool in
-			state = !state
-			return state
+		return transform(initialState: initialState) { (state: inout Bool, toggle: Result<ValueType>, next: SignalNext<Bool>) in
+			switch toggle {
+			case .success:
+				state = !state
+				next.send(value: state)
+			case .failure(let e):
+				next.send(error: e)
+			}
 		}.continuous(initialValue: initialState)
 	}
 }

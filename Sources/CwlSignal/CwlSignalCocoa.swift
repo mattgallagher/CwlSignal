@@ -147,7 +147,16 @@ extension Signal {
 	///   - initial: if true, NSKeyValueObservingOptions.initial is included in the options passed to `addObserver(_:forKeyPath:options:context:)`
 	/// - Returns: a signal which emits the observation results
 	public static func keyValueObserving(_ target: NSObject, keyPath: String, initial: Bool = true) -> Signal<T> {
-		return signalKeyValueObserving(target, keyPath: keyPath, initial: initial).filterMap { $0 as? T }
+		return signalKeyValueObserving(target, keyPath: keyPath, initial: initial).transform { (r: Result<Any>, n: SignalNext<T>) in
+			switch r {
+			case .success(let v):
+				if let t = v as? T {
+					n.send(value: t)
+				}
+			case .failure(let e):
+				n.send(error: e)
+			}
+		}
 	}
 }
 

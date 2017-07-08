@@ -2681,7 +2681,9 @@ public class SignalMultiInput<T>: SignalInput<T> {
 	
 	/// Connects a new `SignalInput<T>` to `self`. A single input may be faster than a multi-input over multiple `send` operations.
 	public final override func singleInput() -> SignalInput<T> {
-		return Signal<T>.create { s -> () in self.add(s) }.input
+		let (input, signal) = Signal<T>.create()
+		self.add(signal)
+		return input
 	}
 	
 	/// The primary signal sending function
@@ -2735,7 +2737,9 @@ public class SignalMergedInput<T>: SignalMultiInput<T> {
 	///   - removeOnDeactivate: passed to `add(_:closePropagation:removeOnDeactivate:) internally
 	/// - Returns: the `SignalInput` that will now feed into this `SignalMergedInput`.
 	public final func singleInput(closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = false) -> SignalInput<T> {
-		return Signal<T>.create { s -> () in self.add(s, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate) }.input
+		let (input, signal) = Signal<T>.create()
+		self.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
+		return input
 	}
 }
 
