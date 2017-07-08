@@ -87,7 +87,8 @@ public class Signal<T> {
 	
 	// Notifications for the inverse of `delivery == .disabled`, accessed exclusively through the `generate` constructor. Can be used for lazy construction/commencement, resetting to initial state on graph disconnect and reconnect or cleanup after graph deletion.
 	// A signal is used here instead of a simple function callback since re-entrancy-safe queueing and context delivery are needed.
-	fileprivate final var newInputSignal: (Signal<SignalInput<T>?>, SignalEndpoint<SignalInput<T>?>)? = nil
+	// WARNING: this is actually a (Signal<SignalInput<T>?>, SignalEndpont<SignalInput<T>?>)? but we use `Any` to avoid huge optimization overheads.
+	fileprivate final var newInputSignal: (Signal<Any?>, SignalEndpoint<Any?>)? = nil
 	
 	// If there is a preceeding `Signal` in the graph, its `SignalProcessor` is stored in this variable. Note that `SignalPredecessor` is always an instance of `SignalProcessor`.
 	/// If Swift gains an `OrderedSet` type, it should be used here in place of this `Set` and the `sortedPreceeding` accessor, below.
@@ -142,10 +143,10 @@ public class Signal<T> {
 	/// - Returns: the constructed `Signal`
 	public static func generate(context: Exec = .direct, activationChange: @escaping (_ input: SignalInput<T>?) -> Void) -> Signal<T> {
 		let s = Signal<T>()
-		let nis = Signal<SignalInput<T>?>()
+		let nis = Signal<Any?>()
 		s.newInputSignal = (nis, nis.subscribe(context: context) { r in
 			if case .success(let v) = r {
-				activationChange(v)
+				activationChange(v as? SignalInput<T>)
 			}
 		})
 		return s
