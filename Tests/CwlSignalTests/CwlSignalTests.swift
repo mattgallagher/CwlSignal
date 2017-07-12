@@ -1099,7 +1099,9 @@ class SignalTests: XCTestCase {
 		input.send(value: 5)
 		
 		_ = escapedNext?.send(value: Double(escapedValue * 2))
-		escapedNext = nil
+		
+		// Since releasing `escapedNext` will immediately cause `escapedNext` to be overwritten (clashing with the assign to `nil`) we need to copy to a non-shared location, clear the shared `escapedNext` first, then release the copy.
+		withExtendedLifetime(escapedNext) { escapedNext = nil }
 		
 		XCTAssert(results.count == 1)
 		XCTAssert(results.at(0)?.value == 2)
@@ -1107,16 +1109,20 @@ class SignalTests: XCTestCase {
 		XCTAssert(escapedValue == 3)
 		
 		_ = escapedNext?.send(value: Double(escapedValue * 2))
-		escapedNext = nil
-		
+
+		// Since releasing `escapedNext` will immediately cause `escapedNext` to be overwritten (clashing with the assign to `nil`) we need to copy to a non-shared location, clear the shared `escapedNext` first, then release the copy.
+		withExtendedLifetime(escapedNext) { escapedNext = nil }
+
 		XCTAssert(results.count == 2)
 		XCTAssert(results.at(1)?.value == 6)
 		XCTAssert(escapedNext != nil)
 		XCTAssert(escapedValue == 5)
 		
 		_ = escapedNext?.send(value: Double(escapedValue * 2))
-		escapedNext = nil
-		
+
+		// Since releasing `escapedNext` will immediately cause `escapedNext` to be overwritten (clashing with the assign to `nil`) we need to copy to a non-shared location, clear the shared `escapedNext` first, then release the copy.
+		withExtendedLifetime(escapedNext) { escapedNext = nil }
+
 		XCTAssert(results.count == 3)
 		XCTAssert(results.at(2)?.value == 10)
 		XCTAssert(escapedNext == nil)
@@ -1155,24 +1161,30 @@ class SignalTests: XCTestCase {
 		input.send(value: 5)
 		
 		_ = escapedNext?.send(value: Double(escapedValue * 2))
-		escapedNext = nil
-		
+
+		// Since releasing `escapedNext` will immediately cause `escapedNext` to be overwritten (clashing with the assign to `nil`) we need to copy to a non-shared location, clear the shared `escapedNext` first, then release the copy.
+		withExtendedLifetime(escapedNext) { escapedNext = nil }
+
 		XCTAssert(results.count == 1)
 		XCTAssert(results.at(0)?.value == 2)
 		XCTAssert(escapedNext != nil)
 		XCTAssert(escapedValue == 3)
 		
 		_ = escapedNext?.send(value: Double(escapedValue * 2))
-		escapedNext = nil
-		
+
+		// Since releasing `escapedNext` will immediately cause `escapedNext` to be overwritten (clashing with the assign to `nil`) we need to copy to a non-shared location, clear the shared `escapedNext` first, then release the copy.
+		withExtendedLifetime(escapedNext) { escapedNext = nil }
+
 		XCTAssert(results.count == 2)
 		XCTAssert(results.at(1)?.value == 6)
 		XCTAssert(escapedNext != nil)
 		XCTAssert(escapedValue == 5)
 		
 		_ = escapedNext?.send(value: Double(escapedValue * 2))
-		escapedNext = nil
-		
+
+		// Since releasing `escapedNext` will immediately cause `escapedNext` to be overwritten (clashing with the assign to `nil`) we need to copy to a non-shared location, clear the shared `escapedNext` first, then release the copy.
+		withExtendedLifetime(escapedNext) { escapedNext = nil }
+
 		XCTAssert(results.count == 3)
 		XCTAssert(results.at(2)?.value == 10)
 		XCTAssert(escapedNext == nil)
