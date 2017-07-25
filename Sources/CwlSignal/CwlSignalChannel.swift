@@ -58,7 +58,7 @@ public struct SignalChannel<I, T> {
 	public var pair: (input: I, signal: Signal<T>) { return (input, signal) }
 }
 
-func channel<T>() -> SignalChannel<SignalInput<T>, T> {
+public func channel<T>() -> SignalChannel<SignalInput<T>, T> {
 	return SignalChannel<SignalInput<T>, T>(Signal<T>.create())
 }
 
