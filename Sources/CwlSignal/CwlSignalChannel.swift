@@ -237,7 +237,7 @@ extension SignalChannel {
 		return (input: tuple.input, endpoint: tuple.output)
 	}
 	
-	public func toggle(initialState: Bool = false) -> (input: I, signal: SignalMulti<Bool>) {
+	public func toggle(initialState: Bool = false) -> SignalChannel<I, Bool> {
 		let tuple = final { $0.toggle(initialState: initialState) }
 		return (input: tuple.input, signal: tuple.output)
 	}
