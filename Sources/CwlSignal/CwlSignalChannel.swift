@@ -22,16 +22,16 @@
 	import CwlUtils
 #endif
 
-/// A basic wrapper around a `Signal` and an input which feeds input into it (usually a `SignalInput` but possibly also a `SignalMergedInput`, `SignalMultiInput`).
+/// A `SignalPair` and its common typealiases, `Channel`, `MultiChannel` and `Variable` form basic wrappers around a `SignalInput`/`Signal` pair.
 ///
-/// You don't generally hold onto a `SignalChannel`; it exists for syntactic convenience when building a series of pipeline stages.
+/// This class exists for syntactic convenience when building a series of pipeline stages.
 /// e.g.:
-///		let (input, signal) = Signal<Int>.channel().map { $0 + 1 }.pair
+///		let (input, signal) = Channel<Int>().map { $0 + 1 }.pair
 ///
 /// Every transform in the CwlSignal library that can be applied to `Signal<T>` can also be applied to `SignalChannel<T>`. Where possible, the result is another `SignalChannel` so the result can be immediately transformed again.
 ///
-/// A `channel()` function exists in global scope to simplify syntax further in situations where the result type is already constrained:
-///		someFunction(signalInput: channel().map { $0 + 1 }.join(to: multiInputChannelFromElsewhere))
+/// A `Channel()` function exists in global scope to simplify syntax further in situations where the result type is already constrained:
+///		someFunction(signalInput: Channel().map { $0 + 1 }.join(to: multiInputChannelFromElsewhere))
 ///
 /// For similar syntactic reasons, `SignalInput<T>` includes static versions of all of those `SignalChannel` methods where the result is either a `SignalInput<T>` or a `SignalChannel` where `I` remains unchanged.
 /// e.g.:
@@ -57,6 +57,7 @@ public struct SignalPair<I, SI: SignalInput<I>, T, ST: Signal<T>> {
 		try compose(signal)
 		return input
 	}
+	public var tuple: (input: SI, signal: ST) { return (input: input, signal: signal) }
 }
 
 public typealias Channel<T> = SignalPair<T, SignalInput<T>, T, Signal<T>>
@@ -66,16 +67,6 @@ public typealias Variable<T> = SignalPair<T, SignalMultiInput<T>, T, SignalMulti
 extension SignalPair where I == T, SI == SignalInput<I>, ST == Signal<T> {
 	public init() {
 		self.init(Signal<I>.create())
-	}
-}
-
-extension SignalPair where I == T, SI == SignalInput<I>, ST == SignalMulti<T> {
-	public init(continuous: Bool = true) {
-		let c = Channel<T>()
-		self = continuous ? c.continuous() : c.multicast()
-	}
-	public init(initialValue: T) {
-		self = Channel<T>().continuous(initialValue: initialValue)
 	}
 }
 
