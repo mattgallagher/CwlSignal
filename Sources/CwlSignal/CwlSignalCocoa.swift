@@ -40,7 +40,8 @@ open class SignalActionTarget: NSObject {
 		
 		// Otherwise, create a new one
 			// Instead of using a `continuous` transform, use a `customActivation` to do the same thing while capturing `self` so that we're owned by the signal.
-		let (i, s) = Signal<Any?>.channel().customActivation { (b: inout Array<Any?>, e: inout Error?, r: Result<Any?>) in
+		let (i, internalSignal) = Signal<Any?>.create()
+		let s = internalSignal.customActivation { (b: inout Array<Any?>, e: inout Error?, r: Result<Any?>) in
 			withExtendedLifetime(self) {}
 			switch r {
 			case .success(let v):
@@ -79,7 +80,8 @@ open class SignalDoubleActionTarget: SignalActionTarget {
 		}
 		
 		// Otherwise, create a new one
-		let (i, s) = Signal<Any?>.channel().customActivation { (b: inout Array<Any?>, e: inout Error?, r: Result<Any?>) in
+		let (i, internalSignal) = Signal<Any?>.create()
+		let s = internalSignal.customActivation { (b: inout Array<Any?>, e: inout Error?, r: Result<Any?>) in
 			withExtendedLifetime(self) {}
 			switch r {
 			case .success(let v):
