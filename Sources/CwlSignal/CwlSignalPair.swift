@@ -1,5 +1,5 @@
 //
-//  CwlSignalChannel.swift
+//  CwlSignalPair.swift
 //  CwlSignal
 //
 //  Created by Matt Gallagher on 2017/06/27.
