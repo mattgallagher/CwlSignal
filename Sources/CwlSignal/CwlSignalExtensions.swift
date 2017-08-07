@@ -356,7 +356,7 @@ extension Signal {
 	}
 	
 	/// Internally creates a polling endpoint which is polled once for the latest Result<T> and then discarded.
-	public var poll: T? {
+	public func poll() -> T? {
 		return SignalPollingEndpoint(signal: self).latestValue
 	}
 }

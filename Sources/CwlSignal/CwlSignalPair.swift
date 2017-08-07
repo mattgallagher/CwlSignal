@@ -63,6 +63,7 @@ public struct SignalPair<I, SI: SignalInput<I>, T, ST: Signal<T>> {
 public typealias Channel<T> = SignalPair<T, SignalInput<T>, T, Signal<T>>
 public typealias MultiChannel<T> = SignalPair<T, SignalMultiInput<T>, T, Signal<T>>
 public typealias Variable<T> = SignalPair<T, SignalMultiInput<T>, T, SignalMulti<T>>
+public typealias Reducer<T, U> = SignalPair<T, SignalMultiInput<T>, U, SignalMulti<U>>
 
 extension SignalPair where I == T, SI == SignalInput<I>, ST == Signal<T> {
 	public init() {
@@ -83,6 +84,16 @@ extension SignalPair where I == T, SI == SignalMultiInput<I>, ST == SignalMulti<
 	}
 	public init(initialValue: T) {
 		self = MultiChannel<T>().continuous(initialValue: initialValue)
+	}
+}
+
+extension SignalPair where SI == SignalMultiInput<I>, ST == SignalMulti<T> {
+	public init(initialState: T, _ processor: @escaping (_ state: T, _ input: I) -> T) {
+		self = MultiChannel<I>().map(initialState: initialState) { (state: inout T, input: I) -> T in
+			let new = processor(state, input)
+			state = new
+			return new
+		}.continuous(initialValue: initialState)
 	}
 }
 
