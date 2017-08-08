@@ -63,7 +63,7 @@ open class SignalActionTarget: NSObject {
 		_ = signalInput?.send(value: sender)
 	}
 	
-	/// Convenience accessor for `#selector(SignalActionTarget<T>.cwlSignalAction(_:))`
+	/// Convenience accessor for `#selector(SignalActionTarget<Value>.cwlSignalAction(_:))`
 	public var selector: Selector { return #selector(SignalActionTarget.cwlSignalAction(_:)) }
 }
 
@@ -103,7 +103,7 @@ open class SignalDoubleActionTarget: SignalActionTarget {
 		_ = secondInput?.send(value: sender)
 	}
 	
-	/// Convenience accessor for `#selector(SignalDoubleActionTarget<T>.cwlSignalSecondAction(_:))`
+	/// Convenience accessor for `#selector(SignalDoubleActionTarget<Value>.cwlSignalSecondAction(_:))`
 	public var secondSelector: Selector { return #selector(SignalDoubleActionTarget.cwlSignalSecondAction(_:)) }
 }
 
@@ -141,18 +141,18 @@ public func signalKeyValueObserving(_ source: NSObject, keyPath: String, initial
 }
 
 extension Signal {
-	/// Observe a property via key-value-observing and emit the new values that can be downcast to T. This is just a wrapper around `signalKeyValueObserving` that applies `filterMap` to downcast values to T and emit only if the downcast is successful.
+	/// Observe a property via key-value-observing and emit the new values that can be downcast to Value. This is just a wrapper around `signalKeyValueObserving` that applies `filterMap` to downcast values to Value and emit only if the downcast is successful.
 	///
 	/// - Parameters:
 	///   - target: will have `addObserver(_:forKeyPath:options:context:)` invoked on it
 	///   - keyPath: passed to `addObserver(_:forKeyPath:options:context:)`
 	///   - initial: if true, NSKeyValueObservingOptions.initial is included in the options passed to `addObserver(_:forKeyPath:options:context:)`
 	/// - Returns: a signal which emits the observation results
-	public static func keyValueObserving(_ target: NSObject, keyPath: String, initial: Bool = true) -> Signal<T> {
-		return signalKeyValueObserving(target, keyPath: keyPath, initial: initial).transform { (r: Result<Any>, n: SignalNext<T>) in
+	public static func keyValueObserving(_ target: NSObject, keyPath: String, initial: Bool = true) -> Signal<Value> {
+		return signalKeyValueObserving(target, keyPath: keyPath, initial: initial).transform { (r: Result<Any>, n: SignalNext<Value>) in
 			switch r {
 			case .success(let v):
-				if let t = v as? T {
+				if let t = v as? Value {
 					n.send(value: t)
 				}
 			case .failure(let e):
@@ -192,8 +192,8 @@ extension Signal {
 	///   - target: the object upon which `setValue(_:forKeyPath:)` will be invoked
 	///   - keyPath: passed to `setValue(_:forKeyPath:)`
 	/// - Returns: the `SignalEnpoint` created by this action (releasing the endpoint will cease any further setting)
-	public func kvcSetter(context: Exec, target: NSObject, keyPath: String) -> SignalEndpoint<T> {
-		return subscribeValues(context: context) { [weak target] (value: ValueType) -> Void in
+	public func kvcSetter(context: Exec, target: NSObject, keyPath: String) -> SignalEndpoint<Value> {
+		return subscribeValues(context: context) { [weak target] (value: Value) -> Void in
 			target?.setValue(value, forKeyPath: keyPath)
 		}
 	}
