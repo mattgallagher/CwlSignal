@@ -102,22 +102,12 @@ extension SignalChannel where InputValue == OutputValue, Input == SignalMultiInp
 	}
 }
 
-extension SignalChannel where InputValue == OutputValue, Input == SignalMergedInput<InputValue>, Output == Signal<OutputValue> {
-	// An empty MergedChannel can be default constructed
-	public init() {
-		self.init(Signal<InputValue>.createMergedInput())
-	}
-}
-
 extension Signal {
 	public static func channel() -> Channel<Value> {
 		return Channel<Value>()
 	}
 	public static func multiChannel() -> MultiChannel<Value> {
 		return MultiChannel<Value>()
-	}
-	public static func mergedChannel() -> MergedChannel<Value> {
-		return MergedChannel<Value>()
 	}
 }
 
