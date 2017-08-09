@@ -86,7 +86,7 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 
 public typealias Channel<Value> = SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>>
 public typealias MultiChannel<Value> = SignalChannel<Value, SignalMultiInput<Value>, Value, Signal<Value>>
-public typealias MergedChannel<Value> = SignalChannel<Value, SignalMergedInput<Value>, Value, Signal<Value>>
+public typealias Reducer<Message, State> = SignalChannel<Message, SignalMultiInput<Message>, State, SignalMulti<State>>
 
 extension SignalChannel where IV == OV, I == SignalInput<IV>, O == Signal<OV> {
 	// An empty Channel can be default constructed
