@@ -37,7 +37,6 @@ public protocol SignalPair {
 	
 	var input: Input { get }
 	var signal: Output { get }
-	init(input: Input, signal: Output)
 }
 
 /// A `SignalChannel` and its common typealiases, `Channel`, `MultiChannel` form basic wrappers around a `SignalInput`/`Signal` pair.
@@ -66,12 +65,12 @@ public struct SignalChannel<IV, I: SignalInput<IV>, OV, O: Signal<OV>>: SignalPa
 	public init(input: Input, signal: Output) {
 		(self.input, self.signal) = (input, signal)
 	}
-}
-
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
 	public init(_ tuple: (Input, Output)) {
 		self.init(input: tuple.0, signal: tuple.1)
 	}
+}
+
+extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
 	public func next<U, SU: Signal<U>>(_ compose: (Signal<OutputValue>) throws -> SU) rethrows -> SignalChannel<InputValue, Input, U, SU> {
 		return try SignalChannel<InputValue, Input, U, SU>(input: input, signal: compose(signal))
 	}
