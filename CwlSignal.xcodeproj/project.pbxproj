@@ -497,6 +497,7 @@
 					};
 					C945D7C01E5038C4009AFB8E = {
 						CreatedOnToolsVersion = 9.0;
+						LastSwiftMigration = 0900;
 					};
 					C9A380371EFF923A00BFF2E5 = {
 						CreatedOnToolsVersion = 9.0;
@@ -505,6 +506,12 @@
 						LastSwiftMigration = 0900;
 					};
 					C9DD3D9B1E41DFBA00E23B15 = {
+						LastSwiftMigration = 0900;
+					};
+					OBJ_190 = {
+						LastSwiftMigration = 0900;
+					};
+					OBJ_214 = {
 						LastSwiftMigration = 0900;
 					};
 				};

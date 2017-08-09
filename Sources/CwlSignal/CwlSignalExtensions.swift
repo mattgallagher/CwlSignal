@@ -324,28 +324,35 @@ extension Signal {
 	}
 }
 
-/// This wrapper around `SignalEndpoint` exposes the last received value in a stream so that it can be 'polled' (read synchronously from an arbitrary execution context).
+/// This wrapper around `SignalEndpoint` saves the last received value from the signal so that it can be 'polled' (read synchronously from an arbitrary execution context). This class ensures thread-safety on the read operation.
+///
+/// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Holding a `SignalPollingEndpoint` set to run in the same context as the delegate (e.g. .main) will allow the delegate to synchronously respond with the latest value.
+///
+/// Note that there is a semantic difference between this class which is intended to be left active for some time and polled periodically and `SignalCapture` which captures the *activation* value (leaving it running for a duration is pointless). For that reason, the standalone `poll()` function actually uses `SignalCapture` rather than this class (`SignalCapture` is more consistent in the presence of multi-threaded updates since there is no possibility of asychronous updates between creation and reading).
+///
+/// However, `SignalCapture` can only read activation values (not regular values). Additionally, `poll()` will be less efficient than this class if multiple reads are required since the `SignalCapture` is created and thrown away each time.
 ///
 /// **WARNING**: this class should be avoided where possible since it removes the "reactive" part of reactive programming (changes in the polled value must be detected through other means, usually another subscriber to the underlying `Signal`).
 ///
-/// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Since you cannot simply `Signal.combine` the delegate method with another `Signal`, you must use polling to generate a calculation involving values from another `Signal`.
 public final class SignalPollingEndpoint<Value> {
 	var endpoint: SignalEndpoint<Value>? = nil
 	var latest: Result<Value>? = nil
-	let queueContext = DispatchQueueContext()
+	let mutex = PThreadMutex()
 	
-	public init(signal: Signal<Value>) {
-		endpoint = signal.subscribe(context: .custom(queueContext)) { [weak self] r in
-			self?.latest = r
+	public init(signal: Signal<Value>, context: Exec = .direct) {
+		endpoint = signal.subscribe(context: context) { [weak self] r in
+			if let s = self {
+				s.mutex.sync { s.latest = r }
+			}
 		}
 	}
 	
 	public var latestResult: Result<Value>? {
-		return queueContext.queue.sync { latest }
+		return mutex.sync { latest }
 	}
 	
 	public var latestValue: Value? {
-		return queueContext.queue.sync { latest?.value }
+		return mutex.sync { latest?.value }
 	}
 }
 
@@ -355,9 +362,9 @@ extension Signal {
 		return SignalPollingEndpoint(signal: self)
 	}
 	
-	/// Internally creates a polling endpoint which is polled once for the latest Result<Value> and then discarded.
+	/// Internally creates a `SignalCapture` which is activated and immediately discarded to get the latest activation value from the stream.
 	public func poll() -> Value? {
-		return SignalPollingEndpoint(signal: self).latestValue
+		return capture().activation().values.last
 	}
 }
 

@@ -2315,9 +2315,9 @@ public final class SignalCapture<Value>: SignalProcessor<Value, Value>, Cancella
 	/// Any activation signals captured can be accessed through this property between construction and activating an output (after that point, capture signals are cleared).
 	///
 	/// - Returns: and array of values (which may be empty) and an optional error, which are the signals received during activation.
-	public func activation() -> ([Value], Error?) {
+	public func activation() -> (values: [Value], error: Error?) {
 		return sync {
-			return (capturedValues, capturedError)
+			return (values: capturedValues, error: capturedError)
 		}
 	}
 	
