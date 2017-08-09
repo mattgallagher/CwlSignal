@@ -399,6 +399,10 @@ extension SignalCapture {
 	}
 }
 
+extension Error {
+	var isSignalClosed: Bool { return (self as? SignalError) != .closed }
+}
+
 extension Result {
 	/// A convenience extension on `Result` to test if it wraps a `SignalError.closed`
 	public var isSignalClosed: Bool {

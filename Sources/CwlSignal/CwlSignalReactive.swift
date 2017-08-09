@@ -1164,14 +1164,32 @@ extension Signal {
 	/// Implementation of [Reactive X operator "ignoreElements"](http://reactivex.io/documentation/operators/ignoreelements.html)
 	///
 	/// - Returns: a signal that emits the input error, when received, otherwise ignores all values.
-	public func ignoreElements<U>(endWith value: U, conditional: @escaping (Error) -> Error? = { $0 }) -> Signal<U> {
+	func ignoreElements<U>(endWith value: @autoclosure @escaping () -> U, conditional: @escaping (Error) -> Error? = { $0 }) -> Signal<U> {
 		return transform() { (r: Result<Value>, n: SignalNext<U>) in
 			switch r {
 			case .success: break
 			case .failure(let e):
 				if let err = conditional(e) {
-					n.send(value: value)
+					n.send(value: value())
 					n.send(error: err)
+				} else {
+					n.send(error: e)
+				}
+			}
+		}
+	}
+	
+	/// Implementation of [Reactive X operator "ignoreElements"](http://reactivex.io/documentation/operators/ignoreelements.html)
+	///
+	/// - Returns: a signal that emits the input error, when received, otherwise ignores all values.
+	func ignoreElements<U>(ifSuccessfulEndWith value: @autoclosure @escaping () -> U) -> Signal<U> {
+		return transform() { (r: Result<Value>, n: SignalNext<U>) in
+			switch r {
+			case .success: break
+			case .failure(let e):
+				if e.isSignalClosed {
+					n.send(value: value())
+					n.send(error: e)
 				} else {
 					n.send(error: e)
 				}
