@@ -9,7 +9,7 @@ Programming with `Signal` involves building lots of little pipelines. `Channel` 
 
 A `Channel` wraps the same `SignalInput` and `Signal` that are returned from `Signal.create()` but you can apply transformations directly to the `Channel` and it applies the transform to the `Signal` half, returning another `Channel` wrapping the old input and new signal or other result from the transform. This lets you construct a signal pipeline with multiple stages in a single, linear expression.
 
-> NOTE: `Channel` is a typealias for `SignalPair<T, SignalInput<T>, T, Signal<T>>`. A `SignalPair` can be used to wrap a any `SignalInput` subclass and any `Signal` subclass. Other typealiases include `MultiChannel` (which is a `Channel` with multi-input) and `Variable` (which is a `Channel` with multi-input and multi-output). Since their purpose is syntactic convenience, these are the only types in the CwlSignal.framework that omit the word "Signal" from their name.
+Since the purpose of `Channel` is syntactic convenience, it omits the word "Signal" from the type name. If you find this confusing, you can construct it through `Signal<T>.channel()`, instead.
 
 Here's the example from the previous page, using `Channel<Int>()` instead of `Signal<Int>.create()`.
 
