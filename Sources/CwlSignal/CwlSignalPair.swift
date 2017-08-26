@@ -273,6 +273,10 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	public func toggle(initialState: Bool = false) -> SignalChannel<InputValue, Input, Bool, Signal<Bool>> {
 		return next { $0.toggle(initialState: initialState) }
 	}
+
+	public func dropActivation() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+		return next { $0.dropActivation() }
+	}
 }
 
 // Implementation of SignalReactive.swift

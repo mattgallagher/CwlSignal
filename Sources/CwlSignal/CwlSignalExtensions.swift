@@ -430,6 +430,14 @@ extension SignalCapture {
 	}
 }
 
+extension Signal {
+	public func dropActivation() -> Signal<Value> {
+		let pair = Signal<Value>.create()
+		try! capture().join(to: pair.input)
+		return pair.signal
+	}
+}
+
 extension Error {
 	var isSignalClosed: Bool { return (self as? SignalError) != .closed }
 }
