@@ -19,26 +19,23 @@ let animals = Signal<String>.from(values: ["🐶", "🐱", "🐭", "🐨"], erro
 
 //: We can combine them into a single signal with `merge`
 print("Merge:")
-Signal<String>.merge(smileys, spookeys, animals).subscribeValuesAndKeepAlive {
+Signal<String>.merge(smileys, spookeys, animals).subscribeValuesUntilEnd {
 	print($0, terminator: "")
-	return true
 }
 
 //: If the two signals were asynchronous, `merge` would interleave them as they arrived. If you truly want one, then the other, you can use `concat` but concat won't emit the second signal until the first has closed.
 //: SOMETHING TO TRY: swap `smileys` to the front... since smileys never emits a closing `error`, the other signals won't be emitted.
 print("\n\nConcat:")
-spookeys.concat(animals).concat(smileys).subscribeValuesAndKeepAlive {
+spookeys.concat(animals).concat(smileys).subscribeValuesUntilEnd {
 	print($0, terminator: "")
-	return true
 }
 
 //: We can also expose a `SignalMultiInput` which lets you send or join new signals whenever you like.
 //: Since `multiInput` is intended to be exposed in interfaces, it does not propagate errors (it merely disconnects the joined signal).
 //: SOMETHING TO TRY: replace `multiInputChannel` with `channel` (so you get a regular `SignalInput` instead), write `_ = try? ` in front of the three `join` statements (so the code compiles) and see how the input is consumed by the first `join` causing the remaining use of the input to send no signal data (returns an error).
 print("\n\nSignalMultiInput:")
-let multiInput = MultiChannel<String>().subscribeValuesAndKeepAlive {
+let multiInput = MultiChannel<String>().subscribeValuesUntilEnd {
 	print($0, terminator: "")
-	return true
 }
 multiInput.send(value: "Start ")
 smileys.join(to: multiInput)
@@ -50,9 +47,8 @@ multiInput.send(value: " End")
 //: Notice that in this first case, the closed at the end of the `spookeys` sequence closes the whole stream and neither animals nor `End` are emitted.
 //: SOMETHING TO TRY: replace the `.all` parameters with `.errors` or `.none`.
 print("\n\nSignalMergeSet:")
-let mergeSet = MergedChannel<String>().subscribeValuesAndKeepAlive {
+let mergeSet = MergedChannel<String>().subscribeValuesUntilEnd {
 	print($0, terminator: "")
-	return true
 }
 mergeSet.send(value: "Start")
 _ = try? smileys.join(to: mergeSet, closePropagation: .all)
