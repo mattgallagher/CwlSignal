@@ -105,6 +105,20 @@ extension Signal {
 		}
 	}
 
+	/// A version of `subscribe` that retains the `SignalEndpoint` internally, keeping the signal graph alive. The `SignalEndpoint` is cancelled and released when the signal closes.
+	///
+	/// NOTE: this subscriber deliberately creates a reference counted loop. If the signal is never closed, it will result in a memory leak. This function should be used only when `self` is guaranteed to close.
+	///
+	/// - Parameters:
+	///   - context: the execution context where the `processor` will be invoked
+	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
+	public final func subscribeUntilEnd(context: Exec = .direct, handler: @escaping (Result<Value>) -> Void) {
+		return subscribeWhile(handler: { (result: Result<Value>) -> Bool in
+			handler(result)
+			return true
+		})
+	}
+	
 	/// A convenience version of `subscribe` that only invokes the `processor` on `Result.success`
 	///
 	/// - Parameters:
@@ -119,13 +133,30 @@ extension Signal {
 		}
 	}
 	
-	/// A convenience version of `subscribeAndKeepAlive` that only invokes the `processor` on `Result.success`
+	/// A convenience version of `subscribeUntilEnd` that only invokes the `processor` on `Result.success`
+	///
+	/// NOTE: this subscriber deliberately creates a reference counted loop. If the signal is never closed, it will result in a memory leak. This function should be used only when `self` is guaranteed to close.
 	///
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
-	public func subscribeValuesAndKeepAlive(context: Exec = .direct, handler: @escaping (Value) -> Bool) {
-		subscribeAndKeepAlive(context: context) { r in
+	public func subscribeValuesUntilEnd(context: Exec = .direct, handler: @escaping (Value) -> Void) {
+		subscribeUntilEnd(context: context) { r in
+			if case .success(let v) = r {
+				handler(v)
+			}
+		}
+	}
+	
+	/// A convenience version of `subscribeWhile` that only invokes the `processor` on `Result.success`
+	///
+	/// NOTE: this subscriber deliberately creates a reference counted loop. If the signal is never closed and the handler never returns false, it will result in a memory leak. This function should be used only when `self` is guaranteed to close or the handler `false` condition is guaranteed.
+	///
+	/// - Parameters:
+	///   - context: the execution context where the `processor` will be invoked
+	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
+	public func subscribeValuesWhile(context: Exec = .direct, handler: @escaping (Value) -> Bool) {
+		subscribeWhile(context: context) { r in
 			if case .success(let v) = r {
 				return handler(v)
 			} else {

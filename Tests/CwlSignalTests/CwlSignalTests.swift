@@ -61,7 +61,7 @@ class SignalTests: XCTestCase {
 	
 	func testKeepAlive() {
 		var results = [Result<Int>]()
-		let (i, _) = Signal<Int>.create { $0.subscribeAndKeepAlive { r in
+		let (i, _) = Signal<Int>.create { $0.subscribeWhile { r in
 			results.append(r)
 			return r.value != 7
 		} }
@@ -85,7 +85,7 @@ class SignalTests: XCTestCase {
 
 		// A subscribeAndKeepAlive retains itself (i.e. doesn't return an endpoint that you must hold) until the signal is closed or until you return false
 		var results2 = Array<String>()
-		generatedSignal.subscribeValuesAndKeepAlive {
+		generatedSignal.subscribeValuesWhile {
 			results2 += $0
 			return $0 == "😡" ? false : true
 		}
@@ -124,10 +124,9 @@ class SignalTests: XCTestCase {
 			do {
 				do {
 					let token = NSObject()
-					signal2.subscribeAndKeepAlive { (r: Result<Int>) in
+					signal2.subscribeUntilEnd { (r: Result<Int>) in
 						withExtendedLifetime(token) {}
 						results2.append(r)
-						return true
 					}
 					weakToken = token
 				}

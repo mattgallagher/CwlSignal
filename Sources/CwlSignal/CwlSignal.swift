@@ -166,12 +166,12 @@ public class Signal<Value> {
 	
 	/// A version of `subscribe` that retains the `SignalEndpoint` internally, keeping the signal graph alive. The `SignalEndpoint` is cancelled and released if the signal closes or if the handler returns `false` after any signal.
 	///
-	/// NOTE: this subscriber deliberately creates a reference counted loop. If the signal is never closed, it will result in a memory leak. This function should be used only when `self` is guaranteed to close.
+	/// NOTE: this subscriber deliberately creates a reference counted loop. If the signal is never closed and the handler never returns false, it will result in a memory leak. This function should be used only when `self` is guaranteed to close or the handler `false` condition is guaranteed.
 	///
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
-	public func subscribeAndKeepAlive(context: Exec = .direct, handler: @escaping (Result<Value>) -> Bool) {
+	public final func subscribeWhile(context: Exec = .direct, handler: @escaping (Result<Value>) -> Bool) {
 		_ = attach { (s, dw) in
 			var handlerRetainedEndpoint: SignalEndpoint<Value>? = nil
 			let endpoint = SignalEndpoint<Value>(signal: s, dw: &dw, context: context, handler: { r in
@@ -2627,9 +2627,10 @@ fileprivate class SignalMultiInputProcessor<Value>: SignalProcessor<Value, Value
 }
 
 /// Technically, a `SignalInput` is threadsafe and you could share it between multiple locations, if you wished. However, you might want to `join` multiple incoming signals to a single output – in that case, you need a `SignalMultiInput`.
-/// You can use a `SignalMultiInput` like a `SignalInput`, if you wish, but that's not its key purpose. The key purpose of a `SignalMultiInpu` is that you can `join` to it, multiple times, spawning multiple `SignalInput`s connected to the same outgoing `Signal`, in much the same way that `SignalMulti` can spawn multiple outgoing `Signal`s connected to the same source `Signal`.
+/// You can use a `SignalMultiInput` like a `SignalInput`, if you wish, but that's not its key purpose. The key purpose of a `SignalMultiInput` is that you can `join` to it, multiple times, spawning multiple `SignalInput`s connected to the same outgoing `Signal`, in much the same way that `SignalMulti` can spawn multiple outgoing `Signal`s connected to the same source `Signal`.
 /// There's an important semantic difference here between `SignalInput` and `SignalMultiInput`... when an error is sent to one of the inputs spawned by `SignalMultiInput`, it disconnects the `SignalInput` but the error is not propagated to the output signal. This is in accordance with the idea that `SignalMultiInput` is safe in a shared interface – one incoming signal cannot close the outgoing signal and disconnect all the other signals. If you need incoming signals to have the ability to close the outgoing signal, use the `SignalMergedInput` subclass.
-/// Another minor difference is that a `SignalInput` is invalidated when the graph deactivates whereas `SignalMultiInput` remains valid (however, the `SignalInput`s it spawns may be invalidated).
+/// Another difference is that a `SignalInput` is invalidated when the graph deactivates whereas `SignalMultiInput` remains valid.
+/// NOTE: while a `SignalMultiInput` is generally usable in an external interface, it does include a `cancel` method (which removes all incoming signals and cancels the output). If you want to hide this behavior, you would still need to keep the `SignalMultiInput` internal and expose your own `add` function. 
 public class SignalMultiInput<Value>: SignalInput<Value> {
 	// Constructs a `SignalMergedInput` (typically called from `Signal<Value>.createMergedInput`)
 	//
@@ -2706,7 +2707,7 @@ public class SignalMultiInput<Value>: SignalInput<Value> {
 	}
 }
 
-/// Direct use of `SignalMergedInput` is not particularly common – use it when you need precise control over the interaction of multiple inputs to a `Signal`.
+/// Direct use of `SignalMergedInput` is not particularly common. It's typical use is for internal subgraph construction where you need precise control over the interaction of multiple inputs to a `Signal`.
 public class SignalMergedInput<Value>: SignalMultiInput<Value> {
 	/// Connect a new predecessor to the `Signal`
 	///

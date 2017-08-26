@@ -118,8 +118,12 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return (input: tuple.input, endpoint: tuple.output)
 	}
 	
-	public func subscribeAndKeepAlive(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Bool) -> Input {
-		return final { $0.subscribeAndKeepAlive(context: context, handler: handler) }.input
+	public func subscribeWhile(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Bool) -> Input {
+		return final { $0.subscribeWhile(context: context, handler: handler) }.input
+	}
+	
+	public func subscribeUntilEnd(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) -> Input {
+		return final { $0.subscribeUntilEnd(context: context, handler: handler) }.input
 	}
 	
 	public func join(to: SignalInput<OutputValue>) -> Input {
@@ -212,8 +216,13 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return (input: tuple.input, endpoint: tuple.output)
 	}
 	
-	public func subscribeValuesAndKeepAlive(context: Exec = .direct, handler: @escaping (OutputValue) -> Bool) -> Input {
-		signal.subscribeValuesAndKeepAlive(context: context, handler: handler)
+	public func subscribeValuesWhile(context: Exec = .direct, handler: @escaping (OutputValue) -> Bool) -> Input {
+		signal.subscribeValuesWhile(context: context, handler: handler)
+		return input
+	}
+	
+	public func subscribeValuesUntilEnd(context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> Input {
+		signal.subscribeValuesUntilEnd(context: context, handler: handler)
 		return input
 	}
 	
@@ -717,16 +726,24 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 
 // Implementation of Signal.swift
 extension SignalInput {
-	public static func subscribeAndKeepAlive(context: Exec = .direct, handler: @escaping (Result<Value>) -> Bool) -> SignalInput<Value> {
-		return Channel().subscribeAndKeepAlive(context: context, handler: handler)
+	public static func subscribeWhile(context: Exec = .direct, handler: @escaping (Result<Value>) -> Bool) -> SignalInput<Value> {
+		return Channel().subscribeWhile(context: context, handler: handler)
+	}
+	
+	public static func subscribeUntilEnd(context: Exec = .direct, handler: @escaping (Result<Value>) -> Void) -> SignalInput<Value> {
+		return Channel().subscribeUntilEnd(context: context, handler: handler)
 	}
 	
 	public static func join(to: SignalInput<Value>) -> SignalInput<Value> {
 		return Channel().join(to: to)
 	}
 	
-	public static func subscribeValuesAndKeepAlive(context: Exec = .direct, handler: @escaping (Value) -> Bool) -> SignalInput<Value> {
-		return Channel().subscribeValuesAndKeepAlive(context: context, handler: handler)
+	public static func subscribeValuesWhile(context: Exec = .direct, handler: @escaping (Value) -> Bool) -> SignalInput<Value> {
+		return Channel().subscribeValuesWhile(context: context, handler: handler)
+	}
+	
+	public static func subscribeValuesUntilEnd(context: Exec = .direct, handler: @escaping (Value) -> Void) -> SignalInput<Value> {
+		return Channel().subscribeValuesUntilEnd(context: context, handler: handler)
 	}
 	
 	public static func join(to: SignalMergedInput<Value>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> SignalInput<Value> {

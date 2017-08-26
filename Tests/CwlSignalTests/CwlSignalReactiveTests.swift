@@ -570,9 +570,8 @@ class SignalReactiveTests: XCTestCase {
 		_ = Signal.from(values: 1...20).groupBy { v in v % 3 }.subscribe { r in
 			if let v = r.value {
 				results[v.0] = Array<Result<Int>>()
-				v.1.subscribeAndKeepAlive { r in
+				v.1.subscribeUntilEnd { r in
 					results[v.0]!.append(r)
-					return true
 				}
 			} else {
 				XCTAssert(r.isSignalClosed)
@@ -654,9 +653,8 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testScan() {
 		var results = [Result<Int>]()
-		Signal.from(values: 1...5).scan(initialState: 2) { a, v in a + v }.subscribeAndKeepAlive { r in
+		Signal.from(values: 1...5).scan(initialState: 2) { a, v in a + v }.subscribeUntilEnd { r in
 			results.append(r)
-			return true
 		}
 		XCTAssert(results.count == 6)
 		XCTAssert(results.at(0)?.value == 3)
@@ -675,9 +673,8 @@ class SignalReactiveTests: XCTestCase {
 				if let v = r.value {
 					let index = results.count
 					results.append(Array<Result<Int>>())
-					v.subscribeAndKeepAlive { r in
+					v.subscribeUntilEnd { r in
 						results[index].append(r)
-						return true
 					}
 				} else {
 					XCTAssert(r.isSignalClosed)
@@ -738,9 +735,8 @@ class SignalReactiveTests: XCTestCase {
 			if let v = r.value {
 				let index = results.count
 				results.append(Array<Result<Int>>())
-				v.subscribeAndKeepAlive { r in
+				v.subscribeUntilEnd { r in
 					results[index].append(r)
-					return true
 				}
 			}
 			
@@ -791,9 +787,8 @@ class SignalReactiveTests: XCTestCase {
 			if let v = r.value {
 				let index = results.count
 				results.append(Array<Result<Int>>())
-				v.subscribeAndKeepAlive { r in
+				v.subscribeUntilEnd { r in
 					results[index].append(r)
-					return true
 				}
 			}
 		}
@@ -834,9 +829,8 @@ class SignalReactiveTests: XCTestCase {
 			if let v = r.value {
 				let index = results.count
 				results.append(Array<Result<Int>>())
-				v.subscribeAndKeepAlive { r in
+				v.subscribeUntilEnd { r in
 					results[index].append(r)
-					return true
 				}
 			}
 			
@@ -880,9 +874,8 @@ class SignalReactiveTests: XCTestCase {
 			if let v = r.value {
 				let index = results.count
 				results.append(Array<Result<Int>>())
-				v.subscribeAndKeepAlive { r in
+				v.subscribeUntilEnd { r in
 					results[index].append(r)
-					return true
 				}
 			}
 			
@@ -1467,9 +1460,8 @@ class SignalReactiveTests: XCTestCase {
 		let ep1 = leftSignal1.groupJoin(withRight: rightSignal1, leftEnd: { v -> Signal<()> in Signal<()>.preclosed() }, rightEnd: { v in Signal<()>.preclosed() }) { tuple in tuple.1.map { "\(tuple.0) \($0)" } }.subscribe {
 			switch $0 {
 			case .success(let v):
-				v.subscribeValuesAndKeepAlive {
+				v.subscribeValuesUntilEnd {
 					results1.append(Result<String>.success($0))
-					return true
 				}
 			case .failure(let e): results1.append(Result<String>.failure(e))
 			}
@@ -1494,9 +1486,8 @@ class SignalReactiveTests: XCTestCase {
 		let ep2 = leftSignal2.groupJoin(withRight: rightSignal2, leftEnd: { v in leftSignal2 }, rightEnd: { v in rightSignal2 }) { tuple in tuple.1.map { "\(tuple.0) \($0)" } }.subscribe {
 			switch $0 {
 			case .success(let v):
-				v.subscribeValuesAndKeepAlive {
+				v.subscribeValuesUntilEnd {
 					results2.append(Result<String>.success($0))
-					return true
 				}
 			case .failure(let e):
 				results2.append(Result<String>.failure(e))
@@ -1527,9 +1518,8 @@ class SignalReactiveTests: XCTestCase {
 		let ep3 = leftSignal3.groupJoin(withRight: rightSignal3, leftEnd: { v in leftSignal3.skip(1) }, rightEnd: { v in rightSignal3.skip(1) }) { tuple in tuple.1.map { "\(tuple.0) \($0)" } }.subscribe {
 			switch $0 {
 			case .success(let v):
-				v.subscribeValuesAndKeepAlive {
+				v.subscribeValuesUntilEnd {
 					results3.append(Result<String>.success($0))
-					return true
 				}
 			case .failure(let e): results3.append(Result<String>.failure(e))
 			}
