@@ -1547,7 +1547,26 @@ class SignalReactiveTests: XCTestCase {
 		
 		withExtendedLifetime(ep3) {}
 	}
-	
+
+	func testPlaygroundMerge() {
+		let smileysArray = ["😀", "🙃", "😉", "🤣"]
+		let spookeysArray = ["👻", "🎃", "👹", "😈"]
+		let animalsArray = ["🐶", "🐱", "🐭", "🐨"]
+		let smileys = Signal<String>.from(values: smileysArray, error: nil).playback()
+		let spookeys = Signal<String>.from(values: spookeysArray, error: SignalError.closed).playback()
+		let animals = Signal<String>.from(values: animalsArray, error: SignalError.cancelled).playback()
+		
+		var result = [String]()
+		let ep = Signal<String>.merge(smileys, spookeys, animals).subscribeValues {
+			result.append($0)
+		}
+		var expected = smileysArray
+		expected.append(contentsOf: spookeysArray)
+		expected.append(contentsOf: animalsArray)
+		XCTAssert(result == expected)
+		withExtendedLifetime(ep) {}
+	}
+
 	func testMerge() {
 		let merge2 = Signal<Int>.merge([Signal<Int>.from(values: 0..<10), Signal<Int>.from(values: 10..<20)])
 		var results2 = [Result<Int>]()
