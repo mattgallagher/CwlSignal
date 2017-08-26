@@ -7,12 +7,12 @@ This page contains a couple quick and simple examples you can play with to try a
 */
 import CwlSignal
 
-// A lazily `generate`d sequence of strings that feeds into `subscribeValuesAndKeepAlive`, a subscribe function that manages the endpoint internally (which is convenient in unscoped locations like playgrounds where there's no context in which to store the endpoint).
+// A lazily `generate`d sequence of strings that feeds into `subscribeValuesWhile`, a subscribe function that manages the endpoint internally (which is convenient in unscoped locations like playgrounds where there's no context in which to store the endpoint).
 Signal<String>.generate { input in
 	if let i = input {
 		i.send(values: "👻", "🎃", "👹", "😈")
 	}
-}.subscribeValuesAndKeepAlive {
+}.subscribeValuesWhile {
 	print($0)
 	
 	// Stop immediately after the pumpkin"
