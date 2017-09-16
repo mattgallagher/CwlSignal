@@ -84,9 +84,14 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	public var tuple: (input: Input, signal: Output) { return (input: input, signal: signal) }
 }
 
+/// Convenience typealias for creating a channel that starts with a single input
 public typealias Channel<Value> = SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>>
+
+/// Convenience typealias for creating a channel that starts with a multi input
 public typealias MultiChannel<Value> = SignalChannel<Value, SignalMultiInput<Value>, Value, Signal<Value>>
-public typealias Reducer<Message, State> = SignalChannel<Message, SignalMultiInput<Message>, State, SignalMulti<State>>
+
+/// Convenience typealias for creating a channel that starts with a merged input
+public typealias MergedChannel<Value> = SignalChannel<Value, SignalMergedInput<Value>, Value, Signal<Value>>
 
 extension SignalChannel where IV == OV, I == SignalInput<IV>, O == Signal<OV> {
 	// An empty Channel can be default constructed
@@ -102,6 +107,13 @@ extension SignalChannel where InputValue == OutputValue, Input == SignalMultiInp
 	}
 }
 
+extension SignalChannel where InputValue == OutputValue, Input == SignalMergedInput<InputValue>, Output == Signal<OutputValue> {
+	// An empty MergedChannel can be default constructed
+	public init() {
+		self.init(Signal<InputValue>.createMergedInput())
+	}
+}
+
 extension Signal {
 	public static func channel() -> Channel<Value> {
 		return Channel<Value>()
@@ -109,7 +121,13 @@ extension Signal {
 	public static func multiChannel() -> MultiChannel<Value> {
 		return MultiChannel<Value>()
 	}
+	public static func mergedChannel() -> MergedChannel<Value> {
+		return MergedChannel<Value>()
+	}
 }
+
+/// A typealias for a `SignalChannel` where both ends are multi (i.e. SignalMultiInput -> SignalMulti). This is commonly used for basic "Reducer"-style implementations where you feed a `Message` type in, do something stateful in a custom stage in the middle and emit a `Notification` about the stateful change (commonly, the `Notification` is simply the state itself).
+public typealias Reducer<Message, Notification> = SignalChannel<Message, SignalMultiInput<Message>, Notification, SignalMulti<Notification>>
 
 // Implementation of Signal.swift
 extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
