@@ -277,7 +277,7 @@ extension Signal {
 				}
 			}
 
-			mergedInput.add(prefixedInnerSignal)
+			mergedInput.add(prefixedInnerSignal, closePropagation: .none)
 			state.index += 1
 		}
 	}

@@ -2645,9 +2645,14 @@ public class SignalMultiInput<Value>: SignalInput<Value> {
 	///   - removeOnDeactivate: if true, then when the output is deactivated, this source will be removed from the merge set. If false, then the source will remain connected through deactivation.
 	/// - Throws: may throw a `SignalJoinError` (see that type for possible cases)
 	public func add(_ source: Signal<Value>) {
+		self.add(source, closePropagation: .none)
+	}
+	
+	// See the comments on the public override in `SignalMergedInput`
+	fileprivate func add(_ source: Signal<Value>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = false) {
 		guard let sig = signal else { return }
 		let processor = source.attach { (s, dw) -> SignalMultiInputProcessor<Value> in
-			SignalMultiInputProcessor<Value>(signal: s, multiInput: self, closePropagation: .none, removeOnDeactivate: false, dw: &dw)
+			SignalMultiInputProcessor<Value>(signal: s, multiInput: self, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate, dw: &dw)
 		}
 		var dw = DeferredWork()
 		sig.mutex.sync {
@@ -2699,7 +2704,7 @@ public class SignalMultiInput<Value>: SignalInput<Value> {
 		var dw = DeferredWork()
 		sig.mutex.sync {
 			sig.removeAllPreceedingInternal(dw: &dw)
-			sig.pushInternal(values: [], error: SignalError.cancelled, dw: &dw)
+			sig.pushInternal(values: [], error: SignalError.cancelled, activated: true, dw: &dw)
 		}
 		dw.runWork()
 	}
@@ -2707,6 +2712,11 @@ public class SignalMultiInput<Value>: SignalInput<Value> {
 
 /// Direct use of `SignalMergedInput` is not particularly common. It's typical use is for internal subgraph construction where you need precise control over the interaction of multiple inputs to a `Signal`.
 public class SignalMergedInput<Value>: SignalMultiInput<Value> {
+	/// Changes the default closePropagation to `.all`
+	public override func add(_ source: Signal<Value>) {
+		self.add(source, closePropagation: .all, removeOnDeactivate: false)
+	}
+
 	/// Connect a new predecessor to the `Signal`
 	///
 	/// - Parameters:
@@ -2714,19 +2724,10 @@ public class SignalMergedInput<Value>: SignalMultiInput<Value> {
 	///   - closePropagation: behavior to use when `source` sends an error. See `SignalClosePropagation` for more.
 	///   - removeOnDeactivate: f true, then when the output is deactivated, this source will be removed from the merge set. If false, then the source will remain connected through deactivation.
 	/// - Throws: may throw a `SignalJoinError` (see that type for possible cases)
-	public func add(_ source: Signal<Value>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) {
-		guard let sig = signal else { return }
-		let processor = source.attach { (s, dw) -> SignalMultiInputProcessor<Value> in
-			SignalMultiInputProcessor<Value>(signal: s, multiInput: self, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate, dw: &dw)
-		}
-		var dw = DeferredWork()
-		sig.mutex.sync {
-			// This can't be `duplicate` since this a a new processor but `loop` is a precondition failure
-			try! sig.addPreceedingInternal(processor, param: nil, dw: &dw)
-		}
-		dw.runWork()
+	public override func add(_ source: Signal<Value>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = false) {
+		super.add(source, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 	}
-	
+
 	/// Creates a new `SignalInput`/`Signal` pair, immediately adds the `Signal` to this `SignalMergedInput` and returns the `SignalInput`.
 	///
 	/// - Parameters:
@@ -2759,14 +2760,14 @@ public final class SignalEndpoint<Value>: SignalHandler<Value>, Cancellable {
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 	
-	/// Can't have an `output` so this intial handler is the *only* handler
+	// Can't have an `output` so this intial handler is the *only* handler
 	// - Returns: a function to use as the handler prior to activation
 	fileprivate override func initialHandlerInternal() -> (Result<Value>) -> Void {
 		assert(signal.mutex.unbalancedTryLock() == false)
 		return { [userHandler] r in userHandler(r) }
 	}
 	
-	/// A `SignalEndpoint` is active until closed (receives a `failure` signal)
+	// A `SignalEndpoint` is active until closed (receives a `failure` signal)
 	fileprivate override var activeWithoutOutputsInternal: Bool {
 		assert(signal.mutex.unbalancedTryLock() == false)
 		return true
