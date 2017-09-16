@@ -36,7 +36,7 @@
 /* Begin PBXBuildFile section */
 		C90BDC541F01FEC300112A54 /* CwlSignalPair.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90BDC531F01FEC300112A54 /* CwlSignalPair.swift */; };
 		C90BDC551F01FEC300112A54 /* CwlSignalPair.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90BDC531F01FEC300112A54 /* CwlSignalPair.swift */; };
-		C95D21751EC824960082A31E /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlSignalTests.swift */; };
+		C9C1CECF1F6BC58B00A9343F /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlSignalTests.swift */; };
 		C9DD3D771E41CD9000E23B15 /* CwlSignal.h in Headers */ = {isa = PBXBuildFile; fileRef = C9DD3D761E41CD9000E23B15 /* CwlSignal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9DD3D8E1E41DFB600E23B15 /* CwlSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* CwlSignal.swift */; };
 		C9DD3D8F1E41DFB600E23B15 /* CwlSignalCocoa.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* CwlSignalCocoa.swift */; };
@@ -692,7 +692,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
-				C95D21751EC824960082A31E /* CwlSignalTests.swift in Sources */,
+				C9C1CECF1F6BC58B00A9343F /* CwlSignalTests.swift in Sources */,
 				OBJ_219 /* CwlSignalCocoaTests.swift in Sources */,
 				OBJ_220 /* CwlSignalReactiveTests.swift in Sources */,
 			);

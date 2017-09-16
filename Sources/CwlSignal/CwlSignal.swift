@@ -901,10 +901,10 @@ public class Signal<Value> {
 	//   - error: pushed onto this `Signal`'s queue
 	//   - activationCount: activationCount of the sender (must match the internal value)
 	//   - dw: used to dispatch the signal safely outside the parent's mutex
-	fileprivate final func push(values: Array<Value>, error: Error?, activationCount: Int, dw: inout DeferredWork) {
+	fileprivate final func push(values: Array<Value>, error: Error?, activationCount: Int, activated: Bool, dw: inout DeferredWork) {
 		mutex.sync {
 			guard self.activationCount == activationCount else { return }
-			pushInternal(values: values, error: error, dw: &dw)
+			pushInternal(values: values, error: error, activated: activated, dw: &dw)
 		}
 	}
 	
@@ -914,7 +914,7 @@ public class Signal<Value> {
 	//   - values: pushed onto this `Signal`'s queue
 	//   - error: pushed onto this `Signal`'s queue
 	//   - dw: used to dispatch the signal safely outside the parent's mutex
-	fileprivate final func pushInternal(values: Array<Value>, error: Error?, dw: inout DeferredWork) {
+	fileprivate final func pushInternal(values: Array<Value>, error: Error?, activated: Bool, dw: inout DeferredWork) {
 		assert(mutex.unbalancedTryLock() == false)
 		
 		guard values.count > 0 || error != nil else {
@@ -925,7 +925,7 @@ public class Signal<Value> {
 			return
 		}
 		
-		if case .synchronous(let count) = delivery {
+		if !activated, case .synchronous(let count) = delivery {
 			assert(count == 0)
 			delivery = .synchronous(values.count + (error != nil ? 1 : 0))
 		}
@@ -1154,14 +1154,14 @@ public class Signal<Value> {
 				}
 			}
 			resumeIfPossibleInternal(dw: &dw)
-			newInputSignal?.0.push(values: [SignalInput(signal: self, activationCount: activationCount)], error: nil, activationCount: 0, dw: &dw)
+			newInputSignal?.0.push(values: [SignalInput(signal: self, activationCount: activationCount)], error: nil, activationCount: 0, activated: true, dw: &dw)
 		case .synchronous:
 			if preceeding.count > 0 {
 				updateActivationInternal(andInvalidateAllPrevious: false, dw: &dw)
 			}
 		case .disabled:
 			updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw)
-			_ = newInputSignal?.0.push(values: [Optional<SignalInput<Value>>.none], error: nil, activationCount: 0, dw: &dw)
+			_ = newInputSignal?.0.push(values: [Optional<SignalInput<Value>>.none], error: nil, activationCount: 0, activated: true, dw: &dw)
 		}
 	}
 }
@@ -1772,7 +1772,8 @@ fileprivate class SignalMultiProcessor<Value>: SignalProcessor<Value, Value> {
 	//   - index: identifies the output
 	//   - dw: required
 	fileprivate final override func sendActivationToOutputInternal(index: Int, dw: inout DeferredWork) {
-		outputs[index].destination.value?.pushInternal(values: activationValues, error: preclosed, dw: &dw)
+		// Push as *not* activated (i.e. this is the activation)
+		outputs[index].destination.value?.pushInternal(values: activationValues, error: preclosed, activated: false, dw: &dw)
 	}
 	
 	// Multiprocessors are (usually – not multicast) preactivated and may cache the values or errors
@@ -1882,7 +1883,8 @@ fileprivate class SignalCacheUntilActive<Value>: SignalProcessor<Value, Value> {
 	//   - index: identifies the output
 	//   - dw: required
 	fileprivate final override func sendActivationToOutputInternal(index: Int, dw: inout DeferredWork) {
-		outputs[index].destination.value?.pushInternal(values: cachedValues, error: cachedError, dw: &dw)
+		// Push as *not* activated (i.e. this is the activation)
+		outputs[index].destination.value?.pushInternal(values: cachedValues, error: cachedError, activated: false, dw: &dw)
 	}
 	
 	/// Caches values prior to an output connecting
@@ -2381,7 +2383,8 @@ public final class SignalCapture<Value>: SignalProcessor<Value, Value>, Cancella
 			// Don't deliver errors if `disconnectOnError` is set
 			if let d = disconnectOnError, let e = capturedError {
 				// NOTE: we use the successors "internal" functon here since this is always called from successor's `updateActivationInternal` function
-				outputSignal.pushInternal(values: capturedValues, error: nil, dw: &dw)
+				// Push as *activated* (i.e. this is deferred from activation to normal)
+				outputSignal.pushInternal(values: capturedValues, error: nil, activated: true, dw: &dw)
 				dw.append {
 					// We need to use a specialized version of disconnect that ensures another disconnect hasn't happened in the meantime. Since it's theoretically possible that this handler could be disconnected and reconnected in the meantime (or deactivated and reactivated) we need to check the output and activationCount to ensure everything's still the same.
 					var previous: ((SignalCapture<Value>, Error, SignalInput<Value>) -> ())? = nil
@@ -2400,7 +2403,8 @@ public final class SignalCapture<Value>: SignalProcessor<Value, Value>, Cancella
 				}
 			} else {
 				// NOTE: we use the successors "internal" functon here since this is always called from successor's `updateActivationInternal` function
-				outputSignal.pushInternal(values: capturedValues, error: capturedError, dw: &dw)
+				// Push as *activated* (i.e. this is deferred from activation to normal)
+				outputSignal.pushInternal(values: capturedValues, error: capturedError, activated: true, dw: &dw)
 			}
 		}
 		signal.unblockInternal(activationCountAtBlock: blockActivationCount)

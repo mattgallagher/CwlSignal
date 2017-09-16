@@ -1698,6 +1698,70 @@ class SignalTests: XCTestCase {
 		withExtendedLifetime(combined) {}
 	}
 	
+	func testIsSignalClosed() {
+		let v1 = Result<Int>.success(5)
+		let e1 = Result<Int>.failure(SignalError.cancelled)
+		let e2 = Result<Int>.failure(SignalError.closed)
+		XCTAssert(v1.isSignalClosed == false)
+		XCTAssert(e1.isSignalClosed == false)
+		XCTAssert(e2.isSignalClosed == true)
+	}
+
+	func testReactivateDeadlockBug() {
+		// This bug exercises the `if itemContextNeedsRefresh` branch in `send(result:predecessor:activationCount:activated:)` and deadlocks if the previous handler is released incorrectly.
+		var results = [Result<String?>]()
+		let sig1 = Signal<String?>.create { s in s.continuous(initialValue: "hello") }
+		let sig2 = sig1.composed.startWith(["boop"])
+		for _ in 1...3 {
+			let ep = sig2.subscribe(context: .main) { r in results.append(r) }
+			ep.cancel()
+		}
+		
+		XCTAssert(results.count == 6)
+		XCTAssert(results.at(0)?.value.flatMap { $0 } == "boop")
+		XCTAssert(results.at(1)?.value.flatMap { $0 } == "hello")
+		XCTAssert(results.at(2)?.value.flatMap { $0 } == "boop")
+		XCTAssert(results.at(3)?.value.flatMap { $0 } == "hello")
+		XCTAssert(results.at(4)?.value.flatMap { $0 } == "boop")
+		XCTAssert(results.at(5)?.value.flatMap { $0 } == "hello")
+		withExtendedLifetime(sig1.input) {}
+	}
+	
+	func testDeferActivation() {
+		var results = [Result<Int>]()
+		let coordinator = DebugContextCoordinator()
+		let (input, signal) = Signal<Int>.create()
+		let ep = signal.continuous(initialValue: 3).deferActivation().map(context: coordinator.mainAsync) { $0 * 2 }.subscribe { r in
+			results.append(r)
+		}
+		XCTAssert(results.isEmpty)
+		coordinator.runScheduledTasks()
+		XCTAssert(results.count == 1)
+		XCTAssert(results.at(0)?.value == 6)
+		
+		XCTAssert(coordinator.currentTime == 1)
+		
+		withExtendedLifetime(input) { }
+		withExtendedLifetime(ep) { }
+	}
+	
+	func testDropActivation() {
+		var results = [Result<Int>]()
+		let (input, signal) = Signal<Int>.create()
+		let ep = signal.continuous(initialValue: 3).dropActivation().subscribe { r in
+			results.append(r)
+		}
+		XCTAssert(results.isEmpty)
+		input.send(value: 5)
+		XCTAssert(results.count == 1)
+		XCTAssert(results.at(0)?.value == 5)
+		
+		withExtendedLifetime(input) { }
+		withExtendedLifetime(ep) { }
+	}
+}
+
+class SignalTimingTests: XCTestCase {
 	@inline(never)
 	private static func noinlineMapFunction(_ value: Int) -> Result<Int> {
 		return Result<Int>.success(value)
@@ -1741,7 +1805,7 @@ class SignalTests: XCTestCase {
 			// Approximate analogue to Signal architecture (sequence -> lazy map to Result -> iterate -> unwrap)
 			let t2 = mach_absolute_time()
 			var count2 = 0
-			(0..<sequenceLength).lazy.map(SignalTests.noinlineMapFunction).forEach { r in
+			(0..<sequenceLength).lazy.map(SignalTimingTests.noinlineMapFunction).forEach { r in
 				switch r {
 				case .success: count2 += 1
 				case .failure: break
@@ -1790,7 +1854,7 @@ class SignalTests: XCTestCase {
 			// Approximate analogue to Signal architecture (sequence -> lazy map to Result -> iterate -> unwrap)
 			let t2 = mach_absolute_time()
 			var count2 = 0
-			(0..<sequenceLength).lazy.map(SignalTests.noinlineMapFunction).forEach { r in
+			(0..<sequenceLength).lazy.map(SignalTimingTests.noinlineMapFunction).forEach { r in
 				switch r {
 				case .success: count2 += 1
 				case .failure: break
@@ -1839,10 +1903,10 @@ class SignalTests: XCTestCase {
 	
 		@inline(never)
 		private static func noinlineMapToDepthFunction(_ value: Int, _ depth: Int) -> Result<Int> {
-			var result = SignalTests.noinlineMapFunction(value)
+			var result = SignalTimingTests.noinlineMapFunction(value)
 			for _ in 0..<depth {
 				switch result {
-				case .success(let v): result = SignalTests.noinlineMapFunction(v)
+				case .success(let v): result = SignalTimingTests.noinlineMapFunction(v)
 				case .failure(let e): result = .failure(e)
 				}
 			}
@@ -1894,7 +1958,7 @@ class SignalTests: XCTestCase {
 			var count2 = 0
 			
 			// Again, as close an equivalent as possible
-			(0..<sequenceLength).lazy.map { SignalTests.noinlineMapToDepthFunction($0, depth) }.forEach { r in
+			(0..<sequenceLength).lazy.map { SignalTimingTests.noinlineMapToDepthFunction($0, depth) }.forEach { r in
 				switch r {
 				case .success: count2 += 1
 				case .failure: break
@@ -2030,34 +2094,4 @@ class SignalTests: XCTestCase {
 		
 		print("Finished run \(run) with completion count \(completionCount) of \(iterations * threadCount) (roughly 25% completion desired)")
 	}
-	
-	func testIsSignalClosed() {
-		let v1 = Result<Int>.success(5)
-		let e1 = Result<Int>.failure(SignalError.cancelled)
-		let e2 = Result<Int>.failure(SignalError.closed)
-		XCTAssert(v1.isSignalClosed == false)
-		XCTAssert(e1.isSignalClosed == false)
-		XCTAssert(e2.isSignalClosed == true)
-	}
-
-	func testReactivateDeadlockBug() {
-		// This bug exercises the `if itemContextNeedsRefresh` branch in `send(result:predecessor:activationCount:activated:)` and deadlocks if the previous handler is released incorrectly.
-		var results = [Result<String?>]()
-		let sig1 = Signal<String?>.create { s in s.continuous(initialValue: "hello") }
-		let sig2 = sig1.composed.startWith(["boop"])
-		for _ in 1...3 {
-			let ep = sig2.subscribe(context: .main) { r in results.append(r) }
-			ep.cancel()
-		}
-		
-		XCTAssert(results.count == 6)
-		XCTAssert(results.at(0)?.value.flatMap { $0 } == "boop")
-		XCTAssert(results.at(1)?.value.flatMap { $0 } == "hello")
-		XCTAssert(results.at(2)?.value.flatMap { $0 } == "boop")
-		XCTAssert(results.at(3)?.value.flatMap { $0 } == "hello")
-		XCTAssert(results.at(4)?.value.flatMap { $0 } == "boop")
-		XCTAssert(results.at(5)?.value.flatMap { $0 } == "hello")
-		withExtendedLifetime(sig1.input) {}
-	}
-	
 }

@@ -431,9 +431,17 @@ extension SignalCapture {
 }
 
 extension Signal {
+	/// Removes any activation from the signal. Useful in cases when you only want *changes*, not the latest value.
 	public func dropActivation() -> Signal<Value> {
 		let pair = Signal<Value>.create()
 		try! capture().join(to: pair.input)
+		return pair.signal
+	}
+
+	/// Causes any activation to be deferred past activation time to the "normal" phase. This avoids the synchronous send rules normally used for activation signals an allows this initial signal to be asynchronously delivered.
+	public func deferActivation() -> Signal<Value> {
+		let pair = Signal<Value>.create()
+		try! capture().join(to: pair.input, resend: true)
 		return pair.signal
 	}
 }
