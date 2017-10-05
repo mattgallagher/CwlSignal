@@ -25,9 +25,10 @@ Failure to follow these steps correctly will result in a "Playground execution f
 9. [Advanced behaviors - lazy generation](Advanced%20behaviors%20-%20lazy%20generation)
 10. [Advanced behaviors - capturing](Advanced%20behaviors%20-%20capturing)
 11. [Advanced composition - nested operators](Advanced%20composition%20-%20nested%20operators)
-12. [App scenario - threadsafe key-value storage](App%20scenario%20-%20threadsafe%20key-value%20storage)
-13. [App scenario - dynamic view properties](App%20scenario%20-%20dynamic%20view%20properties)
-14. And a [Play area](Play%20area) if you just want to goof around.
+12. [Advanced composition - loopback](Advanced%20composition%20-%20loopback)
+13. [App scenario - threadsafe key-value storage](App%20scenario%20-%20threadsafe%20key-value%20storage)
+14. [App scenario - dynamic view properties](App%20scenario%20-%20dynamic%20view%20properties)
+15. And a [Play area](Play%20area) if you just want to goof around.
 
 [Next: Basic channel](@next)
 */

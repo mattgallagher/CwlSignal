@@ -71,5 +71,5 @@ class DocumentValues {
 
 [Next page: App scenario - dynamic view properties](@next)
 
-[Previous page: Advanced composition - nested operators](@previous)
+[Previous page: Advanced composition - loopback](@previous)
 */

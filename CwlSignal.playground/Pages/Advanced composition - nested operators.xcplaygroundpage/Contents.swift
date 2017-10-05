@@ -63,7 +63,7 @@ endpoint.cancel()
 
 *This example writes to the "Debug Area". If it is not visible, show it from the menubar: "View" → "Debug Area" → "Show Debug Area".*
 
-[Next page: App scenario - threadsafe key-value storage](@next)
+[Next page: Advanced composition - loopback](@next)
 
 [Previous page: Advanced behaviors - capturing](@previous)
 */

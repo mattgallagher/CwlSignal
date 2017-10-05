@@ -13,6 +13,7 @@
         <page name='Advanced behaviors - lazy generation'/>
         <page name='Advanced behaviors - capturing'/>
         <page name='Advanced composition - nested operators'/>
+        <page name='Advanced composition - loopback'/>
         <page name='App scenario - threadsafe key-value storage'/>
         <page name='App scenario - dynamic view properties'/>
         <page name='Play area'/>
