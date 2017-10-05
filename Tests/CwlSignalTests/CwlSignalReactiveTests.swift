@@ -728,7 +728,7 @@ class SignalReactiveTests: XCTestCase {
 		let coordinator = DebugContextCoordinator()
 		
 		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.global)
-		let windowedSignal = baseSignal.window(windows: intervalSignal(.fromSeconds(0.2), initial: .fromSeconds(0.05), context: coordinator.global).map { _ in
+		let windowedSignal = baseSignal.window(windows: intervalSignal(.fromSeconds(0.2), initial: .fromSeconds(0.0499), context: coordinator.global).map { _ in
 			Signal<()>.timer(interval: .fromSeconds(0.1), context: coordinator.global)
 		})
 		let ep = windowedSignal.subscribe { r in
@@ -1927,12 +1927,18 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(3)?.value == 3)
 		XCTAssert(results.at(4)?.value == 4)
 		XCTAssert(results.at(5)?.error as? SignalError == .timeout)
-		XCTAssert(times.at(0).map { (v: UInt64) -> Bool in v == 5_000_000_000 } == true)
-		XCTAssert(times.at(1).map { (v: UInt64) -> Bool in v == 6_000_000_000 } == true)
-		XCTAssert(times.at(2).map { (v: UInt64) -> Bool in v == 7_000_000_000 } == true)
-		XCTAssert(times.at(3).map { (v: UInt64) -> Bool in v == 8_000_000_000 } == true)
-		XCTAssert(times.at(4).map { (v: UInt64) -> Bool in v == 9_000_000_000 } == true)
-		XCTAssert(times.at(5).map { (v: UInt64) -> Bool in v == 9_000_000_000 } == true)
+		
+		// Explanation of the `4` at the end of these times:
+		// `intervalSignal` is invoked asynchronously on `coordinator.global`, adding 1
+		// `timeout` is invoked asynchronously on `coordinator.global`, adding 1
+		// `delay` runs its offset calculation function asynchronously on `coordinator.global`, adding 1
+		// the timer started by `delay` completes asynchronously on `coordinator.global`, adding 1
+		XCTAssert(times.at(0).map { (v: UInt64) -> Bool in v == 5_000_000_004 } == true)
+		XCTAssert(times.at(1).map { (v: UInt64) -> Bool in v == 6_000_000_004 } == true)
+		XCTAssert(times.at(2).map { (v: UInt64) -> Bool in v == 7_000_000_004 } == true)
+		XCTAssert(times.at(3).map { (v: UInt64) -> Bool in v == 8_000_000_004 } == true)
+		XCTAssert(times.at(4).map { (v: UInt64) -> Bool in v == 9_000_000_004 } == true)
+		XCTAssert(times.at(5).map { (v: UInt64) -> Bool in v == 9_000_000_004 } == true)
 	}
 	
 	func testDelaySignal() {
@@ -1958,12 +1964,14 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(4)?.value == 0)
 		XCTAssert(results.at(5)?.isSignalClosed == true)
 
-		XCTAssert(times.at(0).map { (v: UInt64) -> Bool in v == 100_000_000 } == true)
-		XCTAssert(times.at(1).map { (v: UInt64) -> Bool in v == 150_000_000 } == true)
-		XCTAssert(times.at(2).map { (v: UInt64) -> Bool in v == 200_000_000 } == true)
-		XCTAssert(times.at(3).map { (v: UInt64) -> Bool in v == 250_000_000 } == true)
-		XCTAssert(times.at(4).map { (v: UInt64) -> Bool in v == 300_000_000 } == true)
-		XCTAssert(times.at(5).map { (v: UInt64) -> Bool in v == 300_000_000 } == true)
+		// Explanation of the `1` at the end of these times:
+		// the timer started by `delay` completes asynchronously on `coordinator.global`, adding 1
+		XCTAssert(times.at(0).map { (v: UInt64) -> Bool in v == 100_000_001 } == true)
+		XCTAssert(times.at(1).map { (v: UInt64) -> Bool in v == 150_000_001 } == true)
+		XCTAssert(times.at(2).map { (v: UInt64) -> Bool in v == 200_000_001 } == true)
+		XCTAssert(times.at(3).map { (v: UInt64) -> Bool in v == 250_000_001 } == true)
+		XCTAssert(times.at(4).map { (v: UInt64) -> Bool in v == 300_000_001 } == true)
+		XCTAssert(times.at(5).map { (v: UInt64) -> Bool in v == 300_000_001 } == true)
 	}
 	
 	func testOn() {
