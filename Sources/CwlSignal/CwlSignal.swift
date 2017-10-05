@@ -506,6 +506,25 @@ public class Signal<Value> {
 		})
 	}
 	
+	/// This operator is a reducer, reducing the stream of incoming values down to a single, internal state value. This operator combines aspects of `transform` and `customActivation` into a single operation.
+	///
+	/// Appends a new transformation function to this `Signal<Value>` and returns a `SignalMulti<State>`. The new transformation takes the incoming `Result<Value>`, combines this with an internal `Result<State>`, updating the `Result<State>` as needed and emitting a `State` value on each iteration (or throwing an error, to close).
+	///
+	/// The interal `Result<State>` is used as the activation value. If new listeners attach to the `SignalMulti`, midstream, they will receive the internal `Result<State>` as an activation value. It should be kept in a form suitable for this purpose.
+	///
+	/// The internal `Result<State>` and the `State` returned on each iteration need not be the same value. The returned `State` value can be used for differential updates – e.g. "insert X at index Y" – instead of emitting the entire internal state – which might be stored as "reset array to [a, b, c, d]".
+	///
+	/// - Parameters:
+	///   - initialState: initial activation value for the stream and internal state for the reducer
+	///   - context: execution context where `reducer` will run
+	///   - reducer: the function that combines the state with incoming values and emits differential updates
+	/// - Returns: a `SignalMulti<State>`
+	public final func reduce<State>(initialState: Result<State>, context: Exec = .direct, reducer: @escaping (_ state: inout Result<State>, _ message: Result<Value>) throws -> State) -> SignalMulti<State> {
+		return SignalMulti<State>(processor: attach { (s, dw) in
+			return SignalReducer<Value, State>(signal: s, state: initialState, dw: &dw, context: context, reducer: reducer)
+		})
+	}
+	
 	/// Constructs a `SignalMulti` with an array of "activation" values and a closing error.
 	///
 	/// - Parameters:
@@ -1169,7 +1188,7 @@ public class Signal<Value> {
 /// `SignalMulti<Value>` is the only subclass of `Signal<Value>`. It represents a `Signal<Value>` that allows attaching multiple listeners (a normal `Signal<Value>` is "single owner" and will immediately close any subsequent listeners after the first with a `SignalError.duplicate` error).
 /// This class is not constructed directly but is instead created from one of the `SignalMulti<Value>` returning functions on `Signal<Value>`, including `playback()`, `multicast()` and `continuous()`.
 public final class SignalMulti<Value>: Signal<Value> {
-	fileprivate init(processor: SignalMultiProcessor<Value>) {
+	fileprivate override init<U>(processor: SignalProcessor<U, Value>) {
 		super.init(processor: processor)
 	}
 	
@@ -1727,7 +1746,7 @@ fileprivate class SignalProcessor<Value, U>: SignalHandler<Value>, SignalPredece
 }
 
 // Implementation of a processor that can output to multiple `Signal`s. Used by `continuous`, `continuous`, `playback`, `multicast`, `customActivation` and `preclosed`.
-fileprivate class SignalMultiProcessor<Value>: SignalProcessor<Value, Value> {
+fileprivate final class SignalMultiProcessor<Value>: SignalProcessor<Value, Value> {
 	typealias Updater = (_ activationValues: inout Array<Value>, _ preclosed: inout Error?, _ result: Result<Value>) -> (Array<Value>, Error?)
 	let updater: Updater?
 	var activationValues: Array<Value>
@@ -1795,6 +1814,7 @@ fileprivate class SignalMultiProcessor<Value>: SignalProcessor<Value, Value> {
 		// There's a tricky point here: for multicast, we only want to send to outputs that were connected *before* we started sending this value; otherwise values could be sent to the wrong outputs following asychronous graph manipulations.
 		// HOWEVER, when activation values exist, we must ensure that any output that was sent the *old* activation values will receive this new value *regardless* of when it connects.
 		// To balance these needs, the outputs array is copied here for "multicast" but isn't copied until immediately after updating the `activationValues` in all other cases
+		// There's an additional assumption: (updater == nil) is only possible for "multicast"
 		var outs: OutputsArray? = updater != nil ? nil : outputs
 		
 		let activated = signal.delivery.isNormal
@@ -1857,8 +1877,106 @@ fileprivate class SignalMultiProcessor<Value>: SignalProcessor<Value, Value> {
 	}
 }
 
+// Implementation of a processor that can output to multiple `Signal`s. Used by `continuous`, `continuous`, `playback`, `multicast`, `customActivation` and `preclosed`.
+fileprivate final class SignalReducer<Value, State>: SignalProcessor<Value, State>, SignalBlockable {
+	typealias Reducer = (_ state: inout Result<State>, _ message: Result<Value>) throws -> State
+	let reducer: Reducer
+	var state: Result<State>
+	
+	init(signal: Signal<Value>, state: Result<State>, dw: inout DeferredWork, context: Exec, reducer: @escaping Reducer) {
+		self.reducer = reducer
+		self.state = state
+		super.init(signal: signal, dw: &dw, context: context)
+	}
+	
+	fileprivate override var activeWithoutOutputsInternal: Bool {
+		assert(signal.mutex.unbalancedTryLock() == false)
+		return true
+	}
+	
+	fileprivate override var multipleOutputsPermitted: Bool {
+		return true
+	}
+	
+	fileprivate func unblock(activationCount: Int) {
+		signal.unblock(activationCountAtBlock: activationCount)
+	}
+
+	fileprivate final override func sendActivationToOutputInternal(index: Int, dw: inout DeferredWork) {
+		// Push as *not* activated (i.e. this is the activation)
+		outputs[index].destination.value?.pushInternal(values: state.value.map { [$0] } ?? [], error: state.error, activated: false, dw: &dw)
+	}
+	
+	// Multiprocessors are (usually – not multicast) preactivated and may cache the values or errors
+	// - Returns: a function to use as the handler prior to activation
+	override func initialHandlerInternal() -> (Result<Value>) -> Void {
+		assert(signal.mutex.unbalancedTryLock() == false)
+		return { [weak self] r in
+			if let s = self {
+				var state = Result<State>.failure(SignalError.closed)
+
+				// Copy the state under the mutex
+				s.sync {
+					state = s.state
+				}
+				
+				// Perform the update on the copy
+				let previous = state
+				_ = try? s.reducer(&state, r)
+				
+				// Apply the change to the authoritative version under the mutex
+				s.sync {
+					s.state = state
+				}
+				
+				// Ensure any old references are released outside the mutex
+				withExtendedLifetime(previous) {}
+			}
+		}
+	}
+	
+	// On result, update any activation values.
+	// - Returns: a function to use as the handler after activation
+	fileprivate override func nextHandlerInternal() -> (Result<Value>) -> Void {
+		assert(signal.mutex.unbalancedTryLock() == false)
+		
+		let activated = signal.delivery.isNormal
+		return { [weak self] r in
+			if let s = self {
+				var state = Result<State>.failure(SignalError.closed)
+				
+				// Copy the state under the mutex
+				s.sync {
+					state = s.state
+				}
+				
+				// Perform the update on the copy
+				let previous = state
+				let result = Result<State> { try s.reducer(&state, r) }
+				
+				// Apply the change to the authoritative version under the mutex
+				var outputs: OutputsArray = []
+				s.sync {
+					swap(&state, &s.state)
+					outputs = s.outputs
+				}
+				
+				// Ensure any old references are released outside the mutex
+				withExtendedLifetime(previous) {}
+
+				let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(s)
+				for o in outputs {
+					if let d = o.destination.value, let ac = o.activationCount {
+						d.send(result: result, predecessor: predecessor, activationCount: ac, activated: activated)
+					}
+				}
+			}
+		}
+	}
+}
+
 // A handler which starts receiving `Signal`s immediately and caches them until an output connects
-fileprivate class SignalCacheUntilActive<Value>: SignalProcessor<Value, Value> {
+fileprivate final class SignalCacheUntilActive<Value>: SignalProcessor<Value, Value> {
 	var cachedValues: Array<Value> = []
 	var cachedError: Error? = nil
 	
@@ -1942,7 +2060,7 @@ public final class SignalNext<Value>: SignalSender {
 	
 	fileprivate let activated: Bool
 	
-	// NOTE: this property must be accessed under the `blockable`'s mutext
+	// NOTE: this property must be accessed under the `blockable`'s mutex
 	fileprivate var needUnblock = false
 	
 	// Constructs with the details of the next `Signal` and the `blockable` (the `SignalTransformer` or `SignalTransformerWithState` to which this belongs). NOTE: predecessor and blockable are typically the same instance, just stored differently, for efficiency.
@@ -1952,7 +2070,7 @@ public final class SignalNext<Value>: SignalSender {
 	//   - predecessor: the preceeding signal
 	//   - activationCount: the latest activation count that we've recorded from the signal
 	//   - activated: whether the signal is `.normal` (otherwise, it's assumed to be `.synchronous`)
-	//   - blockable: same as predecessor but implementing a different protocol
+	//   - blockable: same as predecessor but implementing a different protocol and retained a different way
 	fileprivate init(signal: Signal<Value>, predecessor: SignalPredecessor, activationCount: Int, activated: Bool, blockable: SignalBlockable) {
 		self.signal = signal
 		self.blockable = blockable

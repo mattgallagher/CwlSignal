@@ -2642,7 +2642,7 @@ extension Signal {
 	///
 	/// - Returns: a signal that emits the number of values emitted by `self`
 	public func count() -> Signal<Int> {
-		return reduce(0) { (fold: (Int), value: Value) -> Int in
+		return reduceToSingleValue(0) { (fold: (Int), value: Value) -> Int in
 			return fold + 1
 		}
 	}
@@ -2678,7 +2678,7 @@ extension Signal {
 	///   - context: the `fold` function will be invoked on this context
 	///   - fold: invoked for every value emitted from self
 	/// - Returns: emits the last emitted `fold` state value
-	public func reduce<U>(_ initial: U, context: Exec = .direct, fold: @escaping (U, Value) -> U) -> Signal<U> {
+	public func reduceToSingleValue<U>(_ initial: U, context: Exec = .direct, fold: @escaping (U, Value) -> U) -> Signal<U> {
 		return foldAndFinalize(initial, context: context, finalize: { $0 }) { (state: U, value: Value) in
 			return fold(state, value)
 		}
@@ -2690,7 +2690,7 @@ extension Signal where Value: Numeric {
 	///
 	/// - Returns: a signal that emits the sum of all values emitted by self
 	public func sum() -> Signal<Value> {
-		return reduce(0) { (fold: Value, value: Value) -> Value in
+		return reduceToSingleValue(0) { (fold: Value, value: Value) -> Value in
 			return fold + value
 		}
 	}

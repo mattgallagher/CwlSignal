@@ -126,9 +126,6 @@ extension Signal {
 	}
 }
 
-/// A typealias for a `SignalChannel` where both ends are multi (i.e. SignalMultiInput -> SignalMulti). This is commonly used for basic "Reducer"-style implementations where you feed a `Message` type in, do something stateful in a custom stage in the middle and emit a `Notification` about the stateful change (commonly, the `Notification` is simply the state itself).
-public typealias Reducer<Message, Notification> = SignalChannel<Message, SignalMultiInput<Message>, Notification, SignalMulti<Notification>>
-
 // Implementation of Signal.swift
 extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
 	public func subscribe(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) -> (input: Input, endpoint: SignalEndpoint<OutputValue>) {
@@ -735,8 +732,8 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 }
 
 extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
-	public func reduce<U>(_ initial: U, context: Exec = .direct, fold: @escaping (U, OutputValue) -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
-		return next { $0.reduce(initial, context: context, fold: fold) }
+	public func reduceToSingleValue<U>(_ initial: U, context: Exec = .direct, fold: @escaping (U, OutputValue) -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
+		return next { $0.reduceToSingleValue(initial, context: context, fold: fold) }
 	}
 }
 
