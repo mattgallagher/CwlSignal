@@ -506,22 +506,31 @@ public class Signal<Value> {
 		})
 	}
 	
-	/// This operator is a reducer, reducing the stream of incoming values down to a single, internal state value. This operator combines aspects of `transform` and `customActivation` into a single operation.
+	/// This operator is a reducer, reducing the stream of incoming values down to a single, internal `State` value. A value of the same `State` type is emitted on each iteration (it may be the internal state or another value as appropriate).
 	///
-	/// Appends a new transformation function to this `Signal<Value>` and returns a `SignalMulti<State>`. The new transformation takes the incoming `Result<Value>`, combines this with an internal `Result<State>`, updating the `Result<State>` as needed and emitting a `State` value on each iteration (or throwing an error, to close).
+	/// This operator combines aspects of `transform` and `customActivation` into a single operation. The incoming values are transformed to the internal state type and it is possible to maintain a separate cached value and emitted value.
 	///
-	/// The interal `Result<State>` is used as the activation value. If new listeners attach to the `SignalMulti`, midstream, they will receive the internal `Result<State>` as an activation value. It should be kept in a form suitable for this purpose.
-	///
-	/// The internal `Result<State>` and the `State` returned on each iteration need not be the same value. The returned `State` value can be used for differential updates – e.g. "insert X at index Y" – instead of emitting the entire internal state – which might be stored as "reset array to [a, b, c, d]".
+	/// The interal `State` is used as the activation value. If new listeners attach to the `SignalMulti`, midstream, they will receive the internal `State` as an activation value. It should be kept in a form suitable for this purpose.
 	///
 	/// - Parameters:
 	///   - initialState: initial activation value for the stream and internal state for the reducer
 	///   - context: execution context where `reducer` will run
 	///   - reducer: the function that combines the state with incoming values and emits differential updates
 	/// - Returns: a `SignalMulti<State>`
-	public final func reduce<State>(initialState: Result<State>, context: Exec = .direct, reducer: @escaping (_ state: inout Result<State>, _ message: Result<Value>) throws -> State) -> SignalMulti<State> {
+	public final func reduce<State>(initialState: State, context: Exec = .direct, reducer: @escaping (_ state: inout State, _ message: Value) throws -> State) -> SignalMulti<State> {
 		return SignalMulti<State>(processor: attach { (s, dw) in
-			return SignalReducer<Value, State>(signal: s, state: initialState, dw: &dw, context: context, reducer: reducer)
+			return SignalReducer<Value, State>(signal: s, state: Result<State>.success(initialState), dw: &dw, context: context) { (state: inout Result<State>, message: Result<Value>) throws -> State in
+				switch (state, message) {
+				case (.success(var s), .success(let m)):
+					let emitState = try reducer(&s, m)
+					state = .success(s)
+					return emitState
+				case (.failure(let e), _): throw e
+				case (_, .failure(let e)):
+					state = .failure(e)
+					throw e
+				}
+			}
 		})
 	}
 	
@@ -1188,17 +1197,19 @@ public class Signal<Value> {
 /// `SignalMulti<Value>` is the only subclass of `Signal<Value>`. It represents a `Signal<Value>` that allows attaching multiple listeners (a normal `Signal<Value>` is "single owner" and will immediately close any subsequent listeners after the first with a `SignalError.duplicate` error).
 /// This class is not constructed directly but is instead created from one of the `SignalMulti<Value>` returning functions on `Signal<Value>`, including `playback()`, `multicast()` and `continuous()`.
 public final class SignalMulti<Value>: Signal<Value> {
+	fileprivate let spawnSingle: (SignalPredecessor) -> Signal<Value>
+	
 	fileprivate override init<U>(processor: SignalProcessor<U, Value>) {
+		assert(processor.multipleOutputsPermitted, "Construction of SignalMulti from a single output processor is illegal.")
+		spawnSingle = { (p: SignalPredecessor) in
+			return Signal<Value>(processor: p as! SignalProcessor<U, Value>)
+		}
 		super.init(processor: processor)
 	}
 	
 	// Technically listeners are never attached to the `SignalMulti` itself. Instead, it creates a new `Signal` branching off the preceeding `SignalMultiProcessor<Value>` and the attach is applied to that new `Signal<Value>`.
 	fileprivate override func attach<R>(constructor: (Signal<Value>, inout DeferredWork) -> R) -> R where R: SignalHandler<Value> {
-		if let s = (preceeding.first?.base as? SignalMultiProcessor<Value>).map({ Signal<Value>(processor: $0) }) {
-			return s.attach(constructor: constructor)
-		} else {
-			preconditionFailure("Multiple outputs added to single listener Signal.")
-		}
+		return spawnSingle(preceeding.first!.base).attach(constructor: constructor)
 	}
 }
 
@@ -1397,6 +1408,11 @@ fileprivate class SignalHandler<Value> {
 		dw.runWork()
 	}
 	
+	// If this property returns false, attempts to connect more than one output will be rejected. The rejection information is used primarily by SignalJunction which performs disconnect and join as two separate steps so it needs the rejection to ensure two threads haven't tried to join simultaneously.
+	fileprivate var multipleOutputsPermitted: Bool {
+		return false
+	}
+	
 	// Override point invoked from `endActivationInternal` used in `SignalCapture`
 	// - Parameter dw: required
 	fileprivate func handleSynchronousToNormalInternal(dw: inout DeferredWork) {
@@ -1477,11 +1493,6 @@ fileprivate class SignalProcessor<Value, U>: SignalHandler<Value>, SignalPredece
 		let activated = processor.signal.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(processor)
 		return { [weak outputSignal] (r: Result<Value>) -> Void in _ = outputSignal?.send(result: transform(r), predecessor: predecessor, activationCount: ac, activated: activated) }
-	}
-	
-	// If this property returns false, attempts to connect more than one output will be rejected. The rejection information is used primarily by SignalJunction which performs disconnect and join as two separate steps so it needs the rejection to ensure two threads haven't tried to join simultaneously.
-	fileprivate var multipleOutputsPermitted: Bool {
-		return false
 	}
 	
 	// Determines if a `Signal` is one of the current outputs.
@@ -1777,7 +1788,7 @@ fileprivate final class SignalMultiProcessor<Value>: SignalProcessor<Value, Valu
 	// Multicast and continuousWhileActive are not preactivated but all others are not.
 	fileprivate override var activeWithoutOutputsInternal: Bool {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		return activeWithoutOutputs
+		return activeWithoutOutputs && preclosed == nil
 	}
 	
 	// Multiprocessor can handle multiple outputs
@@ -1891,7 +1902,7 @@ fileprivate final class SignalReducer<Value, State>: SignalProcessor<Value, Stat
 	
 	fileprivate override var activeWithoutOutputsInternal: Bool {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		return true
+		return state.error != nil
 	}
 	
 	fileprivate override var multipleOutputsPermitted: Bool {

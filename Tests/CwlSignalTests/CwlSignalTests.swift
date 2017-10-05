@@ -516,6 +516,90 @@ class SignalTests: XCTestCase {
 		withExtendedLifetime(ep3) {}
 	}
 	
+	enum State: Equatable {
+		static func ==(lhs: State, rhs: State) -> Bool {
+			switch (lhs, rhs) {
+			case (.inserted(let vl, let il), .inserted(let vr, let ir)): return vl == vr && il == ir
+			case (.deleted(let vl, let il), .deleted(let vr, let ir)): return vl == vr && il == ir
+			case (.reset(let al), .reset(let ar)): return al == ar
+			default: return false
+			}
+		}
+		
+		case inserted(value: Int, index: Int)
+		case deleted(value: Int, index: Int)
+		case reset([Int])
+		
+		var array: [Int] {
+			switch self {
+			case .reset(let a): return a
+			default: return []
+			}
+		}
+	}
+	
+	func testReducer() {
+		enum StackOperation {
+			case push(Int)
+			case pop
+		}
+		
+		let (input, signal) = Signal<StackOperation>.create()
+		let reduced = signal.reduce(initialState: .reset([0, 1, 2])) { (state: inout State, message: StackOperation) throws -> State in
+			var stateArray = state.array
+			switch message {
+			case .push(let value):
+				if stateArray.count == 5 {
+					throw TestError.zeroValue
+				}
+				
+				stateArray.append(value)
+				state = .reset(stateArray)
+				return .inserted(value: value, index: stateArray.count - 1)
+			case .pop:
+				let value = stateArray.removeLast()
+				state = .reset(stateArray)
+				return .deleted(value: value, index: stateArray.count)
+			}
+		}
+		
+		var results1 = [Result<State>]()
+		reduced.subscribeUntilEnd { r in
+			results1.append(r)
+		}
+		
+		input.send(value: .push(3))
+		input.send(value: .pop)
+		input.send(value: .pop)
+
+		var results2 = [Result<State>]()
+		reduced.subscribeUntilEnd { r in
+			results2.append(r)
+		}
+
+		input.send(value: .push(1))
+		input.send(value: .push(2))
+		input.send(value: .push(3))
+		input.send(value: .push(5))
+		
+		XCTAssert(results1.count == 8)
+		XCTAssert(results1.at(0)?.value == State.reset([0, 1, 2]))
+		XCTAssert(results1.at(1)?.value == State.inserted(value: 3, index: 3))
+		XCTAssert(results1.at(2)?.value == State.deleted(value: 3, index: 3))
+		XCTAssert(results1.at(3)?.value == State.deleted(value: 2, index: 2))
+		XCTAssert(results1.at(4)?.value == State.inserted(value: 1, index: 2))
+		XCTAssert(results1.at(5)?.value == State.inserted(value: 2, index: 3))
+		XCTAssert(results1.at(6)?.value == State.inserted(value: 3, index: 4))
+		XCTAssert(results1.at(7)?.error as? TestError == TestError.zeroValue)
+
+		XCTAssert(results2.count == 5)
+		XCTAssert(results2.at(0)?.value == State.reset([0, 1]))
+		XCTAssert(results2.at(1)?.value == State.inserted(value: 1, index: 2))
+		XCTAssert(results2.at(2)?.value == State.inserted(value: 2, index: 3))
+		XCTAssert(results2.at(3)?.value == State.inserted(value: 3, index: 4))
+		XCTAssert(results2.at(4)?.error as? TestError == TestError.zeroValue)
+	}
+	
 	func testPreclosed() {
 		var results1 = [Result<Int>]()
 		_ = Signal<Int>.preclosed(values: [1, 3, 5], error: TestError.oneValue).subscribe { r in

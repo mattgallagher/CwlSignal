@@ -218,6 +218,10 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return next { $0.customActivation(initialValues: initialValues, context: context, updater: updater) }
 	}
 	
+	public func reduce<State>(initialState: State, context: Exec = .direct, reducer: @escaping (_ state: inout State, _ message: OutputValue) throws -> State) -> SignalChannel<InputValue, Input, State, SignalMulti<State>> {
+		return next { $0.reduce(initialState: initialState, context: context, reducer: reducer) }
+	}
+	
 	public func capture() -> (input: Input, capture: SignalCapture<OutputValue>) {
 		let tuple = final { $0.capture() }
 		return (input: tuple.input, capture: tuple.output)
@@ -732,8 +736,8 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 }
 
 extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
-	public func reduceToSingleValue<U>(_ initial: U, context: Exec = .direct, fold: @escaping (U, OutputValue) -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
-		return next { $0.reduceToSingleValue(initial, context: context, fold: fold) }
+	public func aggregate<U>(_ initial: U, context: Exec = .direct, fold: @escaping (U, OutputValue) -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
+		return next { $0.aggregate(initial, context: context, fold: fold) }
 	}
 }
 

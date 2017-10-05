@@ -2444,7 +2444,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testReduceToSingleValue() {
 		var results = [Result<Int>]()
-		_ = Signal<Int>.from(values: 1...3).reduceToSingleValue(5) { (state, v) in state + v }.subscribe { r in results.append(r) }
+		_ = Signal<Int>.from(values: 1...3).aggregate(5) { (state, v) in state + v }.subscribe { r in results.append(r) }
 		XCTAssert(results.count == 2)
 		XCTAssert(results.at(0)?.value == 11)
 		XCTAssert(results.at(1)?.error as? SignalError == .closed)
