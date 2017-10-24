@@ -65,9 +65,6 @@ public struct SignalChannel<IV, I: SignalInput<IV>, OV, O: Signal<OV>>: SignalPa
 	public init(input: Input, signal: Output) {
 		(self.input, self.signal) = (input, signal)
 	}
-	public init(_ tuple: (Input, Output)) {
-		self.init(input: tuple.0, signal: tuple.1)
-	}
 }
 
 extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
@@ -96,21 +93,24 @@ public typealias MergedChannel<Value> = SignalChannel<Value, SignalMergedInput<V
 extension SignalChannel where IV == OV, I == SignalInput<IV>, O == Signal<OV> {
 	// An empty Channel can be default constructed
 	public init() {
-		self.init(Signal<InputValue>.create())
+		let (input, signal) = Signal<InputValue>.create()
+		self.init(input: input, signal: signal)
 	}
 }
 
 extension SignalChannel where InputValue == OutputValue, Input == SignalMultiInput<InputValue>, Output == Signal<OutputValue> {
 	// An empty MultiChannel can be default constructed
 	public init() {
-		self.init(Signal<InputValue>.createMultiInput())
+		let (input, signal) = Signal<InputValue>.createMultiInput()
+		self.init(input: input, signal: signal)
 	}
 }
 
 extension SignalChannel where InputValue == OutputValue, Input == SignalMergedInput<InputValue>, Output == Signal<OutputValue> {
 	// An empty MergedChannel can be default constructed
 	public init() {
-		self.init(Signal<InputValue>.createMergedInput())
+		let (input, signal) = Signal<InputValue>.createMergedInput()
+		self.init(input: input, signal: signal)
 	}
 }
 
