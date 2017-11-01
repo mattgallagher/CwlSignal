@@ -522,8 +522,9 @@ public class Signal<Value> {
             return SignalReducer<Value, State>(signal: s, state: Result<State>.success(initialState), dw: &dw, context: context) { (state: inout Result<State>, message: Result<Value>) -> Result<State> in
 				switch (state, message) {
                 case (.success(var s), .success(let m)):
-                    state =  Result<State> { try reducer(&s, m) }
-                    return state
+                    let output =  Result<State> { try reducer(&s, m) }
+                    state = .success(s)
+                    return output
                 case (.failure, _):
                     return state
 				case (_, .failure(let e)):
