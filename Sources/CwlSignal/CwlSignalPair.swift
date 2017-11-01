@@ -372,7 +372,7 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return next { $0.groupBy(context: context, processor) }
 	}
 	
-	public func mapErrors(context: Exec = .direct, _ processor: @escaping (Error) -> Error) -> SignalChannel<InputValue, Input, OutputValue, Output> {
+	public func mapErrors(context: Exec = .direct, _ processor: @escaping (Error) -> Error) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.mapErrors(context: context, processor) }
 	}
 
