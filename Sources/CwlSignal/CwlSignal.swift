@@ -519,16 +519,15 @@ public class Signal<Value> {
 	/// - Returns: a `SignalMulti<State>`
 	public final func reduce<State>(initialState: State, context: Exec = .direct, reducer: @escaping (_ state: inout State, _ message: Value) throws -> State) -> SignalMulti<State> {
 		return SignalMulti<State>(processor: attach { (s, dw) in
-			return SignalReducer<Value, State>(signal: s, state: Result<State>.success(initialState), dw: &dw, context: context) { (state: inout Result<State>, message: Result<Value>) throws -> State in
+            return SignalReducer<Value, State>(signal: s, state: Result<State>.success(initialState), dw: &dw, context: context) { (state: inout Result<State>, message: Result<Value>) -> Result<State> in
 				switch (state, message) {
-				case (.success(var s), .success(let m)):
-					let emitState = try reducer(&s, m)
-					state = .success(s)
-					return emitState
-				case (.failure(let e), _): throw e
+                    state =  Result<State> { try reducer(&s, m) }
+                    return state
+                case (.failure, _):
+                    return state
 				case (_, .failure(let e)):
 					state = .failure(e)
-					throw e
+                    return state
 				}
 			}
 		})
@@ -1896,7 +1895,7 @@ fileprivate final class SignalMultiProcessor<Value>: SignalProcessor<Value, Valu
 
 // Implementation of a processor that can output to multiple `Signal`s. Used by `continuous`, `continuous`, `playback`, `multicast`, `customActivation` and `preclosed`.
 fileprivate final class SignalReducer<Value, State>: SignalProcessor<Value, State>, SignalBlockable {
-	typealias Reducer = (_ state: inout Result<State>, _ message: Result<Value>) throws -> State
+    typealias Reducer = (_ state: inout Result<State>, _ message: Result<Value>) -> Result<State>
 	let reducer: Reducer
 	var state: Result<State>
 	
@@ -1939,8 +1938,8 @@ fileprivate final class SignalReducer<Value, State>: SignalProcessor<Value, Stat
 				
 				// Perform the update on the copy
 				let previous = state
-				_ = try? s.reducer(&state, r)
-				
+                _ = s.reducer(&state, r)
+
 				// Apply the change to the authoritative version under the mutex
 				s.sync {
 					s.state = state
@@ -1969,8 +1968,8 @@ fileprivate final class SignalReducer<Value, State>: SignalProcessor<Value, Stat
 				
 				// Perform the update on the copy
 				let previous = state
-				let result = Result<State> { try s.reducer(&state, r) }
-				
+                let result = s.reducer(&state, r)
+
 				// Apply the change to the authoritative version under the mutex
 				var outputs: OutputsArray = []
 				s.sync {
@@ -3000,3 +2999,4 @@ public enum EitherResult5<U, V, W, X, Y> {
 	case result4(Result<X>)
 	case result5(Result<Y>)
 }
+
