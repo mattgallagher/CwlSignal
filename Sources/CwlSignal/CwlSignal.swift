@@ -1139,7 +1139,8 @@ public class Signal<Value> {
 	fileprivate final func resumeIfPossibleInternal(dw: inout DeferredWork) {
 		if holdCount == 0, itemProcessing == false, !queue.isEmpty {
 			if !refreshItemContextInternal(&dw) {
-				preconditionFailure("Handler should not be nil if queue is not empty")
+				// The weakly held handler has asynchronously released.
+				return
 			}
 			itemProcessing = true
 			dw.append {
@@ -1464,7 +1465,8 @@ fileprivate protocol SignalPredecessor: class {
 	func outputDeactivatedSuccessorInternal(_ successor: AnyObject, dw: inout DeferredWork)
 	func outputAddedSuccessorInternal(_ successor: AnyObject, param: Any?, activationCount: Int?, dw: inout DeferredWork) throws
 	func outputRemovedSuccessorInternal(_ successor: AnyObject, dw: inout DeferredWork)
-	func precessorsSuccessorInternal(contains: SignalPredecessor) -> Bool
+	func predecessorsSuccessorInternal(loopCheck: AnyObject) -> Bool
+	var loopCheckValue: AnyObject { get }
 	func wrappedWithOrder(_ order: Int) -> OrderedSignalPredecessor
 }
 
@@ -1509,19 +1511,23 @@ fileprivate class SignalProcessor<Value, U>: SignalHandler<Value>, SignalPredece
 		return nil
 	}
 	
+	/// Identity used for checking loops (needs to be the mutex since the mutex is shared vertically through the graph, any traversal looking for potential loops could deadlock before noticing a loop with any other value)
+	fileprivate final var loopCheckValue: AnyObject { return signal.mutex }
+	
 	// Performs a depth-first graph traversal looking for the specified `SignalPredecessor`
 	//
 	// - Parameter contains: the search value
 	// - Returns: true if `contains` was found, false otherwise
-	func precessorsSuccessorInternal(contains: SignalPredecessor) -> Bool {
-		if contains === self {
+	func predecessorsSuccessorInternal(loopCheck: AnyObject) -> Bool {
+		// Only check the value when successors don't share the mutex (i.e. when we have a boundary of some kind).
+		if !successorsShareMutex && loopCheck === self.loopCheckValue {
 			return true
 		}
 		var result = false
 		runSuccesorAction {
 			// Don't need to traverse sortedPreceeding (unsorted is fine for an ancestor check)
 			for p in signal.preceeding {
-				if p.base.precessorsSuccessorInternal(contains: contains) {
+				if p.base.predecessorsSuccessorInternal(loopCheck: loopCheck) {
 					result = true
 					return
 				}
@@ -1695,7 +1701,7 @@ fileprivate class SignalProcessor<Value, U>: SignalHandler<Value>, SignalPredece
 			if needsPredecessorCheck, let predecessor = sccr.signalHandler as? SignalPredecessor {
 				// Don't need to traverse sortedPreceeding (unsorted is fine for an ancestor check)
 				for p in signal.preceeding {
-					if p.base.precessorsSuccessorInternal(contains: predecessor) {
+					if p.base.predecessorsSuccessorInternal(loopCheck: predecessor.loopCheckValue) {
 						// Throw an error here and trigger the preconditionFailure outside the lock (otherwise precondition catching tests may deadlock).
 						error = SignalJoinError<Value>.loop
 						dw.append { preconditionFailure("Signals must not be joined in a loop.") }

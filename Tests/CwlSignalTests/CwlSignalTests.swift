@@ -1013,8 +1013,9 @@ class SignalTests: XCTestCase {
 		do {
 			let (input1, signal1) = Signal<Int>.create()
 			let (input2, signal2) = Signal<Int>.create()
+			let signal3 = signal2.map { $0 }
 			
-			let combined = signal1.combine(second: signal2) { (cr: EitherResult2<Int, Int>, next: SignalNext<Int>) in
+			let combined = signal1.combine(second: signal3) { (cr: EitherResult2<Int, Int>, next: SignalNext<Int>) in
 				switch cr {
 				case .result1(let r): next.send(result: r)
 				case .result2(let r): next.send(result: r)
