@@ -372,6 +372,10 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return next { $0.groupBy(context: context, processor) }
 	}
 	
+	public func mapErrors(context: Exec = .direct, _ processor: @escaping (Error) -> Error) -> SignalChannel<InputValue, Input, OutputValue, Output> {
+		return next { $0.mapErrors(context: context, processor) }
+	}
+
 	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
 		return next { $0.map(context: context, processor) }
 	}
@@ -456,14 +460,6 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return next { $0.ignoreElements() }
 	}
 	
-	public func ignoreElements<S: Sequence>(endWith: @escaping (Error) -> (S, Error)?) -> SignalChannel<InputValue, Input, S.Iterator.Element, Signal<S.Iterator.Element>> {
-		return next { $0.ignoreElements(endWith: endWith) }
-	}
-	
-	public func ignoreElements<U>(endWith value: U, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, U, Signal<U>> {
-		return next { $0.ignoreElements(endWith: value, conditional: conditional) }
-	}
-	
 	public func last(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.last(context: context, matching: matching) }
 	}
@@ -539,11 +535,11 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return next { $0.startWith(sequence) }
 	}
 	
-	public func endWith<U: Sequence>(_ sequence: U, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where U.Iterator.Element == OutputValue {
+	public func endWith<U: Sequence>(_ sequence: @autoclosure @escaping () -> U, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where U.Iterator.Element == OutputValue {
 		return next { $0.endWith(sequence, conditional: conditional) }
 	}
 	
-	func endWith(_ value: OutputValue, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+	func endWith(_ value: @autoclosure @escaping () -> OutputValue, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.endWith(value, conditional: conditional) }
 	}
 	
