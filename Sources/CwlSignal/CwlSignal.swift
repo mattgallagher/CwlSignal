@@ -2963,6 +2963,14 @@ public enum SignalError: Error {
 	case timeout
 }
 
+/// A minor convenience SignalClosed = SignalError.closed
+public var SignalClosed: SignalError { return SignalError.closed }
+
+extension Result {
+	/// A minor convenience Result.signalClosed = Result.failure(SignalError.closed)
+	public static var signalClosed: Result<Value> { return Result.failure(SignalError.closed) }
+}
+
 /// Attempts to join a `SignalInput` to a joinable handler (`SignalMergeSet`, `SignalJunction` or `SignalCapture`) can fail in two different ways.
 /// - cancelled: the destination `SignalInput`/`SignalMergeSet` was no longer the active input for its `Signal` (either its `Signal` is joined to something else or `Signal` has been deactivated, invalidating old inputs)
 /// - duplicate(`SignalInput<Value>`): the source `Signal` already had an output connected and doesn't support multiple outputs so the join failed. If the join destination was a `SignalInput` then that `SignalInput` was consumed by the attempt so the associated value will be a new `SignalInput` replacing the old one. If the join destination was a `SignalMergeSet`, the associated value will be `nil`.

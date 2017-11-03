@@ -1003,7 +1003,9 @@ extension Signal where Value: Hashable {
 			}
 		}
 	}
-	
+}
+
+extension Signal where Value: Equatable {
 	/// Implementation of [Reactive X operator "distinct"](http://reactivex.io/documentation/operators/distinct.html)
 	///
 	/// - Returns: a signal that emits the first value but then emits subsequent values only when they are different to the previous value.
@@ -2075,13 +2077,16 @@ extension Signal {
 	///   - handler: invoked when self is activated
 	/// - Returns: a signal that emits the same outputs as self
 	public func onActivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<Value> {
-		let signal = Signal<Value>.generate { input in
-			if let i = input {
-				handler()
-				self.join(to: i)
-			}
-		}
-		return signal
+        let j = self.junction()
+        let signal = Signal<Value>.generate { input in
+            if let i = input {
+                handler()
+                _ = try? j.join(to: i)
+            } else {
+                _ = j.disconnect()
+            }
+        }
+        return signal
 	}
 	
 	/// Implementation of [Reactive X operator "do"](http://reactivex.io/documentation/operators/do.html) for "deactivation" (not a concept that directly exists in ReactiveX but similar to doOnUnsubscribe).
@@ -2091,14 +2096,16 @@ extension Signal {
 	///   - handler: invoked when self is deactivated
 	/// - Returns: a signal that emits the same outputs as self
 	public func onDeactivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<Value> {
-		let signal = Signal<Value>.generate { input in
-			if let i = input {
-				self.join(to: i)
-			} else {
-				handler()
-			}
-		}
-		return signal
+        let j = self.junction()
+        let signal = Signal<Value>.generate { input in
+            if let i = input {
+                _ = try? j.join(to: i)
+            } else {
+                handler()
+                _ = j.disconnect()
+            }
+        }
+        return signal
 	}
 	
 	/// Implementation of [Reactive X operator "do"](http://reactivex.io/documentation/operators/do.html) for "result" (equivalent to doOnEach).

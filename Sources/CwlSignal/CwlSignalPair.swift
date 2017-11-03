@@ -206,15 +206,20 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return next { $0.playback() }
 	}
 	
-	public func cacheUntilActive() -> SignalChannel<InputValue, Input, OutputValue, SignalMulti<OutputValue>> {
-		return next { $0.playback() }
+	public func cacheUntilActive() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+		return next { $0.cacheUntilActive() }
 	}
 	
 	public func multicast() -> SignalChannel<InputValue, Input, OutputValue, SignalMulti<OutputValue>> {
-		return next { $0.playback() }
+		return next { $0.multicast() }
 	}
 	
-	public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout Error?, _ incoming: Result<OutputValue>) -> Void) -> SignalChannel<InputValue, Input, OutputValue, SignalMulti<OutputValue>> {
+    public func multicast(_ output: (SignalMulti<OutputValue>) -> ()) -> Input {
+        output(signal.multicast())
+        return input
+    }
+
+    public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout Error?, _ incoming: Result<OutputValue>) -> Void) -> SignalChannel<InputValue, Input, OutputValue, SignalMulti<OutputValue>> {
 		return next { $0.customActivation(initialValues: initialValues, context: context, updater: updater) }
 	}
 	

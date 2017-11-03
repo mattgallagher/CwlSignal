@@ -1976,7 +1976,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testOn() {
 		var results = [String]()
-		_ = Signal<Int>.from(values: 0..<5).onActivate {
+		let j = Signal<Int>.from(values: 0..<5).onActivate {
 			results.append("activate")
 		}.onDeactivate {
 			results.append("deactivate")
@@ -1986,10 +1986,49 @@ class SignalReactiveTests: XCTestCase {
 			results.append("\(r)")
 		}.onError { e in
 			results.append("\(e)")
-		}.subscribe { r in
-			results.append("Output: \(r)")
-		}
-		
+		}.junction()
+        
+        let (i1, o1) = Signal<Int>.create()
+        let ep1 = o1.subscribe { r in
+            results.append("Output: \(r)")
+        }
+        
+        _ = try? j.join(to: i1)
+        withExtendedLifetime(ep1) {}
+        _ = j.disconnect()
+        
+        XCTAssert(results == [
+            "activate",
+            "0",
+            "success(0)",
+            "Output: success(0)",
+            "1",
+            "success(1)",
+            "Output: success(1)",
+            "2",
+            "success(2)",
+            "Output: success(2)",
+            "3",
+            "success(3)",
+            "Output: success(3)",
+            "4",
+            "success(4)",
+            "Output: success(4)",
+            "failure(CwlSignal.SignalError.closed)",
+            "closed",
+            "Output: failure(CwlSignal.SignalError.closed)",
+            "deactivate",
+        ])
+
+        results.removeAll()
+
+        let (i2, o2) = Signal<Int>.create()
+        let ep2 = o2.subscribe { r in
+            results.append("Output: \(r)")
+        }
+        _ = try? j.join(to: i2)
+        withExtendedLifetime(ep2) {}
+
 		XCTAssert(results == [
 			"activate",
 			"0",
