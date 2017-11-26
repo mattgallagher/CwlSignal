@@ -30,7 +30,8 @@ public protocol SignalSubscribable {
 }
 
 /// This protocol allows transformations that apply to `Signal` types to be applied to a type that exposes a signal.
-public protocol SignalJoinable: SignalSender {
+public protocol SignalJoinable {
+	associatedtype InputValue
 	var input: SignalInput<InputValue> { get }
 }
 
@@ -50,9 +51,10 @@ extension Signal: SignalSubscribable {
 	public var signal: Signal<OutputValue> { return self }
 }
 
-extension SignalInput: SignalJoinable {
+extension SignalInput: SignalJoinable, SignalSender {
 	public var input: SignalInput<InputValue> { return self }
 }
+
 extension SignalNext: SignalSender {}
 
 // All transformations on a Signal are built on top of the following functions, implemented in CwlSignal.swift
