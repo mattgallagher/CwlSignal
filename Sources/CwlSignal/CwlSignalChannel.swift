@@ -81,21 +81,21 @@ extension SignalChannel where InputValue == OutputValue, Input == SignalInput<In
 
 extension Signal {
 	/// This function is used for starting SignalChannel pipeliens with a `SignalInput`
-	public static func channel() -> SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>> {
-		let (input, signal) = Signal<Value>.create()
-		return SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>>(input: input, signal: signal)
+	public static func channel() -> SignalChannel<OutputValue, SignalInput<OutputValue>, OutputValue, Signal<OutputValue>> {
+		let (input, signal) = Signal<OutputValue>.create()
+		return SignalChannel<OutputValue, SignalInput<OutputValue>, OutputValue, Signal<OutputValue>>(input: input, signal: signal)
 	}
 
 	/// This function is used for starting SignalChannel pipeliens with a `SignalMultiInput`
-	public static func multiChannel() -> SignalChannel<Value, SignalMultiInput<Value>, Value, Signal<Value>> {
-		let (input, signal) = Signal<Value>.createMultiInput()
-		return SignalChannel<Value, SignalMultiInput<Value>, Value, Signal<Value>>(input: input, signal: signal)
+	public static func multiChannel() -> SignalChannel<OutputValue, SignalMultiInput<OutputValue>, OutputValue, Signal<OutputValue>> {
+		let (input, signal) = Signal<OutputValue>.createMultiInput()
+		return SignalChannel<OutputValue, SignalMultiInput<OutputValue>, OutputValue, Signal<OutputValue>>(input: input, signal: signal)
 	}
 
 	/// This function is used for starting SignalChannel pipeliens with a `SignalMergedInput`
-	public static func mergedChannel() -> SignalChannel<Value, SignalMergedInput<Value>, Value, Signal<Value>> {
-		let (input, signal) = Signal<Value>.createMergedInput()
-		return SignalChannel<Value, SignalMergedInput<Value>, Value, Signal<Value>>(input: input, signal: signal)
+	public static func mergedChannel() -> SignalChannel<OutputValue, SignalMergedInput<OutputValue>, OutputValue, Signal<OutputValue>> {
+		let (input, signal) = Signal<OutputValue>.createMergedInput()
+		return SignalChannel<OutputValue, SignalMergedInput<OutputValue>, OutputValue, Signal<OutputValue>>(input: input, signal: signal)
 	}
 }
 

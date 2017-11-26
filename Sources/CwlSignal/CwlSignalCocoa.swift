@@ -150,11 +150,11 @@ extension Signal {
 	///   - keyPath: passed to `addObserver(_:forKeyPath:options:context:)`
 	///   - initial: if true, NSKeyValueObservingOptions.initial is included in the options passed to `addObserver(_:forKeyPath:options:context:)`
 	/// - Returns: a signal which emits the observation results
-	public static func keyValueObserving(_ target: NSObject, keyPath: String, initial: Bool = true) -> Signal<Value> {
-		return signalKeyValueObserving(target, keyPath: keyPath, initial: initial).transform { (r: Result<Any>, n: SignalNext<Value>) in
+	public static func keyValueObserving(_ target: NSObject, keyPath: String, initial: Bool = true) -> Signal<OutputValue> {
+		return signalKeyValueObserving(target, keyPath: keyPath, initial: initial).transform { (r: Result<Any>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v):
-				if let t = v as? Value {
+				if let t = v as? OutputValue {
 					n.send(value: t)
 				}
 			case .failure(let e):
@@ -194,8 +194,8 @@ extension Signal {
 	///   - target: the object upon which `setValue(_:forKeyPath:)` will be invoked
 	///   - keyPath: passed to `setValue(_:forKeyPath:)`
 	/// - Returns: the `SignalEnpoint` created by this action (releasing the endpoint will cease any further setting)
-	public func kvcSetter(context: Exec, target: NSObject, keyPath: String) -> SignalEndpoint<Value> {
-		return subscribeValues(context: context) { [weak target] (value: Value) -> Void in
+	public func kvcSetter(context: Exec, target: NSObject, keyPath: String) -> SignalEndpoint<OutputValue> {
+		return subscribeValues(context: context) { [weak target] (value: OutputValue) -> Void in
 			target?.setValue(value, forKeyPath: keyPath)
 		}
 	}
