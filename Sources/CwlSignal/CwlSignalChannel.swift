@@ -67,15 +67,17 @@ public struct SignalChannel<InputValue, Input: SignalInput<InputValue>, OutputVa
 	public var tuple: (input: Input, signal: Output) { return (input: input, signal: signal) }
 }
 
-public typealias SignalPair<Value> = SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>>
-public typealias SignalMultiOutputPair<Value> = SignalChannel<Value, SignalInput<Value>, Value, SignalMulti<Value>>
-public typealias SignalMultiInputPair<Value> = SignalChannel<Value, SignalMultiInput<Value>, Value, Signal<Value>>
-public typealias SignalMultiPair<Value> = SignalChannel<Value, SignalMultiInput<Value>, Value, SignalMulti<Value>>
-
 public typealias SignalPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalInput<InputValue>, OutputValue, Signal<OutputValue>>
 public typealias SignalMultiOutputPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalInput<InputValue>, OutputValue, SignalMulti<OutputValue>>
 public typealias SignalMultiInputPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalMultiInput<InputValue>, OutputValue, Signal<OutputValue>>
 public typealias SignalMultiPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalMultiInput<InputValue>, OutputValue, SignalMulti<OutputValue>>
+
+public typealias Input<Value> = SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>>
+extension SignalChannel where InputValue == OutputValue, Input == SignalInput<InputValue>, Output == Signal<OutputValue> {
+	public init() {
+		self = Signal<InputValue>.channel()
+	}
+}
 
 extension Signal {
 	/// This function is used for starting SignalChannel pipeliens with a `SignalInput`
@@ -95,11 +97,6 @@ extension Signal {
 		let (input, signal) = Signal<Value>.createMergedInput()
 		return SignalChannel<Value, SignalMergedInput<Value>, Value, Signal<Value>>(input: input, signal: signal)
 	}
-}
-
-/// This function is a convenience synonym for `Signal<Value>.channel()` – starting a `SignalChannel` with a single-input `SignalInput`.
-public func input<Value>() -> SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>> {
-	return Signal<Value>.channel()
 }
 
 // Implementation of Signal.swift
