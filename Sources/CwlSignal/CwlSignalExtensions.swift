@@ -464,8 +464,8 @@ extension SignalSubscribable {
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	/// - Returns: a `Cancellable` that will undo the join if cancelled or released
-	public func cancellableJoin(to input: SignalInput<OutputValue>) -> Cancellable {
-		if let multiInput = input as? SignalMultiInput<OutputValue> {
+	public func cancellableJoin<Joinable>(to joinable: Joinable) -> Cancellable where Joinable: SignalJoinable, Joinable.InputValue == OutputValue {
+		if let multiInput = joinable.input as? SignalMultiInput<OutputValue> {
 			multiInput.add(signal)
 			return OnDelete { [weak multiInput, weak signal] in
 				guard let mi = multiInput, let s = signal else { return }
@@ -473,7 +473,7 @@ extension SignalSubscribable {
 			}
 		} else {
 			let j = signal.junction()
-			_ = try? j.join(to: input)
+			_ = try? j.join(to: joinable.input)
 			return j
 		}
 	}

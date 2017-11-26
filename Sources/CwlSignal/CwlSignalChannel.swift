@@ -259,23 +259,13 @@ extension SignalChannel {
 		return next { $0.toggle(initialState: initialState) }
 	}
 	
-	public func join(to: SignalInput<OutputValue>) -> Input {
-		return final { $0.join(to: to) }.input
+	public func join<Joinable>(to joinable: Joinable) -> Input where Joinable: SignalJoinable, Joinable.InputValue == OutputValue {
+		return final { $0.join(to: joinable) }.input
 	}
 	
 	public func join(to: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> Input {
 		signal.join(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return input
-	}
-	
-	public func cancellableJoin(to: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> (input: Input, cancellable: Cancellable) {
-		let tuple = final { $0.cancellableJoin(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate) }
-		return (input: tuple.input, cancellable: tuple.output)
-	}
-	
-	public func cancellableJoin(to: SignalMultiInput<OutputValue>) -> (input: Input, cancellable: Cancellable) {
-		let tuple = final { $0.cancellableJoin(to: to) }
-		return (input: tuple.input, cancellable: tuple.output)
 	}
 	
 	public func pollingEndpoint() -> (input: Input, endpoint: SignalPollingEndpoint<OutputValue>) {
