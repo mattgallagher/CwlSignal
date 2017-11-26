@@ -26,15 +26,13 @@
 /// Instances of `SignalActionTarget` can be used as the "target" of Cocoa "target-action" events and the result will be emitted as a signal.
 /// Instance of this class are owned by the output `signal` so if you're holding onto the signal, you can drop references to this class itself.
 open class SignalActionTarget: NSObject, SignalSubscribable {
-	public var subscribeSignal: Signal<Any?> { return signal }
-
 	private var signalInput: SignalInput<Any?>? = nil
 	
 	// Ownership note: we are owned by the output signal so we only weakly retain it.
 	private weak var signalOutput: SignalMulti<Any?>? = nil
 	
 	/// The `signal` emits the actions received
-	public var signal: SignalMulti<Any?> {
+	public var signal: Signal<Any?> {
 		// If there's a current signal output, return it
 		if let so = signalOutput {
 			return so

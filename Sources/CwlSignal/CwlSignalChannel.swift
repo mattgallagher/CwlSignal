@@ -27,7 +27,7 @@
 /// e.g.: let (input, endpoint) = Signal<Int>.channel().map { $0 + 1 }.subscribe { print($0) }
 ///
 /// Every transform in the CwlSignal library that can be applied to `Signal<OutputValue>` can also be applied to `SignalChannel<OutputValue>`. Where possible, the result is another `SignalChannel` so the result can be immediately transformed again.
-/// Since Swift can't represent higher-kinded types, this type uses two pairs of parameters, with each pair consisting of a free type and a constrained type, cooperating to acheive the desired effect. Unfortunately, this makes the `SignalChannel` little clumsy. If you need to define a SignalChannel type, you might want to consider one of the SignalPair or SignalPipeline typealiases.
+/// Since Swift can't represent higher-kinded types, this type uses two pairs of parameters, with each pair consisting of a free type and a constrained type, cooperating to acheive the desired effect. Unfortunately, this makes the `SignalChannel` little clumsy. If you need to declare a variable, you might want to consider one of the SignalPair typealiases since these remove the redundancy.
 public struct SignalChannel<InputValue, Input: SignalInput<InputValue>, OutputValue, Output: Signal<OutputValue>> {
 	public let input: Input
 	public let signal: Output
@@ -67,12 +67,12 @@ public struct SignalChannel<InputValue, Input: SignalInput<InputValue>, OutputVa
 	public var tuple: (input: Input, signal: Output) { return (input: input, signal: signal) }
 }
 
-public typealias SignalPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalInput<InputValue>, OutputValue, Signal<OutputValue>>
-public typealias SignalMultiOutputPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalInput<InputValue>, OutputValue, SignalMulti<OutputValue>>
-public typealias SignalMultiInputPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalMultiInput<InputValue>, OutputValue, Signal<OutputValue>>
-public typealias SignalMultiPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalMultiInput<InputValue>, OutputValue, SignalMulti<OutputValue>>
+public typealias SignalPair<InputValue, OutputValue> = SignalChannel<InputValue, SignalInput<InputValue>, OutputValue, Signal<OutputValue>>
+public typealias SignalMultiOutputPair<InputValue, OutputValue> = SignalChannel<InputValue, SignalInput<InputValue>, OutputValue, SignalMulti<OutputValue>>
+public typealias SignalMultiInputPair<InputValue, OutputValue> = SignalChannel<InputValue, SignalMultiInput<InputValue>, OutputValue, Signal<OutputValue>>
+public typealias SignalMultiPair<InputValue, OutputValue> = SignalChannel<InputValue, SignalMultiInput<InputValue>, OutputValue, SignalMulti<OutputValue>>
 
-public typealias Input<Value> = SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>>
+public typealias Input<Value> = SignalPair<Value, Value>
 extension SignalChannel where InputValue == OutputValue, Input == SignalInput<InputValue>, Output == Signal<OutputValue> {
 	public init() {
 		self = Signal<InputValue>.channel()

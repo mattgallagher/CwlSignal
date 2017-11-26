@@ -85,7 +85,7 @@ extension SignalSubscribable {
 	/// `SignalSequence` subscribes to `self` and blocks. This means that if any earlier signals in the graph force processing on the same context where `SignalSequence` is iterated, a deadlock may occur between the iteration and the signal processing.
 	/// This function is safe only when you can guarantee all parts of the signal graph are independent of the blocking context.
 	public func toSequence() -> SignalSequence<OutputValue> {
-		return SignalSequence<OutputValue>(subscribeSignal)
+		return SignalSequence<OutputValue>(signal)
 	}
 }
 
@@ -934,7 +934,7 @@ extension SignalSubscribable {
 			timerInput = input
 		}
 		var last: OutputValue? = nil
-		return timerSignal.combine(initialState: (timer: nil, onDelete: nil), second: subscribeSignal, context: serialContext) { (state: inout (timer: Cancellable?, onDelete: OnDelete?), cr: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
+		return timerSignal.combine(initialState: (timer: nil, onDelete: nil), second: signal, context: serialContext) { (state: inout (timer: Cancellable?, onDelete: OnDelete?), cr: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
 			if state.onDelete == nil {
 				state.onDelete = OnDelete { last = nil }
 			}
@@ -1221,7 +1221,7 @@ extension SignalSubscribable {
 	/// - Parameter source: the latest value is emitted when `self` emits
 	/// - Returns: a signal that, when a value is received from `self`, emits the last value (if any) received from `source`.
 	public func latest<U>(_ source: Signal<U>) -> Signal<U> {
-		return source.combine(initialState: nil as U?, second: subscribeSignal, context: .direct) { (last: inout U?, c: EitherResult2<U, OutputValue>, n: SignalNext<U>) -> Void in
+		return source.combine(initialState: nil as U?, second: signal, context: .direct) { (last: inout U?, c: EitherResult2<U, OutputValue>, n: SignalNext<U>) -> Void in
 			switch (c, last) {
 			case (.result1(.success(let v)), _): last = v
 			case (.result1(.failure(let e)), _): n.send(error: e)
@@ -1237,7 +1237,7 @@ extension SignalSubscribable {
 	/// - Parameter source: the latest value is emitted when `self` emits
 	/// - Returns: a signal that, when a value is received from `self`, emits the last value (if any) received from `source`.
 	public func latestCombine<U>(_ source: Signal<U>) -> Signal<(trigger: OutputValue, sample: U)> {
-		return source.combine(initialState: nil as U?, second: subscribeSignal, context: .direct) { (last: inout U?, c: EitherResult2<U, OutputValue>, n: SignalNext<(trigger: OutputValue, sample: U)>) -> Void in
+		return source.combine(initialState: nil as U?, second: signal, context: .direct) { (last: inout U?, c: EitherResult2<U, OutputValue>, n: SignalNext<(trigger: OutputValue, sample: U)>) -> Void in
 			switch (c, last) {
 			case (.result1(.success(let v)), _): last = v
 			case (.result1(.failure(let e)), _): n.send(error: e)
@@ -1532,7 +1532,7 @@ extension SignalSubscribable {
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func mergeWith<S: Sequence>(_ sequence: S) -> Signal<OutputValue> where S.Iterator.Element == Signal<OutputValue> {
 		let (mergedInput, signal) = Signal<OutputValue>.createMergedInput()
-		mergedInput.add(subscribeSignal, closePropagation: .errors)
+		mergedInput.add(signal, closePropagation: .errors)
 		for s in sequence {
 			mergedInput.add(s, closePropagation: .errors)
 		}
@@ -1547,7 +1547,7 @@ extension SignalSubscribable {
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func mergeWith(_ sources: Signal<OutputValue>...) -> Signal<OutputValue> {
 		let (mergedInput, signal) = Signal<OutputValue>.createMergedInput()
-		mergedInput.add(subscribeSignal, closePropagation: .errors)
+		mergedInput.add(signal, closePropagation: .errors)
 		for s in sources {
 			mergedInput.add(s, closePropagation: .errors)
 		}
@@ -1559,7 +1559,7 @@ extension SignalSubscribable {
 	/// - Parameter sequence: a sequence of values.
 	/// - Returns: a signal that emits every value from `sequence` on activation and then mirrors `self`.
 	public func startWith<S: Sequence>(_ sequence: S) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
-		return Signal.preclosed(values: sequence).combine(second: subscribeSignal) { (r: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
+		return Signal.preclosed(values: sequence).combine(second: signal) { (r: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .result1(.success(let v)): n.send(value: v)
 			case .result1(.failure): break
