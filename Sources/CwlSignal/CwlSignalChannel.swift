@@ -1,5 +1,5 @@
 //
-//  CwlSignalPair.swift
+//  CwlSignalChannel.swift
 //  CwlSignal
 //
 //  Created by Matt Gallagher on 2017/06/27.
@@ -22,112 +22,88 @@
 	import CwlUtils
 #endif
 
-/// On its own, the `SignalPair` protocol is fairly useless – a tuple of two unconstrained types.
-/// Actual usefulness comes from situations where it is constrained as:
+/// A `SignalChannel` forms a basic wrapper around a `SignalInput`/`Signal` pair and exists for syntactic convenience when building a series of pipeline stages and returning the head and tail of the pipeline.
 ///
-///	Input: SignalInput<InputValue>, Output: Signal<OutputValue>
-///
-/// Due to limitations in Swift 3 and 4's type system, this constraint can be applied in extensions but cannot be applied in the base protocol.
-/// `SignalChannel` is the most generic implementation of this protocol and encodes the expected constraints.
-public protocol SignalPair {
-	associatedtype InputValue
-	associatedtype OutputValue
-	associatedtype Input
-	associatedtype Output
-	
-	var input: Input { get }
-	var signal: Output { get }
-}
-
-/// A `SignalChannel` and its common typealiases, `Channel`, `MultiChannel` form basic wrappers around a `SignalInput`/`Signal` pair.
-///
-/// This class exists for syntactic convenience when building a series of pipeline stages.
-/// e.g.:
-///		let (input, signal) = Channel<Int>().map { $0 + 1 }.tuple
+/// e.g.: let (input, endpoint) = Signal<Int>.channel().map { $0 + 1 }.subscribe { print($0) }
 ///
 /// Every transform in the CwlSignal library that can be applied to `Signal<OutputValue>` can also be applied to `SignalChannel<OutputValue>`. Where possible, the result is another `SignalChannel` so the result can be immediately transformed again.
-///
-/// A `Channel()` function exists in global scope to simplify syntax further in situations where the result type is already constrained:
-///		someFunction(signalInput: Channel().map { $0 + 1 }.join(to: multiInputChannelFromElsewhere))
-///
-/// For similar syntactic reasons, `SignalInput<OutputValue>` includes static versions of all of those `SignalChannel` methods where the result is either a `SignalInput<OutputValue>` or a `SignalChannel` where `InputValue` remains unchanged.
-/// e.g.:
-///		someFunction(signalInput: .join(to: multiInputChannelFromElsewhere))
-/// Unfortunately, due to limitations in Swift, this bare `SiganlInput` approach works only in those cases where the channel is a single stage ending in a `SignalInput<OutputValue>`.
-public struct SignalChannel<IV, I: SignalInput<IV>, OV, O: Signal<OV>>: SignalPair {
-	public typealias InputValue = IV
-	public typealias OutputValue = OV
-	public typealias Input = I
-	public typealias Output = O
-	
+/// Since Swift can't represent higher-kinded types, this type uses two pairs of parameters, with each pair consisting of a free type and a constrained type, cooperating to acheive the desired effect. Unfortunately, this makes the `SignalChannel` little clumsy. If you need to define a SignalChannel type, you might want to consider one of the SignalPair or SignalPipeline typealiases.
+public struct SignalChannel<InputValue, Input: SignalInput<InputValue>, OutputValue, Output: Signal<OutputValue>> {
 	public let input: Input
 	public let signal: Output
 	public init(input: Input, signal: Output) {
 		(self.input, self.signal) = (input, signal)
 	}
-}
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
+	/// Append an additional `Signal` stage in the `SignalChannel` pipeline, returning a new SignalChannel that combines the `input` from `self` and the `signal` from the new stage.
+	///
+	/// - Parameter compose: a transformation that takes `signal` from `self` and returns a new `Signal`.
+	/// - Returns: a `SignalChannel` combining `input` and the result from `compose`.
+	/// - Throws: rethrows the contents of the `compose` closure.
 	public func next<U, SU: Signal<U>>(_ compose: (Signal<OutputValue>) throws -> SU) rethrows -> SignalChannel<InputValue, Input, U, SU> {
 		return try SignalChannel<InputValue, Input, U, SU>(input: input, signal: compose(signal))
 	}
+	
+	/// Similar to `next` but producing a new stage that is *not* a `Signal` and returning `input` and this new stage as a tuple.
+	///
+	/// - Parameter compose: a transformation that takes `signal` from `self` and returns a new value.
+	/// - Returns: a tuple combining `input` and the result from `compose`.
+	/// - Throws: rethrows the contents of the `compose` closure.
 	public func final<U>(_ compose: (Signal<OutputValue>) throws -> U) rethrows -> (input: Input, output: U) {
 		return try (input, compose(signal))
 	}
+	
+	/// Similar to `next` but consuming (not returning) the result from the `compose` function. The result is simply `input` from `self`. Typically used when `join(to:)` is invoked, joining this channel to another signal graph.
+	///
+	/// - Parameter compose: a transformation that takes `signal` from `self` and returns `Void`.
+	/// - Returns: `input` from `self`
+	/// - Throws: rethrows the contents of the `compose` closure.
 	public func consume(_ compose: (Signal<OutputValue>) throws -> ()) rethrows -> Input {
 		try compose(signal)
 		return input
 	}
+	
+	/// A `SignalChannel` is essentially a tuple. This property explodes the contents as a convenience in some scenarios.
 	public var tuple: (input: Input, signal: Output) { return (input: input, signal: signal) }
 }
 
-/// Convenience typealias for creating a channel that starts with a single input
-public typealias Channel<Value> = SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>>
+public typealias SignalPair<Value> = SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>>
+public typealias SignalMultiOutputPair<Value> = SignalChannel<Value, SignalInput<Value>, Value, SignalMulti<Value>>
+public typealias SignalMultiInputPair<Value> = SignalChannel<Value, SignalMultiInput<Value>, Value, Signal<Value>>
+public typealias SignalMultiPair<Value> = SignalChannel<Value, SignalMultiInput<Value>, Value, SignalMulti<Value>>
 
-/// Convenience typealias for creating a channel that starts with a multi input
-public typealias MultiChannel<Value> = SignalChannel<Value, SignalMultiInput<Value>, Value, Signal<Value>>
-
-/// Convenience typealias for creating a channel that starts with a merged input
-public typealias MergedChannel<Value> = SignalChannel<Value, SignalMergedInput<Value>, Value, Signal<Value>>
-
-extension SignalChannel where IV == OV, I == SignalInput<IV>, O == Signal<OV> {
-	// An empty Channel can be default constructed
-	public init() {
-		let (input, signal) = Signal<InputValue>.create()
-		self.init(input: input, signal: signal)
-	}
-}
-
-extension SignalChannel where InputValue == OutputValue, Input == SignalMultiInput<InputValue>, Output == Signal<OutputValue> {
-	// An empty MultiChannel can be default constructed
-	public init() {
-		let (input, signal) = Signal<InputValue>.createMultiInput()
-		self.init(input: input, signal: signal)
-	}
-}
-
-extension SignalChannel where InputValue == OutputValue, Input == SignalMergedInput<InputValue>, Output == Signal<OutputValue> {
-	// An empty MergedChannel can be default constructed
-	public init() {
-		let (input, signal) = Signal<InputValue>.createMergedInput()
-		self.init(input: input, signal: signal)
-	}
-}
+public typealias SignalPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalInput<InputValue>, OutputValue, Signal<OutputValue>>
+public typealias SignalMultiOutputPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalInput<InputValue>, OutputValue, SignalMulti<OutputValue>>
+public typealias SignalMultiInputPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalMultiInput<InputValue>, OutputValue, Signal<OutputValue>>
+public typealias SignalMultiPipeline<InputValue, OutputValue> = SignalChannel<InputValue, SignalMultiInput<InputValue>, OutputValue, SignalMulti<OutputValue>>
 
 extension Signal {
-	public static func channel() -> Channel<Value> {
-		return Channel<Value>()
+	/// This function is used for starting SignalChannel pipeliens with a `SignalInput`
+	public static func channel() -> SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>> {
+		let (input, signal) = Signal<Value>.create()
+		return SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>>(input: input, signal: signal)
 	}
-	public static func multiChannel() -> MultiChannel<Value> {
-		return MultiChannel<Value>()
+
+	/// This function is used for starting SignalChannel pipeliens with a `SignalMultiInput`
+	public static func multiChannel() -> SignalChannel<Value, SignalMultiInput<Value>, Value, Signal<Value>> {
+		let (input, signal) = Signal<Value>.createMultiInput()
+		return SignalChannel<Value, SignalMultiInput<Value>, Value, Signal<Value>>(input: input, signal: signal)
 	}
-	public static func mergedChannel() -> MergedChannel<Value> {
-		return MergedChannel<Value>()
+
+	/// This function is used for starting SignalChannel pipeliens with a `SignalMergedInput`
+	public static func mergedChannel() -> SignalChannel<Value, SignalMergedInput<Value>, Value, Signal<Value>> {
+		let (input, signal) = Signal<Value>.createMergedInput()
+		return SignalChannel<Value, SignalMergedInput<Value>, Value, Signal<Value>>(input: input, signal: signal)
 	}
+}
+
+/// This function is a convenience synonym for `Signal<Value>.channel()` – starting a `SignalChannel` with a single-input `SignalInput`.
+public func input<Value>() -> SignalChannel<Value, SignalInput<Value>, Value, Signal<Value>> {
+	return Signal<Value>.channel()
 }
 
 // Implementation of Signal.swift
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
+extension SignalChannel {
 	public func subscribe(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) -> (input: Input, endpoint: SignalEndpoint<OutputValue>) {
 		let tuple = final { $0.subscribe(context: context, handler: handler) }
 		return (input: tuple.input, endpoint: tuple.output)
@@ -135,14 +111,6 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	
 	public func subscribeWhile(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Bool) -> Input {
 		return final { $0.subscribeWhile(context: context, handler: handler) }.input
-	}
-	
-	public func subscribeUntilEnd(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) -> Input {
-		return final { $0.subscribeUntilEnd(context: context, handler: handler) }.input
-	}
-	
-	public func join(to: SignalInput<OutputValue>) -> Input {
-		return final { $0.join(to: to) }.input
 	}
 	
 	public func junction() -> (input: Input, junction: SignalJunction<OutputValue>) {
@@ -234,15 +202,30 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 }
 
 // Implementation of SignalExtensions.swift
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
+extension SignalChannel {
+	public func dropActivation() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+		return next { $0.dropActivation() }
+	}
+	
+	public func deferActivation() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+		return next { $0.deferActivation() }
+	}
+	
+	public func transformValues<U>(context: Exec = .direct, handler: @escaping (OutputValue, SignalNext<U>) -> Void) -> SignalChannel<InputValue, Input, U, Signal<U>> {
+		return next { $0.transformValues(context: context, handler: handler) }
+	}
+	
+	public func transformValues<S, U>(initialState: S, context: Exec = .direct, handler: @escaping (inout S, OutputValue, SignalNext<U>) -> Void) -> SignalChannel<InputValue, Input, U, Signal<U>> {
+		return next { $0.transformValues(initialState: initialState, context: context, handler: handler) }
+	}
+	
+	public func subscribeUntilEnd(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) -> Input {
+		return final { $0.subscribeUntilEnd(context: context, handler: handler) }.input
+	}
+	
 	public func subscribeValues(context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> (input: Input, endpoint: SignalEndpoint<OutputValue>) {
 		let tuple = final { $0.subscribeValues(context: context, handler: handler) }
 		return (input: tuple.input, endpoint: tuple.output)
-	}
-	
-	public func subscribeValuesWhile(context: Exec = .direct, handler: @escaping (OutputValue) -> Bool) -> Input {
-		signal.subscribeValuesWhile(context: context, handler: handler)
-		return input
 	}
 	
 	public func subscribeValuesUntilEnd(context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> Input {
@@ -250,11 +233,16 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return input
 	}
 	
+	public func subscribeValuesWhile(context: Exec = .direct, handler: @escaping (OutputValue) -> Bool) -> Input {
+		signal.subscribeValuesWhile(context: context, handler: handler)
+		return input
+	}
+	
 	public func stride(count: Int, initialSkip: Int = 0) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.stride(count: count, initialSkip: initialSkip) }
 	}
 	
-	public func transformFlatten<U>(closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ processor: @escaping (OutputValue, SignalMergedInput<U>) -> ()) -> SignalChannel<InputValue, Input, U, Signal<U>>{
+	public func transformFlatten<U>(closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ processor: @escaping (OutputValue, SignalMergedInput<U>) -> ()) -> SignalChannel<InputValue, Input, U, Signal<U>> {
 		return next { $0.transformFlatten(closePropagation: closePropagation, context: context, processor) }
 	}
 	
@@ -270,6 +258,14 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return next { $0.valueDurations(initialState: initialState, closePropagation: closePropagation, context: context, duration: duration) }
 	}
 	
+	public func toggle(initialState: Bool = false) -> SignalChannel<InputValue, Input, Bool, Signal<Bool>> {
+		return next { $0.toggle(initialState: initialState) }
+	}
+	
+	public func join(to: SignalInput<OutputValue>) -> Input {
+		return final { $0.join(to: to) }.input
+	}
+	
 	public func join(to: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> Input {
 		signal.join(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return input
@@ -278,10 +274,6 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	public func cancellableJoin(to: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> (input: Input, cancellable: Cancellable) {
 		let tuple = final { $0.cancellableJoin(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate) }
 		return (input: tuple.input, cancellable: tuple.output)
-	}
-	
-	public func join(to: SignalMultiInput<OutputValue>) -> Input {
-		return final { $0.join(to: to) }.input
 	}
 	
 	public func cancellableJoin(to: SignalMultiInput<OutputValue>) -> (input: Input, cancellable: Cancellable) {
@@ -293,18 +285,10 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		let tuple = final { SignalPollingEndpoint(signal: $0) }
 		return (input: tuple.input, endpoint: tuple.output)
 	}
-	
-	public func toggle(initialState: Bool = false) -> SignalChannel<InputValue, Input, Bool, Signal<Bool>> {
-		return next { $0.toggle(initialState: initialState) }
-	}
-
-	public func dropActivation() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
-		return next { $0.dropActivation() }
-	}
 }
 
 // Implementation of SignalReactive.swift
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
+extension SignalChannel {
 	public func buffer<U>(boundaries: Signal<U>) -> SignalChannel<InputValue, Input, [OutputValue], Signal<[OutputValue]>> {
 		return next { $0.buffer(boundaries: boundaries) }
 	}
@@ -426,7 +410,7 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue>, OutputValue: Hashable {
+extension SignalChannel where OutputValue: Hashable {
 	public func distinct() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.distinct() }
 	}
@@ -436,7 +420,7 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
+extension SignalChannel {
 	public func distinctUntilChanged(context: Exec = .direct, comparator: @escaping (OutputValue, OutputValue) -> Bool) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.distinctUntilChanged(context: context, comparator: comparator) }
 	}
@@ -500,10 +484,7 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	public func takeLast(_ count: Int) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.takeLast(count) }
 	}
-}
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
-	
 	public func combineLatest<U, V>(second: Signal<U>, context: Exec = .direct, _ processor: @escaping (OutputValue, U) -> V) -> SignalChannel<InputValue, Input, V, Signal<V>> {
 		return next { $0.combineLatest(second: second, context: context, processor) }
 	}
@@ -520,12 +501,12 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 		return next { $0.combineLatest(second: second, third: third, fourth: fourth, fifth: fifth, context: context, processor) }
 	}
 	
-	public func join<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (OutputValue) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((OutputValue, U)) -> X) -> SignalChannel<InputValue, Input, X, Signal<X>> {
-		return next { $0.join(withRight: withRight, leftEnd: leftEnd, rightEnd: rightEnd, context: context, processor) }
+	public func intersect<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (OutputValue) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((OutputValue, U)) -> X) -> SignalChannel<InputValue, Input, X, Signal<X>> {
+		return next { $0.intersect(withRight: withRight, leftEnd: leftEnd, rightEnd: rightEnd, context: context, processor) }
 	}
 	
-	public func groupJoin<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (OutputValue) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((OutputValue, Signal<U>)) -> X) -> SignalChannel<InputValue, Input, X, Signal<X>> {
-		return next { $0.groupJoin(withRight: withRight, leftEnd: leftEnd, rightEnd: rightEnd, context: context, processor) }
+	public func groupIntersect<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (OutputValue) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((OutputValue, Signal<U>)) -> X) -> SignalChannel<InputValue, Input, X, Signal<X>> {
+		return next { $0.groupIntersect(withRight: withRight, leftEnd: leftEnd, rightEnd: rightEnd, context: context, processor) }
 	}
 	
 	public func mergeWith(_ sources: Signal<OutputValue>...) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
@@ -567,9 +548,7 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	public func catchError<S: Sequence>(context: Exec = .direct, recover: @escaping (Error) -> (S, Error)) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where S.Iterator.Element == OutputValue {
 		return next { $0.catchError(context: context, recover: recover) }
 	}
-}
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
 	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<OutputValue>?) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.catchError(context: context, recover: recover) }
 	}
@@ -621,10 +600,6 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	public func materialize() -> SignalChannel<InputValue, Input, Result<OutputValue>, Signal<Result<OutputValue>>> {
 		return next { $0.materialize() }
 	}
-}
-
-
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
 	
 	public func timeInterval(context: Exec = .direct) -> SignalChannel<InputValue, Input, Double, Signal<Double>> {
 		return next { $0.timeInterval(context: context) }
@@ -637,10 +612,6 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	public func timestamp(context: Exec = .direct) -> SignalChannel<InputValue, Input, (OutputValue, DispatchTime), Signal<(OutputValue, DispatchTime)>> {
 		return next { $0.timestamp(context: context) }
 	}
-}
-
-
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
 	
 	public func all(context: Exec = .direct, test: @escaping (OutputValue) -> Bool) -> SignalChannel<InputValue, Input, Bool, Signal<Bool>> {
 		return next { $0.all(context: context, test: test) }
@@ -651,15 +622,13 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue>, OutputValue: Equatable {
-	
+extension SignalChannel where OutputValue: Equatable {
 	public func contains(value: OutputValue) -> SignalChannel<InputValue, Input, Bool, Signal<Bool>> {
 		return next { $0.contains(value: value) }
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
-	
+extension SignalChannel {
 	public func defaultIfEmpty(value: OutputValue) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.defaultIfEmpty(value: value) }
 	}
@@ -669,15 +638,13 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue>, OutputValue: Equatable {
-	
+extension SignalChannel where OutputValue: Equatable {
 	public func sequenceEqual(to: Signal<OutputValue>) -> SignalChannel<InputValue, Input, Bool, Signal<Bool>> {
 		return next { $0.sequenceEqual(to: to) }
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
-	
+extension SignalChannel {
 	public func skipUntil<U>(_ other: Signal<U>) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.skipUntil(other) }
 	}
@@ -707,15 +674,13 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue>, OutputValue: BinaryInteger {
-	
+extension SignalChannel where OutputValue: BinaryInteger {
 	public func average() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.average() }
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
-	
+extension SignalChannel {
 	public func concat(_ other: Signal<OutputValue>) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.concat(other) }
 	}
@@ -725,8 +690,7 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue>, OutputValue: Comparable {
-	
+extension SignalChannel where OutputValue: Comparable {
 	public func min() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.min() }
 	}
@@ -736,46 +700,14 @@ extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<Output
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue> {
+extension SignalChannel {
 	public func aggregate<U>(_ initial: U, context: Exec = .direct, fold: @escaping (U, OutputValue) -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
 		return next { $0.aggregate(initial, context: context, fold: fold) }
 	}
 }
 
-extension SignalPair where Input: SignalInput<InputValue>, Output: Signal<OutputValue>, OutputValue: Numeric {
+extension SignalChannel where OutputValue: Numeric {
 	public func sum() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.sum() }
 	}
 }
-
-// Implementation of Signal.swift
-extension SignalInput {
-	public static func subscribeWhile(context: Exec = .direct, handler: @escaping (Result<Value>) -> Bool) -> SignalInput<Value> {
-		return Channel().subscribeWhile(context: context, handler: handler)
-	}
-	
-	public static func subscribeUntilEnd(context: Exec = .direct, handler: @escaping (Result<Value>) -> Void) -> SignalInput<Value> {
-		return Channel().subscribeUntilEnd(context: context, handler: handler)
-	}
-	
-	public static func join(to: SignalInput<Value>) -> SignalInput<Value> {
-		return Channel().join(to: to)
-	}
-	
-	public static func subscribeValuesWhile(context: Exec = .direct, handler: @escaping (Value) -> Bool) -> SignalInput<Value> {
-		return Channel().subscribeValuesWhile(context: context, handler: handler)
-	}
-	
-	public static func subscribeValuesUntilEnd(context: Exec = .direct, handler: @escaping (Value) -> Void) -> SignalInput<Value> {
-		return Channel().subscribeValuesUntilEnd(context: context, handler: handler)
-	}
-	
-	public static func join(to: SignalMergedInput<Value>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> SignalInput<Value> {
-		return Channel().join(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
-	}
-	
-	public static func join(to: SignalMultiInput<Value>) -> SignalInput<Value> {
-		return Channel().join(to: to)
-	}
-}
-

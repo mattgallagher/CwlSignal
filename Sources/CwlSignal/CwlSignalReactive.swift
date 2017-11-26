@@ -29,7 +29,7 @@
 	public typealias BinaryInteger = IntegerArithmetic & ExpressibleByIntegerLiteral
 #endif
 
-extension Signal {
+extension SignalSubscribable {
 	/// - Note: the [Reactive X operator "Create"](http://reactivex.io/documentation/operators/create.html) is considered unnecessary, given the `CwlSignal.Signal.generate` and `CwlSignal.Signal.create` methods.
 	
 	/// - Note: the [Reactive X operator "Defer"](http://reactivex.io/documentation/operators/defer.html) is considered not applicable, given the different semantics of "activation" with `CwlSignal.Signal`. If `Defer`-like behavior is desired, either a method that constructs and returns a new `Signal` graph should be used (if a truly distinct graph is desired) or `CwlSignal.Signal.generate` should be used (if wait-until-activated behavior is desired).
@@ -75,7 +75,9 @@ extension Signal {
 			}
 		}
 	}
-	
+}
+
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "To"](http://reactivex.io/documentation/operators/to.html) in the context of the Swift `Sequence`
 	///
 	/// WARNING: Because it blocks the receiving thread, and because it undermines the principle of *reactive* programming, this function should only be used in specific circumstances.
@@ -83,7 +85,7 @@ extension Signal {
 	/// `SignalSequence` subscribes to `self` and blocks. This means that if any earlier signals in the graph force processing on the same context where `SignalSequence` is iterated, a deadlock may occur between the iteration and the signal processing.
 	/// This function is safe only when you can guarantee all parts of the signal graph are independent of the blocking context.
 	public func toSequence() -> SignalSequence<Value> {
-		return SignalSequence<Value>(self)
+		return SignalSequence<Value>(subscribeSignal)
 	}
 }
 
@@ -189,7 +191,7 @@ public func intervalSignal(_ interval: DispatchTimeInterval, initial initialInte
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// - Note: the [Reactive X operator "Just"](http://reactivex.io/documentation/operators/just.html) is redundant with the default invocation of `CwlSignal.Signal.preclosed`
 	
 	/// - Note: the [Reactive X operator `Range`](http://reactivex.io/documentation/operators/range.html) is considered unnecessary, given the `CwlSignal.Signal.fromSequence`. Further, since Swift uses multiple different *kinds* of range, multiple implementations would be required. Doesn't seem worth the effort.
@@ -253,7 +255,9 @@ extension Signal {
 			}
 		}
 	}
+}
 	
+extension SignalSubscribable {
 	/// A shared function for emitting a boundary signal usable by the timed, non-overlapping buffer/window functions buffer(timeshift:count:continuous:behavior:) or window(timeshift:count:continuous:behavior:)
 	///
 	/// - Parameters:
@@ -930,7 +934,7 @@ extension Signal {
 			timerInput = input
 		}
 		var last: Value? = nil
-		return timerSignal.combine(initialState: (timer: nil, onDelete: nil), second: self, context: serialContext) { (state: inout (timer: Cancellable?, onDelete: OnDelete?), cr: EitherResult2<Value, Value>, n: SignalNext<Value>) in
+		return timerSignal.combine(initialState: (timer: nil, onDelete: nil), second: subscribeSignal, context: serialContext) { (state: inout (timer: Cancellable?, onDelete: OnDelete?), cr: EitherResult2<Value, Value>, n: SignalNext<Value>) in
 			if state.onDelete == nil {
 				state.onDelete = OnDelete { last = nil }
 			}
@@ -986,7 +990,7 @@ extension Signal {
 	}
 }
 
-extension Signal where Value: Hashable {
+extension SignalSubscribable where Value: Hashable {
 	/// Implementation of [Reactive X operator "distinct"](http://reactivex.io/documentation/operators/distinct.html)
 	///
 	/// - Returns: a signal where all values received are remembered and only values not previously received are emitted.
@@ -1005,7 +1009,7 @@ extension Signal where Value: Hashable {
 	}
 }
 
-extension Signal where Value: Equatable {
+extension SignalSubscribable where Value: Equatable {
 	/// Implementation of [Reactive X operator "distinct"](http://reactivex.io/documentation/operators/distinct.html)
 	///
 	/// - Returns: a signal that emits the first value but then emits subsequent values only when they are different to the previous value.
@@ -1024,7 +1028,7 @@ extension Signal where Value: Equatable {
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "distinct"](http://reactivex.io/documentation/operators/distinct.html)
 	///
 	/// - Parameters:
@@ -1217,7 +1221,7 @@ extension Signal {
 	/// - Parameter source: the latest value is emitted when `self` emits
 	/// - Returns: a signal that, when a value is received from `self`, emits the last value (if any) received from `source`.
 	public func latest<U>(_ source: Signal<U>) -> Signal<U> {
-		return source.combine(initialState: nil as U?, second: self, context: .direct) { (last: inout U?, c: EitherResult2<U, Value>, n: SignalNext<U>) -> Void in
+		return source.combine(initialState: nil as U?, second: subscribeSignal, context: .direct) { (last: inout U?, c: EitherResult2<U, Value>, n: SignalNext<U>) -> Void in
 			switch (c, last) {
 			case (.result1(.success(let v)), _): last = v
 			case (.result1(.failure(let e)), _): n.send(error: e)
@@ -1233,7 +1237,7 @@ extension Signal {
 	/// - Parameter source: the latest value is emitted when `self` emits
 	/// - Returns: a signal that, when a value is received from `self`, emits the last value (if any) received from `source`.
 	public func latestCombine<U>(_ source: Signal<U>) -> Signal<(trigger: Value, sample: U)> {
-		return source.combine(initialState: nil as U?, second: self, context: .direct) { (last: inout U?, c: EitherResult2<U, Value>, n: SignalNext<(trigger: Value, sample: U)>) -> Void in
+		return source.combine(initialState: nil as U?, second: subscribeSignal, context: .direct) { (last: inout U?, c: EitherResult2<U, Value>, n: SignalNext<(trigger: Value, sample: U)>) -> Void in
 			switch (c, last) {
 			case (.result1(.success(let v)), _): last = v
 			case (.result1(.failure(let e)), _): n.send(error: e)
@@ -1315,11 +1319,11 @@ extension Signal {
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// - Note: the [Reactive X operators "And", "Then" and "When"](http://reactivex.io/documentation/operators/and-then-when.html) are considered unnecessary, given the slightly different implementation of `CwlSignal.Signal.zip` which produces tuples (rather than producing a non-structural type) and is hence equivalent to `and`+`then`.
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "combineLatest"](http://reactivex.io/documentation/operators/combinelatest.html) for two observed signals.
 	///
 	/// - Parameters:
@@ -1437,7 +1441,7 @@ extension Signal {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: invoked with the corresponding `left` and `right` values when a `left` value is emitted during a `right`->`rightEnd` window or a `right` value is received during a `left`->`leftEnd` window
 	/// - Returns: a signal that emits the values from the processor and closes when any of the last of the observed windows closes.
-	public func join<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (Value) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((Value, U)) -> X) -> Signal<X> {
+	public func intersect<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (Value) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((Value, U)) -> X) -> Signal<X> {
 		let leftDurations = valueDurations(duration: { t in leftEnd(t).takeWhile { _ in false } })
 		let rightDurations = withRight.valueDurations(duration: { u in rightEnd(u).takeWhile { _ in false } })
 		let a = leftDurations.combine(initialState: ([Int: Value](), [Int: U]()), second: rightDurations) { (state: inout (activeLeft: [Int: Value], activeRight: [Int: U]), cr: EitherResult2<(Int, Value?), (Int, U?)>, next: SignalNext<(Value, U)>) in
@@ -1463,9 +1467,9 @@ extension Signal {
 	///   - leftEnd: function invoked when a value is received from `self`. The resulting signal is observed and the time until signal close is treated as a duration "window" that started with the received `self` value.
 	///   - rightEnd: function invoked when a value is received from `right`. The resulting signal is observed and the time until signal close is treated as a duration "window" that started with the received `right` value.
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
-	///   - processor: when a `left` value is received, this function is invoked with the `left` value and a `Signal` that will emit all the `right` values encountered until the `left`->`leftEnd` window closes. The value returned by this function will be emitted as part of the `Signal` returned from `groupJoin`.
+	///   - processor: when a `left` value is received, this function is invoked with the `left` value and a `Signal` that will emit all the `right` values encountered until the `left`->`leftEnd` window closes. The value returned by this function will be emitted as part of the `Signal` returned from `groupIntersect`.
 	/// - Returns: a signal that emits the values from the processor and closes when any of the last of the observed windows closes.
-	public func groupJoin<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (Value) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((Value, Signal<U>)) -> X) -> Signal<X> {
+	public func groupIntersect<U, V, W, X>(withRight: Signal<U>, leftEnd: @escaping (Value) -> Signal<V>, rightEnd: @escaping (U) -> Signal<W>, context: Exec = .direct, _ processor: @escaping ((Value, Signal<U>)) -> X) -> Signal<X> {
 		let leftDurations = valueDurations(duration: { u in leftEnd(u).takeWhile { _ in false } })
 		let rightDurations = withRight.valueDurations(duration: { u in rightEnd(u).takeWhile { _ in false } })
 		return leftDurations.combine(initialState: ([Int: SignalInput<U>](), [Int: U]()), second: rightDurations) { (state: inout (activeLeft: [Int: SignalInput<U>], activeRight: [Int: U]), cr: EitherResult2<(Int, Value?), (Int, U?)>, next: SignalNext<(Value, Signal<U>)>) in
@@ -1487,7 +1491,9 @@ extension Signal {
 			}
 		}.map(context: context, processor)
 	}
-	
+}
+
+extension Signal {	
 	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
 	///
 	/// NOTE: the signal closes as `SignalError.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
@@ -1515,7 +1521,9 @@ extension Signal {
 		}
 		return signal
 	}
-	
+}
+
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
 	///
 	/// NOTE: the signal closes as `SignalError.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
@@ -1524,7 +1532,7 @@ extension Signal {
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func mergeWith<S: Sequence>(_ sequence: S) -> Signal<Value> where S.Iterator.Element == Signal<Value> {
 		let (mergedInput, signal) = Signal<Value>.createMergedInput()
-		mergedInput.add(self, closePropagation: .errors)
+		mergedInput.add(subscribeSignal, closePropagation: .errors)
 		for s in sequence {
 			mergedInput.add(s, closePropagation: .errors)
 		}
@@ -1539,7 +1547,7 @@ extension Signal {
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func mergeWith(_ sources: Signal<Value>...) -> Signal<Value> {
 		let (mergedInput, signal) = Signal<Value>.createMergedInput()
-		mergedInput.add(self, closePropagation: .errors)
+		mergedInput.add(subscribeSignal, closePropagation: .errors)
 		for s in sources {
 			mergedInput.add(s, closePropagation: .errors)
 		}
@@ -1551,7 +1559,7 @@ extension Signal {
 	/// - Parameter sequence: a sequence of values.
 	/// - Returns: a signal that emits every value from `sequence` on activation and then mirrors `self`.
 	public func startWith<S: Sequence>(_ sequence: S) -> Signal<Value> where S.Iterator.Element == Value {
-		return Signal.preclosed(values: sequence).combine(second: self) { (r: EitherResult2<Value, Value>, n: SignalNext<Value>) in
+		return Signal.preclosed(values: sequence).combine(second: subscribeSignal) { (r: EitherResult2<Value, Value>, n: SignalNext<Value>) in
 			switch r {
 			case .result1(.success(let v)): n.send(value: v)
 			case .result1(.failure): break
@@ -1596,7 +1604,9 @@ extension Signal {
 			}
 		}
 	}
+}
 	
+extension Signal {
 	/// Implementation of [Reactive X operator "switch"](http://reactivex.io/documentation/operators/switch.html)
 	///
 	/// See also: `flatMapLatest` (emits values from the latest `Signal` to start emitting)
@@ -1614,7 +1624,9 @@ extension Signal {
 			mergedInput.add(next, closePropagation: .errors, removeOnDeactivate: true)
 		}
 	}
+}
 	
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
 	///
 	/// - Parameter second: another `Signal`
@@ -1965,7 +1977,7 @@ private class RetryRecovery<U> {
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "catch"](http://reactivex.io/documentation/operators/catch.html), returning a `Signal` on error in `self`.
 	///
 	/// - Parameters:
@@ -2077,7 +2089,7 @@ extension Signal {
 	///   - handler: invoked when self is activated
 	/// - Returns: a signal that emits the same outputs as self
 	public func onActivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<Value> {
-        let j = self.junction()
+        let j = junction()
         let signal = Signal<Value>.generate { input in
             if let i = input {
                 handler()
@@ -2096,7 +2108,7 @@ extension Signal {
 	///   - handler: invoked when self is deactivated
 	/// - Returns: a signal that emits the same outputs as self
 	public func onDeactivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<Value> {
-        let j = self.junction()
+        let j = junction()
         let signal = Signal<Value>.generate { input in
             if let i = input {
                 _ = try? j.join(to: i)
@@ -2175,8 +2187,8 @@ extension Signal {
 	///
 	/// NOTE: ideally, this would not be a static function but a "same type" conditional extension. In a future Swift release this will probably change.
 	///
-	/// - Parameter signal: a signal whose ValueType is a `Result` wrapped version of an underlying type
-	/// - Returns: a signal whose ValueType is the unwrapped value from the input, with unwrapped errors sent as errors.
+	/// - Parameter signal: a signal whose Value is a `Result` wrapped version of an underlying type
+	/// - Returns: a signal whose Value is the unwrapped value from the input, with unwrapped errors sent as errors.
 	public static func dematerialize<Value>(_ signal: Signal<Result<Value>>) -> Signal<Value> {
 		return signal.transform { (r: Result<Result<Value>>, n: SignalNext<Value>) in
 			switch r {
@@ -2188,7 +2200,7 @@ extension Signal {
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// - Note: the [Reactive X operator "ObserveOn"](http://reactivex.io/documentation/operators/observeon.html) doesn't apply to CwlSignal.Signal since any CwlSignal.Signal that runs work can specify their own execution context and control scheduling in that way.
 	
 	/// - Note: the [Reactive X operator "Serialize"](http://reactivex.io/documentation/operators/serialize.html) doesn't apply to CwlSignal.Signal since all CwlSignal.Signal instances are always serialized and well-behaved under multi-threaded access.
@@ -2196,7 +2208,7 @@ extension Signal {
 	/// - Note: the [Reactive X operator "Subscribe" and "SubscribeOn"](http://reactivex.io/documentation/operators/subscribe.html) are implemented as `subscribe`.
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "TimeInterval"](http://reactivex.io/documentation/operators/timeinterval.html)
 	///
 	/// - Parameter context: time between emissions will be calculated based on the timestamps from this context
@@ -2233,7 +2245,7 @@ extension Signal {
 		let junction = Signal<()>.timer(interval: interval, context: context).junction()
 		// Both `junction` and `input` are newly created so this can't be an error
 		try! junction.join(to: input)
-		return self.combine(second: signal, context: context) { (cr: EitherResult2<Value, ()>, n: SignalNext<Value>) in
+		return combine(second: signal, context: context) { (cr: EitherResult2<Value, ()>, n: SignalNext<Value>) in
 			switch cr {
 			case .result1(let r):
 				if resetOnValue {
@@ -2248,7 +2260,7 @@ extension Signal {
 	/// Implementation of [Reactive X operator "Timestamp"](http://reactivex.io/documentation/operators/timestamp.html)
 	///
 	/// - Parameter context: used as the source of time
-	/// - Returns: a signal where the values are a two element tuple, first element is self.ValueType, second element is the `DispatchTime` timestamp that this element was emitted from self.
+	/// - Returns: a signal where the values are a two element tuple, first element is self.Value, second element is the `DispatchTime` timestamp that this element was emitted from self.
 	public func timestamp(context: Exec = .direct) -> Signal<(Value, DispatchTime)> {
 		return transform(context: context) { (r: Result<Value>, n: SignalNext<(Value, DispatchTime)>) in
 			switch r {
@@ -2259,11 +2271,11 @@ extension Signal {
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// - Note: the [Reactive X operator "Using"](http://reactivex.io/documentation/operators/using.html) doesn't apply to CwlSignal.Signal which uses standard Swift reference counted lifetimes. Resources should be captured by closures or `transform(initialState:...)`.
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "All"](http://reactivex.io/documentation/operators/all.html)
 	///
 	/// - Parameters:
@@ -2284,7 +2296,9 @@ extension Signal {
 			}
 		}
 	}
-	
+}
+
+extension Signal {
 	/// Implementation of [Reactive X operator "Amb"](http://reactivex.io/documentation/operators/amb.html)
 	///
 	/// - Parameter inputs: a set of inputs
@@ -2307,7 +2321,9 @@ extension Signal {
 			}
 		}
 	}
-	
+}
+
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "Some"](http://reactivex.io/documentation/operators/some.html)
 	///
 	/// - Parameters:
@@ -2330,7 +2346,7 @@ extension Signal {
 	}
 }
 
-extension Signal where Value: Equatable {
+extension SignalSubscribable where Value: Equatable {
 	/// Implementation of [Reactive X operator "Some"](http://reactivex.io/documentation/operators/some.html)
 	///
 	/// - Parameter value: every value emitted by self is tested for equality with this value
@@ -2340,7 +2356,7 @@ extension Signal where Value: Equatable {
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "DefaultIfEmpty"](http://reactivex.io/documentation/operators/defaultifempty.html)
 	///
 	/// - Parameter value: value to emit if self closes without a value
@@ -2384,7 +2400,7 @@ extension Signal {
 	}
 }
 
-extension Signal where Value: Equatable {
+extension SignalSubscribable where Value: Equatable {
 	/// Implementation of [Reactive X operator "SequenceEqual"](http://reactivex.io/documentation/operators/sequenceequal.html)
 	///
 	/// - Parameter to: another signal whose contents will be compared to this signal
@@ -2434,7 +2450,7 @@ extension Signal where Value: Equatable {
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "SkipUntil"](http://reactivex.io/documentation/operators/skipuntil.html)
 	///
 	/// - Parameter other: until this signal emits a value, all values from self will be dropped
@@ -2564,7 +2580,7 @@ extension Signal {
 	}
 }
 
-extension Signal where Value: BinaryInteger {
+extension SignalSubscribable where Value: BinaryInteger {
 	/// Implementation of [Reactive X operator "Average"](http://reactivex.io/documentation/operators/average.html)
 	///
 	/// - Returns: a signal that emits a single value... the sum of all values emitted by `self`
@@ -2575,7 +2591,7 @@ extension Signal where Value: BinaryInteger {
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "Concat"](http://reactivex.io/documentation/operators/concat.html)
 	///
 	/// - Parameter other: a second signal
@@ -2616,7 +2632,7 @@ extension Signal {
 	}
 }
 
-extension Signal where Value: Comparable {
+extension SignalSubscribable where Value: Comparable {
 	/// Implementation of [Reactive X operator "Min"](http://reactivex.io/documentation/operators/min.html)
 	///
 	/// - Returns: the smallest value emitted by self
@@ -2636,7 +2652,7 @@ extension Signal where Value: Comparable {
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// Implementation of [Reactive X operator "Reduce"](http://reactivex.io/documentation/operators/reduce.html). The .NET/alternate name of `aggregate` is used to avoid conflict with the Signal.reduce function.
 	///
 	/// See also: `scan` which applies the same logic but emits the `fold` value on *every* invocation.
@@ -2653,7 +2669,7 @@ extension Signal {
 	}
 }
 
-extension Signal where Value: Numeric {
+extension SignalSubscribable where Value: Numeric {
 	/// Implementation of [Reactive X operator "Sum"](http://reactivex.io/documentation/operators/sum.html)
 	///
 	/// - Returns: a signal that emits the sum of all values emitted by self

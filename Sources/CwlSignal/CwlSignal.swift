@@ -57,8 +57,6 @@
 ///   3. Delivery of signal values is guaranteed to be in-order but other guarantees are conditional. Specifically, synchronous delivery through signal processing closures is only guaranteed when signals are sent from a single thread. If a subsequent result is sent to a `Signal` on a second thread while the `Signal` is processing a previous result from a first thread the subsequent result will be *queued* and handled on the *first* thread once it completes processing the earlier values.
 ///   4. Handlers, captured values and state values will be released *outside* all contexts or mutexes. If you capture an object with `deinit` behavior in a processing closure, you must apply any synchronization context yourself.
 public class Signal<Value> {
-	public typealias ValueType = Value
-	
 	// Protection for all mutable members on this class and any attached `signalHandler`.
 	// NOTE 1: This mutex may be shared between synchronous serially connected `Signal`s (for memory and performance efficiency).
 	// NOTE 2: It is noted that a `DispatchQueue` mutex would be preferrable since it respects libdispatch's QoS, however, it is not possible (as of Swift 4) to use `DispatchQueue` as a mutex without incurring a heap allocated closure capture so `PThreadMutex` is used instead to avoid a factor of 10 performance loss.
@@ -1215,22 +1213,8 @@ public final class SignalMulti<Value>: Signal<Value> {
 	}
 }
 
-/// Used to provide a light abstraction over the `SignalInput` and `SignalNext` types.
-/// In general, the only real purpose of this protocol is to enable the `send(value:)`, `send(error:)`, `close()` extensions in "SignalExternsions.swift"
-public protocol SignalSender {
-	associatedtype Value
-	
-	/// The primary signal sending function
-	///
-	/// - Parameter result: the value or error to send, composed as a `Result`
-	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.cancelled` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
-	@discardableResult func send(result: Result<Value>) -> SignalError?
-}
-
 /// An `SignalInput` is used to send values to the "head" `Signal`s in a signal graph. It is created using the `Signal<Value>.create()` function.
-public class SignalInput<Value>: SignalSender, Cancellable {
-	public typealias ValueType = Value
-	
+public class SignalInput<Value>: Cancellable {
 	fileprivate final weak var signal: Signal<Value>?
 	fileprivate final let activationCount: Int
 	
@@ -2070,7 +2054,7 @@ fileprivate protocol SignalBlockable: class {
 // An interface used to send signals from the inside of a transformer handler function to the next signal in the graph. Similar to an `SignalInput` but differing on what effects retaining and releasing have.
 //	1. Releasing an `SignalInput` will automatically send a `SignalError.cancelled` – that doesn't happend with `SignalNext`.
 //	2. Holding onto the `SignalNext` outside the scope of the handler function will block the transformer queue, allowing processing to continue out-of-line until the `SignalNext` is released.
-public final class SignalNext<Value>: SignalSender {
+public final class SignalNext<Value> {
 	fileprivate weak var signal: Signal<Value>?
 	fileprivate weak var blockable: SignalBlockable?
 	fileprivate let activationCount: Int

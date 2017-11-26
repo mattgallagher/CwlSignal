@@ -23,6 +23,136 @@
 	import CwlUtils
 #endif
 
+/// This protocol allows transformations that apply to `Signal` types to be applied to a type that exposes a signal.
+public protocol SignalSubscribable {
+	associatedtype Value
+	var subscribeSignal: Signal<Value> { get }
+}
+
+/// This protocol allows transformations that apply to `Signal` types to be applied to a type that exposes a signal.
+public protocol SignalJoinable: SignalSender {
+	var joinInput: SignalInput<Value> { get }
+}
+
+/// Used to provide a light abstraction over the `SignalInput` and `SignalNext` types.
+/// In general, the only real purpose of this protocol is to enable the `send(value:)`, `send(error:)`, `close()` extensions in "SignalExternsions.swift"
+public protocol SignalSender {
+	associatedtype Value
+	
+	/// The primary signal sending function
+	///
+	/// - Parameter result: the value or error to send, composed as a `Result`
+	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.cancelled` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
+	@discardableResult func send(result: Result<Value>) -> SignalError?
+}
+
+extension Signal: SignalSubscribable {
+	public var subscribeSignal: Signal<Value> { return self }
+}
+
+extension SignalInput: SignalJoinable {
+	public var joinInput: SignalInput<Value> { return self }
+}
+extension SignalNext: SignalSender {}
+
+// All transformations on a Signal are built on top of the following functions, implemented in CwlSignal.swift
+extension SignalSubscribable {
+	public func subscribe(context: Exec = .direct, handler: @escaping (Result<Value>) -> Void) -> SignalEndpoint<Value> {
+		return subscribeSignal.subscribe(context: context, handler: handler)
+	}
+	public func subscribeWhile(context: Exec = .direct, handler: @escaping (Result<Value>) -> Bool) {
+		return subscribeSignal.subscribeWhile(context: context, handler: handler)
+	}
+	public func junction() -> SignalJunction<Value> {
+		return subscribeSignal.junction()
+	}
+	public func transform<U>(context: Exec = .direct, handler: @escaping (Result<Value>, SignalNext<U>) -> Void) -> Signal<U> {
+		return subscribeSignal.transform(context: context, handler: handler)
+	}
+	public func transform<S, U>(initialState: S, context: Exec = .direct, handler: @escaping (inout S, Result<Value>, SignalNext<U>) -> Void) -> Signal<U> {
+		return subscribeSignal.transform(initialState: initialState, context: context, handler: handler)
+	}
+	public func combine<U, V>(second: Signal<U>, context: Exec = .direct, handler: @escaping (EitherResult2<Value, U>, SignalNext<V>) -> Void) -> Signal<V> {
+		return subscribeSignal.combine(second: second, context: context, handler: handler)
+	}
+	public func combine<U, V, W>(second: Signal<U>, third: Signal<V>, context: Exec = .direct, handler: @escaping (EitherResult3<Value, U, V>, SignalNext<W>) -> Void) -> Signal<W> {
+		return subscribeSignal.combine(second: second, third: third, context: context, handler: handler)
+	}
+	public func combine<U, V, W, X>(second: Signal<U>, third: Signal<V>, fourth: Signal<W>, context: Exec = .direct, handler: @escaping (EitherResult4<Value, U, V, W>, SignalNext<X>) -> Void) -> Signal<X> {
+		return subscribeSignal.combine(second: second, third: third, fourth: fourth, context: context, handler: handler)
+	}
+	public func combine<U, V, W, X, Y>(second: Signal<U>, third: Signal<V>, fourth: Signal<W>, fifth: Signal<X>, context: Exec = .direct, handler: @escaping (EitherResult5<Value, U, V, W, X>, SignalNext<Y>) -> Void) -> Signal<Y> {
+		return subscribeSignal.combine(second: second, third: third, fourth: fourth, fifth: fifth, context: context, handler: handler)
+	}
+	public func combine<S, U, V>(initialState: S, second: Signal<U>, context: Exec = .direct, handler: @escaping (inout S, EitherResult2<Value, U>, SignalNext<V>) -> Void) -> Signal<V> {
+		return subscribeSignal.combine(initialState: initialState, second: second, context: context, handler: handler)
+	}
+	public func combine<S, U, V, W>(initialState: S, second: Signal<U>, third: Signal<V>, context: Exec = .direct, handler: @escaping (inout S, EitherResult3<Value, U, V>, SignalNext<W>) -> Void) -> Signal<W> {
+		return subscribeSignal.combine(initialState: initialState, second: second, third: third, context: context, handler: handler)
+	}
+	public func combine<S, U, V, W, X>(initialState: S, second: Signal<U>, third: Signal<V>, fourth: Signal<W>, context: Exec = .direct, handler: @escaping (inout S, EitherResult4<Value, U, V, W>, SignalNext<X>) -> Void) -> Signal<X> {
+		return subscribeSignal.combine(initialState: initialState, second: second, third: third, fourth: fourth, context: context, handler: handler)
+	}
+	public func combine<S, U, V, W, X, Y>(initialState: S, second: Signal<U>, third: Signal<V>, fourth: Signal<W>, fifth: Signal<X>, context: Exec = .direct, handler: @escaping (inout S, EitherResult5<Value, U, V, W, X>, SignalNext<Y>) -> Void) -> Signal<Y> {
+		return subscribeSignal.combine(initialState: initialState, second: second, third: third, fourth: fourth, fifth: fifth, context: context, handler: handler)
+	}
+	public func continuous(initialValue: Value) -> SignalMulti<Value> {
+		return subscribeSignal.continuous(initialValue: initialValue)
+	}
+	public func continuous() -> SignalMulti<Value> {
+		return subscribeSignal.continuous()
+	}
+	public func continuousWhileActive() -> SignalMulti<Value> {
+		return subscribeSignal.continuousWhileActive()
+	}
+	public func playback() -> SignalMulti<Value> {
+		return subscribeSignal.playback()
+	}
+	public func cacheUntilActive() -> Signal<Value> {
+		return subscribeSignal.cacheUntilActive()
+	}
+	public func multicast() -> SignalMulti<Value> {
+		return subscribeSignal.multicast()
+	}
+	public func customActivation(initialValues: Array<Value> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<Value>, _ cachedError: inout Error?, _ incoming: Result<Value>) -> Void) -> SignalMulti<Value> {
+		return subscribeSignal.customActivation(initialValues: initialValues, context: context, updater: updater)
+	}
+	public func reduce<State>(initialState: State, context: Exec = .direct, reducer: @escaping (_ state: inout State, _ message: Value) throws -> State) -> SignalMulti<State> {
+		return subscribeSignal.reduce(initialState: initialState, context: context, reducer: reducer)
+	}
+	public func capture() -> SignalCapture<Value> {
+		return subscribeSignal.capture()
+	}
+}
+
+extension Signal {
+	// Like `create` but also provides a trailing closure to transform the `Signal` normally returned from `create` and in its place, return the result of the transformation.
+	//
+	// - Parameter compose: a trailing closure which receices the `Signal` as a parameter and any result is returned as the second tuple parameter from this function
+	// - Returns: a (`SignalInput`, U) tuple where `SignalInput` is the input to the signal graph and `U` is the return value from the `compose` function.
+	// - Throws: rethrows any error from the closure
+	public static func create<U>(compose: (Signal<Value>) throws -> U) rethrows -> (input: SignalInput<Value>, composed: U) {
+		let (i, s) = Signal<Value>.create()
+		return (i, try compose(s))
+	}
+	
+	/// A version of `generate` that retains the latest `input` so it doesn't automatically close the signal when the input falls out of scope. This enables a generator that never closes (lives until deactivation).
+	///
+	/// - Parameters:
+	///   - context: the `activationChange` will be invoked in this context
+	///   - activationChange: receives inputs on activation and nil on each deactivation
+	/// - Returns: the constructed `Signal`
+	public static func retainedGenerate(context: Exec = .direct, activationChange: @escaping (SignalInput<Value>?) -> Void) -> Signal<Value> {
+		var latestInput: SignalInput<Value>? = nil
+		return .generate(context: context) { input in
+			latestInput = input
+			withExtendedLifetime(latestInput) {}
+			activationChange(input)
+		}
+	}
+	
+}
+
 extension SignalSender {
 	/// A convenience version of `send` that wraps a value in `Result.success` before sending
 	///
@@ -79,29 +209,36 @@ extension SignalSender {
 	}
 }
 
-extension Signal {
-	// Like `create` but also provides a trailing closure to transform the `Signal` normally returned from `create` and in its place, return the result of the transformation.
-	//
-	// - Parameter compose: a trailing closure which receices the `Signal` as a parameter and any result is returned as the second tuple parameter from this function
-	// - Returns: a (`SignalInput`, U) tuple where `SignalInput` is the input to the signal graph and `U` is the return value from the `compose` function.
-	// - Throws: rethrows any error from the closure
-	public static func create<U>(compose: (Signal<Value>) throws -> U) rethrows -> (input: SignalInput<Value>, composed: U) {
-		let (i, s) = Signal<Value>.create()
-		return (i, try compose(s))
+extension SignalSubscribable {
+	/// Removes any activation from the signal. Useful in cases when you only want *changes*, not the latest value.
+	public func dropActivation() -> Signal<Value> {
+		let pair = Signal<Value>.create()
+		try! subscribeSignal.capture().join(to: pair.input)
+		return pair.signal
 	}
 	
-	/// A version of `generate` that retains the latest `input` so it doesn't automatically close the signal when the input falls out of scope. This enables a generator that never closes (lives until deactivation).
-	///
-	/// - Parameters:
-	///   - context: the `activationChange` will be invoked in this context
-	///   - activationChange: receives inputs on activation and nil on each deactivation
-	/// - Returns: the constructed `Signal`
-	public static func retainedGenerate(context: Exec = .direct, activationChange: @escaping (SignalInput<Value>?) -> Void) -> Signal<Value> {
-		var latestInput: SignalInput<Value>? = nil
-		return .generate(context: context) { input in
-			latestInput = input
-			withExtendedLifetime(latestInput) {}
-			activationChange(input)
+	/// Causes any activation to be deferred past activation time to the "normal" phase. This avoids the synchronous send rules normally used for activation signals an allows this initial signal to be asynchronously delivered.
+	public func deferActivation() -> Signal<Value> {
+		let pair = Signal<Value>.create()
+		try! subscribeSignal.capture().join(to: pair.input, resend: true)
+		return pair.signal
+	}
+	
+	public func transformValues<U>(context: Exec = .direct, handler: @escaping (Value, SignalNext<U>) -> Void) -> Signal<U> {
+		return subscribeSignal.transform(context: context) { (result: Result<Value>, next: SignalNext<U>) in
+			switch result {
+			case .success(let v): handler(v, next)
+			case .failure(let e): next.send(error: e)
+			}
+		}
+	}
+
+	public func transformValues<S, U>(initialState: S, context: Exec = .direct, handler: @escaping (inout S, Value, SignalNext<U>) -> Void) -> Signal<U> {
+		return subscribeSignal.transform(initialState: initialState, context: context) { (state: inout S, result: Result<Value>, next: SignalNext<U>) in
+			switch result {
+			case .success(let v): handler(&state, v, next)
+			case .failure(let e): next.send(error: e)
+			}
 		}
 	}
 
@@ -112,8 +249,8 @@ extension Signal {
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
-	public final func subscribeUntilEnd(context: Exec = .direct, handler: @escaping (Result<Value>) -> Void) {
-		return subscribeWhile(handler: { (result: Result<Value>) -> Bool in
+	public func subscribeUntilEnd(context: Exec = .direct, handler: @escaping (Result<Value>) -> Void) {
+		return subscribeSignal.subscribeWhile(handler: { (result: Result<Value>) -> Bool in
 			handler(result)
 			return true
 		})
@@ -126,7 +263,7 @@ extension Signal {
 	///   - handler: will be invoked with each value received
 	/// - Returns: the `SignalEndpoint` created by this function
 	public func subscribeValues(context: Exec = .direct, handler: @escaping (Value) -> Void) -> SignalEndpoint<Value> {
-		return subscribe(context: context) { r in
+		return subscribeSignal.subscribe(context: context) { r in
 			if case .success(let v) = r {
 				handler(v)
 			}
@@ -141,7 +278,7 @@ extension Signal {
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
 	public func subscribeValuesUntilEnd(context: Exec = .direct, handler: @escaping (Value) -> Void) {
-		subscribeUntilEnd(context: context) { r in
+		subscribeSignal.subscribeUntilEnd(context: context) { r in
 			if case .success(let v) = r {
 				handler(v)
 			}
@@ -156,7 +293,7 @@ extension Signal {
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
 	public func subscribeValuesWhile(context: Exec = .direct, handler: @escaping (Value) -> Bool) {
-		subscribeWhile(context: context) { r in
+		subscribeSignal.subscribeWhile(context: context) { r in
 			if case .success(let v) = r {
 				return handler(v)
 			} else {
@@ -172,7 +309,7 @@ extension Signal {
 	///   - initialSkip: number of values before the first emission
 	/// - Returns: the strided signal
 	public func stride(count: Int, initialSkip: Int = 0) -> Signal<Value> {
-		return transform(initialState: count - initialSkip - 1) { (state: inout Int, r: Result<Value>, n: SignalNext<Value>) in
+		return subscribeSignal.transform(initialState: count - initialSkip - 1) { (state: inout Int, r: Result<Value>, n: SignalNext<Value>) in
 			switch r {
 			case .success(let v) where state >= count - 1:
 				n.send(value: v)
@@ -211,7 +348,7 @@ extension Signal {
 	public func transformFlatten<S, U>(initialState: S, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ processor: @escaping (inout S, Value, SignalMergedInput<U>) -> ()) -> Signal<U> {
 		let (mergedInput, result) = Signal<U>.createMergedInput()
 		var closeError: Error? = nil
-		let outerSignal = transform(initialState: initialState, context: context) { (state: inout S, r: Result<Value>, n: SignalNext<U>) in
+		let outerSignal = subscribeSignal.transform(initialState: initialState, context: context) { (state: inout S, r: Result<Value>, n: SignalNext<U>) in
 			switch r {
 			case .success(let v): processor(&state, v, mergedInput)
 			case .failure(let e):
@@ -287,7 +424,7 @@ extension Signal {
 	/// - Parameter initialState: before receiving the first value
 	/// - Returns: the alternating, continuous signal
 	public func toggle(initialState: Bool = false) -> Signal<Bool> {
-		return transform(initialState: initialState) { (state: inout Bool, toggle: Result<Value>, next: SignalNext<Bool>) in
+		return subscribeSignal.transform(initialState: initialState) { (state: inout Bool, toggle: Result<Value>, next: SignalNext<Bool>) in
 			switch toggle {
 			case .success:
 				state = !state
@@ -297,20 +434,18 @@ extension Signal {
 			}
 		}
 	}
-}
 
-extension Signal {
 	/// Joins this `Signal` to a destination `SignalInput`
 	///
 	/// WARNING: if you join to a previously joined or otherwise inactive instance of the base `SignalInput` class, this function will have no effect. To get underlying errors, use `junction().join(to: input)` instead.
 	///
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
-	public final func join(to input: SignalInput<Value>) {
+	public func join<Joinable>(to input: Joinable) where Joinable: SignalJoinable, Joinable.Value == Value {
 		if let multiInput = input as? SignalMultiInput<Value> {
-			multiInput.add(self)
+			multiInput.add(subscribeSignal)
 		} else {
-			_ = try? junction().join(to: input)
+			_ = try? subscribeSignal.junction().join(to: input.joinInput)
 		}
 	}
 	
@@ -318,8 +453,8 @@ extension Signal {
 	///
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
-	public final func join(to input: SignalMergedInput<Value>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) {
-		input.add(self, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
+	public func join(to input: SignalMergedInput<Value>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) {
+		input.add(subscribeSignal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 	}
 	
 	/// Joins this `Signal` to a destination `SignalMultiInput` and returns a `Cancellable` that, when cancelled, will remove the `Signal` from the `SignalMultiInput` again.
@@ -327,15 +462,15 @@ extension Signal {
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	/// - Returns: a `Cancellable` that will undo the join if cancelled or released
-	public final func cancellableJoin(to input: SignalInput<Value>) -> Cancellable {
+	public func cancellableJoin(to input: SignalInput<Value>) -> Cancellable {
 		if let multiInput = input as? SignalMultiInput<Value> {
-			multiInput.add(self)
-			return OnDelete { [weak multiInput, weak self] in
-				guard let mi = multiInput, let s = self else { return }
+			multiInput.add(subscribeSignal)
+			return OnDelete { [weak multiInput, weak subscribeSignal] in
+				guard let mi = multiInput, let s = subscribeSignal else { return }
 				mi.remove(s)
 			}
 		} else {
-			let j = junction()
+			let j = subscribeSignal.junction()
 			_ = try? j.join(to: input)
 			return j
 		}
@@ -346,10 +481,10 @@ extension Signal {
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	/// - Returns: a `Cancellable` that will undo the join if cancelled or released
-	public final func cancellableJoin(to input: SignalMergedInput<Value>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) -> Cancellable {
-		input.add(self, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
-		return OnDelete { [weak input, weak self] in
-			guard let i = input, let s = self else { return }
+	public func cancellableJoin(to input: SignalMergedInput<Value>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) -> Cancellable {
+		input.add(subscribeSignal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
+		return OnDelete { [weak input, weak subscribeSignal] in
+			guard let i = input, let s = subscribeSignal else { return }
 			i.remove(s)
 		}
 	}
@@ -387,15 +522,15 @@ public final class SignalPollingEndpoint<Value> {
 	}
 }
 
-extension Signal {
+extension SignalSubscribable {
 	/// Appends a `SignalPollingEndpoint` listener to the value emitted from this `Signal`. The endpoint will "activate" this `Signal` and all direct antecedents in the graph (which may start lazy operations deferred until activation).
 	public func pollingEndpoint() -> SignalPollingEndpoint<Value> {
-		return SignalPollingEndpoint(signal: self)
+		return SignalPollingEndpoint(signal: subscribeSignal)
 	}
 	
 	/// Internally creates a `SignalCapture` which is activated and immediately discarded to get the latest activation value from the stream.
 	public func poll() -> Value? {
-		return capture().activation().values.last
+		return subscribeSignal.capture().activation().values.last
 	}
 }
 
@@ -427,22 +562,6 @@ extension SignalCapture {
 		// This can't be `loop` but `duplicate` is a precondition failure
 		try! join(to: input, resend: resend, onError: onError)
 		return output.subscribeValues(context: context, handler: handler)
-	}
-}
-
-extension Signal {
-	/// Removes any activation from the signal. Useful in cases when you only want *changes*, not the latest value.
-	public func dropActivation() -> Signal<Value> {
-		let pair = Signal<Value>.create()
-		try! capture().join(to: pair.input)
-		return pair.signal
-	}
-
-	/// Causes any activation to be deferred past activation time to the "normal" phase. This avoids the synchronous send rules normally used for activation signals an allows this initial signal to be asynchronously delivered.
-	public func deferActivation() -> Signal<Value> {
-		let pair = Signal<Value>.create()
-		try! capture().join(to: pair.input, resend: true)
-		return pair.signal
 	}
 }
 
