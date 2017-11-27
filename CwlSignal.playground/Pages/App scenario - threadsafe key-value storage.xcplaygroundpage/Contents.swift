@@ -53,7 +53,7 @@ class DocumentValues {
 			return state
 			
 		// Convert single `Signal` into multi-subscribable `SignalMulti` with `continuous`
-		}.continuous(initialValue: [:])
+		}.continuous(initialValue: [:]).tuple
    }
    
 	func removeValue(forKey key: AnyHashable) {

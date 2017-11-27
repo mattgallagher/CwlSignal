@@ -15,21 +15,21 @@ import CwlSignal
 
 // Create an input/output pair, transforming the output before returning
 // SOMETHING TO TRY: replace `.continuous()` with `.playback()`
-let (input, output) = Signal<Int>.channel().continuous()
+let pair = Signal<Int>.channel().continuous()
 
 // The `continuous` signal will cache the most recently sent value
-input.send(value: 1)
-input.send(value: 2)
+pair.input.send(value: 1)
+pair.input.send(value: 2)
 
 // Capture the "2" activation value cached by the `continuous` signal
-let capture = output.capture()
+let capture = pair.signal.capture()
 let (values, error) = capture.activation()
 
 print("Activation values: \(values)")
 
 // Capturing blocks signal delivery so *both* of these will be queued for later
-input.send(value: 3)
-input.send(value: 4)
+pair.input.send(value: 3)
+pair.input.send(value: 4)
 
 print("Values sent during capture are paused until we subscribe.")
 

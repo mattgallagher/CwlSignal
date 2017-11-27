@@ -20,7 +20,7 @@ let semaphore = DispatchSemaphore(value: 0)
 let completionContext = Exec.asyncQueue()
 
 // Create an input/output pair
-let (input, endpoint) = Channel<Int>()
+let (input, endpoint) = Signal<Int>.channel()
 	.map(context: .global) { value in
 		// Perform the background work
 		return sqrt(Double(value)) }

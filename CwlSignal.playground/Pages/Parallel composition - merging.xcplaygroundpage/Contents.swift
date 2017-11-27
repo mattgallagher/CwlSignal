@@ -41,7 +41,7 @@ Since a "multi" input is intended to be exposed in interfaces, it does not propa
 SOMETHING TO TRY: replace `MultiChannel` with `Channel` (so you get a regular `SignalInput` instead) and see how the input is consumed by the first `join` causing the remaining use of the input to send no signal data (returns an error).
 */
 print("\n\nSignalMultiInput:")
-let multiInput = MultiChannel<String>().subscribeValuesUntilEnd {
+let multiInput = Signal<String>.multiChannel().subscribeValuesUntilEnd {
 	print($0, terminator: "")
 }
 multiInput.send(value: "Start ")
@@ -60,7 +60,7 @@ Notice that in this first case, the closed at the end of the `spookeys` sequence
 SOMETHING TO TRY: replace the `.all` parameters with `.errors` or `.none`.
 */
 print("\n\nSignalMergeSet:")
-let mergeSet = SignalChannel(Signal<String>.createMergedInput()).subscribeValuesUntilEnd {
+let mergeSet = Signal<String>.mergedChannel().subscribeValuesUntilEnd {
 	print($0, terminator: "")
 }
 mergeSet.send(value: "Start")

@@ -53,7 +53,7 @@ signal.combine(initialState: [Result<String>](), second: loopbackSignal, context
 	print("Finished processing \(r)")
 	
 	// Notify that we're ready for the next item
-	loopbackInput.send(result: r)
+	loopbackInput.send(value: ())
 }.subscribeUntilEnd { (r: Result<String>) in
 	// Wait until the signal is complete
 	switch r {

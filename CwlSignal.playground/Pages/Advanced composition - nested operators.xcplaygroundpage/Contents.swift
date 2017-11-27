@@ -30,7 +30,7 @@ class Service {
 				connect().timeout(interval: seconds).materialize()
 			}.next { allConnectionAttempts in
 				Signal<Result<String>>.switchLatest(allConnectionAttempts)
-			}.multicast()
+			}.multicast().tuple
    }
 }
 
