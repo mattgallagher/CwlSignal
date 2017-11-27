@@ -259,8 +259,8 @@ extension SignalChannel {
 		return next { $0.toggle(initialState: initialState) }
 	}
 	
-	public func join<Joinable>(to joinable: Joinable) -> Input where Joinable: SignalJoinable, Joinable.InputValue == OutputValue {
-		return final { $0.join(to: joinable) }.input
+	public func join<InputInterface>(to interface: InputInterface) -> Input where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
+		return final { $0.join(to: interface) }.input
 	}
 	
 	public func join(to: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> Input {

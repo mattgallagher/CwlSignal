@@ -29,7 +29,7 @@
 	public typealias BinaryInteger = IntegerArithmetic & ExpressibleByIntegerLiteral
 #endif
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// - Note: the [Reactive X operator "Create"](http://reactivex.io/documentation/operators/create.html) is considered unnecessary, given the `CwlSignal.Signal.generate` and `CwlSignal.Signal.create` methods.
 	
 	/// - Note: the [Reactive X operator "Defer"](http://reactivex.io/documentation/operators/defer.html) is considered not applicable, given the different semantics of "activation" with `CwlSignal.Signal`. If `Defer`-like behavior is desired, either a method that constructs and returns a new `Signal` graph should be used (if a truly distinct graph is desired) or `CwlSignal.Signal.generate` should be used (if wait-until-activated behavior is desired).
@@ -77,7 +77,7 @@ extension Signal {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "To"](http://reactivex.io/documentation/operators/to.html) in the context of the Swift `Sequence`
 	///
 	/// WARNING: Because it blocks the receiving thread, and because it undermines the principle of *reactive* programming, this function should only be used in specific circumstances.
@@ -191,7 +191,7 @@ public func intervalSignal(_ interval: DispatchTimeInterval, initial initialInte
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// - Note: the [Reactive X operator "Just"](http://reactivex.io/documentation/operators/just.html) is redundant with the default invocation of `CwlSignal.Signal.preclosed`
 	
 	/// - Note: the [Reactive X operator `Range`](http://reactivex.io/documentation/operators/range.html) is considered unnecessary, given the `CwlSignal.Signal.fromSequence`. Further, since Swift uses multiple different *kinds* of range, multiple implementations would be required. Doesn't seem worth the effort.
@@ -257,7 +257,7 @@ extension Signal {
 	}
 }
 	
-extension SignalSubscribable {
+extension SignalInterface {
 	/// A shared function for emitting a boundary signal usable by the timed, non-overlapping buffer/window functions buffer(timeshift:count:continuous:behavior:) or window(timeshift:count:continuous:behavior:)
 	///
 	/// - Parameters:
@@ -990,7 +990,7 @@ extension SignalSubscribable {
 	}
 }
 
-extension SignalSubscribable where OutputValue: Hashable {
+extension SignalInterface where OutputValue: Hashable {
 	/// Implementation of [Reactive X operator "distinct"](http://reactivex.io/documentation/operators/distinct.html)
 	///
 	/// - Returns: a signal where all values received are remembered and only values not previously received are emitted.
@@ -1009,7 +1009,7 @@ extension SignalSubscribable where OutputValue: Hashable {
 	}
 }
 
-extension SignalSubscribable where OutputValue: Equatable {
+extension SignalInterface where OutputValue: Equatable {
 	/// Implementation of [Reactive X operator "distinct"](http://reactivex.io/documentation/operators/distinct.html)
 	///
 	/// - Returns: a signal that emits the first value but then emits subsequent values only when they are different to the previous value.
@@ -1028,7 +1028,7 @@ extension SignalSubscribable where OutputValue: Equatable {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "distinct"](http://reactivex.io/documentation/operators/distinct.html)
 	///
 	/// - Parameters:
@@ -1319,11 +1319,11 @@ extension SignalSubscribable {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// - Note: the [Reactive X operators "And", "Then" and "When"](http://reactivex.io/documentation/operators/and-then-when.html) are considered unnecessary, given the slightly different implementation of `CwlSignal.Signal.zip` which produces tuples (rather than producing a non-structural type) and is hence equivalent to `and`+`then`.
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "combineLatest"](http://reactivex.io/documentation/operators/combinelatest.html) for two observed signals.
 	///
 	/// - Parameters:
@@ -1523,7 +1523,7 @@ extension Signal {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
 	///
 	/// NOTE: the signal closes as `SignalError.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
@@ -1626,7 +1626,7 @@ extension Signal {
 	}
 }
 	
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
 	///
 	/// - Parameter second: another `Signal`
@@ -1977,7 +1977,7 @@ private class RetryRecovery<U> {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "catch"](http://reactivex.io/documentation/operators/catch.html), returning a `Signal` on error in `self`.
 	///
 	/// - Parameters:
@@ -2200,7 +2200,7 @@ extension SignalSubscribable {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// - Note: the [Reactive X operator "ObserveOn"](http://reactivex.io/documentation/operators/observeon.html) doesn't apply to CwlSignal.Signal since any CwlSignal.Signal that runs work can specify their own execution context and control scheduling in that way.
 	
 	/// - Note: the [Reactive X operator "Serialize"](http://reactivex.io/documentation/operators/serialize.html) doesn't apply to CwlSignal.Signal since all CwlSignal.Signal instances are always serialized and well-behaved under multi-threaded access.
@@ -2208,7 +2208,7 @@ extension SignalSubscribable {
 	/// - Note: the [Reactive X operator "Subscribe" and "SubscribeOn"](http://reactivex.io/documentation/operators/subscribe.html) are implemented as `subscribe`.
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "TimeInterval"](http://reactivex.io/documentation/operators/timeinterval.html)
 	///
 	/// - Parameter context: time between emissions will be calculated based on the timestamps from this context
@@ -2271,11 +2271,11 @@ extension SignalSubscribable {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// - Note: the [Reactive X operator "Using"](http://reactivex.io/documentation/operators/using.html) doesn't apply to CwlSignal.Signal which uses standard Swift reference counted lifetimes. Resources should be captured by closures or `transform(initialState:...)`.
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "All"](http://reactivex.io/documentation/operators/all.html)
 	///
 	/// - Parameters:
@@ -2323,7 +2323,7 @@ extension Signal {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "Some"](http://reactivex.io/documentation/operators/some.html)
 	///
 	/// - Parameters:
@@ -2346,7 +2346,7 @@ extension SignalSubscribable {
 	}
 }
 
-extension SignalSubscribable where OutputValue: Equatable {
+extension SignalInterface where OutputValue: Equatable {
 	/// Implementation of [Reactive X operator "Some"](http://reactivex.io/documentation/operators/some.html)
 	///
 	/// - Parameter value: every value emitted by self is tested for equality with this value
@@ -2356,7 +2356,7 @@ extension SignalSubscribable where OutputValue: Equatable {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "DefaultIfEmpty"](http://reactivex.io/documentation/operators/defaultifempty.html)
 	///
 	/// - Parameter value: value to emit if self closes without a value
@@ -2400,7 +2400,7 @@ extension SignalSubscribable {
 	}
 }
 
-extension SignalSubscribable where OutputValue: Equatable {
+extension SignalInterface where OutputValue: Equatable {
 	/// Implementation of [Reactive X operator "SequenceEqual"](http://reactivex.io/documentation/operators/sequenceequal.html)
 	///
 	/// - Parameter to: another signal whose contents will be compared to this signal
@@ -2450,7 +2450,7 @@ extension SignalSubscribable where OutputValue: Equatable {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "SkipUntil"](http://reactivex.io/documentation/operators/skipuntil.html)
 	///
 	/// - Parameter other: until this signal emits a value, all values from self will be dropped
@@ -2580,7 +2580,7 @@ extension SignalSubscribable {
 	}
 }
 
-extension SignalSubscribable where OutputValue: BinaryInteger {
+extension SignalInterface where OutputValue: BinaryInteger {
 	/// Implementation of [Reactive X operator "Average"](http://reactivex.io/documentation/operators/average.html)
 	///
 	/// - Returns: a signal that emits a single value... the sum of all values emitted by `self`
@@ -2591,7 +2591,7 @@ extension SignalSubscribable where OutputValue: BinaryInteger {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "Concat"](http://reactivex.io/documentation/operators/concat.html)
 	///
 	/// - Parameter other: a second signal
@@ -2632,7 +2632,7 @@ extension SignalSubscribable {
 	}
 }
 
-extension SignalSubscribable where OutputValue: Comparable {
+extension SignalInterface where OutputValue: Comparable {
 	/// Implementation of [Reactive X operator "Min"](http://reactivex.io/documentation/operators/min.html)
 	///
 	/// - Returns: the smallest value emitted by self
@@ -2652,7 +2652,7 @@ extension SignalSubscribable where OutputValue: Comparable {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Implementation of [Reactive X operator "Reduce"](http://reactivex.io/documentation/operators/reduce.html). The .NET/alternate name of `aggregate` is used to avoid conflict with the Signal.reduce function.
 	///
 	/// See also: `scan` which applies the same logic but emits the `fold` value on *every* invocation.
@@ -2669,7 +2669,7 @@ extension SignalSubscribable {
 	}
 }
 
-extension SignalSubscribable where OutputValue: Numeric {
+extension SignalInterface where OutputValue: Numeric {
 	/// Implementation of [Reactive X operator "Sum"](http://reactivex.io/documentation/operators/sum.html)
 	///
 	/// - Returns: a signal that emits the sum of all values emitted by self

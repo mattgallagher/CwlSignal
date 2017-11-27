@@ -24,13 +24,13 @@
 #endif
 
 /// This protocol allows transformations that apply to `Signal` types to be applied to a type that exposes a signal.
-public protocol SignalSubscribable {
+public protocol SignalInterface {
 	associatedtype OutputValue
 	var signal: Signal<OutputValue> { get }
 }
 
 /// This protocol allows transformations that apply to `Signal` types to be applied to a type that exposes a signal.
-public protocol SignalJoinable {
+public protocol SignalInputInterface {
 	associatedtype InputValue
 	var input: SignalInput<InputValue> { get }
 }
@@ -47,18 +47,18 @@ public protocol SignalSender {
 	@discardableResult func send(result: Result<InputValue>) -> SignalError?
 }
 
-extension Signal: SignalSubscribable {
+extension Signal: SignalInterface {
 	public var signal: Signal<OutputValue> { return self }
 }
 
-extension SignalInput: SignalJoinable, SignalSender {
+extension SignalInput: SignalInputInterface, SignalSender {
 	public var input: SignalInput<InputValue> { return self }
 }
 
 extension SignalNext: SignalSender {}
 
 // All transformations on a Signal are built on top of the following functions, implemented in CwlSignal.swift
-extension SignalSubscribable {
+extension SignalInterface {
 	public func subscribe(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) -> SignalEndpoint<OutputValue> {
 		return signal.subscribe(context: context, handler: handler)
 	}
@@ -211,7 +211,7 @@ extension SignalSender {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Removes any activation from the signal. Useful in cases when you only want *changes*, not the latest value.
 	public func dropActivation() -> Signal<OutputValue> {
 		let pair = Signal<OutputValue>.create()
@@ -443,11 +443,11 @@ extension SignalSubscribable {
 	///
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
-	public func join<Joinable>(to joinable: Joinable) where Joinable: SignalJoinable, Joinable.InputValue == OutputValue {
-		if let multiInput = joinable.input as? SignalMultiInput<OutputValue> {
+	public func join<InputInterface>(to interface: InputInterface) where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
+		if let multiInput = interface.input as? SignalMultiInput<OutputValue> {
 			multiInput.add(signal)
 		} else {
-			_ = try? signal.junction().join(to: joinable.input)
+			_ = try? signal.junction().join(to: interface.input)
 		}
 	}
 	
@@ -464,8 +464,8 @@ extension SignalSubscribable {
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	/// - Returns: a `Cancellable` that will undo the join if cancelled or released
-	public func cancellableJoin<Joinable>(to joinable: Joinable) -> Cancellable where Joinable: SignalJoinable, Joinable.InputValue == OutputValue {
-		if let multiInput = joinable.input as? SignalMultiInput<OutputValue> {
+	public func cancellableJoin<InputInterface>(to interface: InputInterface) -> Cancellable where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
+		if let multiInput = interface.input as? SignalMultiInput<OutputValue> {
 			multiInput.add(signal)
 			return OnDelete { [weak multiInput, weak signal] in
 				guard let mi = multiInput, let s = signal else { return }
@@ -473,7 +473,7 @@ extension SignalSubscribable {
 			}
 		} else {
 			let j = signal.junction()
-			_ = try? j.join(to: joinable.input)
+			_ = try? j.join(to: interface.input)
 			return j
 		}
 	}
@@ -524,7 +524,7 @@ public final class SignalPollingEndpoint<OutputValue> {
 	}
 }
 
-extension SignalSubscribable {
+extension SignalInterface {
 	/// Appends a `SignalPollingEndpoint` listener to the value emitted from this `Signal`. The endpoint will "activate" this `Signal` and all direct antecedents in the graph (which may start lazy operations deferred until activation).
 	public func pollingEndpoint() -> SignalPollingEndpoint<OutputValue> {
 		return SignalPollingEndpoint(signal: signal)
