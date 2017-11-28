@@ -53,7 +53,7 @@ public struct SignalChannel<InputValue, Input: SignalInput<InputValue>, OutputVa
 		return try (input, compose(signal))
 	}
 	
-	/// Similar to `next` but consuming (not returning) the result from the `compose` function. The result is simply `input` from `self`. Typically used when `join(to:)` is invoked, joining this channel to another signal graph.
+	/// Similar to `next` but consuming (not returning) the result from the `compose` function. The result is simply `input` from `self`. Typically used when `bind(to:)` is invoked, linking the output of this channel to another signal graph.
 	///
 	/// - Parameter compose: a transformation that takes `signal` from `self` and returns `Void`.
 	/// - Returns: `input` from `self`
@@ -259,12 +259,12 @@ extension SignalChannel {
 		return next { $0.toggle(initialState: initialState) }
 	}
 	
-	public func join<InputInterface>(to interface: InputInterface) -> Input where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
-		return final { $0.join(to: interface) }.input
+	public func bind<InputInterface>(to interface: InputInterface) -> Input where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
+		return final { $0.bind(to: interface) }.input
 	}
 	
-	public func join(to: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> Input {
-		signal.join(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
+	public func bind(to: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation = .none, removeOnDeactivate: Bool = false) -> Input {
+		signal.bind(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return input
 	}
 	

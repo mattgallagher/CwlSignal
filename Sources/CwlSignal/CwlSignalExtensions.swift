@@ -215,14 +215,14 @@ extension SignalInterface {
 	/// Removes any activation from the signal. Useful in cases when you only want *changes*, not the latest value.
 	public func dropActivation() -> Signal<OutputValue> {
 		let pair = Signal<OutputValue>.create()
-		try! signal.capture().join(to: pair.input)
+		try! signal.capture().bind(to: pair.input)
 		return pair.signal
 	}
 	
 	/// Causes any activation to be deferred past activation time to the "normal" phase. This avoids the synchronous send rules normally used for activation signals an allows this initial signal to be asynchronously delivered.
 	public func deferActivation() -> Signal<OutputValue> {
 		let pair = Signal<OutputValue>.create()
-		try! signal.capture().join(to: pair.input, resend: true)
+		try! signal.capture().bind(to: pair.input, resend: true)
 		return pair.signal
 	}
 	
@@ -439,15 +439,15 @@ extension SignalInterface {
 
 	/// Joins this `Signal` to a destination `SignalInput`
 	///
-	/// WARNING: if you join to a previously joined or otherwise inactive instance of the base `SignalInput` class, this function will have no effect. To get underlying errors, use `junction().join(to: input)` instead.
+	/// WARNING: if you bind to a previously joined or otherwise inactive instance of the base `SignalInput` class, this function will have no effect. To get underlying errors, use `junction().bind(to: input)` instead.
 	///
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
-	public func join<InputInterface>(to interface: InputInterface) where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
+	public func bind<InputInterface>(to interface: InputInterface) where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
 		if let multiInput = interface.input as? SignalMultiInput<OutputValue> {
 			multiInput.add(signal)
 		} else {
-			_ = try? signal.junction().join(to: interface.input)
+			_ = try? signal.junction().bind(to: interface.input)
 		}
 	}
 	
@@ -455,7 +455,7 @@ extension SignalInterface {
 	///
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
-	public func join(to input: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) {
+	public func bind(to input: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) {
 		input.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 	}
 	
@@ -463,7 +463,7 @@ extension SignalInterface {
 	///
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
-	/// - Returns: a `Cancellable` that will undo the join if cancelled or released
+	/// - Returns: a `Cancellable` that will undo the bind if cancelled or released
 	public func cancellableJoin<InputInterface>(to interface: InputInterface) -> Cancellable where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
 		if let multiInput = interface.input as? SignalMultiInput<OutputValue> {
 			multiInput.add(signal)
@@ -473,7 +473,7 @@ extension SignalInterface {
 			}
 		} else {
 			let j = signal.junction()
-			_ = try? j.join(to: interface.input)
+			_ = try? j.bind(to: interface.input)
 			return j
 		}
 	}
@@ -482,7 +482,7 @@ extension SignalInterface {
 	///
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
-	/// - Returns: a `Cancellable` that will undo the join if cancelled or released
+	/// - Returns: a `Cancellable` that will undo the bind if cancelled or released
 	public func cancellableJoin(to input: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) -> Cancellable {
 		input.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return OnDelete { [weak input, weak signal] in
@@ -547,7 +547,7 @@ extension SignalCapture {
 	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalEndpoint<OutputValue> {
 		let (input, output) = Signal<OutputValue>.create()
 		// This can't be `loop` but `duplicate` is a precondition failure
-		try! join(to: input, resend: resend)
+		try! bind(to: input, resend: resend)
 		return output.subscribeValues(context: context, handler: handler)
 	}
 	
@@ -562,7 +562,7 @@ extension SignalCapture {
 	public func subscribeValues(resend: Bool = false, onError: @escaping (SignalCapture<OutputValue>, Error, SignalInput<OutputValue>) -> (), context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalEndpoint<OutputValue> {
 		let (input, output) = Signal<OutputValue>.create()
 		// This can't be `loop` but `duplicate` is a precondition failure
-		try! join(to: input, resend: resend, onError: onError)
+		try! bind(to: input, resend: resend, onError: onError)
 		return output.subscribeValues(context: context, handler: handler)
 	}
 }

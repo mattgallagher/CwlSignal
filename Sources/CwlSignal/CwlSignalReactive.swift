@@ -282,7 +282,7 @@ extension SignalInterface {
 		// Continuous signals don't really need the junction. Just connect it immediately and ignore it.
 		if continuous {
 			// Both `intervalJunction` and `initialInput` are newly created so this can't be an error
-			try! intervalJunction.join(to: initialInput)
+			try! intervalJunction.bind(to: initialInput)
 		}
 		
 		return combine(initialState: (0, nil), second: signal) { (state: inout (count: Int, timerInput: SignalInput<Int>?), cr: EitherResult2<OutputValue, Int>, n: SignalNext<()>) in
@@ -298,7 +298,7 @@ extension SignalInterface {
 				} else if !continuous, let i = state.timerInput {
 					// If we're not continuous, make sure the timer is connected
 					do {
-						try intervalJunction.join(to: i)
+						try intervalJunction.bind(to: i)
 					} catch {
 						n.send(error: error)
 					}
@@ -1941,7 +1941,7 @@ private class CatchErrorRecovery<OutputValue> {
 		if let s = recover(e) {
 			do {
 				let f: (SignalJunction<OutputValue>, Error, SignalInput<OutputValue>) -> () = self.catchErrorRejoin
-				try s.junction().join(to: i, onError: f)
+				try s.junction().bind(to: i, onError: f)
 			} catch {
 				i.send(error: error)
 			}
@@ -1966,7 +1966,7 @@ private class RetryRecovery<U> {
 		if let t = shouldRetry(&state, e) {
 			timer = context.singleTimer(interval: t) {
 				do {
-					try j.join(to: i, onError: self.retryRejoin)
+					try j.bind(to: i, onError: self.retryRejoin)
 				} catch {
 					i.send(error: error)
 				}
@@ -1987,7 +1987,7 @@ extension SignalInterface {
 	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<OutputValue>?) -> Signal<OutputValue> {
 		let (input, signal) = Signal<OutputValue>.create()
 		// Both `junction` and `input` are newly created so this can't be an error
-		try! junction().join(to: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin)
+		try! junction().bind(to: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin)
 		return signal
 	}
 	
@@ -2003,7 +2003,7 @@ extension SignalInterface {
 	public func retry<U>(_ initialState: U, context: Exec = .direct, shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?) -> Signal<OutputValue> {
 		let (input, signal) = Signal<OutputValue>.create()
 		// Both `junction` and `input` are newly created so this can't be an error
-		try! junction().join(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin)
+		try! junction().bind(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin)
 		return signal
 	}
 	
@@ -2093,7 +2093,7 @@ extension SignalInterface {
         let signal = Signal<OutputValue>.generate { input in
             if let i = input {
                 handler()
-                _ = try? j.join(to: i)
+                _ = try? j.bind(to: i)
             } else {
                 _ = j.disconnect()
             }
@@ -2111,7 +2111,7 @@ extension SignalInterface {
         let j = junction()
         let signal = Signal<OutputValue>.generate { input in
             if let i = input {
-                _ = try? j.join(to: i)
+                _ = try? j.bind(to: i)
             } else {
                 handler()
                 _ = j.disconnect()
@@ -2217,7 +2217,7 @@ extension SignalInterface {
 		let signal = Signal<()>.generate { input in
 			if let i = input {
 				i.send(value: ())
-				self.map { v in () }.join(to: i)
+				self.map { v in () }.bind(to: i)
 			}
 		}.transform(initialState: nil, context: context) { (lastTime: inout DispatchTime?, r: Result<()>, n: SignalNext<Double>) in
 			switch r {
@@ -2244,12 +2244,12 @@ extension SignalInterface {
 		let (input, signal) = Signal<()>.create()
 		let junction = Signal<()>.timer(interval: interval, context: context).junction()
 		// Both `junction` and `input` are newly created so this can't be an error
-		try! junction.join(to: input)
+		try! junction.bind(to: input)
 		return combine(second: signal, context: context) { (cr: EitherResult2<OutputValue, ()>, n: SignalNext<OutputValue>) in
 			switch cr {
 			case .result1(let r):
 				if resetOnValue {
-					junction.rejoin()
+					junction.rebind()
 				}
 				n.send(result: r)
 			case .result2: n.send(error: SignalError.timeout)
@@ -2389,9 +2389,9 @@ extension SignalInterface {
 		}
 		
 		// Both `junction` and `input` are newly created so this can't be an error
-		try! junction().join(to: input) { (j: SignalJunction<OutputValue>, e: Error, i: SignalInput<OutputValue>) in
+		try! junction().bind(to: input) { (j: SignalJunction<OutputValue>, e: Error, i: SignalInput<OutputValue>) in
 			if let f = fallback {
-				f.join(to: i)
+				f.bind(to: i)
 			} else {
 				i.send(error: e)
 			}

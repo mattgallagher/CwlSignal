@@ -52,7 +52,7 @@ class SignalReactiveTests: XCTestCase {
 		let ep = signal.subscribe { r in results.append(r) }
 		let (values, error) = capture.activation()
 		do {
-			try capture.join(to: input)
+			try capture.bind(to: input)
 		} catch {
 			input.send(error: error)
 		}
@@ -1993,7 +1993,7 @@ class SignalReactiveTests: XCTestCase {
             results.append("Output: \(r)")
         }
         
-        _ = try? j.join(to: i1)
+        _ = try? j.bind(to: i1)
         withExtendedLifetime(ep1) {}
         _ = j.disconnect()
         
@@ -2026,7 +2026,7 @@ class SignalReactiveTests: XCTestCase {
         let ep2 = o2.subscribe { r in
             results.append("Output: \(r)")
         }
-        _ = try? j.join(to: i2)
+        _ = try? j.bind(to: i2)
         withExtendedLifetime(ep2) {}
 
 		XCTAssert(results == [

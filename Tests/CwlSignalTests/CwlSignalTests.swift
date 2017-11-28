@@ -639,12 +639,12 @@ class SignalTests: XCTestCase {
 			results.append(r)
 		}
 		
-		// Send a value between construction and join. This must be *blocked* in the capture queue.
+		// Send a value between construction and bind. This must be *blocked* in the capture queue.
 		XCTAssert(input.send(value: 5) == nil)
 		
 		let (values, error) = capture.activation()
 		do {
-			try capture.join(to: subsequentInput)
+			try capture.bind(to: subsequentInput)
 		} catch {
 			XCTFail()
 		}
@@ -750,7 +750,7 @@ class SignalTests: XCTestCase {
 		let (values, error) = capture.activation()
 		
 		do {
-			try capture.join(to: subsequentInput) { (c: SignalCapture<Int>, e: Error, i: SignalInput<Int>) in
+			try capture.bind(to: subsequentInput) { (c: SignalCapture<Int>, e: Error, i: SignalInput<Int>) in
 				XCTAssert(c === capture)
 				XCTAssert(e as? SignalError == .closed)
 				i.send(error: TestError.twoValue)
@@ -784,7 +784,7 @@ class SignalTests: XCTestCase {
 		}
 		
 		do {
-			try capture2.join(to: subsequentInput2, resend: true) { (c, e, i) in
+			try capture2.bind(to: subsequentInput2, resend: true) { (c, e, i) in
 				XCTAssert(c === capture2)
 				XCTAssert(e as? TestError == .oneValue)
 				i.send(error: TestError.zeroValue)
@@ -899,7 +899,7 @@ class SignalTests: XCTestCase {
 			let (i1, s) = Signal<Int>.create()
 			let ep = s.subscribe { results.append($0) }
 			let d = sequence1.junction()
-			try d.join(to: i1)
+			try d.bind(to: i1)
 			i1.send(value: 3)
 			
 			XCTAssert(results.count == 3)
@@ -909,7 +909,7 @@ class SignalTests: XCTestCase {
 			
 			if let i2 = d.disconnect() {
 				let d2 = sequence2.junction()
-				try d2.join(to: i2)
+				try d2.bind(to: i2)
 				i2.send(value: 6)
 				
 				XCTAssert(results.count == 7)
@@ -919,7 +919,7 @@ class SignalTests: XCTestCase {
 				XCTAssert(results.at(6)?.error as? SignalError == .cancelled)
 				
 				if let i3 = d2.disconnect() {
-					_ = try d.join(to: i3)
+					_ = try d.bind(to: i3)
 					i3.send(value: 3)
 					
 					XCTAssert(results.count == 7)
@@ -942,7 +942,7 @@ class SignalTests: XCTestCase {
 		} }
 		
 		do {
-			try sequence3.junction().join(to: i4) { d, e, i in
+			try sequence3.junction().bind(to: i4) { d, e, i in
 				XCTAssert(e as? SignalError == .cancelled)
 				i.send(value: 7)
 				i.close()
@@ -966,7 +966,7 @@ class SignalTests: XCTestCase {
 		do {
 			let signal = Signal<Int>.generate { i in _ = i?.send(value: 5) }
 			let (junctionInput, output) = Signal<Int>.create()
-			try! signal.junction().join(to: junctionInput) { (j, err, input) in
+			try! signal.junction().bind(to: junctionInput) { (j, err, input) in
 				XCTAssert(err as? SignalError == SignalError.cancelled)
 				input.close()
 			}
@@ -992,14 +992,14 @@ class SignalTests: XCTestCase {
 			}
 			let (junctionInput, output) = Signal<Int>.create()
 			let junction = signal.junction()
-			try! junction.join(to: junctionInput)
+			try! junction.bind(to: junctionInput)
 			endpoints += output.subscribe { r in results += r }
 			XCTAssert(results.count == 1)
 			XCTAssert(results.at(0)?.value == 5)
-			junction.rejoin()
+			junction.rebind()
 			XCTAssert(results.count == 2)
 			XCTAssert(results.at(1)?.value == 5)
-			junction.rejoin { (j, err, i) in
+			junction.rebind { (j, err, i) in
 				XCTAssert(err as? SignalError == SignalError.closed)
 				i.send(error: TestError.zeroValue)
 			}
@@ -1023,7 +1023,7 @@ class SignalTests: XCTestCase {
 			}.transform { r, n in n.send(result: r) }.continuous()
 			
 			let ex = catchBadInstruction {
-				combined.join(to: input2)
+				combined.bind(to: input2)
 				XCTFail()
 			}
 			XCTAssert(ex != nil)
@@ -1335,7 +1335,7 @@ class SignalTests: XCTestCase {
 			let (mergedInput, mergeSignal) = Signal<Int>.createMergedInput()
 			let (input, ep) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
 			let disconnector = mergeSignal.junction()
-			try disconnector.join(to: input)
+			try disconnector.bind(to: input)
 		
 			let (input1, signal1) = Signal<Int>.create { $0.cacheUntilActive() }
 			let (input2, signal2) = Signal<Int>.create { $0.cacheUntilActive() }
@@ -1353,7 +1353,7 @@ class SignalTests: XCTestCase {
 			input1.close()
 		
 			let reconnectable = disconnector.disconnect()
-			try reconnectable.map { try disconnector.join(to: $0) }
+			try reconnectable.map { try disconnector.bind(to: $0) }
 		
 			mergedInput.remove(signal4)
 		
@@ -2165,7 +2165,7 @@ class SignalTimingTests: XCTestCase {
 					}
 					DispatchQueue.main.async { allEndpoints[double(j, i)] = ep }
 					_ = junction.disconnect()
-					_ = try? junction.join(to: input, closePropagation: .all)
+					_ = try? junction.bind(to: input, closePropagation: .all)
 				}
 			}
 		}
