@@ -252,7 +252,7 @@ extension SignalInterface {
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
 	public func subscribeUntilEnd(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) {
-		return signal.subscribeWhile(handler: { (result: Result<OutputValue>) -> Bool in
+        return signal.subscribeWhile(context: context, handler: { (result: Result<OutputValue>) -> Bool in
 			handler(result)
 			return true
 		})
