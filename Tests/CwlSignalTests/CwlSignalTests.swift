@@ -677,7 +677,7 @@ class SignalTests: XCTestCase {
 			input.send(value: 3)
 			
 			var results = [Result<Int>]()
-			_ = capture.subscribe { r in results += r }
+			_ = capture.resume().subscribe { r in results += r }
 			XCTAssert(results.count == 1)
 			XCTAssert(results.at(0)?.value == 3)
 		}
@@ -691,7 +691,7 @@ class SignalTests: XCTestCase {
 			input.send(value: 4)
 			
 			var results = [Result<Int>]()
-			_ = capture.subscribe(onError: { (j, e, i) in }) { r in results += r }
+			_ = capture.resume(onError: { (j, e, i) in }).subscribe { r in results += r }
 			XCTAssert(results.count == 1)
 			XCTAssert(results.at(0)?.value == 4)
 		}

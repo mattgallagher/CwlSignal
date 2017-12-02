@@ -2631,33 +2631,29 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 		try bindFunction(processor: self, disconnect: self.disconnect, to: to.singleInput(closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate), optionalErrorHandler: param)
 	}
 	
-	/// Appends a `SignalEndpoint` listener to the value emitted from this `SignalCapture`. The endpoint will resume the stream interrupted by the `SignalCapture`.
+	/// Appends a `Signal` that will resume the stream interrupted by the `SignalCapture`.
 	///
 	/// - Parameters:
 	///   - resend: if true, captured values are sent to the new output as the first values in the stream, otherwise, captured values are not sent (default is false)
-	///   - context: the `Exec` context used to invoke the `handler`
-	///   - handler: the function invoked for each received `Result`
-	/// - returns: the created `SignalEndpoint`
-	public func subscribe(resend: Bool = false, context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) -> SignalEndpoint<OutputValue> {
+	/// - returns: the created `Signal`
+	public func resume(resend: Bool = false) -> Signal<OutputValue> {
 		let (input, output) = Signal<OutputValue>.create()
 		// This could be `duplicate` but that's a precondition failure
 		try! bind(to: input, resend: resend)
-		return output.subscribe(context: context, handler: handler)
+		return output
 	}
 	
-	/// Appends a `SignalEndpoint` listener to the value emitted from this `SignalCapture`. The endpoint will resume the stream interrupted by the `SignalCapture`.
+	/// Appends a `Signal` that will resume the stream interrupted by the `SignalCapture`.
 	///
 	/// - Parameters:
 	///   - resend: if true, captured values are sent to the new output as the first values in the stream, otherwise, captured values are not sent (default is false)
 	///   - onError: if nil, errors from self will be passed through to `to`'s `Signal` normally. If non-nil, errors will not be sent, instead, the `Signal` will be disconnected and the `onError` function will be invoked with the disconnected `SignalCapture` and the input created by calling `disconnect` on it.
-	///   - context: the `Exec` context used to invoke the `handler`
-	///   - handler: the function invoked for each received `Result`
 	/// - returns: the created `SignalEndpoint`
-	public func subscribe(resend: Bool = false, onError: @escaping (SignalCapture<OutputValue>, Error, SignalInput<OutputValue>) -> (), context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) -> SignalEndpoint<OutputValue> {
+	public func resume(resend: Bool = false, onError: @escaping (SignalCapture<OutputValue>, Error, SignalInput<OutputValue>) -> ()) -> Signal<OutputValue> {
 		let (input, output) = Signal<OutputValue>.create()
 		// This could be `duplicate` but that's a precondition failure
 		try! bind(to: input, resend: resend, onError: onError)
-		return output.subscribe(context: context, handler: handler)
+		return output
 	}
 }
 
