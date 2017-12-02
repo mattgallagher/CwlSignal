@@ -192,9 +192,19 @@ public func intervalSignal(_ interval: DispatchTimeInterval, initial initialInte
 }
 
 extension SignalInterface {
-	/// - Note: the [Reactive X operator "Just"](http://reactivex.io/documentation/operators/just.html) is redundant with the default invocation of `CwlSignal.Signal.preclosed`
+	/// - Implementation of [Reactive X operator "Just"](http://reactivex.io/documentation/operators/just.html)
+	///
+	/// See also: `from(values:)`, which sends a sequence of values (optionally on a specific context)
+	///
+	/// - Parameters:
+	///   - value: the value to send
+	///   - error: if non-nil, sent after value to close the stream 
+	/// - Returns: a signal that will emit `value` and (optionally) close
+	public static func just(_ value: OutputValue, error: Error? = SignalError.closed) -> Signal<OutputValue> {
+		return Signal<OutputValue>.from(values: CollectionOfOne(value), error: error)
+	}
 	
-	/// - Note: the [Reactive X operator `Range`](http://reactivex.io/documentation/operators/range.html) is considered unnecessary, given the `CwlSignal.Signal.fromSequence`. Further, since Swift uses multiple different *kinds* of range, multiple implementations would be required. Doesn't seem worth the effort.
+	/// - Note: the [Reactive X operator `Range`](http://reactivex.io/documentation/operators/range.html) is considered unnecessary, given that ranges are already handled by `from(values:)`.
 }
 
 extension Signal {
