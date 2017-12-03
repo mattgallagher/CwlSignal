@@ -287,7 +287,7 @@ extension SignalInterface {
 		
 		// The interval signal may need to be disconnectable so create a junction
 		let intervalJunction = intSig.junction()
-		let (initialInput, signal) = Signal<Int>.create()
+		let (initialInput, sig) = Signal<Int>.create()
 		
 		// Continuous signals don't really need the junction. Just connect it immediately and ignore it.
 		if continuous {
@@ -295,7 +295,7 @@ extension SignalInterface {
 			try! intervalJunction.bind(to: initialInput)
 		}
 		
-		return combine(initialState: (0, nil), second: signal) { (state: inout (count: Int, timerInput: SignalInput<Int>?), cr: EitherResult2<OutputValue, Int>, n: SignalNext<()>) in
+		return combine(initialState: (0, nil), second: sig) { (state: inout (count: Int, timerInput: SignalInput<Int>?), cr: EitherResult2<OutputValue, Int>, n: SignalNext<()>) in
 			var send = false
 			switch cr {
 			case .result1(.success):
@@ -715,9 +715,9 @@ extension SignalInterface {
 					o.send(value: v)
 				} else {
 					let (input, preCachedSignal) = Signal<OutputValue>.create()
-					let signal = preCachedSignal.cacheUntilActive()
+					let s = preCachedSignal.cacheUntilActive()
 					input.send(value: v)
-					n.send(value: (u, signal))
+					n.send(value: (u, s))
 					outputs[u] = input
 				}
 			case .failure(let e):
@@ -2009,10 +2009,10 @@ extension SignalInterface {
 	///   - recover: a function that, when passed the `ErrorType` that closed `self`, optionally returns a new signal.
 	/// - Returns: a signal that emits the values from `self` until an error is received and then, if `recover` returns non-`nil` emits the values from `recover` and then emits the error from `recover`, otherwise if `recover` returns `nil`, emits the `ErrorType` from `self`.
 	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<OutputValue>?) -> Signal<OutputValue> {
-		let (input, signal) = Signal<OutputValue>.create()
+		let (input, sig) = Signal<OutputValue>.create()
 		// Both `junction` and `input` are newly created so this can't be an error
 		try! junction().bind(to: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin)
-		return signal
+		return sig
 	}
 	
 	/// Implementation of [Reactive X operator "retry"](http://reactivex.io/documentation/operators/retry.html) where the choice to retry and the delay between retries is controlled by a function.
@@ -2025,10 +2025,10 @@ extension SignalInterface {
 	///   - shouldRetry: a function that, when passed the current state value and the `ErrorType` that closed `self`, returns an `Optional<Double>`.
 	/// - Returns: a signal that emits the values from `self` until an error is received and then, if `shouldRetry` returns non-`nil`, disconnects from `self`, delays by the number of seconds returned from `shouldRetry`, and reconnects to `self` (triggering re-activation), otherwise if `shouldRetry` returns `nil`, emits the `ErrorType` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
 	public func retry<U>(_ initialState: U, context: Exec = .direct, shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?) -> Signal<OutputValue> {
-		let (input, signal) = Signal<OutputValue>.create()
+		let (input, sig) = Signal<OutputValue>.create()
 		// Both `junction` and `input` are newly created so this can't be an error
 		try! junction().bind(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin)
-		return signal
+		return sig
 	}
 	
 	/// Implementation of [Reactive X operator "retry"](http://reactivex.io/documentation/operators/retry.html) where retries occur until the error is not `SignalError.Closed` or `count` number of retries has occurred.
@@ -2114,7 +2114,7 @@ extension SignalInterface {
 	/// - Returns: a signal that emits the same outputs as self
 	public func onActivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<OutputValue> {
         let j = junction()
-        let signal = Signal<OutputValue>.generate { input in
+        let s = Signal<OutputValue>.generate { input in
             if let i = input {
                 handler()
                 _ = try? j.bind(to: i)
@@ -2122,7 +2122,7 @@ extension SignalInterface {
                 _ = j.disconnect()
             }
         }
-        return signal
+        return s
 	}
 	
 	/// Implementation of [Reactive X operator "do"](http://reactivex.io/documentation/operators/do.html) for "deactivation" (not a concept that directly exists in ReactiveX but similar to doOnUnsubscribe).
@@ -2133,7 +2133,7 @@ extension SignalInterface {
 	/// - Returns: a signal that emits the same outputs as self
 	public func onDeactivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<OutputValue> {
         let j = junction()
-        let signal = Signal<OutputValue>.generate { input in
+        let s = Signal<OutputValue>.generate { input in
             if let i = input {
                 _ = try? j.bind(to: i)
             } else {
@@ -2141,7 +2141,7 @@ extension SignalInterface {
                 _ = j.disconnect()
             }
         }
-        return signal
+        return s
 	}
 	
 	/// Implementation of [Reactive X operator "do"](http://reactivex.io/documentation/operators/do.html) for "result" (equivalent to doOnEach).
@@ -2238,7 +2238,7 @@ extension SignalInterface {
 	/// - Parameter context: time between emissions will be calculated based on the timestamps from this context
 	/// - Returns: a signal where the values are seconds between emissions from self
 	public func timeInterval(context: Exec = .direct) -> Signal<Double> {
-		let signal = Signal<()>.generate { input in
+		let s = Signal<()>.generate { input in
 			if let i = input {
 				i.send(value: ())
 				self.map { v in () }.bind(to: i)
@@ -2254,7 +2254,7 @@ extension SignalInterface {
 			case .failure(let e): n.send(error: e)
 			}
 		}
-		return signal
+		return s
 	}
 	
 	/// Implementation of [Reactive X operator "Timeout"](http://reactivex.io/documentation/operators/timeout.html)
@@ -2265,11 +2265,11 @@ extension SignalInterface {
 	///   - context: timestamps will be added based on the time in this context
 	/// - Returns: a mirror of self unless a timeout occurs, in which case it will closed by a SignalError.timeout
 	public func timeout(interval: DispatchTimeInterval, resetOnValue: Bool = true, context: Exec = .direct) -> Signal<OutputValue> {
-		let (input, signal) = Signal<()>.create()
+		let (input, s) = Signal<()>.create()
 		let junction = Signal<()>.timer(interval: interval, context: context).junction()
 		// Both `junction` and `input` are newly created so this can't be an error
 		try! junction.bind(to: input)
-		return combine(second: signal, context: context) { (cr: EitherResult2<OutputValue, ()>, n: SignalNext<OutputValue>) in
+		return combine(second: s, context: context) { (cr: EitherResult2<OutputValue, ()>, n: SignalNext<OutputValue>) in
 			switch cr {
 			case .result1(let r):
 				if resetOnValue {
@@ -2328,13 +2328,13 @@ extension Signal {
 	/// - Parameter inputs: a set of inputs
 	/// - Returns: connects to all inputs then emits the full set of values from the first of these to emit a value
 	public static func amb<S: Sequence>(_ inputs: S) -> Signal<OutputValue> where S.Iterator.Element == Signal<OutputValue> {
-		let (mergedInput, signal) = Signal<(Int, Result<OutputValue>)>.createMergedInput()
+		let (mergedInput, sig) = Signal<(Int, Result<OutputValue>)>.createMergedInput()
 		inputs.enumerated().forEach { s in
 			mergedInput.add(s.element.transform { r, n in
 				n.send(value: (s.offset, r))
 			}, closePropagation: .errors)
 		}
-		return signal.transform(initialState: -1) { (first: inout Int, r: Result<(Int, Result<OutputValue>)>, n: SignalNext<OutputValue>) in
+		return sig.transform(initialState: -1) { (first: inout Int, r: Result<(Int, Result<OutputValue>)>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let index, let underlying) where first < 0:
 				first = index
@@ -2407,7 +2407,7 @@ extension SignalInterface {
 	public func switchIfEmpty(alternate: Signal<OutputValue>) -> Signal<OutputValue> {
 		var fallback: Signal<OutputValue>? = alternate
 		let (input, preMappedSignal) = Signal<OutputValue>.create()
-		let signal = preMappedSignal.map { (t: OutputValue) -> OutputValue in
+		let s = preMappedSignal.map { (t: OutputValue) -> OutputValue in
 			fallback = nil
 			return t
 		}
@@ -2420,7 +2420,7 @@ extension SignalInterface {
 				i.send(error: e)
 			}
 		}
-		return signal
+		return s
 	}
 }
 

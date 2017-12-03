@@ -444,10 +444,11 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	public func bind<InputInterface>(to interface: InputInterface) where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
-		if let multiInput = interface.input as? SignalMultiInput<OutputValue> {
+		let input = interface.input
+		if let multiInput = input as? SignalMultiInput<OutputValue> {
 			multiInput.add(signal)
 		} else {
-			_ = try? signal.junction().bind(to: interface.input)
+			_ = try? signal.junction().bind(to: input)
 		}
 	}
 	
@@ -465,7 +466,8 @@ extension SignalInterface {
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	/// - Returns: a `Cancellable` that will undo the bind if cancelled or released
 	public func cancellableJoin<InputInterface>(to interface: InputInterface) -> Cancellable where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
-		if let multiInput = interface.input as? SignalMultiInput<OutputValue> {
+		let input = interface.input
+		if let multiInput = input as? SignalMultiInput<OutputValue> {
 			multiInput.add(signal)
 			return OnDelete { [weak multiInput, weak signal] in
 				guard let mi = multiInput, let s = signal else { return }
@@ -473,7 +475,7 @@ extension SignalInterface {
 			}
 		} else {
 			let j = signal.junction()
-			_ = try? j.bind(to: interface.input)
+			_ = try? j.bind(to: input)
 			return j
 		}
 	}
