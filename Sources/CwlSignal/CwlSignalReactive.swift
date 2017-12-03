@@ -1570,12 +1570,26 @@ extension SignalInterface {
 	/// - Parameter sequence: a sequence of values.
 	/// - Returns: a signal that emits every value from `sequence` immediately before it starts mirroring `self`.
 	public func startWith<S: Sequence>(_ sequence: S) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
-		return Signal.from(values: sequence).combine(second: signal) { (r: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
+		return Signal.from(values: sequence).combine(initialState: false, second: signal) { (alreadySent: inout Bool, r: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
 			switch r {
-			case .result1(.success(let v)): n.send(value: v)
-			case .result1(.failure): break
-			case .result2(.success(let v)): n.send(value: v)
-			case .result2(.failure(let e)): n.send(error: e)
+			case .result1(.success(let v)):
+				if !alreadySent {
+					n.send(value: v)
+				}
+			case .result1(.failure):
+				alreadySent = true
+			case .result2(.success(let v)):
+				if !alreadySent {
+					n.send(sequence: sequence)
+					alreadySent = true
+				}
+				n.send(value: v)
+			case .result2(.failure(let e)):
+				if !alreadySent {
+					n.send(sequence: sequence)
+					alreadySent = true
+				}
+				n.send(error: e)
 			}
 		}
 	}
