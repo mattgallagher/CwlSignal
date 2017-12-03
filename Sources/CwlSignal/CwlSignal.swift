@@ -2909,7 +2909,6 @@ public class SignalMergedInput<OutputValue>: SignalMultiInput<OutputValue> {
 		guard let sig = signal else { return }
 		var dw = DeferredWork()
 		sig.mutex.sync {
-			sig.removeAllPreceedingInternal(dw: &dw)
 			sig.pushInternal(values: [], error: onDeinit, activated: true, dw: &dw)
 		}
 		dw.runWork()
