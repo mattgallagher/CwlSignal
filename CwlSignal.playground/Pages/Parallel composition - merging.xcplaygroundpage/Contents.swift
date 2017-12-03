@@ -45,9 +45,9 @@ let multiInput = Signal<String>.multiChannel().subscribeValuesUntilEnd {
 	print($0, terminator: "")
 }
 multiInput.send(value: "Start ")
-smileys.join(to: multiInput)
-spookeys.join(to: multiInput)
-animals.join(to: multiInput)
+smileys.bind(to: multiInput)
+spookeys.bind(to: multiInput)
+animals.bind(to: multiInput)
 multiInput.send(value: " End")
 
 /*:
@@ -64,9 +64,9 @@ let mergeSet = Signal<String>.mergedChannel().subscribeValuesUntilEnd {
 	print($0, terminator: "")
 }
 mergeSet.send(value: "Start")
-smileys.join(to: mergeSet, closePropagation: .all)
-spookeys.join(to: mergeSet, closePropagation: .all)
-animals.join(to: mergeSet, closePropagation: .all)
+smileys.bind(to: mergeSet, closePropagation: .all)
+spookeys.bind(to: mergeSet, closePropagation: .all)
+animals.bind(to: mergeSet, closePropagation: .all)
 mergeSet.send(value: "End")
 
 print("\n\nDone")
