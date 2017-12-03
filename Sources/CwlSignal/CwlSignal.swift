@@ -2818,7 +2818,7 @@ public class SignalMultiInput<OutputValue>: SignalInput<OutputValue> {
 	}
 	
 	/// Connects a new `SignalInput<OutputValue>` to `self`. A single input may be faster than a multi-input over multiple `send` operations.
-	public final override func singleInput() -> SignalInput<OutputValue> {
+	public override func singleInput() -> SignalInput<OutputValue> {
 		let (input, signal) = Signal<OutputValue>.create()
 		self.add(signal)
 		return input
@@ -2850,7 +2850,7 @@ public class SignalMultiInput<OutputValue>: SignalInput<OutputValue> {
 /// In particular:
 ///	* The SignalMergeSet can be configured to send a specific Error (e.g. SignalError.closed) when the last input is removed. This is helpful when merging a specific set of inputs and running until they're all complete.
 ///	* The SignalMergeSet can be configured to send a specific Error on deinit (i.e. when there are no inputs and the class is not otherwise retained). SignalMultiInput sends a `.cancelled` in this scenario but SignalMergeSet sends a `.closed` and can be configured to send something else as desired.
-///	* A SignalMultiInput rejects all attempts to send errors through it (closes, cancels, or otherwise) and merely disconnects the input that sent the error. A SignalMergeSet can be configured to similar reject all or it can permit all, or permit only non-close errors.
+///	* A SignalMultiInput rejects all attempts to send errors through it (closes, cancels, or otherwise) and merely disconnects the input that sent the error. A SignalMergeSet can be configured to similar reject all (`.none`) or it can permit all (`.all`), or permit only non-close errors (`.errors`). The latter is the *default* for SignalMultiInput (except when using `singleInput` which keeps the `.none` behavior). This default marks a difference in behavior, relative to SignalMultiInput, which always uses `.none`.
 /// Direct use of `SignalMergedInput` is not particularly common. It is typically used via Reactive transformations like `merge` or `flatMapLatest`.
 public class SignalMergedInput<OutputValue>: SignalMultiInput<OutputValue> {
 	fileprivate let onLastInputClosed: Error?
@@ -2864,7 +2864,7 @@ public class SignalMergedInput<OutputValue>: SignalMultiInput<OutputValue> {
 	
 	/// Changes the default closePropagation to `.all`
 	public override func add(_ source: Signal<OutputValue>) {
-		self.add(source, closePropagation: .all, removeOnDeactivate: false)
+		self.add(source, closePropagation: .errors, removeOnDeactivate: false)
 	}
 
 	fileprivate override func checkForLastInputRemovedInternal(signal sig: Signal<OutputValue>, dw: inout DeferredWork) {
@@ -2894,6 +2894,10 @@ public class SignalMergedInput<OutputValue>: SignalMultiInput<OutputValue> {
 		let (input, signal) = Signal<OutputValue>.create()
 		self.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return input
+	}
+
+	public final override func singleInput() -> SignalInput<OutputValue> {
+		return singleInput(closePropagation: .none, removeOnDeactivate: false)
 	}
 
 	// SignalMergeSet suppresses the standard cancel on deinit behavior in favor of sending its own chosen error.

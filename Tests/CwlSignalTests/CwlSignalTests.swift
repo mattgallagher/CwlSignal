@@ -1379,6 +1379,16 @@ class SignalTests: XCTestCase {
 		}
 	}
 	
+	func testSingleInput() {
+		var results = Array<Result<Int>>()
+		let mergeSet = Signal<Int>.mergedChannel().subscribe { r in
+			results.append(r)
+		}
+		mergeSet.input.send(value: 5)
+		XCTAssert(results.count == 1)
+		XCTAssert(results.at(0)?.value == 5)
+	}
+	
 	func testCombine2() {
 		var results = [Result<String>]()
 		
