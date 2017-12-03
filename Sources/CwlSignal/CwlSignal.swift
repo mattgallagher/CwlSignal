@@ -125,12 +125,12 @@ public class Signal<OutputValue> {
 	/// A version of created that creates a `SignalMergedInput` instead of a `SignalInput`.
 	///
 	/// - Returns: the (input, signal)
-	public static func createMergedInput() -> (input: SignalMergedInput<OutputValue>, signal: Signal<OutputValue>) {
+	public static func createMergedInput(onLastInputClosed: Error? = nil, onDeinit: Error = SignalError.cancelled) -> (input: SignalMergedInput<OutputValue>, signal: Signal<OutputValue>) {
 		let s = Signal<OutputValue>()
 		var dw = DeferredWork()
 		s.mutex.sync { s.updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw) }
 		dw.runWork()
-		return (SignalMergedInput(signal: s), s)
+		return (SignalMergedInput(signal: s, onLastInputClosed: onLastInputClosed, onDeinit: onDeinit), s)
 	}
 	
 	/// Similar to `create`, in that it creates a "head" for the graph but rather than immediately providing a `SignalInput`, this function calls the `activationChange` function when the signal graph is activated and provides the newly created `SignalInput` at that time. When the graph deactivates, `nil` is sent to the `activationChange` function. If a subsequent reactivation occurs, the new `SignalInput` for the re-activation is provided.
@@ -1248,8 +1248,14 @@ public class SignalInput<InputValue>: Cancellable {
 		_ = send(result: .failure(SignalError.cancelled))
 	}
 	
+	fileprivate var cancelOnDeinit: Bool {
+		return true
+	}
+
 	deinit {
-		cancel()
+		if cancelOnDeinit {
+			cancel()
+		}
 	}
 }
 
@@ -2674,7 +2680,11 @@ public enum SignalClosePropagation {
 	public func shouldPropagateError(_ error: Error) -> Bool {
 		switch self {
 		case .none: return false
-		case .errors: return !(error as? SignalError == .closed)
+		case .errors:
+			if let e = error as? SignalError, e == .closed {
+				return false
+			}
+			return true
 		case .all: return true
 		}
 	}
@@ -2735,6 +2745,7 @@ fileprivate class SignalMultiInputProcessor<OutputValue>: SignalProcessor<Output
 				os.mutex.sync {
 					guard os.activationCount == ac else { return }
 					os.removePreceedingWithoutInterruptionInternal(s, dw: &dw)
+					s.multiInput.checkForLastInputRemovedInternal(signal: os, dw: &dw)
 				}
 				dw.runWork()
 			} else {
@@ -2796,9 +2807,14 @@ public class SignalMultiInput<OutputValue>: SignalInput<OutputValue> {
 		if let mp = mergeProcessor {
 			sig.mutex.sync {
 				sig.removePreceedingWithoutInterruptionInternal(mp, dw: &dw)
+				checkForLastInputRemovedInternal(signal: sig, dw: &dw)
 			}
 		}
 		dw.runWork()
+	}
+	
+	// Overridden by SignalMergeSet to send an error immediately upon last input removed
+	fileprivate func checkForLastInputRemovedInternal(signal: Signal<OutputValue>, dw: inout DeferredWork) {
 	}
 	
 	/// Connects a new `SignalInput<OutputValue>` to `self`. A single input may be faster than a multi-input over multiple `send` operations.
@@ -2830,13 +2846,33 @@ public class SignalMultiInput<OutputValue>: SignalInput<OutputValue> {
 	}
 }
 
-/// Direct use of `SignalMergedInput` is not particularly common. It's typical use is for internal subgraph construction where you need precise control over the interaction of multiple inputs to a `Signal`.
+/// A SignalMergeSet is a very similar to a SignalMultiInput but offering slightly different behaviors as expected by common transformations.
+/// In particular:
+///	* The SignalMergeSet can be configured to send a specific Error (e.g. SignalError.closed) when the last input is removed. This is helpful when merging a specific set of inputs and running until they're all complete.
+///	* The SignalMergeSet can be configured to send a specific Error on deinit (i.e. when there are no inputs and the class is not otherwise retained). SignalMultiInput sends a `.cancelled` in this scenario but SignalMergeSet sends a `.closed` and can be configured to send something else as desired.
+///	* A SignalMultiInput rejects all attempts to send errors through it (closes, cancels, or otherwise) and merely disconnects the input that sent the error. A SignalMergeSet can be configured to similar reject all or it can permit all, or permit only non-close errors.
+/// Direct use of `SignalMergedInput` is not particularly common. It is typically used via Reactive transformations like `merge` or `flatMapLatest`.
 public class SignalMergedInput<OutputValue>: SignalMultiInput<OutputValue> {
+	fileprivate let onLastInputClosed: Error?
+	fileprivate let onDeinit: Error
+	
+	fileprivate init(signal: Signal<OutputValue>, onLastInputClosed: Error? = nil, onDeinit: Error = SignalError.cancelled) {
+		self.onLastInputClosed = onLastInputClosed
+		self.onDeinit = onDeinit
+		super.init(signal: signal)
+	}
+	
 	/// Changes the default closePropagation to `.all`
 	public override func add(_ source: Signal<OutputValue>) {
 		self.add(source, closePropagation: .all, removeOnDeactivate: false)
 	}
 
+	fileprivate override func checkForLastInputRemovedInternal(signal sig: Signal<OutputValue>, dw: inout DeferredWork) {
+		if sig.preceeding.count == 0, let e = onLastInputClosed {
+			sig.pushInternal(values: [], error: e, activated: true, dw: &dw)
+		}
+	}
+	
 	/// Connect a new predecessor to the `Signal`
 	///
 	/// - Parameters:
@@ -2858,6 +2894,21 @@ public class SignalMergedInput<OutputValue>: SignalMultiInput<OutputValue> {
 		let (input, signal) = Signal<OutputValue>.create()
 		self.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return input
+	}
+
+	// SignalMergeSet suppresses the standard cancel on deinit behavior in favor of sending its own chosen error.
+	fileprivate override var cancelOnDeinit: Bool {
+		return false
+	}
+	
+	deinit {
+		guard let sig = signal else { return }
+		var dw = DeferredWork()
+		sig.mutex.sync {
+			sig.removeAllPreceedingInternal(dw: &dw)
+			sig.pushInternal(values: [], error: onDeinit, activated: true, dw: &dw)
+		}
+		dw.runWork()
 	}
 }
 

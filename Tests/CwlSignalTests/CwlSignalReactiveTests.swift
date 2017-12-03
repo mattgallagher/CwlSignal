@@ -1577,7 +1577,15 @@ class SignalReactiveTests: XCTestCase {
 		for i in 0..<20 {
 			XCTAssert(results2.at(i)?.value == i)
 		}
-		XCTAssert(results2.at(20)?.error as? SignalError == .cancelled)
+		XCTAssert(results2.at(20)?.error as? SignalError == .closed)
+		
+		var emptyMergeResults = [Result<Int>]()
+		let emptyMerge = Signal<Int>.merge([]).subscribe {
+			emptyMergeResults.append($0)
+		}
+		XCTAssert(emptyMergeResults.count == 1)
+		XCTAssert(emptyMergeResults.at(0)?.isSignalClosed == true)
+		withExtendedLifetime(emptyMerge) {}
 	}
 	
 	func testStartWith() {

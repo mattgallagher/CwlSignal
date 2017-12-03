@@ -1511,11 +1511,16 @@ extension Signal {
 	/// - Parameter sources: an `Array` where `signal` is merged into the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public static func merge<S: Sequence>(_ sequence: S) -> Signal<OutputValue> where S.Iterator.Element == Signal<OutputValue> {
-		let (mergedInput, signal) = Signal<OutputValue>.createMergedInput()
+		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalError.closed)
+		var sequenceEmpty = true
 		for s in sequence {
 			mergedInput.add(s, closePropagation: .errors)
+			sequenceEmpty = false
 		}
-		return signal
+		if sequenceEmpty {
+			return Signal<OutputValue>.preclosed()
+		}
+		return sig
 	}
 	
 	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
@@ -1525,11 +1530,7 @@ extension Signal {
 	/// - Parameter sources: an `Array` where `signal` is merged into the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public static func merge(_ sources: Signal<OutputValue>...) -> Signal<OutputValue> {
-		let (mergedInput, signal) = Signal<OutputValue>.createMergedInput()
-		for s in sources {
-			mergedInput.add(s, closePropagation: .errors)
-		}
-		return signal
+		return merge(sources)
 	}
 }
 
@@ -1541,12 +1542,12 @@ extension SignalInterface {
 	/// - Parameter sources: a variable parameter list of `Signal<OutputValue>` instances that are merged with `self` to form the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func mergeWith<S: Sequence>(_ sequence: S) -> Signal<OutputValue> where S.Iterator.Element == Signal<OutputValue> {
-		let (mergedInput, signal) = Signal<OutputValue>.createMergedInput()
+		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalError.closed)
 		mergedInput.add(signal, closePropagation: .errors)
 		for s in sequence {
 			mergedInput.add(s, closePropagation: .errors)
 		}
-		return signal
+		return sig
 	}
 	
 	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
@@ -1556,12 +1557,12 @@ extension SignalInterface {
 	/// - Parameter sources: a variable parameter list of `Signal<OutputValue>` instances that are merged with `self` to form the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func mergeWith(_ sources: Signal<OutputValue>...) -> Signal<OutputValue> {
-		let (mergedInput, signal) = Signal<OutputValue>.createMergedInput()
+		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalError.closed)
 		mergedInput.add(signal, closePropagation: .errors)
 		for s in sources {
 			mergedInput.add(s, closePropagation: .errors)
 		}
-		return signal
+		return sig
 	}
 	
 	/// Implementation of [Reactive X operator "startWith"](http://reactivex.io/documentation/operators/startwith.html)
