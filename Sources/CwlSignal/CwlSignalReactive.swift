@@ -1568,15 +1568,28 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "startWith"](http://reactivex.io/documentation/operators/startwith.html)
 	///
 	/// - Parameter sequence: a sequence of values.
-	/// - Returns: a signal that emits every value from `sequence` on activation and then mirrors `self`.
+	/// - Returns: a signal that emits every value from `sequence` immediately before it starts mirroring `self`.
 	public func startWith<S: Sequence>(_ sequence: S) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
-		return Signal.preclosed(values: sequence).combine(second: signal) { (r: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
-			switch r {
-			case .result1(.success(let v)): n.send(value: v)
-			case .result1(.failure): break
-			case .result2(.success(let v)): n.send(value: v)
-			case .result2(.failure(let e)): n.send(error: e)
+		return transform(initialState: false) { (started: inout Bool, result: Result<OutputValue>, next: SignalNext<OutputValue>) in
+			if !started {
+				next.send(sequence: sequence)
+				started = true
 			}
+			next.send(result: result)
+		}
+	}
+	
+	/// Implementation of [Reactive X operator "startWith"](http://reactivex.io/documentation/operators/startwith.html)
+	///
+	/// - Parameter value: a value.
+	/// - Returns: a signal that emits the value immediately before it starts mirroring `self`.
+	public func startWith(_ value: OutputValue) -> Signal<OutputValue> {
+		return transform(initialState: false) { (started: inout Bool, result: Result<OutputValue>, next: SignalNext<OutputValue>) in
+			if !started {
+				next.send(value: value)
+				started = true
+			}
+			next.send(result: result)
 		}
 	}
 	
