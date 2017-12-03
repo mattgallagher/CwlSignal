@@ -1570,12 +1570,13 @@ extension SignalInterface {
 	/// - Parameter sequence: a sequence of values.
 	/// - Returns: a signal that emits every value from `sequence` immediately before it starts mirroring `self`.
 	public func startWith<S: Sequence>(_ sequence: S) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
-		return transform(initialState: false) { (started: inout Bool, result: Result<OutputValue>, next: SignalNext<OutputValue>) in
-			if !started {
-				next.send(sequence: sequence)
-				started = true
+		return Signal.from(values: sequence).combine(second: signal) { (r: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
+			switch r {
+			case .result1(.success(let v)): n.send(value: v)
+			case .result1(.failure): break
+			case .result2(.success(let v)): n.send(value: v)
+			case .result2(.failure(let e)): n.send(error: e)
 			}
-			next.send(result: result)
 		}
 	}
 	
@@ -1584,13 +1585,7 @@ extension SignalInterface {
 	/// - Parameter value: a value.
 	/// - Returns: a signal that emits the value immediately before it starts mirroring `self`.
 	public func startWith(_ value: OutputValue) -> Signal<OutputValue> {
-		return transform(initialState: false) { (started: inout Bool, result: Result<OutputValue>, next: SignalNext<OutputValue>) in
-			if !started {
-				next.send(value: value)
-				started = true
-			}
-			next.send(result: result)
-		}
+		return startWith(CollectionOfOne(value))
 	}
 	
 	/// Implementation of [Reactive X operator "endWith"](http://reactivex.io/documentation/operators/endwith.html)
