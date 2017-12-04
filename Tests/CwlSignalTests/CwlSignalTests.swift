@@ -1803,7 +1803,7 @@ class SignalTests: XCTestCase {
 	}
 
 	func testReactivateDeadlockBugAndStartWithActivationBug() {
-		// This bug exercises the `if itemContextNeedsRefresh` branch in `send(result:predecessor:activationCount:activated:)` and deadlocks if the previous handler is released incorrectly.
+		// This bug runs `if itemContextNeedsRefresh` in `send(result:predecessor:activationCount:activated:)` multiple times across different activations and deadlocks if the previous handler is released incorrectly.
 		// It also tests startWith to ensure that it correctly sends *before* activation values, even though it normally sends during normal phase.
 		var results = [Result<String?>]()
 		let sig1 = Signal<String?>.create { s in s.continuous(initialValue: "hello") }
