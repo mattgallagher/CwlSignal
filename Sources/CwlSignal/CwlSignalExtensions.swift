@@ -465,7 +465,7 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	/// - Returns: a `Cancellable` that will undo the bind if cancelled or released
-	public func cancellableJoin<InputInterface>(to interface: InputInterface) -> Cancellable where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
+	public func cancellableBind<InputInterface>(to interface: InputInterface) -> Cancellable where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
 		let input = interface.input
 		if let multiInput = input as? SignalMultiInput<OutputValue> {
 			multiInput.add(signal)
@@ -485,7 +485,7 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	/// - Returns: a `Cancellable` that will undo the bind if cancelled or released
-	public func cancellableJoin(to input: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) -> Cancellable {
+	public func cancellableBind(to input: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) -> Cancellable {
 		input.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return OnDelete { [weak input, weak signal] in
 			guard let i = input, let s = signal else { return }
