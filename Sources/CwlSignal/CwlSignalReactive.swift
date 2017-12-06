@@ -464,6 +464,22 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
+	public func filterOptionals<U>() -> Signal<U> where OutputValue == Optional<U> {
+		return transform() { (r: Result<Optional<U>>, n: SignalNext<U>) in
+			switch r {
+			case .success(.some(let v)): n.send(value: v)
+			case .success: break
+			case .failure(let e): n.send(error: e)
+			}
+		}
+	}
+	
+	/// Implementation of map and filter. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over child `Optional`s.
+	///
+	/// - Parameters:
+	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
+	///   - processor: for each value emitted by `self`, outputs a new `Signal`
+	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func filterMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U?) -> Signal<U> {
 		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<U>) in
 			switch r {
