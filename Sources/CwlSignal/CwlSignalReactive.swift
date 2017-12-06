@@ -152,41 +152,44 @@ public class SignalSequence<OutputValue>: Sequence, IteratorProtocol {
 	}
 }
 
-/// Implementation of [Reactive X operator "Interval"](http://reactivex.io/documentation/operators/interval.html)
-///
-/// - Parameters:
-///   - interval: duration between values
-///   - initialInterval: duration until first value
-///   - context: execution context where the timer will run
-/// - Returns: the interval signal
-public func intervalSignal(_ interval: DispatchTimeInterval, initial initialInterval: DispatchTimeInterval? = nil, context: Exec = .global) -> Signal<Int> {
-	// We need to protect the `count` variable and make sure that out-of-date timers don't update it so we use a `serialized` context for the `generate` and the timers, since the combination of the two will ensure that these requirements are met.
-	let serialContext = context.serialized()
-	var timer: Cancellable? = nil
-	var count = 0
-	
-	return Signal<Int>.generate(context: serialContext) { input in
-		guard let i = input else {
-			timer?.cancel()
-			count = 0
-			return
-		}
+extension SignalInterface where OutputValue == Int {
+
+	/// Implementation of [Reactive X operator "Interval"](http://reactivex.io/documentation/operators/interval.html)
+	///
+	/// - Parameters:
+	///   - interval: duration between values
+	///   - initialInterval: duration until first value
+	///   - context: execution context where the timer will run
+	/// - Returns: the interval signal
+	public static func interval(_ interval: DispatchTimeInterval, initial initialInterval: DispatchTimeInterval? = nil, context: Exec = .global) -> Signal<Int> {
+		// We need to protect the `count` variable and make sure that out-of-date timers don't update it so we use a `serialized` context for the `generate` and the timers, since the combination of the two will ensure that these requirements are met.
+		let serialContext = context.serialized()
+		var timer: Cancellable? = nil
+		var count = 0
 		
-		let repeater = {
-			timer = serialContext.periodicTimer(interval: interval) {
-				i.send(value: count)
-				count += 1
+		return Signal<Int>.generate(context: serialContext) { input in
+			guard let i = input else {
+				timer?.cancel()
+				count = 0
+				return
 			}
-		}
-		
-		if let initial = initialInterval {
-			timer = serialContext.singleTimer(interval: initial) {
-				i.send(value: count)
-				count += 1
+			
+			let repeater = {
+				timer = serialContext.periodicTimer(interval: interval) {
+					i.send(value: count)
+					count += 1
+				}
+			}
+			
+			if let initial = initialInterval {
+				timer = serialContext.singleTimer(interval: initial) {
+					i.send(value: count)
+					count += 1
+					repeater()
+				}
+			} else {
 				repeater()
 			}
-		} else {
-			repeater()
 		}
 	}
 }
@@ -278,7 +281,7 @@ extension SignalInterface {
 	/// - Returns: the boundary signal
 	private func timedCountedBoundary(interval: DispatchTimeInterval, count: Int, continuous: Bool, context: Exec) -> Signal<()> {
 		// An interval signal
-		let intSig = intervalSignal(interval, context: context)
+		let intSig = Signal.interval(interval, context: context)
 		
 		if count == Int.max {
 			// If number of values per boundary is infinite, then all we need is the timer signal
@@ -447,7 +450,7 @@ extension SignalInterface {
 	
 	/// Implementation of [Reactive X operator "Buffer"](http://reactivex.io/documentation/operators/buffer.html) for periodic buffer start times and fixed duration buffers.
 	///
-	/// - Note: this is just a convenience wrapper around `buffer(windows:behaviors)` where the `windows` signal contains `timerSignal` signals contained in a `intervalSignal` signal.
+	/// - Note: this is just a convenience wrapper around `buffer(windows:behaviors)` where the `windows` signal contains `timerSignal` signals contained in a `Signal.interval` signal.
 	///
 	/// - Parameters:
 	///   - interval: the duration of each buffer, in seconds.
@@ -455,7 +458,7 @@ extension SignalInterface {
 	///   - context: context where the timer will be run
 	/// - Returns: a signal where the values are arrays of values from `self`, accumulated according to `windows`
 	public func buffer(interval: DispatchTimeInterval, timeshift: DispatchTimeInterval, context: Exec = .direct) -> Signal<[OutputValue]> {
-		return buffer(windows: intervalSignal(timeshift, initial: .seconds(0), context: context).map { v in Signal<()>.timer(interval: interval, context: context) })
+		return buffer(windows: Signal.interval(timeshift, initial: .seconds(0), context: context).map { v in Signal<()>.timer(interval: interval, context: context) })
 	}
 	
 	/// Implementation of map and filter. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over child `Optional`s.
@@ -924,7 +927,7 @@ extension SignalInterface {
 	
 	/// Implementation of [Reactive X operator "Window"](http://reactivex.io/documentation/operators/window.html) for periodic buffer start times and fixed duration buffers.
 	///
-	/// - Note: this is just a convenience wrapper around `buffer(windows:behaviors)` where the `windows` signal contains `timerSignal` signals contained in a `intervalSignal` signal.
+	/// - Note: this is just a convenience wrapper around `buffer(windows:behaviors)` where the `windows` signal contains `timerSignal` signals contained in a `Signal.interval` signal.
 	/// - Note: equivalent to "buffer" method with same parameters
 	///
 	/// - Parameters:
@@ -933,7 +936,7 @@ extension SignalInterface {
 	///   - context: context where the timer will run
 	/// - Returns: a signal where the values are arrays of values from `self`, accumulated according to `windows`
 	public func window(interval: DispatchTimeInterval, timeshift: DispatchTimeInterval, context: Exec = .direct) -> Signal<Signal<OutputValue>> {
-		return window(windows: intervalSignal(timeshift, initial: .seconds(0), context: context).map { v in Signal<()>.timer(interval: interval, context: context) })
+		return window(windows: Signal.interval(timeshift, initial: .seconds(0), context: context).map { v in Signal<()>.timer(interval: interval, context: context) })
 	}
 	
 	/// Implementation of [Reactive X operator "Debounce"](http://reactivex.io/documentation/operators/debounce.html)
@@ -1653,9 +1656,7 @@ extension SignalInterface {
 			}
 		}
 	}
-}
-	
-extension Signal {
+
 	/// Implementation of [Reactive X operator "switch"](http://reactivex.io/documentation/operators/switch.html)
 	///
 	/// See also: `flatMapLatest` (emits values from the latest `Signal` to start emitting)
@@ -1664,8 +1665,8 @@ extension Signal {
 	///
 	/// - Parameter signal: each of the inner signals emitted by this outer signal is observed, with the most recent signal emitted from the result
 	/// - Returns: a signal that emits the values from the latest `Signal` emitted by `signal`
-	public static func switchLatest<OutputValue>(_ signal: Signal<Signal<OutputValue>>) -> Signal<OutputValue> {
-		return signal.transformFlatten(initialState: nil, closePropagation: .errors) { (latest: inout Signal<OutputValue>?, next: Signal<OutputValue>, mergedInput: SignalMergedInput<OutputValue>) in
+	public func switchLatest<U>() -> Signal<U> where OutputValue: Signal<U> {
+		return transformFlatten(initialState: nil, closePropagation: .errors) { (latest: inout Signal<U>?, next: Signal<U>, mergedInput: SignalMergedInput<U>) in
 			if let l = latest {
 				mergedInput.remove(l)
 			}
@@ -1673,9 +1674,7 @@ extension Signal {
 			mergedInput.add(next, closePropagation: .errors, removeOnDeactivate: true)
 		}
 	}
-}
-	
-extension SignalInterface {
+
 	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
 	///
 	/// - Parameter second: another `Signal`

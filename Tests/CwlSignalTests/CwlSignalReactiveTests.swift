@@ -87,7 +87,7 @@ class SignalReactiveTests: XCTestCase {
 	func testInterval() {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
-		let ep = intervalSignal(.fromSeconds(0.01), context: coordinator.direct).subscribe { r in
+		let ep = Signal.interval(.fromSeconds(0.01), context: coordinator.direct).subscribe { r in
 			results.append(r)
 			if let v = r.value, v == 3 {
 				coordinator.stop()
@@ -727,8 +727,8 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.global)
-		let windowedSignal = baseSignal.window(windows: intervalSignal(.fromSeconds(0.2), initial: .fromSeconds(0.0499), context: coordinator.global).map { _ in
+		let baseSignal = Signal.interval(.fromSeconds(0.03), context: coordinator.global)
+		let windowedSignal = baseSignal.window(windows: Signal.interval(.fromSeconds(0.2), initial: .fromSeconds(0.0499), context: coordinator.global).map { _ in
 			Signal<()>.timer(interval: .fromSeconds(0.1), context: coordinator.global)
 		})
 		let ep = windowedSignal.subscribe { r in
@@ -781,7 +781,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.global).timeout(interval: .fromSeconds(0.34), resetOnValue: false, context: coordinator.global)
+		let baseSignal = Signal.interval(.fromSeconds(0.03), context: coordinator.global).timeout(interval: .fromSeconds(0.34), resetOnValue: false, context: coordinator.global)
 		let windowedSignal = baseSignal.window(interval: .fromSeconds(0.091), timeshift: .fromSeconds(0.151), context: coordinator.global)
 		let ep = windowedSignal.subscribe { r in
 			if let v = r.value {
@@ -823,7 +823,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.global)
+		let baseSignal = Signal.interval(.fromSeconds(0.03), context: coordinator.global)
 		let windowedSignal = baseSignal.window(count: 3, skip: 5)
 		let ep = windowedSignal.subscribe { r in
 			if let v = r.value {
@@ -868,7 +868,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = Array<Array<Result<Int>>>()
 		let coordinator = DebugContextCoordinator()
 		
-		let baseSignal = intervalSignal(.fromSeconds(0.03), context: coordinator.global)
+		let baseSignal = Signal.interval(.fromSeconds(0.03), context: coordinator.global)
 		let windowedSignal = baseSignal.window(count: 3)
 		let ep = windowedSignal.subscribe { r in
 			if let v = r.value {
@@ -1623,7 +1623,7 @@ class SignalReactiveTests: XCTestCase {
 	func testSwitchLatest() {
 		var results = [Result<Int>]()
 		let (input, signal) = Signal<Signal<Int>>.create()
-		let ep = Signal<Int>.switchLatest(signal).subscribe { (r: Result<Int>) in
+		let ep = signal.switchLatest().subscribe { (r: Result<Int>) in
 			results.append(r)
 		}
 		let (input1, child1) = Signal<Int>.create()
@@ -1927,7 +1927,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
 		var times = [UInt64]()
-		let ep = intervalSignal(.seconds(1), initial: .seconds(0), context: coordinator.global).timeout(interval: .seconds(5), resetOnValue: false, context: coordinator.global).delay(interval: .seconds(5), context: coordinator.global).subscribe { (r: Result<Int>) in
+		let ep = Signal.interval(.seconds(1), initial: .seconds(0), context: coordinator.global).timeout(interval: .seconds(5), resetOnValue: false, context: coordinator.global).delay(interval: .seconds(5), context: coordinator.global).subscribe { (r: Result<Int>) in
 			results.append(r)
 			times.append(coordinator.currentTime)
 		}
