@@ -34,7 +34,7 @@ public struct SignalChannel<InputValue, Input: SignalInput<InputValue>, OutputVa
 	public init(input: Input, signal: Output) {
 		(self.input, self.signal) = (input, signal)
 	}
-
+	
 	/// Append an additional `Signal` stage in the `SignalChannel` pipeline, returning a new SignalChannel that combines the `input` from `self` and the `signal` from the new stage.
 	///
 	/// - Parameter compose: a transformation that takes `signal` from `self` and returns a new `Signal`.
@@ -85,13 +85,13 @@ extension Signal {
 		let (input, signal) = Signal<OutputValue>.create()
 		return SignalChannel<OutputValue, SignalInput<OutputValue>, OutputValue, Signal<OutputValue>>(input: input, signal: signal)
 	}
-
+	
 	/// This function is used for starting SignalChannel pipeliens with a `SignalMultiInput`
 	public static func multiChannel() -> SignalChannel<OutputValue, SignalMultiInput<OutputValue>, OutputValue, Signal<OutputValue>> {
 		let (input, signal) = Signal<OutputValue>.createMultiInput()
 		return SignalChannel<OutputValue, SignalMultiInput<OutputValue>, OutputValue, Signal<OutputValue>>(input: input, signal: signal)
 	}
-
+	
 	/// This function is used for starting SignalChannel pipeliens with a `SignalMergedInput`
 	public static func mergedChannel(onLastInputClosed: Error? = nil, onDeinit: Error = SignalError.cancelled) -> SignalChannel<OutputValue, SignalMergedInput<OutputValue>, OutputValue, Signal<OutputValue>> {
 		let (input, signal) = Signal<OutputValue>.createMergedInput(onLastInputClosed: onLastInputClosed, onDeinit: onDeinit)
@@ -179,12 +179,16 @@ extension SignalChannel {
 		return next { $0.multicast() }
 	}
 	
-    public func multicast(_ output: (SignalMulti<OutputValue>) -> ()) -> Input {
-        output(signal.multicast())
-        return input
-    }
-
-    public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout Error?, _ incoming: Result<OutputValue>) -> Void) -> SignalChannel<InputValue, Input, OutputValue, SignalMulti<OutputValue>> {
+	public func multicast(_ interfaces: SignalInput<OutputValue>...) -> Input {
+		return final {
+			let multi = $0.multicast()
+			for i in interfaces {
+				multi.bind(to: i)
+			}
+		}.input
+	}
+	
+	public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout Error?, _ incoming: Result<OutputValue>) -> Void) -> SignalChannel<InputValue, Input, OutputValue, SignalMulti<OutputValue>> {
 		return next { $0.customActivation(initialValues: initialValues, context: context, updater: updater) }
 	}
 	
@@ -351,7 +355,7 @@ extension SignalChannel {
 	public func mapErrors(context: Exec = .direct, _ processor: @escaping (Error) -> Error) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.mapErrors(context: context, processor) }
 	}
-
+	
 	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
 		return next { $0.map(context: context, processor) }
 	}
@@ -471,7 +475,7 @@ extension SignalChannel {
 	public func takeLast(_ count: Int) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.takeLast(count) }
 	}
-
+	
 	public func combineLatest<U, V>(second: Signal<U>, context: Exec = .direct, _ processor: @escaping (OutputValue, U) -> V) -> SignalChannel<InputValue, Input, V, Signal<V>> {
 		return next { $0.combineLatest(second: second, context: context, processor) }
 	}
@@ -539,7 +543,7 @@ extension SignalChannel {
 	public func catchError<S: Sequence>(context: Exec = .direct, recover: @escaping (Error) -> (S, Error)) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where S.Iterator.Element == OutputValue {
 		return next { $0.catchError(context: context, recover: recover) }
 	}
-
+	
 	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<OutputValue>?) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.catchError(context: context, recover: recover) }
 	}
