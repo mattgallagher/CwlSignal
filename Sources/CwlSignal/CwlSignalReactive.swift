@@ -1598,20 +1598,20 @@ extension SignalInterface {
 	///
 	/// - Parameter value: a value.
 	/// - Returns: a signal that emits the value immediately before it starts mirroring `self`.
-	public func startWith(_ value: OutputValue) -> Signal<OutputValue> {
-		return startWith(CollectionOfOne(value))
+	public func startWith(_ values: OutputValue...) -> Signal<OutputValue> {
+		return startWith(values)
 	}
 	
 	/// Implementation of [Reactive X operator "endWith"](http://reactivex.io/documentation/operators/endwith.html)
 	///
 	/// - Returns: a signal that emits every value from `sequence` on activation and then mirrors `self`.
-	public func endWith<U: Sequence>(_ sequence: @autoclosure @escaping () -> U, conditional: @escaping (Error) -> Error? = { e in e }) -> Signal<OutputValue> where U.Iterator.Element == OutputValue {
+	public func endWith<U: Sequence>(_ sequence: U, conditional: @escaping (Error) -> Error? = { e in e }) -> Signal<OutputValue> where U.Iterator.Element == OutputValue {
 		return transform() { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v): n.send(value: v)
 			case .failure(let e):
 				if let newEnd = conditional(e) {
-					sequence().forEach { n.send(value: $0) }
+					sequence.forEach { n.send(value: $0) }
 					n.send(error: newEnd)
 				} else {
 					n.send(error: e)
@@ -1623,13 +1623,13 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "endWith"](http://reactivex.io/documentation/operators/endwith.html)
 	///
 	/// - Returns: a signal that emits every value from `sequence` on activation and then mirrors `self`.
-	public func endWith(_ value: @autoclosure @escaping () -> OutputValue, conditional: @escaping (Error) -> Error? = { e in e }) -> Signal<OutputValue> {
+	public func endWith(_ value: OutputValue, conditional: @escaping (Error) -> Error? = { e in e }) -> Signal<OutputValue> {
 		return transform() { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v): n.send(value: v)
 			case .failure(let e):
 				if let newEnd = conditional(e) {
-					n.send(value: value())
+					n.send(value: value)
 					n.send(error: newEnd)
 				} else {
 					n.send(error: e)

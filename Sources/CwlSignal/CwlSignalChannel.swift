@@ -508,11 +508,15 @@ extension SignalChannel {
 		return next { $0.startWith(sequence) }
 	}
 	
-	public func endWith<U: Sequence>(_ sequence: @autoclosure @escaping () -> U, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where U.Iterator.Element == OutputValue {
+	public func startWith(_ values: OutputValue...) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+		return next { $0.startWith(values) }
+	}
+	
+	public func endWith<U: Sequence>(_ sequence: U, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where U.Iterator.Element == OutputValue {
 		return next { $0.endWith(sequence, conditional: conditional) }
 	}
 	
-	func endWith(_ value: @autoclosure @escaping () -> OutputValue, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+	func endWith(_ value: OutputValue, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.endWith(value, conditional: conditional) }
 	}
 	
