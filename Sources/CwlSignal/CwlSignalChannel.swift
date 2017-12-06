@@ -263,6 +263,10 @@ extension SignalChannel {
 		return next { $0.toggle(initialState: initialState) }
 	}
 	
+	public func optionalToArray<U>() -> SignalChannel<InputValue, Input, [U], Signal<[U]>> where OutputValue == Optional<U> {
+		return next { $0.optionalToArray() }
+	}
+	
 	public func bind<InputInterface>(to interface: InputInterface) -> Input where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
 		return final { $0.bind(to: interface) }.input
 	}

@@ -586,13 +586,21 @@ extension SignalInterface {
 	/// - Parameter initialState: before receiving the first value
 	/// - Returns: the alternating, continuous signal
 	public func toggle(initialState: Bool = false) -> Signal<Bool> {
-		return signal.transform(initialState: initialState) { (state: inout Bool, toggle: Result<OutputValue>, next: SignalNext<Bool>) in
-			switch toggle {
-			case .success:
-				state = !state
-				next.send(value: state)
-			case .failure(let e):
-				next.send(error: e)
+		return reduce(initialState: initialState) { (state: inout Bool, input: OutputValue) -> Bool in
+			state = !state
+			return state
+		}
+	}
+
+	/// A convenience transform to turn a signal of optional values into an signal of array values with one or zero elements.
+	///
+	/// - Returns: an array signal
+	public func optionalToArray<U>() -> Signal<[U]> where OutputValue == Optional<U> {
+		return signal.transform { (optional: Result<U?>, next: SignalNext<[U]>) in
+			switch optional {
+			case .success(.some(let v)): next.send(value: [v])
+			case .success: next.send(value: [])
+			case .failure(let e): next.send(error: e)
 			}
 		}
 	}
@@ -731,7 +739,7 @@ extension SignalCapture {
 
 extension Error {
 	/// A convenience extension on `Error` to test if it is a `SignalError.closed`
-	public var isSignalClosed: Bool { return (self as? SignalError) != .closed }
+	public var isSignalClosed: Bool { return (self as? SignalError) == .closed }
 }
 
 extension Result {

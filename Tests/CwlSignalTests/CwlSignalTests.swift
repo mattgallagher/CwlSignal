@@ -1801,7 +1801,44 @@ class SignalTests: XCTestCase {
 		XCTAssert(e1.isSignalClosed == false)
 		XCTAssert(e2.isSignalClosed == true)
 	}
-
+	
+	func testToggle() {
+		var results = [Result<Bool>]()
+		let (i, ep) = Signal<()>.channel().toggle(initialState: true).subscribe {
+			results.append($0)
+		}
+		i.send(value: ())
+		i.send(value: ())
+		i.close()
+		XCTAssert(results.count == 4)
+		XCTAssert(results.at(0)?.value == true)
+		XCTAssert(results.at(1)?.value == false)
+		XCTAssert(results.at(2)?.value == true)
+		XCTAssert(results.at(3)?.error?.isSignalClosed == true)
+		ep.cancel()
+	}
+	
+	func testOptionalToArray() {
+		var results = [Result<[Int]>]()
+		let (i, ep) = Signal<Int?>.channel().optionalToArray().subscribe {
+			results.append($0)
+		}
+		i.send(value: 1)
+		i.send(value: nil)
+		i.send(value: 2)
+		i.send(value: nil)
+		i.close()
+		XCTAssert(results.count == 5)
+		XCTAssert(results.at(0)?.value?.count == 1)
+		XCTAssert(results.at(0)?.value?.at(0) == 1)
+		XCTAssert(results.at(1)?.value?.count == 0)
+		XCTAssert(results.at(2)?.value?.count == 1)
+		XCTAssert(results.at(2)?.value?.at(0) == 2)
+		XCTAssert(results.at(3)?.value?.count == 0)
+		XCTAssert(results.at(4)?.error?.isSignalClosed == true)
+		ep.cancel()
+	}
+	
 	func testReactivateDeadlockBugAndStartWithActivationBug() {
 		// This bug runs `if itemContextNeedsRefresh` in `send(result:predecessor:activationCount:activated:)` multiple times across different activations and deadlocks if the previous handler is released incorrectly.
 		// It also tests startWith to ensure that it correctly sends *before* activation values, even though it normally sends during normal phase.

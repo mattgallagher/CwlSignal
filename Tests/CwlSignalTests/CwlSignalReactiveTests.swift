@@ -609,6 +609,15 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(r3?.at(7)?.isSignalClosed == true)
 	}
 	
+	func testFilterOptionals() {
+		var results = [Result<Int>]()
+		_ = Signal<Int?>.from(values: [1, nil, 2, nil]).filterOptionals().subscribe { r in results.append(r) }
+		XCTAssert(results.count == 3)
+		XCTAssert(results.at(0)?.value == 1)
+		XCTAssert(results.at(1)?.value == 2)
+		XCTAssert(results.at(2)?.isSignalClosed == true)
+	}
+	
 	func testFilterMap() {
 		var results = [Result<Int>]()
 		_ = Signal.from(values: 1...5).filterMap { v -> Int? in
