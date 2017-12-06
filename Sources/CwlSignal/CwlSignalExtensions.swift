@@ -211,6 +211,36 @@ extension SignalSender {
 	}
 }
 
+/// Used by the Signal<OutputValue>.combine(second:context:handler:) method
+public enum EitherValue2<U, V> {
+	case value1(U)
+	case value2(V)
+}
+
+/// Used by the Signal<OutputValue>.combine(second:third:context:handler:) method
+public enum EitherValue3<U, V, W> {
+	case value1(U)
+	case value2(V)
+	case value3(W)
+}
+
+/// Used by the Signal<OutputValue>.combine(second:third:fourth:context:handler:) method
+public enum EitherValue4<U, V, W, X> {
+	case value1(U)
+	case value2(V)
+	case value3(W)
+	case value4(X)
+}
+
+/// Used by the Signal<OutputValue>.combine(second:third:fourth:fifth:context:handler:) method
+public enum EitherValue5<U, V, W, X, Y> {
+	case value1(U)
+	case value2(V)
+	case value3(W)
+	case value4(X)
+	case value5(Y)
+}
+
 extension SignalInterface {
 	/// Removes any activation from the signal. Useful in cases when you only want *changes*, not the latest value.
 	public func dropActivation() -> Signal<OutputValue> {
@@ -240,6 +270,134 @@ extension SignalInterface {
 			switch result {
 			case .success(let v): handler(&state, v, next)
 			case .failure(let e): next.send(error: e)
+			}
+		}
+	}
+
+	/// Maps values from self or second to EitherValue2 and merges into a single stream.
+	///
+	/// - Parameter second: another signal
+	/// - Returns: Signal<EitherValue2<OutputValue, U.OutputValue>>
+	public func combineValues<U: SignalInterface>(second: U, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue2<OutputValue, U.OutputValue>> {
+		return signal.combine(initialState: (false, false), second: second.signal) { (closed: inout (Bool, Bool), either: EitherResult2<OutputValue, U.OutputValue>, next: SignalNext<EitherValue2<OutputValue, U.OutputValue>>) in
+			switch either {
+			case .result1(.failure(let e)):
+				if closed.1 || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.0 = true
+			case .result2(.failure(let e)):
+				if closed.0 || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.1 = true
+			case .result1(.success(let v)): next.send(value: .value1(v))
+			case .result2(.success(let v)): next.send(value: .value2(v))
+			}
+		}
+	}
+
+	public func combineValues<U: SignalInterface, V: SignalInterface>(second: U, third: V, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue3<OutputValue, U.OutputValue, V.OutputValue>> {
+		return signal.combine(initialState: (false, false, false), second: second.signal, third: third.signal) { (closed: inout (Bool, Bool, Bool), either: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, next: SignalNext<EitherValue3<OutputValue, U.OutputValue, V.OutputValue>>) in
+			switch either {
+			case .result1(.failure(let e)):
+				if (closed.1 && closed.2) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.0 = true
+				next.send(error: e)
+			case .result2(.failure(let e)):
+				if (closed.0 && closed.2) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.1 = true
+				next.send(error: e)
+			case .result3(.failure(let e)):
+				if (closed.0 && closed.1) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.2 = true
+				next.send(error: e)
+			case .result1(.success(let v)): next.send(value: .value1(v))
+			case .result2(.success(let v)): next.send(value: .value2(v))
+			case .result3(.success(let v)): next.send(value: .value3(v))
+			}
+		}
+	}
+	
+	public func combineValues<U: SignalInterface, V: SignalInterface, W: SignalInterface>(second: U, third: V, fourth: W, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> {
+		return signal.combine(initialState: (false, false, false, false), second: second.signal, third: third.signal, fourth: fourth.signal) { (closed: inout (Bool, Bool, Bool, Bool), either: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, next: SignalNext<EitherValue4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>>) in
+			switch either {
+			case .result1(.failure(let e)):
+				if (closed.1 && closed.2 && closed.3) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.0 = true
+				next.send(error: e)
+			case .result2(.failure(let e)):
+				if (closed.0 && closed.2 && closed.3) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.1 = true
+				next.send(error: e)
+			case .result3(.failure(let e)):
+				if (closed.0 && closed.1 && closed.3) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.2 = true
+				next.send(error: e)
+			case .result4(.failure(let e)):
+				if (closed.0 && closed.1 && closed.2) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.3 = true
+				next.send(error: e)
+			case .result1(.success(let v)): next.send(value: .value1(v))
+			case .result2(.success(let v)): next.send(value: .value2(v))
+			case .result3(.success(let v)): next.send(value: .value3(v))
+			case .result4(.success(let v)): next.send(value: .value4(v))
+			}
+		}
+	}
+	
+	public func combineValues<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(second: U, third: V, fourth: W, fifth: X, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> {
+		return signal.combine(initialState: (false, false, false, false, false), second: second.signal, third: third.signal, fourth: fourth.signal, fifth: fifth.signal) { (closed: inout (Bool, Bool, Bool, Bool, Bool), either: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, next: SignalNext<EitherValue5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>>) in
+			switch either {
+			case .result1(.failure(let e)):
+				if (closed.1 && closed.2 && closed.3 && closed.4) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.0 = true
+				next.send(error: e)
+			case .result2(.failure(let e)):
+				if (closed.0 && closed.2 && closed.3 && closed.4) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.1 = true
+				next.send(error: e)
+			case .result3(.failure(let e)):
+				if (closed.0 && closed.1 && closed.3 && closed.4) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.2 = true
+				next.send(error: e)
+			case .result4(.failure(let e)):
+				if (closed.0 && closed.1 && closed.2 && closed.4) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.3 = true
+				next.send(error: e)
+			case .result5(.failure(let e)):
+				if (closed.0 && closed.1 && closed.2 && closed.3) || closePropagation.shouldPropagateError(e) {
+					next.send(error: e)
+				}
+				closed.4 = true
+				next.send(error: e)
+			case .result1(.success(let v)): next.send(value: .value1(v))
+			case .result2(.success(let v)): next.send(value: .value2(v))
+			case .result3(.success(let v)): next.send(value: .value3(v))
+			case .result4(.success(let v)): next.send(value: .value4(v))
+			case .result5(.success(let v)): next.send(value: .value5(v))
 			}
 		}
 	}
