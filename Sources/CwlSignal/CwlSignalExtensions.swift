@@ -23,18 +23,6 @@
 	import CwlUtils
 #endif
 
-/// This protocol allows transformations that apply to `Signal` types to be applied to a type that exposes a signal.
-public protocol SignalInterface {
-	associatedtype OutputValue
-	var signal: Signal<OutputValue> { get }
-}
-
-/// This protocol allows transformations that apply to `Signal` types to be applied to a type that exposes a signal.
-public protocol SignalInputInterface {
-	associatedtype InputValue
-	var input: SignalInput<InputValue> { get }
-}
-
 /// Used to provide a light abstraction over the `SignalInput` and `SignalNext` types.
 /// In general, the only real purpose of this protocol is to enable the `send(value:)`, `send(error:)`, `close()` extensions in "SignalExternsions.swift"
 public protocol SignalSender {
@@ -47,14 +35,7 @@ public protocol SignalSender {
 	@discardableResult func send(result: Result<InputValue>) -> SignalError?
 }
 
-extension Signal: SignalInterface {
-	public var signal: Signal<OutputValue> { return self }
-}
-
-extension SignalInput: SignalInputInterface, SignalSender {
-	public var input: SignalInput<InputValue> { return self }
-}
-
+extension SignalInput: SignalSender {}
 extension SignalNext: SignalSender {}
 
 // All transformations on a Signal are built on top of the following functions, implemented in CwlSignal.swift
@@ -256,6 +237,16 @@ extension SignalInterface {
 		return pair.signal
 	}
 	
+	/// Same as `transform` with the same parameters, except errors are handled automatically and the handler is invoked only for *values*.
+	/// This function is similar to a `map` but with the differences:	
+	///	* You can send a different number of values to received
+	///   * You can send errors
+	///   * If the next stage in the signal pipeline is synchronous, it will be invoked during the call to `next.send` (i.e. while this handler closure is on the stack).
+	///
+	/// - Parameters:
+	///   - context: the `Exec` context used to invoke the `handler`
+	///   - handler: the function invoked for each received `Result.success`
+	/// - Returns: the created `Signal`
 	public func transformValues<U>(context: Exec = .direct, handler: @escaping (OutputValue, SignalNext<U>) -> Void) -> Signal<U> {
 		return signal.transform(context: context) { (result: Result<OutputValue>, next: SignalNext<U>) in
 			switch result {
@@ -265,6 +256,17 @@ extension SignalInterface {
 		}
 	}
 
+	/// Same as `transform` with the same parameters, except errors are handled automatically and the handler is invoked only for *values*.
+	/// This function is similar to a `map` but with the differences:	
+	///   - You can send a different number of values to received
+	///   - You can send errors
+	///   - If the next stage in the signal pipeline is synchronous, it will be invoked during the call to `next.send` (i.e. while this handler closure is on the stack).
+	///
+	/// - Parameters:
+	///   - initialState: the initial value for a state value associated with the handler. This value is retained and if the signal graph is deactivated, the state value is reset to this value.
+	///   - context: the `Exec` context used to invoke the `handler`
+	///   - handler: the function invoked for each received `Result.success`
+	/// - Returns: the created `Signal`
 	public func transformValues<S, U>(initialState: S, context: Exec = .direct, handler: @escaping (inout S, OutputValue, SignalNext<U>) -> Void) -> Signal<U> {
 		return signal.transform(initialState: initialState, context: context) { (state: inout S, result: Result<OutputValue>, next: SignalNext<U>) in
 			switch result {
@@ -728,7 +730,8 @@ extension SignalCapture {
 }
 
 extension Error {
-	var isSignalClosed: Bool { return (self as? SignalError) != .closed }
+	/// A convenience extension on `Error` to test if it is a `SignalError.closed`
+	public var isSignalClosed: Bool { return (self as? SignalError) != .closed }
 }
 
 extension Result {
