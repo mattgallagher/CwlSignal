@@ -448,7 +448,7 @@ extension SignalChannel {
 		return next { $0.last(context: context, matching: matching) }
 	}
 	
-	public func sample(_ trigger: Signal<()>) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+	public func sample<Interface: SignalInterface>(_ trigger: Interface) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where Interface.OutputValue == () {
 		return next { $0.sample(trigger) }
 	}
 	
