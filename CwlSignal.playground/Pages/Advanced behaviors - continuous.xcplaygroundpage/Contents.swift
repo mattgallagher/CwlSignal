@@ -17,13 +17,13 @@ import CwlSignal
 
 // Create an input/output pair, making the output continuous before returning
 // SOMETHING TO TRY: replace `.continuous()` with `.playback()`
-let (input, output) = Signal<Int>.channel().continuous().tuple
+let (input, output) = Signal<Int>.create()
 
 // Send values before a subscriber exists
 input.send(value: 1)
 input.send(value: 2)
 
-print("We just sent a two but we weren't listening. Now let's subscribe and get the last value.")
+print("We just sent a '2' but we weren't listening. Now let's subscribe and get the last value.")
 
 // Subscribe to listen to the values output by the channel
 let endpoint1 = output.subscribeValues { value in print("Endpoint 1 received: \(value)") }
@@ -35,8 +35,11 @@ input.send(value: 3)
 
 print("A new listener to the same signal will receive just the latest value.")
 
-// SOMETHING TO TRY: replace `.channel().continuous()` at the top with `.create()`. In that case, `output` will be a `Signal`, instead of a `SignalMulti` and adding a second listener like this will be an error.
 let endpoint2 = output.subscribeValues { value in print("Endpoint 2 received: \(value)") }
+
+/*:
+SOMETHING TO TRY: replace `.channel().continuous().tuple` at the top with `.create()`. In that case, `output` will be a `Signal`, instead of a `SignalMulti` and adding a second listener like this will be a "**Fatal error**". Unless you know you have a `SignalMulti` (a signal which supports multiple listeners), like the one created by `.continuous()`, you may subscribe or transform it *only once*.
+*/
 
 // We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 endpoint1.cancel()

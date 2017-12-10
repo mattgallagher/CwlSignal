@@ -29,7 +29,7 @@ class Service {
 			.map { seconds in
 				connect().timeout(interval: seconds).materialize()
 			}.next { allConnectionAttempts in
-				Signal<Result<String>>.switchLatest(allConnectionAttempts)
+				allConnectionAttempts.switchLatest()
 			}.multicast().tuple
    }
 }
@@ -41,8 +41,8 @@ let service = Service { Signal<String>.timer(interval: .fromSeconds(2), value: "
 let endpoint = service.signal.subscribe { result in
 	switch result {
 	case .success(.success(let message)): print("Connected with message: \(message)")
-	case .success(.failure(SignalError.closed)): print("Connection closed successfully")
-	case .success(.failure(SignalError.timeout)): print("Connection failed with timeout")
+	case .success(.failure(SignalComplete.closed)): print("Connection closed successfully")
+	case .success(.failure(SignalReactiveError.timeout)): print("Connection failed with timeout")
 	default: print(result)
 	}
 }

@@ -29,6 +29,12 @@
 	public typealias BinaryInteger = IntegerArithmetic & ExpressibleByIntegerLiteral
 #endif
 
+/// Errors used by the Reactive extensions on Signal.
+/// - timeout: used to close the stream when the Signal.timeout function reaches its limit.
+public enum SignalReactiveError: Error {
+	case timeout
+}
+
 extension SignalInterface {
 	/// - Note: the [Reactive X operator "Create"](http://reactivex.io/documentation/operators/create.html) is considered unnecessary, given the `CwlSignal.Signal.generate` and `CwlSignal.Signal.create` methods.
 	
@@ -50,10 +56,10 @@ extension Signal {
 	/// NOTE: it is possible to specify a `nil` error to have the signal remain open at the end of the sequence.
 	///
 	/// - parameter values: A Swift `Sequence` that generates the signal values.
-	/// - parameter error: The error with which to close the sequence. Can be `nil` to leave the sequence open (default: `SignalError.closed`)
+	/// - parameter error: The error with which to close the sequence. Can be `nil` to leave the sequence open (default: `SignalComplete.closed`)
 	/// - parameter context: the `Exec` where the `SequenceType` will be enumerated (default: .direct).
 	/// - returns: a signal that emits `values` and then closes
-	public static func from<S: Sequence>(values: S, error: Error? = SignalError.closed, context: Exec = .direct) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
+	public static func from<S: Sequence>(values: S, error: Error? = SignalComplete.closed, context: Exec = .direct) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
 		if let e = error {
 			return generate(context: context) { input in
 				guard let i = input else { return }
@@ -120,10 +126,10 @@ public class SignalSequence<OutputValue>: Sequence, IteratorProtocol {
 		}
 	}
 	
-	/// Stops listening to the signal and set the error value to SignalError.Cancelled
+	/// Stops listening to the signal and set the error value to SignalComplete.cancelled
 	public func cancel() {
 		context.invokeAndWait {
-			self.error = SignalError.cancelled
+			self.error = SignalComplete.cancelled
 			self.endpoint?.cancel()
 			self.semaphore.signal()
 		}
@@ -203,7 +209,7 @@ extension SignalInterface {
 	///   - value: the value to send
 	///   - error: if non-nil, sent after value to close the stream 
 	/// - Returns: a signal that will emit `value` and (optionally) close
-	public static func just(_ value: OutputValue, error: Error? = SignalError.closed) -> Signal<OutputValue> {
+	public static func just(_ value: OutputValue, error: Error? = SignalComplete.closed) -> Signal<OutputValue> {
 		return Signal<OutputValue>.from(values: CollectionOfOne(value), error: error)
 	}
 	
@@ -1161,7 +1167,7 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - context: the `Exec` where `matching` will be evaluated (default: .direct).
 	///   - matching: run for each value
-	/// - Returns: a signal that, if a single value in the sequence, when passed to `matching` returns `true`, then that value will be returned, followed by a SignalError.Closed when the input signal closes (otherwise a SignalError.Closed will be emitted without emitting any prior values).
+	/// - Returns: a signal that, if a single value in the sequence, when passed to `matching` returns `true`, then that value will be returned, followed by a SignalComplete.closed when the input signal closes (otherwise a SignalComplete.closed will be emitted without emitting any prior values).
 	public func single(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> Signal<OutputValue> {
 		return transform(initialState: nil, context: context) { (state: inout (firstMatch: OutputValue, unique: Bool)?, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
@@ -1525,12 +1531,12 @@ extension SignalInterface {
 extension Signal {	
 	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
 	///
-	/// NOTE: the signal closes as `SignalError.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
+	/// NOTE: the signal closes as `SignalComplete.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
 	///
 	/// - Parameter sources: an `Array` where `signal` is merged into the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public static func merge<S: Sequence>(_ sequence: S) -> Signal<OutputValue> where S.Iterator.Element == Signal<OutputValue> {
-		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalError.closed)
+		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalComplete.closed)
 		var sequenceEmpty = true
 		for s in sequence {
 			mergedInput.add(s, closePropagation: .errors)
@@ -1544,8 +1550,6 @@ extension Signal {
 	
 	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
 	///
-	/// NOTE: the signal closes as `SignalError.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
-	///
 	/// - Parameter sources: an `Array` where `signal` is merged into the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public static func merge(_ sources: Signal<OutputValue>...) -> Signal<OutputValue> {
@@ -1556,12 +1560,10 @@ extension Signal {
 extension SignalInterface {
 	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
 	///
-	/// NOTE: the signal closes as `SignalError.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
-	///
 	/// - Parameter sources: a variable parameter list of `Signal<OutputValue>` instances that are merged with `self` to form the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func mergeWith<S: Sequence>(_ sequence: S) -> Signal<OutputValue> where S.Iterator.Element == Signal<OutputValue> {
-		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalError.closed)
+		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalComplete.closed)
 		mergedInput.add(signal, closePropagation: .errors)
 		for s in sequence {
 			mergedInput.add(s, closePropagation: .errors)
@@ -1571,12 +1573,10 @@ extension SignalInterface {
 	
 	/// Implementation of [Reactive X operator "merge"](http://reactivex.io/documentation/operators/merge.html) where the output closes only when the last source closes.
 	///
-	/// NOTE: the signal closes as `SignalError.cancelled` when the last output closes. For other closing semantics, use `Signal.mergSetAndSignal` instead.
-	///
 	/// - Parameter sources: a variable parameter list of `Signal<OutputValue>` instances that are merged with `self` to form the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func mergeWith(_ sources: Signal<OutputValue>...) -> Signal<OutputValue> {
-		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalError.closed)
+		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalComplete.closed)
 		mergedInput.add(signal, closePropagation: .errors)
 		for s in sources {
 			mergedInput.add(s, closePropagation: .errors)
@@ -2055,7 +2055,7 @@ extension SignalInterface {
 		return sig
 	}
 	
-	/// Implementation of [Reactive X operator "retry"](http://reactivex.io/documentation/operators/retry.html) where retries occur until the error is not `SignalError.Closed` or `count` number of retries has occurred.
+	/// Implementation of [Reactive X operator "retry"](http://reactivex.io/documentation/operators/retry.html) where retries occur until the error is not `isSignalComplete` or `count` number of retries has occurred.
 	///
 	/// - Note: a ReactiveX "resubscribe" is interpreted as a disconnect and reconnect, which will trigger reactivation iff the preceding nodes have behavior that supports that.
 	///
@@ -2066,7 +2066,7 @@ extension SignalInterface {
 	/// - Returns: a signal that emits the values from `self` until an error is received and then, if fewer than `count` retries have occurred, disconnects from `self`, delays by `delaySeconds` and reconnects to `self` (triggering re-activation), otherwise if `count` retries have occurred, emits the `ErrorType` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
 	public func retry(count: Int, delayInterval: DispatchTimeInterval, context: Exec = .direct) -> Signal<OutputValue> {
 		return retry(0, context: context) { (retryCount: inout Int, e: Error) -> DispatchTimeInterval? in
-			if e as? SignalError == .closed {
+			if e.isSignalComplete {
 				return nil
 			} else if retryCount < count {
 				retryCount += 1
@@ -2219,14 +2219,14 @@ extension SignalInterface {
 	
 	/// Implementation of [Reactive X operator "materialize"](http://reactivex.io/documentation/operators/materialize-dematerialize.html)
 	///
-	/// WARNING: in CwlSignal, this operator will emit a `SignalError.closed` into the output signal immediately after emitting the first wrapped error. Within the "first error closes signal" behavior of CwlSignal, this is the only behavior that makes sense (since no further upstream values will be received), however, it does limit the usefulness of `materialize` to constructions where the `materialize` signal immediately outputs into a `SignalMergedInput` (including abstractions built on top, like `switchLatest` or child signals of a `flatMap`) that ignore non-error close conditions from the source signal.
+	/// WARNING: in CwlSignal, this operator will emit a `SignalComplete.closed` into the output signal immediately after emitting the first wrapped error. Within the "first error closes signal" behavior of CwlSignal, this is the only behavior that makes sense (since no further upstream values will be received), however, it does limit the usefulness of `materialize` to constructions where the `materialize` signal immediately outputs into a `SignalMultiInput` (including abstractions built on top, like `switchLatest` or child signals of a `flatMap`) that ignore non-error close conditions from the source signal.
 	///
 	/// - Returns: a signal where each `Result` emitted from self is further wrapped in a Result.success.
 	public func materialize() -> Signal<Result<OutputValue>> {
 		return transform { r, n in
 			n.send(value: r)
 			if r.isError {
-				n.send(error: SignalError.closed)
+				n.send(error: SignalComplete.closed)
 			}
 		}
 	}
@@ -2284,10 +2284,10 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "Timeout"](http://reactivex.io/documentation/operators/timeout.html)
 	///
 	/// - Parameters:
-	///   - interval: the duration before a SignalError.timeout will be emitted
+	///   - interval: the duration before a SignalReactiveError.timeout will be emitted
 	///   - resetOnValue: if `true`, each value sent through the signal will reset the timer (making the timeout an "idle" timeout). If `false`, the timeout duration is measured from the start of the signal and is unaffected by whether values are received.
 	///   - context: timestamps will be added based on the time in this context
-	/// - Returns: a mirror of self unless a timeout occurs, in which case it will closed by a SignalError.timeout
+	/// - Returns: a mirror of self unless a timeout occurs, in which case it will closed by a SignalReactiveError.timeout
 	public func timeout(interval: DispatchTimeInterval, resetOnValue: Bool = true, context: Exec = .direct) -> Signal<OutputValue> {
 		let (input, s) = Signal<()>.create()
 		let junction = Signal<()>.timer(interval: interval, context: context).junction()
@@ -2300,7 +2300,7 @@ extension SignalInterface {
 					junction.rebind()
 				}
 				n.send(result: r)
-			case .result2: n.send(error: SignalError.timeout)
+			case .result2: n.send(error: SignalReactiveError.timeout)
 			}
 		}
 	}
@@ -2336,7 +2336,7 @@ extension SignalInterface {
 			case .success(let v) where !test(v):
 				n.send(value: false)
 				n.close()
-			case .failure(SignalError.closed):
+			case .failure(_ as SignalComplete):
 				n.send(value: true)
 				n.close()
 			case .failure(let e): n.send(error: e)

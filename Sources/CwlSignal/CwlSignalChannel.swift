@@ -93,7 +93,7 @@ extension Signal {
 	}
 	
 	/// This function is used for starting SignalChannel pipeliens with a `SignalMergedInput`
-	public static func mergedChannel(onLastInputClosed: Error? = nil, onDeinit: Error = SignalError.cancelled) -> SignalChannel<OutputValue, SignalMergedInput<OutputValue>, OutputValue, Signal<OutputValue>> {
+	public static func mergedChannel(onLastInputClosed: Error? = nil, onDeinit: Error = SignalComplete.cancelled) -> SignalChannel<OutputValue, SignalMergedInput<OutputValue>, OutputValue, Signal<OutputValue>> {
 		let (input, signal) = Signal<OutputValue>.createMergedInput(onLastInputClosed: onLastInputClosed, onDeinit: onDeinit)
 		return SignalChannel<OutputValue, SignalMergedInput<OutputValue>, OutputValue, Signal<OutputValue>>(input: input, signal: signal)
 	}

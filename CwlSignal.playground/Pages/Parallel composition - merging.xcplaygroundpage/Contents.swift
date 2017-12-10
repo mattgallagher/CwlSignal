@@ -8,14 +8,14 @@
 
 The `combine` operator can take a fixed number of inputs with different types. There are a number of different ways of joining signals with different types, most of them based around CwlSignal's underlying `SignalMergeSet`.
 
-Let's look at how the different merging patterns work by exammining three different signals, "smileys", "spookeys" and "animals". In their construction, these signal differ by how they are closed ("smileys" is not closed, "spookeys" is closed normally and "animals" is closed with a cancelled error).
+Let's look at how the different merging patterns work by exammining three different signals, "smileys", "spookeys" and "animals". In their construction, these signal differ by how they are closed ("smileys" is not closed, "spookeys" is closed normally and "animals" is closed with a `timeout` error).
 
 ---
  */
 import CwlSignal
 let smileys = Signal<String>.from(values: ["😀", "🙃", "😉", "🤣"], error: nil).playback()
-let spookeys = Signal<String>.from(values: ["👻", "🎃", "👹", "😈"], error: SignalError.closed).playback()
-let animals = Signal<String>.from(values: ["🐶", "🐱", "🐭", "🐨"], error: SignalError.cancelled).playback()
+let spookeys = Signal<String>.from(values: ["👻", "🎃", "👹", "😈"], error: SignalComplete.closed).playback()
+let animals = Signal<String>.from(values: ["🐶", "🐱", "🐭", "🐨"], error: SignalReactiveError.timeout).playback()
 
 //: We can combine them into a single signal with `merge`
 print("Merge:")
@@ -24,7 +24,7 @@ Signal<String>.merge(smileys, spookeys, animals).subscribeValuesUntilEnd {
 }
 
 /*:
-If the two signals were asynchronous, `merge` would interleave them as they arrived. If you truly want one, then the other, you can use `concat` but concat won't emit the second signal until the first has closed.
+If the two signals were asynchronous, `merge` would interleave them as they arrived. If you want one signal in its entirety, then the other, you can use `concat` but `concat` which won't emit the second signal until the first has closed.
 
 SOMETHING TO TRY: swap `smileys` to the front... since smileys never emits a closing `error`, the other signals won't be emitted.
 */
@@ -38,7 +38,7 @@ We can also expose a `SignalMultiInput` which lets you send or join new signals 
 
 Since a "multi" input is intended to be exposed in interfaces, it does not propagate errors (it merely disconnects the joined signal).
 
-SOMETHING TO TRY: replace `MultiChannel` with `Channel` (so you get a regular `SignalInput` instead) and see how the input is consumed by the first `join` causing the remaining use of the input to send no signal data (returns an error).
+SOMETHING TO TRY: replace `multiChannel` with `channel` (so you get a regular `SignalInput` instead) and see how the input is consumed by the first `bind` causing the remaining use of the input to send no signal data (will instead return an error).
 */
 print("\n\nSignalMultiInput:")
 let multiInput = Signal<String>.multiChannel().subscribeValuesUntilEnd {
@@ -51,7 +51,7 @@ animals.bind(to: multiInput)
 multiInput.send(value: " End")
 
 /*:
-If you want incoming joined signals to be able close the output, you can use `SignalMergeSet`. This offers a `closePropagation` parameter that lets you control if `SignalError.closed` (.all) or other errors (.errors) are propagated to the output or not (.none).
+If you want incoming joined signals to be able close the output, you can use `SignalMergeSet`. This offers a `closePropagation` parameter that lets you control if any error or close message (`.all`) or merely non-successful errors (`.errors`) are propagated to the output – or if all attempts to close the stream, succesful or otherwise should be blocked (`.none`).
 
 The use cases for SignalMergeSet are fairly uncommon, so there's deliberately no convenient typealias for it. Instead, we construct the tuple from `Signal` and then wrap it in a `SignalChannel`.
 

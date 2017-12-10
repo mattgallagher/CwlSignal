@@ -79,7 +79,7 @@ class SignalCocoaTests: XCTestCase {
 		XCTAssert(results.count == 3)
 		XCTAssert(results.at(0)?.value as? NSNumber == NSNumber(integerLiteral: 123))
 		XCTAssert(results.at(1)?.value as? NSNumber == NSNumber(integerLiteral: 456))
-		XCTAssert(results.at(2)?.error as? SignalError == .closed)
+		XCTAssert(results.at(2)?.error as? SignalComplete == .closed)
 		
 		withExtendedLifetime(endpoint) {}
 	}
@@ -97,7 +97,7 @@ class SignalCocoaTests: XCTestCase {
 		XCTAssert(results.count == 3)
 		XCTAssert(results.at(0)?.value == NSNumber(integerLiteral: 123))
 		XCTAssert(results.at(1)?.value == NSNumber(integerLiteral: 456))
-		XCTAssert(results.at(2)?.error as? SignalError == .closed)
+		XCTAssert(results.at(2)?.error as? SignalComplete == .closed)
 		
 		withExtendedLifetime(endpoint) {}
 	}

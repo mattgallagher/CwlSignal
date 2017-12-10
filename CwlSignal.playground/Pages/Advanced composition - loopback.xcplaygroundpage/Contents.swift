@@ -8,9 +8,9 @@
 
 In some cases, you want a loop in your graph. A reason you might want this is to send a signal to the head of the graph when an element is emitted from the tail (allowing you to carefully manage how many elements are processing in the middle at any given time).
 
-You're not allowed to subscribe an antecedent (earlier) signal directly to the output of a postcedent (later) signal. It's difficult to do by accident but you'll get a "loop" error if you use the `join(to:)` function to try and create a loop.
+You're not allowed to subscribe an antecedent (earlier) signal directly to the output of a postcedent (later) signal. It's difficult to do by accident but you'll see a *precondition failure* error if you use the `bind(to:)` function to try and permanently link the output of a `Signal` with a `SignalInput` that feeds into the `Signal`.
 
-However, you can use an antecedent `SignalInput` in a later processing closure to similar effect. Re-entrancy will not occur during loopback (sending to a busy `Signal` processor will be queued, like any other send).
+However, while you're not allowed to create a loop in the graph itself, you can hold onto a preceeding `SignalInput` in a subsequent transformation function and `send` values to that `SignalInput`, which has a similar loopback effect. Re-entrancy will never occur during this type of loopback (if the value propagates through the graph to an in-use `Signal` processor, the value will be queued until the `Signal` is idle, like with any other `send`).
 
 In the following example, all the values 'b' to 'k' will be queued while 'a' is still processing. Queueing one item while the next processor is busy is standard behavior but this graph uses its own queue to queue in *reverse* order. So 'a' will be processed first but then the items will be emitted from 'k' to 'b'.
 

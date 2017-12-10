@@ -36,7 +36,11 @@ public protocol SignalInputInterface {
 
 /// A composable one-way communication channel that delivers a sequence of `Result<OutputValue>` items to a `handler` function running in a potentially different execution context. Delivery is serial (FIFO) queuing as required.
 ///
-/// The intended use case is as a serialized asynchronous change propagation framework.
+/// # NOTE:
+///
+/// Explaining reactive programming and usage of this class is *far* beyond the scope of this class code-comment. This is mostly a set of notes to myself about the implementation. Try the playgrounds for a better walkthrough of concepts and usage. Code comments on some of the methods within this class might also be helpful.
+///
+/// # Terminology:
 ///
 /// The word "signal" may be used in a number of ways, so keep in mind:
 ///	- `Signal`: this class
@@ -51,7 +55,7 @@ public protocol SignalInputInterface {
 ///	2. No possible action results in undefined, corrupt or assertion failure behavior
 ///	3. Values will never be delivered out-of-order.
 ///	4. After a disconnection and reconnection, only values from the latest connection will be delivered.
-///	5. Loops and reentrant-like behavior in the graph is permitted and reentrant delivery is simply queued to be delivered after any in-flight behavior.
+///	5. Loopback (sending to an antecedent input from a subsequent signal handler) and attempts at re-entrancy to any closure in the graph are permitted. Attempted re-entrancy delivery is simply queued to be delivered after any in-flight behavior completes.
 ///
 /// That's quite a list of goals but it's largely covered by two ideas:
 ///	1. No user code ever invoked inside a mutex
@@ -139,7 +143,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// A version of created that creates a `SignalMergedInput` instead of a `SignalInput`.
 	///
 	/// - Returns: the (input, signal)
-	public static func createMergedInput(onLastInputClosed: Error? = nil, onDeinit: Error = SignalError.cancelled) -> (input: SignalMergedInput<OutputValue>, signal: Signal<OutputValue>) {
+	public static func createMergedInput(onLastInputClosed: Error? = nil, onDeinit: Error = SignalComplete.cancelled) -> (input: SignalMergedInput<OutputValue>, signal: Signal<OutputValue>) {
 		let s = Signal<OutputValue>()
 		var dw = DeferredWork()
 		s.mutex.sync { s.updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw) }
@@ -553,7 +557,7 @@ public class Signal<OutputValue>: SignalInterface {
 	///   - values: an array of values
 	///   - error: the closing error for the `Signal`
 	/// - Returns: a `SignalMulti`
-	public static func preclosed<S: Sequence>(values: S, error: Error = SignalError.closed) -> SignalMulti<OutputValue> where S.Iterator.Element == OutputValue {
+	public static func preclosed<S: Sequence>(values: S, error: Error = SignalComplete.closed) -> SignalMulti<OutputValue> where S.Iterator.Element == OutputValue {
 		return SignalMulti<OutputValue>(processor: Signal<OutputValue>().attach { (s, dw) in
 			SignalMultiProcessor(signal: s, values: (Array(values), error), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
 		})
@@ -565,7 +569,7 @@ public class Signal<OutputValue>: SignalInterface {
 	///   - value: a single value
 	///   - error: the closing error for the `Signal`
 	/// - Returns: a `SignalMulti`
-	public static func preclosed(_ value: OutputValue, error: Error = SignalError.closed) -> SignalMulti<OutputValue> {
+	public static func preclosed(_ value: OutputValue, error: Error = SignalComplete.closed) -> SignalMulti<OutputValue> {
 		return SignalMulti<OutputValue>(processor: Signal<OutputValue>().attach { (s, dw) in
 			SignalMultiProcessor(signal: s, values: ([value], error), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
 		})
@@ -575,7 +579,7 @@ public class Signal<OutputValue>: SignalInterface {
 	///
 	/// - Parameter error: the closing error for the `Signal`
 	/// - Returns: a `SignalMulti`
-	public static func preclosed(error: Error = SignalError.closed) -> SignalMulti<OutputValue> {
+	public static func preclosed(error: Error = SignalComplete.closed) -> SignalMulti<OutputValue> {
 		return SignalMulti<OutputValue>(processor: Signal<OutputValue>().attach { (s, dw) in
 			SignalMultiProcessor(signal: s, values: ([], error), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
 		})
@@ -649,7 +653,7 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	// Need to close the `newInputSignal` and detach from all predecessors on deinit.
 	deinit {
-		_ = newInputSignal?.0.send(result: .failure(SignalError.cancelled), predecessor: nil, activationCount: 0, activated: true)
+		_ = newInputSignal?.0.send(result: .failure(SignalComplete.cancelled), predecessor: nil, activationCount: 0, activated: true)
 		
 		var dw = DeferredWork()
 		mutex.sync {
@@ -850,7 +854,7 @@ public class Signal<OutputValue>: SignalInterface {
 	//   - predecessor: the `SignalInput` or `SignalNext` delivering the handler
 	//   - activationCount: the activation count from the predecessor to match against internal value
 	//   - activated: whether the predecessor is already in `normal` delivery mode
-	// - Returns: `nil` on success. Non-`nil` values include `SignalError.cancelled` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
+	// - Returns: `nil` on success. Non-`nil` values include `SignalError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
 	@discardableResult fileprivate final func send(result: Result<OutputValue>, predecessor: Unmanaged<AnyObject>?, activationCount: Int, activated: Bool) -> SignalError? {
 		mutex.unbalancedLock()
 		
@@ -859,7 +863,7 @@ public class Signal<OutputValue>: SignalInterface {
 			
 			// Retain the result past the end of the lock
 			withExtendedLifetime(result) {}
-			return SignalError.cancelled
+			return SignalError.disconnected
 		}
 		
 		switch delivery {
@@ -1208,7 +1212,7 @@ public class Signal<OutputValue>: SignalInterface {
 	}
 }
 
-/// `SignalMulti<OutputValue>` is the only subclass of `Signal<OutputValue>`. It represents a `Signal<OutputValue>` that allows attaching multiple listeners (a normal `Signal<OutputValue>` is "single owner" and will immediately close any subsequent listeners after the first with a `SignalError.duplicate` error).
+/// `SignalMulti<OutputValue>` is the only subclass of `Signal<OutputValue>`. It represents a `Signal<OutputValue>` that allows attaching multiple listeners (a normal `Signal<OutputValue>` is "single owner" and will immediately close any subsequent listeners after the first with a `SignalBindError.duplicate` error).
 /// This class is not constructed directly but is instead created from one of the `SignalMulti<OutputValue>` returning functions on `Signal<OutputValue>`, including `playback()`, `multicast()` and `continuous()`.
 public final class SignalMulti<OutputValue>: Signal<OutputValue> {
 	fileprivate let spawnSingle: (SignalPredecessor) -> Signal<OutputValue>
@@ -1247,9 +1251,9 @@ public class SignalInput<InputValue>: Cancellable, SignalInputInterface {
 	/// The primary signal sending function
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
-	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.cancelled` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
+	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
 	@discardableResult public func send(result: Result<InputValue>) -> SignalError? {
-		guard let s = signal else { return SignalError.cancelled }
+		guard let s = signal else { return SignalError.disconnected }
 		return s.send(result: result, predecessor: nil, activationCount: activationCount, activated: true)
 	}
 	
@@ -1259,9 +1263,9 @@ public class SignalInput<InputValue>: Cancellable, SignalInputInterface {
 		return self
 	}
 	
-	/// Implementation of `Cancellable` that sends a `SignalError.cancelled`. You wouldn't generally invoke this yourself; it's intended to be invoked if the `SignalInput` owner is released and the `SignalInput` is no longer retained.
+	/// Implementation of `Cancellable` that sends a `SignalComplete.cancelled`. You wouldn't generally invoke this yourself; it's intended to be invoked if the `SignalInput` owner is released and the `SignalInput` is no longer retained.
 	public func cancel() {
-		_ = send(result: .failure(SignalError.cancelled))
+		_ = send(result: .failure(SignalComplete.cancelled))
 	}
 	
 	fileprivate var cancelOnDeinit: Bool {
@@ -1915,7 +1919,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 	
 	fileprivate override var activeWithoutOutputsInternal: Bool {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		return state.error != nil
+		return state.error == nil
 	}
 	
 	fileprivate override var multipleOutputsPermitted: Bool {
@@ -1937,7 +1941,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		assert(signal.mutex.unbalancedTryLock() == false)
 		return { [weak self] r in
 			if let s = self {
-				var state = Result<State>.failure(SignalError.closed)
+				var state = Result<State>.failure(SignalComplete.closed)
 
 				// Copy the state under the mutex
 				s.sync {
@@ -1967,7 +1971,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		let activated = signal.delivery.isNormal
 		return { [weak self] r in
 			if let s = self {
-				var state = Result<State>.failure(SignalError.closed)
+				var state = Result<State>.failure(SignalComplete.closed)
 				
 				// Copy the state under the mutex
 				s.sync {
@@ -2074,7 +2078,7 @@ fileprivate protocol SignalBlockable: class {
 }
 
 // An interface used to send signals from the inside of a transformer handler function to the next signal in the graph. Similar to an `SignalInput` but differing on what effects retaining and releasing have.
-//	1. Releasing an `SignalInput` will automatically send a `SignalError.cancelled` – that doesn't happend with `SignalNext`.
+//	1. Releasing an `SignalInput` will automatically send a `SignalComplete.cancelled` – that doesn't happend with `SignalNext`.
 //	2. Holding onto the `SignalNext` outside the scope of the handler function will block the transformer queue, allowing processing to continue out-of-line until the `SignalNext` is released.
 public final class SignalNext<OutputValue> {
 	fileprivate weak var signal: Signal<OutputValue>?
@@ -2106,9 +2110,9 @@ public final class SignalNext<OutputValue> {
 	// Send simply combines the activation and predecessor information
 	//
 	// - Parameter result: signal to send
-	// - Returns: `nil` on success. Non-`nil` values include `SignalError.cancelled` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
+	// - Returns: `nil` on success. Non-`nil` values include `SignalError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
 	@discardableResult public func send(result: Result<OutputValue>) -> SignalError? {
-		guard let s = signal else { return SignalError.cancelled }
+		guard let s = signal else { return SignalError.disconnected }
 		return s.send(result: result, predecessor: predecessor, activationCount: activationCount, activated: activated)
 	}
 	
@@ -2681,9 +2685,9 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 
 /// When an input to a `SignalMergedInput` sends an error, this behavior determines the effect on the merge set and its output
 ///
-/// - none: the input signal is removed from the merge set but the error is not propagated through to the output. This is default for most `SignalMergedInput` usage.
-/// - errors: if the error is not SignalError.closed, then the error is propagated through to the output. This is the default for many Reactive X operators like `flatMap`.
-/// - close: any error, including SignalError.closed, is progagated through to the output
+/// - none: the input signal is removed from the merge set but the error is not propagated through to the output.
+/// - errors: if the error is not an instance of `SignalComplete`, then the error is propagated through to the output. This is the default.
+/// - close: any error, including `SignalComplete.closed`, is progagated through to the output
 public enum SignalClosePropagation {
 	case none
 	case errors
@@ -2696,11 +2700,7 @@ public enum SignalClosePropagation {
 	public func shouldPropagateError(_ error: Error) -> Bool {
 		switch self {
 		case .none: return false
-		case .errors:
-			if let e = error as? SignalError, e == .closed {
-				return false
-			}
-			return true
+		case .errors: return !error.isSignalComplete
 		case .all: return true
 		}
 	}
@@ -2846,18 +2846,18 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 	/// NOTE: on `SignalMultiInput` this is a relatively low performance convenience method; it calls `singleInput()` on each send. If you plan to send multiple results, it is more efficient to call `singleInput()`, retain the `SignalInput` that creates and call `SignalInput` on that single input.
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
-	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.cancelled` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
+	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
 	@discardableResult public final override func send(result: Result<InputValue>) -> SignalError? {
 		return singleInput().send(result: result)
 	}
 	
-	/// Implementation of `Cancellable` removes all inputs and sends a `SignalError.cancelled` to the `SignalMergedInput` destination.
+	/// Implementation of `Cancellable` removes all inputs and sends a `SignalComplete.cancelled` to the destination.
 	public final override func cancel() {
 		guard let sig = signal else { return }
 		var dw = DeferredWork()
 		sig.mutex.sync {
 			sig.removeAllPreceedingInternal(dw: &dw)
-			sig.pushInternal(values: [], error: SignalError.cancelled, activated: true, dw: &dw)
+			sig.pushInternal(values: [], error: SignalComplete.cancelled, activated: true, dw: &dw)
 		}
 		dw.runWork()
 	}
@@ -2865,7 +2865,7 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 
 /// A SignalMergeSet is a very similar to a SignalMultiInput but offering slightly different behaviors as expected by common transformations.
 /// In particular:
-///	* The SignalMergeSet can be configured to send a specific Error (e.g. SignalError.closed) when the last input is removed. This is helpful when merging a specific set of inputs and running until they're all complete.
+///	* The SignalMergeSet can be configured to send a specific Error (e.g. SignalComplete.closed) when the last input is removed. This is helpful when merging a specific set of inputs and running until they're all complete.
 ///	* The SignalMergeSet can be configured to send a specific Error on deinit (i.e. when there are no inputs and the class is not otherwise retained). SignalMultiInput sends a `.cancelled` in this scenario but SignalMergeSet sends a `.closed` and can be configured to send something else as desired.
 ///	* A SignalMultiInput rejects all attempts to send errors through it (closes, cancels, or otherwise) and merely disconnects the input that sent the error. A SignalMergeSet can be configured to similar reject all (`.none`) or it can permit all (`.all`), or permit only non-close errors (`.errors`). The latter is the *default* for SignalMultiInput (except when using `singleInput` which keeps the `.none` behavior). This default marks a difference in behavior, relative to SignalMultiInput, which always uses `.none`.
 /// Direct use of `SignalMergedInput` is not particularly common. It is typically used via Reactive transformations like `merge` or `flatMapLatest`.
@@ -2873,7 +2873,7 @@ public class SignalMergedInput<InputValue>: SignalMultiInput<InputValue> {
 	fileprivate let onLastInputClosed: Error?
 	fileprivate let onDeinit: Error
 	
-	fileprivate init(signal: Signal<InputValue>, onLastInputClosed: Error? = nil, onDeinit: Error = SignalError.cancelled) {
+	fileprivate init(signal: Signal<InputValue>, onLastInputClosed: Error? = nil, onDeinit: Error = SignalComplete.cancelled) {
 		self.onLastInputClosed = onLastInputClosed
 		self.onDeinit = onDeinit
 		super.init(signal: signal)
@@ -2996,35 +2996,41 @@ fileprivate enum SignalDelivery {
 	var isNormal: Bool { if case .normal = self { return true } else { return false } }
 }
 
-/// A special set of errors that may be sent through the stream (or returned from `send` functions) to indicate specific close conditions
+/// An enum used to represent the two "expected" end-of-stream cases.
 ///
-/// - closed:    indicates the end-of-stream was reached normally
-/// - cancelled: indicates the signal graph was deconstructed
-///		This error will be sent through the graph in one of two situations
-///			1. `.cancel` is explicitly called on one of the `Cancellable` entities (`SignalInput`, `SignalJunction`, `SignalCapture` or `SignalMergedInput`).
-///			2. a `SignalInput` or `SignalMergedInput` is released while it is active
-///		A `.cancelled` error may be an expected "end-of-use" scenario or it may indicate a programmer error.
-/// - inactive:  the signal graph is not activated (no endpoints in the graph) and the Result was not sent
-/// - duplicate: when attempts to add multiple listeners to non-multi `Signals` occurs, the subsequent attempts are instead connected to a separate, pre-closed `Signal` that sends this error.
-/// - timeout:   used by some utility functions to indicate a time limit has expired
-public enum SignalError: Error {
+/// - closed:    indicates the end-of-stream was reached by calling close
+/// - cancelled: indicates the end-of-stream was reached because an input was disconnected or cancelled
+///
+/// There may be rare cases where `.cancelled` indicates a scenario you might want to handle specially but for all handling within the CwlSignal framework, these two are treated identically – this is expected to be the common situation in user code. There are situations where `.cancelled` may indicate programmer error (i.e. failure to retain `SignalInput` correctly) so distinguishing between the two may be important for debugging.
+///
+/// Even though `SignalComplete` conforms to `Error` and is sent as the `failure` case of `Result` values passed through the signal graph, `SignalComplete` is treated as the non-error case (a "successful" completion of the signal stream).
+///
+/// See also: `isSignalComplete` on `Error` and `Result<T>` for easily testing if a given `Error` or `Result` contains a `SignalComplete`.
+public enum SignalComplete: Error {
 	case closed
-	case inactive
 	case cancelled
-	case timeout
 }
 
-/// A minor convenience SignalClosed = SignalError.closed
-public var SignalClosed: SignalError { return SignalError.closed }
+/// Errors which may be returned when attempting to send a signal.
+///
+/// - disconnected:  the signal input has been disconnected from its target signal
+/// - inactive:  the signal graph is not activated (no endpoints in the graph) and the Result was not sent
+public enum SignalError {
+	@available(*, unavailable, message: "Use SignalComplete.closed instead or test Error/Result<T> for isSignalComplete")
+	case closed
+	@available(*, unavailable, message: "Use SignalComplete.cancelled instead or test Error/Result<T> for isSignalComplete")
+	case cancelled
+	
+	case disconnected
+	case inactive
 
-extension Result {
-	/// A minor convenience Result.signalClosed = Result.failure(SignalError.closed)
-	public static var signalClosed: Result<Value> { return Result.failure(SignalError.closed) }
+	@available(*, unavailable, message: "Use SignalReactiveError.timeout instead")
+	case timeout
 }
 
 /// Attempts to bind a `SignalInput` to a bindable handler (`SignalMergeSet`, `SignalJunction` or `SignalCapture`) can fail in two different ways.
 /// - cancelled: the destination `SignalInput`/`SignalMergeSet` was no longer the active input for its `Signal` (either its `Signal` is joined to something else or `Signal` has been deactivated, invalidating old inputs)
-/// - duplicate(`SignalInput<OutputValue>`): the source `Signal` already had an output connected and doesn't support multiple outputs so the bind failed. If the bind destination was a `SignalInput` then that `SignalInput` was consumed by the attempt so the associated value will be a new `SignalInput` replacing the old one. If the bind destination was a `SignalMergeSet`, the associated value will be `nil`.
+/// - duplicate(`SignalInput<OutputValue>`): the source `Signal` already had an output connected and doesn't support multiple outputs so the bind failed. If the bind destination was a single `SignalInput` then that `SignalInput` was consumed by the attempt so the associated value will be a new `SignalInput` replacing the old one.
 public enum SignalBindError<OutputValue>: Error {
 	case cancelled
 	case loop

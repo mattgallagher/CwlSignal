@@ -31,7 +31,7 @@ public protocol SignalSender {
 	/// The primary signal sending function
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
-	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.cancelled` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
+	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
 	@discardableResult func send(result: Result<InputValue>) -> SignalError?
 }
 
@@ -183,12 +183,12 @@ extension SignalSender {
 		return send(result: .failure(error))
 	}
 	
-	/// Sends a `Result.failure(SignalError.closed)`
+	/// Sends a `Result.failure(SignalComplete.closed)`
 	///
 	/// - Returns: the return value from the underlying `send(result:)` function
 	@discardableResult
 	public func close() -> SignalError? {
-		return send(result: .failure(SignalError.closed))
+		return send(result: .failure(SignalComplete.closed))
 	}
 }
 
@@ -530,11 +530,11 @@ extension SignalInterface {
 			}
 			switch r {
 			case .success(let v): n.send(value: v)
-			case .failure(SignalError.cancelled):
+			case .failure(SignalComplete.cancelled):
 				// If the `mergedInput` is `nil` at this point, that means that this `.cancelled` comes from the `mergedInput`, not one of its inputs. We'd prefer in that case to emit the `outerSignal`'s `closeError` rather than follow the `shouldPropagateError` logic.
-				n.send(error: mergedInput == nil ? (closeError ?? SignalError.cancelled) : SignalError.cancelled)
+				n.send(error: mergedInput == nil ? (closeError ?? SignalComplete.cancelled) : SignalComplete.cancelled)
 			case .failure(let e):
-				n.send(error: closePropagation.shouldPropagateError(e) ? e : (closeError ?? SignalError.cancelled))
+				n.send(error: closePropagation.shouldPropagateError(e) ? e : (closeError ?? SignalComplete.cancelled))
 			}
 		}
 	}
@@ -738,13 +738,22 @@ extension SignalCapture {
 }
 
 extension Error {
-	/// A convenience extension on `Error` to test if it is a `SignalError.closed`
-	public var isSignalClosed: Bool { return (self as? SignalError) == .closed }
+	/// A convenience extension on `Error` to test if it is a `SignalComplete`
+	public var isSignalComplete: Bool { return self is SignalComplete }
+
+	@available(*, unavailable, message: "Use isSignalComplete or test `(error as? SignalComplete) == .closed`")
+	public var isSignalClosed: Bool { return self is SignalComplete }
 }
 
 extension Result {
-	/// A convenience extension on `Result` to test if it wraps a `SignalError.closed`
-	public var isSignalClosed: Bool {
-		return error as? SignalError == .closed
+	/// A convenience extension on `Result` to test if it wraps a `SignalComplete`
+	public var isSignalComplete: Bool {
+		switch self {
+		case .failure(_ as SignalComplete): return true
+		default: return false
+		}
 	}
+
+	@available(*, unavailable, message: "Use isSignalComplete or test Result<T> for .failure(SignalComplete.closed)")
+	public var isSignalClosed: Bool { return false }
 }
