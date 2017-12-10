@@ -738,6 +738,9 @@ extension SignalCapture {
 }
 
 extension Error {
+	/// A minor convenience so that parameters requesting an `Error` can be passed `.signalClosed`
+	public var signalClosed: Error { return SignalComplete.closed }
+	
 	/// A convenience extension on `Error` to test if it is a `SignalComplete`
 	public var isSignalComplete: Bool { return self is SignalComplete }
 
@@ -746,6 +749,9 @@ extension Error {
 }
 
 extension Result {
+	/// A minor convenience so that parameters requesting a `Result` can be passed `.signalClosed`
+	public static var signalClosed: Result<Value> { return Result.failure(SignalComplete.closed) }
+	
 	/// A convenience extension on `Result` to test if it wraps a `SignalComplete`
 	public var isSignalComplete: Bool {
 		switch self {
