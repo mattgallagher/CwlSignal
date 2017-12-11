@@ -1829,16 +1829,10 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testCatch() {
 		var results1 = [Result<Int>]()
-		let signal1 = Signal<Int>.from(values: 0..<10)
+		let signal1 = Signal<Int>.from(values: 0..<10, error: TestError.zeroValue)
 		let signal2 = Signal<Int>.from(values: 10..<20)
-		var alternateAvailable = true
 		_ = signal1.catchError { e -> Signal<Int>? in
-			if e as? SignalComplete == .closed, alternateAvailable {
-				alternateAvailable = false
-				return signal2
-			} else {
-				return nil
-			}
+			return signal2
 		}.subscribe { (r: Result<Int>) in
 			results1.append(r)
 		}
@@ -1849,7 +1843,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results1.at(20)?.error as? SignalComplete == .closed)
 		
 		var results2 = [Result<Int>]()
-		let signal3 = Signal<Int>.from(values: 0..<10)
+		let signal3 = Signal<Int>.from(values: 0..<10, error: TestError.twoValue)
 		_ = signal3.catchError { e in (10..<20, SignalComplete.closed) }.subscribe { (r: Result<Int>) in
 			results2.append(r)
 		}
@@ -2001,7 +1995,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testOn() {
 		var results = [String]()
-		let j = Signal<Int>.from(values: 0..<5).onActivate {
+		let j = Signal<Int>.from(values: 0..<5, error: SignalReactiveError.timeout).onActivate {
 			results.append("activate")
 		}.onDeactivate {
 			results.append("deactivate")
@@ -2039,9 +2033,9 @@ class SignalReactiveTests: XCTestCase {
             "4",
             "success(4)",
             "Output: success(4)",
-            "failure(CwlSignal.SignalComplete.closed)",
-            "closed",
-            "Output: failure(CwlSignal.SignalComplete.closed)",
+            "failure(CwlSignal.SignalReactiveError.timeout)",
+            "timeout",
+            "Output: failure(CwlSignal.SignalReactiveError.timeout)",
             "deactivate",
         ])
 
@@ -2071,9 +2065,9 @@ class SignalReactiveTests: XCTestCase {
 			"4",
 			"success(4)",
 			"Output: success(4)",
-			"failure(CwlSignal.SignalComplete.closed)",
-			"closed",
-			"Output: failure(CwlSignal.SignalComplete.closed)",
+			"failure(CwlSignal.SignalReactiveError.timeout)",
+			"timeout",
+			"Output: failure(CwlSignal.SignalReactiveError.timeout)",
 			"deactivate",
 		])
 	}

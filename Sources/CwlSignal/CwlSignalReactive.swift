@@ -1964,16 +1964,21 @@ extension SignalInterface {
 	///
 	/// - Parameters:
 	///   - context: context where `recover` will run
-	///   - recover: a function that, when passed the `ErrorType` that closed `self`, returns a sequence of values and an `ErrorType` that should be emitted instead of the error that `self` emitted.
+	///   - catchSignalComplete: by default, the `recover` closure will be invoked only for unexpected errors, i.e. when `Error` is *not* a `SignalComplete`. Set this parameter to `true` to invoke the `recover` closure for *all* errors, including `SignalComplete.closed` and `SignalComplete.cancelled`. 
+	///   - recover: a function that, when passed the `Error` that closed `self`, returns a sequence of values and an `Error` that should be emitted instead of the error that `self` emitted.
 	/// - Returns: a signal that emits the values from `self` until an error is received and then emits the values from `recover` and then emits the error from `recover`.
-	public func catchError<S: Sequence>(context: Exec = .direct, recover: @escaping (Error) -> (S, Error)) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
+	public func catchError<S: Sequence>(context: Exec = .direct, catchSignalComplete: Bool = false, recover: @escaping (Error) -> (S, Error)) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
 		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v): n.send(value: v)
 			case .failure(let e):
-				let (sequence, error) = recover(e)
-				sequence.forEach { n.send(value: $0) }
-				n.send(error: error)
+				if catchSignalComplete || !e.isSignalComplete {
+					let (sequence, error) = recover(e)
+					sequence.forEach { n.send(value: $0) }
+					n.send(error: error)
+				} else {
+					n.send(error: e)
+				}
 			}
 		}
 	}
@@ -1982,11 +1987,13 @@ extension SignalInterface {
 // Essentially a closure type used by `catchError`, defined as a separate class so the function can reference itself
 private class CatchErrorRecovery<OutputValue> {
 	fileprivate let recover: (Error) -> Signal<OutputValue>?
-	fileprivate init(recover: @escaping (Error) -> Signal<OutputValue>?) {
+	fileprivate let catchTypes: SignalClosePropagation
+	fileprivate init(recover: @escaping (Error) -> Signal<OutputValue>?, catchTypes: SignalClosePropagation) {
 		self.recover = recover
+		self.catchTypes = catchTypes
 	}
 	fileprivate func catchErrorRejoin(j: SignalJunction<OutputValue>, e: Error, i: SignalInput<OutputValue>) {
-		if let s = recover(e) {
+		if catchTypes.shouldPropagateError(e), let s = recover(e) {
 			do {
 				let f: (SignalJunction<OutputValue>, Error, SignalInput<OutputValue>) -> () = self.catchErrorRejoin
 				try s.junction().bind(to: i, onError: f)
@@ -2002,16 +2009,18 @@ private class CatchErrorRecovery<OutputValue> {
 // Essentially a closure type used by `retry`, defined as a separate class so the function can reference itself
 private class RetryRecovery<U> {
 	fileprivate let shouldRetry: (inout U, Error) -> DispatchTimeInterval?
+	fileprivate let catchTypes: SignalClosePropagation
 	fileprivate var state: U
 	fileprivate let context: Exec
 	fileprivate var timer: Cancellable? = nil
-	fileprivate init(shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?, state: U, context: Exec) {
+	fileprivate init(shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?, catchTypes: SignalClosePropagation, state: U, context: Exec) {
 		self.shouldRetry = shouldRetry
+		self.catchTypes = catchTypes
 		self.state = state
 		self.context = context
 	}
 	fileprivate func retryRejoin<OutputValue>(j: SignalJunction<OutputValue>, e: Error, i: SignalInput<OutputValue>) {
-		if let t = shouldRetry(&state, e) {
+		if catchTypes.shouldPropagateError(e), let t = shouldRetry(&state, e) {
 			timer = context.singleTimer(interval: t) {
 				do {
 					try j.bind(to: i, onError: self.retryRejoin)
@@ -2030,12 +2039,13 @@ extension SignalInterface {
 	///
 	/// - Parameters:
 	///   - context: context where `recover` will run
-	///   - recover: a function that, when passed the `ErrorType` that closed `self`, optionally returns a new signal.
-	/// - Returns: a signal that emits the values from `self` until an error is received and then, if `recover` returns non-`nil` emits the values from `recover` and then emits the error from `recover`, otherwise if `recover` returns `nil`, emits the `ErrorType` from `self`.
-	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<OutputValue>?) -> Signal<OutputValue> {
+	///   - catchSignalComplete: by default, the `recover` closure will be invoked only for unexpected errors, i.e. when `Error` is *not* a `SignalComplete`. Set this parameter to `true` to invoke the `recover` closure for *all* errors, including `SignalComplete.closed` and `SignalComplete.cancelled`. 
+	///   - recover: a function that, when passed the `Error` that closed `self`, optionally returns a new signal.
+	/// - Returns: a signal that emits the values from `self` until an error is received and then, if `recover` returns non-`nil` emits the values from `recover` and then emits the error from `recover`, otherwise if `recover` returns `nil`, emits the `Error` from `self`.
+	public func catchError(context: Exec = .direct, catchSignalComplete: Bool = false, recover: @escaping (Error) -> Signal<OutputValue>?) -> Signal<OutputValue> {
 		let (input, sig) = Signal<OutputValue>.create()
 		// Both `junction` and `input` are newly created so this can't be an error
-		try! junction().bind(to: input, onError: CatchErrorRecovery(recover: recover).catchErrorRejoin)
+		try! junction().bind(to: input, onError: CatchErrorRecovery(recover: recover, catchTypes: catchSignalComplete ? .all : .errors).catchErrorRejoin)
 		return sig
 	}
 	
@@ -2046,12 +2056,13 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - initialState:  a mutable state value that will be passed into `shouldRetry`.
 	///   - context: the `Exec` where timed reconnection will occcur (default: .global).
-	///   - shouldRetry: a function that, when passed the current state value and the `ErrorType` that closed `self`, returns an `Optional<Double>`.
-	/// - Returns: a signal that emits the values from `self` until an error is received and then, if `shouldRetry` returns non-`nil`, disconnects from `self`, delays by the number of seconds returned from `shouldRetry`, and reconnects to `self` (triggering re-activation), otherwise if `shouldRetry` returns `nil`, emits the `ErrorType` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
-	public func retry<U>(_ initialState: U, context: Exec = .direct, shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?) -> Signal<OutputValue> {
+	///   - catchSignalComplete: by default, the `shouldRetry` closure will be invoked only for unexpected errors, i.e. when `Error` is *not* a `SignalComplete`. Set this parameter to `true` to invoke the `recover` closure for *all* errors, including `SignalComplete.closed` and `SignalComplete.cancelled`. 
+	///   - shouldRetry: a function that, when passed the current state value and the `Error` that closed `self`, returns an `Optional<Double>`.
+	/// - Returns: a signal that emits the values from `self` until an error is received and then, if `shouldRetry` returns non-`nil`, disconnects from `self`, delays by the number of seconds returned from `shouldRetry`, and reconnects to `self` (triggering re-activation), otherwise if `shouldRetry` returns `nil`, emits the `Error` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
+	public func retry<U>(_ initialState: U, context: Exec = .direct, catchSignalComplete: Bool = false, shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?) -> Signal<OutputValue> {
 		let (input, sig) = Signal<OutputValue>.create()
 		// Both `junction` and `input` are newly created so this can't be an error
-		try! junction().bind(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, state: initialState, context: context).retryRejoin)
+		try! junction().bind(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, catchTypes: catchSignalComplete ? .all : .errors, state: initialState, context: context).retryRejoin)
 		return sig
 	}
 	
@@ -2063,10 +2074,11 @@ extension SignalInterface {
 	///   - count: the maximum number of retries
 	///   - delayInterval: the number of seconds between retries
 	///   - context: the `Exec` where timed reconnection will occcur (default: .global).
-	/// - Returns: a signal that emits the values from `self` until an error is received and then, if fewer than `count` retries have occurred, disconnects from `self`, delays by `delaySeconds` and reconnects to `self` (triggering re-activation), otherwise if `count` retries have occurred, emits the `ErrorType` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
-	public func retry(count: Int, delayInterval: DispatchTimeInterval, context: Exec = .direct) -> Signal<OutputValue> {
+	///   - catchSignalComplete: by default, retry attempts will occur only for unexpected errors, i.e. when `Error` is *not* a `SignalComplete`. Set this parameter to `true` to invoke the `recover` closure for *all* errors, including `SignalComplete.closed` and `SignalComplete.cancelled`. 
+	/// - Returns: a signal that emits the values from `self` until an error is received and then, if fewer than `count` retries have occurred, disconnects from `self`, delays by `delaySeconds` and reconnects to `self` (triggering re-activation), otherwise if `count` retries have occurred, emits the `Error` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
+	public func retry(count: Int, delayInterval: DispatchTimeInterval, context: Exec = .direct, catchSignalComplete: Bool = false) -> Signal<OutputValue> {
 		return retry(0, context: context) { (retryCount: inout Int, e: Error) -> DispatchTimeInterval? in
-			if e.isSignalComplete {
+			if !catchSignalComplete && e.isSignalComplete {
 				return nil
 			} else if retryCount < count {
 				retryCount += 1
@@ -2205,13 +2217,15 @@ extension SignalInterface {
 	///   - context: where the handler will be invoked
 	///   - handler: invoked for each error (Result.failure) in the signal
 	/// - Returns: a signal that emits the same outputs as self
-	public func onError(context: Exec = .direct, handler: @escaping (Error) -> ()) -> Signal<OutputValue> {
+	public func onError(context: Exec = .direct, catchSignalComplete: Bool = false, handler: @escaping (Error) -> ()) -> Signal<OutputValue> {
 		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v):
 				n.send(value: v)
 			case .failure(let e):
-				handler(e)
+				if catchSignalComplete || !e.isSignalComplete {
+					handler(e)
+				}
 				n.send(error: e)
 			}
 		}
