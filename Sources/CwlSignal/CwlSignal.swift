@@ -1268,14 +1268,12 @@ public class SignalInput<InputValue>: Cancellable, SignalInputInterface {
 		_ = send(result: .failure(SignalComplete.cancelled))
 	}
 	
-	fileprivate var cancelOnDeinit: Bool {
-		return true
+	fileprivate func cancelOnDeinit() {
+		cancel()
 	}
 
 	deinit {
-		if cancelOnDeinit {
-			cancel()
-		}
+		cancelOnDeinit()
 	}
 }
 
@@ -2771,11 +2769,9 @@ fileprivate class SignalMultiInputProcessor<InputValue>: SignalProcessor<InputVa
 	}
 }
 
-/// Technically, a `SignalInput` is threadsafe and you could share it between multiple locations, if you wished. However, you might want to `bind` multiple incoming signals to a single output – in that case, you need a `SignalMultiInput`.
-/// You can use a `SignalMultiInput` like a `SignalInput`, if you wish, but that's not its key purpose. The key purpose of a `SignalMultiInput` is that you can `bind` to it, multiple times, spawning multiple `SignalInput`s connected to the same outgoing `Signal`, in much the same way that `SignalMulti` can spawn multiple outgoing `Signal`s connected to the same source `Signal`.
-/// There's an important semantic difference here between `SignalInput` and `SignalMultiInput`... when an error is sent to one of the inputs spawned by `SignalMultiInput`, it disconnects the `SignalInput` but the error is not propagated to the output signal. This is in accordance with the idea that `SignalMultiInput` is safe in a shared interface – one incoming signal cannot close the outgoing signal and disconnect all the other signals. If you need incoming signals to have the ability to close the outgoing signal, use the `SignalMergedInput` subclass.
+/// Technically, a `SignalInput` is threadsafe and you could share it between multiple locations, if you wished. However, you can call `bind(to:)` on a `SignalInput` just once before it is consumed (is no longer connected to the signal graph). If you want an input that can be bound multiple times, you need a `SignalMultiInput`.
+/// There's an important semantic difference here between `SignalInput` and `SignalMultiInput`... when you `bind` to a `SignalInput`, then sending a `SignalComplete` through the graph will close the output. With s `SignalMultiInput`, sending a `SignalComplete` disconnects the preceeding branch of the signal graph but the close is not propagated to the output signal. This is in accordance with the idea that `SignalMultiInput` is a shared interface – the `SignalMultiInput` remains open until all inputs are closed and the `SignalMultiInput` itself is released. Unexpected errors (instances of `Error` other than `SignalComplete`) will still propagate through a `SignalMultiInput`, closing the outgoing graph. If you need more precise control about whether incoming signals have the ability to close the outgoing signal, use the `SignalMergedInput` subclass.
 /// Another difference is that a `SignalInput` is invalidated when the graph deactivates whereas `SignalMultiInput` remains valid.
-/// NOTE: while a `SignalMultiInput` is generally usable in an external interface, it does include a `cancel` method (which removes all incoming signals and cancels the output). If you want to hide this behavior, you would still need to keep the `SignalMultiInput` internal and expose your own `add` function. 
 public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 	// Constructs a `SignalMergedInput` (typically called from `Signal<InputValue>.createMergedInput`)
 	//
@@ -2792,7 +2788,7 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 	///   - removeOnDeactivate: if true, then when the output is deactivated, this source will be removed from the merge set. If false, then the source will remain connected through deactivation.
 	/// - Throws: may throw a `SignalBindError` (see that type for possible cases)
 	public func add<U: SignalInterface>(_ source: U) where U.OutputValue == InputValue {
-		self.add(source, closePropagation: .none)
+		self.add(source, closePropagation: .errors)
 	}
 	
 	// See the comments on the public override in `SignalMergedInput`
@@ -2863,12 +2859,15 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 	}
 }
 
-/// A SignalMergeSet is a very similar to a SignalMultiInput but offering slightly different behaviors as expected by common transformations.
+/// A SignalMergeSet is a very similar to a SignalMultiInput but offering additional customization as expected by common transformations.
+///
+/// The reason why this customization is not offered directly on `SignalMultiInput` is that these are behavior customizations you don't generally want to expose in an interface.
+///
 /// In particular:
 ///	* The SignalMergeSet can be configured to send a specific Error (e.g. SignalComplete.closed) when the last input is removed. This is helpful when merging a specific set of inputs and running until they're all complete.
 ///	* The SignalMergeSet can be configured to send a specific Error on deinit (i.e. when there are no inputs and the class is not otherwise retained). SignalMultiInput sends a `.cancelled` in this scenario but SignalMergeSet sends a `.closed` and can be configured to send something else as desired.
 ///	* A SignalMultiInput rejects all attempts to send errors through it (closes, cancels, or otherwise) and merely disconnects the input that sent the error. A SignalMergeSet can be configured to similar reject all (`.none`) or it can permit all (`.all`), or permit only non-close errors (`.errors`). The latter is the *default* for SignalMultiInput (except when using `singleInput` which keeps the `.none` behavior). This default marks a difference in behavior, relative to SignalMultiInput, which always uses `.none`.
-/// Direct use of `SignalMergedInput` is not particularly common. It is typically used via Reactive transformations like `merge` or `flatMapLatest`.
+/// Exposing `SignalMergedInput` in an interface is not particularly common. It is typically used for internal subgraphs where specific control is required.
 public class SignalMergedInput<InputValue>: SignalMultiInput<InputValue> {
 	fileprivate let onLastInputClosed: Error?
 	fileprivate let onDeinit: Error
@@ -2913,16 +2912,8 @@ public class SignalMergedInput<InputValue>: SignalMultiInput<InputValue> {
 		return input
 	}
 
-	public final override func singleInput() -> SignalInput<InputValue> {
-		return singleInput(closePropagation: .none, removeOnDeactivate: false)
-	}
-
 	// SignalMergeSet suppresses the standard cancel on deinit behavior in favor of sending its own chosen error.
-	fileprivate override var cancelOnDeinit: Bool {
-		return false
-	}
-	
-	deinit {
+	fileprivate override func cancelOnDeinit() {
 		guard let sig = signal else { return }
 		var dw = DeferredWork()
 		sig.mutex.sync {
