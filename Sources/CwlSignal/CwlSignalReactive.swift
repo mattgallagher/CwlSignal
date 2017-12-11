@@ -420,7 +420,7 @@ extension SignalInterface {
 		// Create the two listeners to the "multi" signal carefully so that the window signal is *first* (so it reaches the buffer before the value signal)
 		let windowSignal = multi.stride(count: Int(skip)).map { _ in
 			// `count - 1` is the index of the count-th element but since `valuesSignal` will resolve before this, we need to fire 1 element sooner, hence `count - 2`
-			multi.elementAt(count - 2).ignoreElements()
+			multi.elementAt(count - 2).ignoreElements(outputType: OutputValue.self)
 		}
 		
 		return multi.buffer(windows: windowSignal)
@@ -894,7 +894,7 @@ extension SignalInterface {
 		// Create the two listeners to the "multi" signal carefully so that the window signal is *first* (so it reaches the buffer before the value signal)
 		let windowSignal = multi.stride(count: Int(skip)).map { v in
 			// `count - 1` is the index of the count-th element but since `valuesSignal` will resolve before this, we need to fire 1 element sooner, hence `count - 2`
-			multi.elementAt(count - 2).ignoreElements()
+			multi.elementAt(count - 2).ignoreElements(outputType: OutputValue.self)
 		}
 		
 		return multi.window(windows: windowSignal)
@@ -1191,10 +1191,10 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "ignoreElements"](http://reactivex.io/documentation/operators/ignoreelements.html)
 	///
 	/// - Returns: a signal that emits the input error, when received, otherwise ignores all values.
-	public func ignoreElements() -> Signal<OutputValue> {
-		return transform { (r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
-			if case .failure = r {
-				n.send(result: r)
+	public func ignoreElements<U>(outputType: U.Type = U.self) -> Signal<U> {
+		return transform { (r: Result<OutputValue>, n: SignalNext<U>) -> Void in
+			if case .failure(let e) = r {
+				n.send(error: e)
 			}
 		}
 	}
