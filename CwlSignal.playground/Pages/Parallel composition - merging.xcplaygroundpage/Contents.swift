@@ -13,26 +13,43 @@ Let's look at how the different merging patterns work by exammining three differ
 ---
  */
 import CwlSignal
+
+// Some signals that we'll use for the remainder of this page
 let smileys = Signal<String>.from(values: ["😀", "🙃", "😉", "🤣"], error: nil).playback()
 let spookeys = Signal<String>.from(values: ["👻", "🎃", "👹", "😈"], error: SignalComplete.closed).playback()
 let animals = Signal<String>.from(values: ["🐶", "🐱", "🐭", "🐨"], error: SignalReactiveError.timeout).playback()
-
 //: We can combine them into a single signal with `merge`
 print("Merge:")
 Signal<String>.merge(smileys, spookeys, animals).subscribeValuesUntilEnd {
 	print($0, terminator: "")
 }
 
+// Should print: 😀🙃😉🤣👻🎃👹😈🐶🐱🐭🐨
 /*:
-If the two signals were asynchronous, `merge` would interleave them as they arrived. If you want one signal in its entirety, then the other, you can use `concat` but `concat` which won't emit the second signal until the first has closed.
+NOTE: you won't be able to merge more signals after the `animals` signal because it emits an error other than `SignalComplete`. This *unexpected* error causes the `merge` operator to immediately close, instead of running until the last input closes. This is an example of how `merge` (as well as `concat`, `flatMap` and other combining transformations) distinguish between `SignalComplete` and other kinds of error.
 
-SOMETHING TO TRY: swap `smileys` to the front... since smileys never emits a closing `error`, the other signals won't be emitted.
+If the two signals were interleaved, `merge` would interleave them as they arrived. If you want one signal in its entirety, then the other, you can use `concat` but `concat` which won't emit the second signal until the first has closed. For this to work, you need to know that the first signal is guaranteed to close.
+
+SOMETHING TO TRY: comment out the `smileys2.input.close()` line and see that the animals will never be sent.
 */
 print("\n\nConcat:")
-spookeys.concat(animals).concat(smileys).subscribeValuesUntilEnd {
+let smileys2 = Signal<String>.create()
+let animals2 = Signal<String>.create()
+smileys2.signal.concat(animals2.signal).subscribeValuesUntilEnd {
 	print($0, terminator: "")
 }
+smileys2.input.send(value: "😀")
+animals2.input.send(value: "🐶")
+smileys2.input.send(value: "🙃")
+animals2.input.send(value: "🐱")
+smileys2.input.send(value: "😉")
+animals2.input.send(value: "🐭")
+smileys2.input.send(value: "🤣")
+animals2.input.send(value: "🐨")
+smileys2.input.close()
+animals2.input.close()
 
+// Should print: 😀🙃😉🤣🐶🐱🐭🐨
 /*:
 We can also expose a `SignalMultiInput` which lets you send or join new signals whenever you like.
 
@@ -50,6 +67,7 @@ spookeys.bind(to: multiInput)
 animals.bind(to: multiInput)
 multiInput.send(value: " End")
 
+// Should print: Start 😀🙃😉🤣👻🎃👹😈🐶🐱🐭🐨 End
 /*:
 If you want incoming joined signals to be able close the output, you can use `SignalMergeSet`. This offers a `closePropagation` parameter that lets you control if any error or close message (`.all`) or merely non-successful errors (`.errors`) are propagated to the output – or if all attempts to close the stream, succesful or otherwise should be blocked (`.none`).
 
@@ -68,6 +86,9 @@ smileys.bind(to: mergeSet, closePropagation: .all)
 spookeys.bind(to: mergeSet, closePropagation: .all)
 animals.bind(to: mergeSet, closePropagation: .all)
 mergeSet.send(value: "End")
+
+// Should print: Start 😀🙃😉🤣👻🎃👹😈 End
+
 
 print("\n\nDone")
 

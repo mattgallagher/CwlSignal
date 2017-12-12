@@ -528,6 +528,10 @@ extension SignalChannel {
 		return next { $0.endWith(value, conditional: conditional) }
 	}
 	
+	public func switchLatest<U>() -> SignalChannel<InputValue, Input, U, Signal<U>> where OutputValue: Signal<U> {
+		return next { $0.switchLatest() }
+	}
+
 	public func zip<U: SignalInterface>(second: U) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue), Signal<(OutputValue, U.OutputValue)>> {
 		return next { $0.zip(second: second) }
 	}

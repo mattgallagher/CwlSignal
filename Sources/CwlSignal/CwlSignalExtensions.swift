@@ -31,8 +31,8 @@ public protocol SignalSender {
 	/// The primary signal sending function
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
-	/// - Returns: `nil` on success. Non-`nil` values include `SignalError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalError.inactive` if the current `delivery` state is `.disabled`.
-	@discardableResult func send(result: Result<InputValue>) -> SignalError?
+	/// - Returns: `nil` on success. Non-`nil` values include `SignalSendError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalSendError.inactive` if the current `delivery` state is `.disabled`.
+	@discardableResult func send(result: Result<InputValue>) -> SignalSendError?
 }
 
 extension SignalInput: SignalSender {}
@@ -142,7 +142,7 @@ extension SignalSender {
 	/// - Parameter value: will be wrapped and sent
 	/// - Returns: the return value from the underlying `send(result:)` function
 	@discardableResult
-	public func send(value: InputValue) -> SignalError? {
+	public func send(value: InputValue) -> SignalSendError? {
 		return send(result: .success(value))
 	}
 	
@@ -151,7 +151,7 @@ extension SignalSender {
 	/// - Parameter value: will be wrapped and sent
 	/// - Returns: the return value from the underlying `send(result:)` function
 	@discardableResult
-	public func send(values: InputValue...) -> SignalError? {
+	public func send(values: InputValue...) -> SignalSendError? {
 		for v in values {
 			if let e = send(result: .success(v)) {
 				return e
@@ -165,7 +165,7 @@ extension SignalSender {
 	/// - Parameter value: will be wrapped and sent
 	/// - Returns: the return value from the underlying `send(result:)` function
 	@discardableResult
-	public func send<S: Sequence>(sequence: S) -> SignalError? where S.Iterator.Element == InputValue {
+	public func send<S: Sequence>(sequence: S) -> SignalSendError? where S.Iterator.Element == InputValue {
 		for v in sequence {
 			if let e = send(result: .success(v)) {
 				return e
@@ -179,7 +179,7 @@ extension SignalSender {
 	/// - Parameter error: will be wrapped and sent
 	/// - Returns: the return value from the underlying `send(result:)` function
 	@discardableResult
-	public func send(error: Error) -> SignalError? {
+	public func send(error: Error) -> SignalSendError? {
 		return send(result: .failure(error))
 	}
 	
@@ -187,7 +187,7 @@ extension SignalSender {
 	///
 	/// - Returns: the return value from the underlying `send(result:)` function
 	@discardableResult
-	public func close() -> SignalError? {
+	public func close() -> SignalSendError? {
 		return send(result: .failure(SignalComplete.closed))
 	}
 }

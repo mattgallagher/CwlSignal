@@ -2664,13 +2664,18 @@ extension SignalInterface {
 			case (.result1(.success(let v)), _):
 				n.send(value: v)
 			case (.result1(.failure(let e1)), _):
-				for v in state.secondValues {
-					n.send(value: v)
-				}
-				if let e2 = state.secondError {
-					n.send(error: e2)
+				if e1.isSignalComplete {
+					for v in state.secondValues {
+						n.send(value: v)
+					}
+					if let e2 = state.secondError {
+						n.send(error: e2)
+					} else {
+						state.firstError = e1
+					}
 				} else {
-					state.firstError = e1
+					// In the event of an "unexpected" error, don't emit the second signal.
+					n.send(error: e1)
 				}
 			case (.result2(.success(let v)), .none):
 				state.secondValues.append(v)

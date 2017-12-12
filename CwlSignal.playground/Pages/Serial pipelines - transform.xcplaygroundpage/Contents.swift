@@ -21,7 +21,7 @@ let (i, o) = Signal<Int>.create()
 // Transform into signal that emits the string "Beep", a number of times equal to the integer received
 let endpoint = o.transform { (result: Result<Int>, next: SignalNext<String>) in
 	switch result {
-	case .success(let intValue): (0..<intValue).forEach { _ in next.send(value: "Beep") }
+	case .success(let intValue): (0..<intValue).forEach { i in next.send(value: "Beep \(i + 1)") }
 	case .failure(let error): next.send(error: error)
 	}
 }.subscribeValues { value in
@@ -31,9 +31,6 @@ let endpoint = o.transform { (result: Result<Int>, next: SignalNext<String>) in
 
 i.send(value: 3)
 i.close()
-
-// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
-endpoint.cancel()
 /*:
 ---
 

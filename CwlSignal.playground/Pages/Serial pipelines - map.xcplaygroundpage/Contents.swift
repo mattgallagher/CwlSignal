@@ -6,7 +6,7 @@
 
 ## The `map` function. Also, transferring between contexts.
 
-Most of the time, using `transform` is a little verbose. If we only want to process values (not errors) and we want to emit the same number of values as we receive, then we can use the much simpler `map`. Along with `subscribeValues` (which extracts only values from the signal), this lets us build much simple channels.
+Most of the time, using `transform` is a little verbose. If we only want to process values (not errors) and we want to emit the same number of values as we receive, then we can use the much simpler `map`. Along with `subscribeValues` (which extracts only values from the signal), this lets us build much simpler signal pipelines.
 
 ---
 */

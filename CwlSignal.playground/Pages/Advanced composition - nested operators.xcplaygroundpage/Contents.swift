@@ -4,38 +4,47 @@
 
 > **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
 
-## Some advanced operators
+## Signals containing Signals
 
-There are lots of different "operator" functions for merging and combining `Signal` instances. This page demonstrates `switchLatest` and `timeout` but there are many more (including the `combineLatest` used in [App scenario - dynamic view properties](App%20scenario%20-%20dynamic%20view%20properties)).
+The following code is interesting because instead of creating and transforming *values*, the `map` operator is used to create a wholly new `Signal` (representing a new network connection). This new `Signal` is then observed by the `switchLatest` operator which abandons any previously create `Signal` to observe the newly created one.
 
-This page contains a `Service`. The service constructs an underlying signal and times out if the underlying signal runs longer than a specified timeout time. The service is complicated by the requirement that the `connect` function can be called at any time and any previous connection must be abandoned.
-
-The `switchLatest` function is used to abandon previous connection attempts. The `timeout` function is used to enforce the timeout. There are also other functions like `fromSeconds`, `timer` and `multicast` in use (I'll leave you to explore and understand what each does).
+The `timeout` function is used to enforce the timeout. There are also other functions like `materialize`, `timer` and `multicast` in use (I'll leave you to explore and understand what each does).
 
 ---
  */
 import CwlSignal
 import Foundation
 
-// This `Service` class takes a `connect` function on construction that attempts a new connection each time it is called – the result of the connect is emitted as a `Signal`.
-// The `connect` signal is created every time a new value is sent to `newConnectionWithTimeout` and the value is used to apply a `timeout` to the `connect` signal.
-// Additionally, the `Service` can handle multiple connection attempts and `switchLatest` will ignore all but the most recent attempt.
-class Service {
-   let newConnectionWithTimeout: SignalMultiInput<DispatchTimeInterval>
+// When a timeout value is sent to the `startWithTimeout` input, this
+// class starts the `fakeConnectionLogic` connection.
+// If the timeout expires before the the new connection sends a result, an error
+// will be send instead of the connection result.
+// If multiple attempts to start a connection occur, the subsequent attempt will
+// be used and any previous attempt will be cancelled.
+struct Service {
+   let startWithTimeout: SignalMultiInput<DispatchTimeInterval>
    let signal: SignalMulti<Result<String>>
 	
-   init(connect: @escaping () -> Signal<String>) {
-		(newConnectionWithTimeout, signal) = Signal<DispatchTimeInterval>.multiChannel()
+   init() {
+		(startWithTimeout, signal) = Signal<DispatchTimeInterval>.multiChannel()
 			.map { seconds in
-				connect().timeout(interval: seconds).materialize()
-			}.next { allConnectionAttempts in
-				allConnectionAttempts.switchLatest()
-			}.multicast().tuple
+				Service.fakeConnectionLogic()
+					.timeout(interval: seconds)
+					.materialize()
+			}
+			.switchLatest()
+			.multicast()
+			.tuple
    }
+	
+	static func fakeConnectionLogic() -> Signal<String> {
+		// Simulate a network connection that takes a couple seconds and returns a string
+		return Signal<String>.timer(interval: .fromSeconds(2), value: "Hello, world!")
+	}
 }
 
 // Our "connection" is a timer that will return a string after a fixed delay
-let service = Service { Signal<String>.timer(interval: .fromSeconds(2), value: "Hello, world!") }
+let service = Service()
 
 // Subscribe to the output of the service. Since we've used `materialize`, we'll get the values *and* the errors from the child `connect()` signals wrapped in `.success` cases of the enclosing `Service.signal`.
 let endpoint = service.signal.subscribe { result in
@@ -47,11 +56,8 @@ let endpoint = service.signal.subscribe { result in
 	}
 }
 
-// Try to connect.
-// If this number is greater than the `.fromSeconds` value above, the "Hello, world!" response will be sent.
-// If this number is smaller than the `.fromSeconds` value above, the timeout behavior will occur.
 // SOMETHING TO TRY: replace 3 seconds with 1
-service.newConnectionWithTimeout.send(value: .seconds(3))
+service.startWithTimeout.send(value: .seconds(3))
 
 // Let everything run for 10 seconds.
 RunLoop.current.run(until: Date(timeIntervalSinceNow: 10.0))

@@ -50,7 +50,7 @@ class SignalTests: XCTestCase {
 		let (i2, ep2) = Signal<Int>.create { $0.transform { r, n in n.send(result: r) }.subscribe { r in results.append(r) } }
 		i2.send(result: .success(5))
 		i2.send(error: TestError.zeroValue)
-		XCTAssert(i2.send(value: 0) == SignalError.disconnected)
+		XCTAssert(i2.send(value: 0) == SignalSendError.disconnected)
 		XCTAssert(results.at(2)?.value == 5)
 		XCTAssert(results.at(3)?.error as? TestError == TestError.zeroValue)
 		ep2.cancel()
@@ -155,7 +155,7 @@ class SignalTests: XCTestCase {
 		let (input, signal) = Signal<Int>.create()
 		
 		// Make sure we get an .Inactive response before anything is connected
-		XCTAssert(input.send(result: .success(321)) == SignalError.inactive)
+		XCTAssert(input.send(result: .success(321)) == SignalSendError.inactive)
 		
 		// Subscribe
 		var results = [Result<Int>]()
@@ -168,7 +168,7 @@ class SignalTests: XCTestCase {
 		// Ensure we don't immediately receive anything
 		XCTAssert(results.count == 0)
 		
-		// Adding a second subscriber results in an assertion failure at DEBUG time or a SignalError.duplicate otherwise
+		// Adding a second subscriber results in an assertion failure at DEBUG time or a SignalSendError.duplicate otherwise
 		let e = catchBadInstruction {
 			var results2 = [Result<Int>]()
 			let ep2 = signal.subscribe { r in results2.append(r) }
@@ -176,7 +176,7 @@ class SignalTests: XCTestCase {
 				XCTFail()
 			#else
 				XCTAssert(results2.count == 1)
-				XCTAssert(results2.at(0)?.error as? SignalError == SignalError.duplicate)
+				XCTAssert(results2.at(0)?.error as? SignalSendError == SignalSendError.duplicate)
 			#endif
 			withExtendedLifetime(ep2) {}
 		}
@@ -205,7 +205,7 @@ class SignalTests: XCTestCase {
 		let signal = s.multicast()
 		
 		// Make sure we get an .Inactive response before anything is connected
-		XCTAssert(input.send(result: .success(321)) == SignalError.inactive)
+		XCTAssert(input.send(result: .success(321)) == SignalSendError.inactive)
 		
 		// Subscribe send and close
 		var results1 = [Result<Int>]()
@@ -438,7 +438,7 @@ class SignalTests: XCTestCase {
 				#else
 					// Ensure error received
 					XCTAssert(results2.count == 1)
-					XCTAssert(results2.at(0)?.error as? SignalError == SignalError.duplicate)
+					XCTAssert(results2.at(0)?.error as? SignalSendError == SignalSendError.duplicate)
 				#endif
 				
 				withExtendedLifetime(ep2) {}

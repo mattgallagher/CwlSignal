@@ -30,7 +30,6 @@ let aggregated = Signal<String>
 	.toSequence()
 	.next()!
 print(aggregated)
-
 /*:
 ---
 
