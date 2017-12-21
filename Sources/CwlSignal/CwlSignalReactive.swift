@@ -1255,7 +1255,7 @@ extension SignalInterface {
 	///
 	/// - Parameter source: the latest value is emitted when `self` emits
 	/// - Returns: a signal that, when a value is received from `self`, emits the last value (if any) received from `source`.
-	public func latest<Interface: SignalInterface>(_ source: Interface) -> Signal<Interface.OutputValue> {
+	public func trigger<Interface: SignalInterface>(_ source: Interface) -> Signal<Interface.OutputValue> {
 		return source.combine(initialState: nil as Interface.OutputValue?, second: signal, context: .direct) { (last: inout Interface.OutputValue?, c: EitherResult2<Interface.OutputValue, OutputValue>, n: SignalNext<Interface.OutputValue>) -> Void in
 			switch (c, last) {
 			case (.result1(.success(let v)), _): last = v
@@ -1271,7 +1271,7 @@ extension SignalInterface {
 	///
 	/// - Parameter source: the latest value is emitted when `self` emits
 	/// - Returns: a signal that, when a value is received from `self`, emits the last value (if any) received from `source`.
-	public func latestCombine<Interface: SignalInterface>(_ source: Interface) -> Signal<(trigger: OutputValue, sample: Interface.OutputValue)> {
+	public func triggerCombine<Interface: SignalInterface>(_ source: Interface) -> Signal<(trigger: OutputValue, sample: Interface.OutputValue)> {
 		return source.combine(initialState: nil as Interface.OutputValue?, second: signal, context: .direct) { (last: inout Interface.OutputValue?, c: EitherResult2<Interface.OutputValue, OutputValue>, n: SignalNext<(trigger: OutputValue, sample: Interface.OutputValue)>) -> Void in
 			switch (c, last) {
 			case (.result1(.success(let v)), _): last = v

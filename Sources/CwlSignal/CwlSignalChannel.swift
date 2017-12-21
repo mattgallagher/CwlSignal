@@ -440,8 +440,8 @@ extension SignalChannel {
 		return next { $0.single(context: context, matching: matching) }
 	}
 	
-	public func ignoreElements() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
-		return next { $0.ignoreElements() }
+	public func ignoreElements<U>(outputType: U.Type = U.self) -> SignalChannel<InputValue, Input, U, Signal<U>> {
+		return next { $0.ignoreElements(outputType: outputType) }
 	}
 	
 	public func last(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
@@ -456,12 +456,12 @@ extension SignalChannel {
 		return next { $0.sampleCombine(trigger) }
 	}
 	
-	public func latest<Interface: SignalInterface>(_ source: Interface) -> SignalChannel<InputValue, Input, Interface.OutputValue, Signal<Interface.OutputValue>> {
-		return next { $0.latest(source) }
+	public func trigger<Interface: SignalInterface>(_ source: Interface) -> SignalChannel<InputValue, Input, Interface.OutputValue, Signal<Interface.OutputValue>> {
+		return next { $0.trigger(source) }
 	}
 	
-	public func latestCombine<Interface: SignalInterface>(_ source: Interface) -> SignalChannel<InputValue, Input, (trigger: OutputValue, sample: Interface.OutputValue), Signal<(trigger: OutputValue, sample: Interface.OutputValue)>> {
-		return next { $0.latestCombine(source) }
+	public func triggerCombine<Interface: SignalInterface>(_ source: Interface) -> SignalChannel<InputValue, Input, (trigger: OutputValue, sample: Interface.OutputValue), Signal<(trigger: OutputValue, sample: Interface.OutputValue)>> {
+		return next { $0.triggerCombine(source) }
 	}
 	
 	public func skip(_ count: Int) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
