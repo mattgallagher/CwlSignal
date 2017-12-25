@@ -535,17 +535,17 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Returns: a `SignalMulti<State>`
 	public final func reduce<State>(initialState: State, context: Exec = .direct, reducer: @escaping (_ state: inout State, _ message: OutputValue) throws -> State) -> SignalMulti<State> {
 		return SignalMulti<State>(processor: attach { (s, dw) in
-            return SignalReducer<OutputValue, State>(signal: s, state: Result<State>.success(initialState), dw: &dw, context: context) { (state: inout Result<State>, message: Result<OutputValue>) -> Result<State> in
+			return SignalReducer<OutputValue, State>(signal: s, state: Result<State>.success(initialState), dw: &dw, context: context) { (state: inout Result<State>, message: Result<OutputValue>) -> Result<State> in
 				switch (state, message) {
-                case (.success(var s), .success(let m)):
-                    let output =  Result<State> { try reducer(&s, m) }
-                    state = .success(s)
-                    return output
-                case (.failure, _):
-                    return state
+				case (.success(var s), .success(let m)):
+					let output = Result<State> { try reducer(&s, m) }
+					state = .success(s)
+					return output
+				case (.failure, _):
+					return state
 				case (_, .failure(let e)):
 					state = .failure(e)
-                    return state
+					return state
 				}
 			}
 		})
@@ -1948,7 +1948,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 				
 				// Perform the update on the copy
 				let previous = state
-                _ = s.reducer(&state, r)
+				_ = s.reducer(&state, r)
 
 				// Apply the change to the authoritative version under the mutex
 				s.sync {
@@ -1969,16 +1969,12 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		let activated = signal.delivery.isNormal
 		return { [weak self] r in
 			if let s = self {
-				var state = Result<State>.failure(SignalComplete.closed)
-				
 				// Copy the state under the mutex
-				s.sync {
-					state = s.state
-				}
+				var state = s.sync { s.state }
 				
 				// Perform the update on the copy
 				let previous = state
-                let result = s.reducer(&state, r)
+				let result = s.reducer(&state, r)
 
 				// Apply the change to the authoritative version under the mutex
 				var outputs: OutputsArray = []
