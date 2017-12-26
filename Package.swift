@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
    name: "CwlSignal",
    products: [.library(name: "CwlSignal", type: .dynamic, targets: ["CwlSignal"])],
-	dependencies: [.package(url: "https://github.com/mattgallagher/CwlUtils.git", .revision("21fa87616a3aed2a79c64e6fd7d4837093d160bd"))],
+	dependencies: [.package(url: "https://github.com/mattgallagher/CwlUtils.git", .revision("c6ae3a8d3ad48213094a9ebe3133830fd602a425"))],
 	targets: [
 		.target(
 			name: "CwlSignal",
