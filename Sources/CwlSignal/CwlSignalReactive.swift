@@ -1223,8 +1223,8 @@ extension SignalInterface {
 	///
 	/// - Parameter trigger: instructs the result to emit the last value from `self`
 	/// - Returns: a signal that, when a value is received from `trigger`, emits the last value (if any) received from `self`.
-	public func sample<Interface: SignalInterface>(_ trigger: Interface) -> Signal<OutputValue> where Interface.OutputValue == () {
-		return combine(initialState: nil, second: trigger, context: .direct) { (last: inout OutputValue?, c: EitherResult2<OutputValue, ()>, n: SignalNext<OutputValue>) -> Void in
+	public func sample<Interface: SignalInterface>(_ trigger: Interface) -> Signal<OutputValue> {
+		return combine(initialState: nil, second: trigger, context: .direct) { (last: inout OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>, n: SignalNext<OutputValue>) -> Void in
 			switch (c, last) {
 			case (.result1(.success(let v)), _): last = v
 			case (.result1(.failure(let e)), _): n.send(error: e)
