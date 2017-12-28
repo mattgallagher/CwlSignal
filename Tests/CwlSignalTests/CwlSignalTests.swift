@@ -204,8 +204,8 @@ class SignalTests: XCTestCase {
 		let (input, s) = Signal<Int>.create()
 		let signal = s.multicast()
 		
-		// Make sure we get an .Inactive response before anything is connected
-		XCTAssert(input.send(result: .success(321)) == SignalSendError.inactive)
+		// We should already be active, even without listeners.
+		XCTAssert(input.send(result: .success(321)) == nil)
 		
 		// Subscribe send and close
 		var results1 = [Result<Int>]()

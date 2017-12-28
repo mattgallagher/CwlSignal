@@ -499,7 +499,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - returns: a "multicast" `SignalMulti`.
 	public final func multicast() -> SignalMulti<OutputValue> {
 		return SignalMulti<OutputValue>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: ([], nil), userUpdated: false, activeWithoutOutputs: false, dw: &dw, context: .direct, updater: nil)
+			SignalMultiProcessor(signal: s, values: ([], nil), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: nil)
 		})
 	}
 	
