@@ -1070,11 +1070,11 @@ extension SignalInterface {
 	///   - context: the `Exec` where `comparator` will be evaluated (default: .direct).
 	///   - comparator: a function taking two parameters (the previous and current value in the signal) which should return `false` to indicate the current value should be emitted.
 	/// - Returns: a signal that emits the first value but then emits subsequent values only if the function `comparator` returns `false` when passed the previous and current values.
-	public func distinctUntilChanged(context: Exec = .direct, comparator: @escaping (OutputValue, OutputValue) -> Bool) -> Signal<OutputValue> {
+	public func distinctUntilChanged(context: Exec = .direct, compare: @escaping (OutputValue, OutputValue) -> Bool) -> Signal<OutputValue> {
 		return transform(initialState: nil) { (previous: inout OutputValue?, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v):
-				if let p = previous, comparator(p, v) {
+				if let p = previous, compare(p, v) {
 					// no action required
 				} else {
 					n.send(value: v)

@@ -409,15 +409,17 @@ extension SignalChannel where OutputValue: Hashable {
 	public func distinct() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.distinct() }
 	}
-	
+}
+
+extension SignalChannel where OutputValue: Equatable {
 	public func distinctUntilChanged() -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.distinctUntilChanged() }
 	}
 }
 
 extension SignalChannel {
-	public func distinctUntilChanged(context: Exec = .direct, comparator: @escaping (OutputValue, OutputValue) -> Bool) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
-		return next { $0.distinctUntilChanged(context: context, comparator: comparator) }
+	public func distinctUntilChanged(context: Exec = .direct, compare: @escaping (OutputValue, OutputValue) -> Bool) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+		return next { $0.distinctUntilChanged(context: context, compare: compare) }
 	}
 	
 	public func elementAt(_ index: UInt) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
