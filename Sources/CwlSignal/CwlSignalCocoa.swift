@@ -114,74 +114,67 @@ public enum SignalObservingError: Error {
 	case missingChangeDictionary
 }
 
-/// Observe a property via key-value-observing and emit the changes as a Signal<Any>
+/// Observe a property via key-value-observing and emit the changes as a Signal<OutputValue> on the condition that the emitted `Any` value can be dynamically cast (`as?`) to `OutputValue`
 ///
 /// - Parameters:
 ///   - source: will have `addObserver(_:forKeyPath:options:context:)` invoked on it
 ///   - keyPath: passed to `addObserver(_:forKeyPath:options:context:)`
 ///   - initial: if true, NSKeyValueObservingOptions.initial is included in the options passed to `addObserver(_:forKeyPath:options:context:)`
-/// - Returns: a signal which emits the observation results
-public func signalKeyValueObserving(_ source: NSObject, keyPath: String, initial: Bool = true) -> Signal<Any> {
-	var observer: KeyValueObserver?
-	return Signal<Any>.generate { [weak source] (input: SignalInput<Any>?) -> Void in
-		guard let i = input, let s = source else {
-			observer = nil
-			return
-		}
-		let options = NSKeyValueObservingOptions.new.union(initial ? NSKeyValueObservingOptions.initial : NSKeyValueObservingOptions())
-		observer = KeyValueObserver(source: s, keyPath: keyPath, options: options, callback: { (change, reason) -> Void in
-			switch (reason, change[NSKeyValueChangeKey.newKey]) {
-			case (.sourceDeleted, _): i.close()
-			case (_, .some(let v)): i.send(value: v)
-			default: i.send(error: SignalObservingError.missingChangeDictionary)
+/// - Returns: a signal which emits the observation results that match the expected type
+extension Signal {
+	public static func keyValueObserving(_ source: NSObject, keyPath: String, initial: Bool = true) -> Signal<OutputValue> {
+		var observer: KeyValueObserver?
+		return Signal<OutputValue>.generate { [weak source] (input: SignalInput<OutputValue>?) -> Void in
+			guard let i = input, let s = source else {
+				observer = nil
+				return
 			}
-		})
-		withExtendedLifetime(observer) {}
+			let options = NSKeyValueObservingOptions.new.union(initial ? NSKeyValueObservingOptions.initial : NSKeyValueObservingOptions())
+			observer = KeyValueObserver(source: s, keyPath: keyPath, options: options, callback: { (change, reason) -> Void in
+				switch (reason, change[NSKeyValueChangeKey.newKey]) {
+				case (.sourceDeleted, _): i.close()
+				case (_, .some(let v)):
+					if let t = v as? OutputValue {
+						i.send(value: t)
+					}
+				default: i.send(error: SignalObservingError.missingChangeDictionary)
+				}
+			})
+			withExtendedLifetime(observer) {}
+		}
 	}
 }
+@available(*, deprecated, message: "Use Signal.keyValueObserving")
+public func signalKeyValueObserving(_ source: NSObject, keyPath: String, initial: Bool = true) -> Signal<Any> {
+	return Signal.keyValueObserving(source, keyPath: keyPath, initial: initial)
+}
 
-extension Signal {
-	/// Observe a property via key-value-observing and emit the new values that can be downcast to Value. This is just a wrapper around `signalKeyValueObserving` that applies `filterMap` to downcast values to Value and emit only if the downcast is successful.
+extension Signal where OutputValue == Notification {
+	/// Observe a notification
 	///
 	/// - Parameters:
-	///   - target: will have `addObserver(_:forKeyPath:options:context:)` invoked on it
-	///   - keyPath: passed to `addObserver(_:forKeyPath:options:context:)`
-	///   - initial: if true, NSKeyValueObservingOptions.initial is included in the options passed to `addObserver(_:forKeyPath:options:context:)`
+	///   - center: the NotificationCenter where addObserver will be invoked (`NotificationCenter.default` is the default)
+	///   - name: the Notification.Name to observer (nil is default)
+	///   - object: the object to observer (nil is default)
 	/// - Returns: a signal which emits the observation results
-	public static func keyValueObserving(_ target: NSObject, keyPath: String, initial: Bool = true) -> Signal<OutputValue> {
-		return signalKeyValueObserving(target, keyPath: keyPath, initial: initial).transform { (r: Result<Any>, n: SignalNext<OutputValue>) in
-			switch r {
-			case .success(let v):
-				if let t = v as? OutputValue {
-					n.send(value: t)
-				}
-			case .failure(let e):
-				n.send(error: e)
-			}
-		}
-	}
-}
-
-/// Observe a notification on the
-///
-/// - Parameters:
-///   - center: the NotificationCenter where addObserver will be invoked (`NotificationCenter.default` is the default)
-///   - name: the Notification.Name to observer (nil is default)
-///   - object: the object to observer (nil is default)
-/// - Returns: a signal which emits the observation results
-public func signalFromNotifications(center: NotificationCenter = NotificationCenter.default, name: Notification.Name? = nil, object: AnyObject? = nil) -> Signal<Notification> {
-	var observerObject: NSObjectProtocol?
-	return Signal<Notification>.generate { [weak object] input in
-		if let i = input, let o = object {
-			observerObject = center.addObserver(forName: name, object: o, queue: nil) { n in
-				i.send(value: n)
-			}
-		} else {
+	public static func notifications(from center: NotificationCenter = NotificationCenter.default, name: Notification.Name? = nil, object: AnyObject? = nil) -> Signal<OutputValue> {
+		var observerObject: NSObjectProtocol?
+		return Signal<Notification>.generate { [weak object] input in
 			if let o = observerObject {
 				NotificationCenter.default.removeObserver(o)
 			}
+			if let i = input {
+				observerObject = center.addObserver(forName: name, object: object, queue: nil) { n in
+					i.send(value: n)
+				}
+			}
 		}
 	}
+}
+
+@available(*, deprecated, message: "Use Signal<Notification>.notifications")
+public func signalFromNotifications(center: NotificationCenter = NotificationCenter.default, name: Notification.Name? = nil, object: AnyObject? = nil) -> Signal<Notification> {
+	return Signal.notifications(from: center, name: name, object: object)
 }
 
 extension Signal {

@@ -28,9 +28,7 @@ import CwlUtils
 
 class Target: NSObject {
 	@objc dynamic var property = NSObject()
-	init(property: NSObject) {
-		self.property = property
-	}
+	@objc dynamic var intProperty: Int = 5
 }
 
 class Sender: NSObject {
@@ -67,36 +65,19 @@ class Sender: NSObject {
 
 class SignalCocoaTests: XCTestCase {
 	func testSignalKeyValueObserving() {
-		var target: Target? = Target(property: NSNumber(integerLiteral: 123))
-		var results = [Result<Any>]()
-		let endpoint = signalKeyValueObserving(target!, keyPath: #keyPath(Target.property)).subscribe { result in
+		var target: Target? = Target()
+		target?.intProperty = 123
+		var results = [Result<Int>]()
+		let endpoint = Signal<Int>.keyValueObserving(target!, keyPath: #keyPath(Target.intProperty)).subscribe { result in
 			results.append(result)
 		}
 		
-		target?.property = NSNumber(integerLiteral: 456)
+		target?.intProperty = 456
 		target = nil
 		
 		XCTAssert(results.count == 3)
-		XCTAssert(results.at(0)?.value as? NSNumber == NSNumber(integerLiteral: 123))
-		XCTAssert(results.at(1)?.value as? NSNumber == NSNumber(integerLiteral: 456))
-		XCTAssert(results.at(2)?.error as? SignalComplete == .closed)
-		
-		withExtendedLifetime(endpoint) {}
-	}
-
-	func testKeyValueObserving() {
-		var target: Target? = Target(property: NSNumber(integerLiteral: 123))
-		var results = [Result<NSNumber>]()
-		let endpoint = Signal<NSNumber>.keyValueObserving(target!, keyPath: #keyPath(Target.property)).subscribe { result in
-			results.append(result)
-		}
-		
-		target?.property = NSNumber(integerLiteral: 456)
-		target = nil
-		
-		XCTAssert(results.count == 3)
-		XCTAssert(results.at(0)?.value == NSNumber(integerLiteral: 123))
-		XCTAssert(results.at(1)?.value == NSNumber(integerLiteral: 456))
+		XCTAssert(results.at(0)?.value == 123)
+		XCTAssert(results.at(1)?.value == 456)
 		XCTAssert(results.at(2)?.error as? SignalComplete == .closed)
 		
 		withExtendedLifetime(endpoint) {}
@@ -169,7 +150,7 @@ class SignalCocoaTests: XCTestCase {
 	func testSignalFromNotifications() {
 		let source = NSObject()
 		var results = [String]()
-		let ep = signalFromNotifications(object: source).subscribeValues { v in
+		let ep = Signal.notifications(object: source).subscribeValues { v in
 			results.append("\(v.name)")
 		}
 		NotificationCenter.default.post(name: Notification.Name.NSThreadWillExit, object: source)

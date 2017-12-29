@@ -2276,10 +2276,17 @@ extension SignalInterface {
 	/// - Parameter context: time between emissions will be calculated based on the timestamps from this context
 	/// - Returns: a signal where the values are seconds between emissions from self
 	public func timeInterval(context: Exec = .direct) -> Signal<Double> {
+		let junction = self.map { v in () }.junction()
+		
+		// This `generate` transform is used to capture the start of the stream
 		let s = Signal<()>.generate { input in
 			if let i = input {
 				i.send(value: ())
-				self.map { v in () }.bind(to: i)
+				
+				// Then after sending the initial value, connect to upstream
+				try! junction.bind(to: i)
+			} else {
+				_ = junction.disconnect()
 			}
 		}.transform(initialState: nil, context: context) { (lastTime: inout DispatchTime?, r: Result<()>, n: SignalNext<Double>) in
 			switch r {
