@@ -17,7 +17,7 @@ import CwlSignal
 
 // Create an input/output pair, making the output continuous before returning
 // SOMETHING TO TRY: replace `.continuous()` with `.playback()`
-let (input, output) = Signal<Int>.create()
+let (input, output) = Signal<Int>.channel().continuous().tuple
 
 // Send values before a subscriber exists
 input.send(value: 1)

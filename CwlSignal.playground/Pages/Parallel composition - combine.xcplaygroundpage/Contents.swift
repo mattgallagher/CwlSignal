@@ -22,7 +22,7 @@ let doubleSignal = Signal<Double>.timer(interval: .fromSeconds(0.5), value: 0.12
 
 // The signals are combined – first to send a value wins
 // SOMETHING TO TRY: change the `fromSeconds` timing values, above, to let the `Int` signal arrive first.
-let endpoint = intSignal.combine(second: doubleSignal) { (eitherResult: EitherResult2<Int, Double>, next: SignalNext<String>) in
+let endpoint = intSignal.combine(doubleSignal) { (eitherResult: EitherResult2<Int, Double>, next: SignalNext<String>) in
    switch eitherResult {
    case .result1(.success(let intValue)): next.send(value: "\(intValue)")
    case .result2(.success(let doubleValue)): next.send(value: "\(doubleValue)")

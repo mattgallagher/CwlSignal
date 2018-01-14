@@ -1243,8 +1243,8 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<String>]()
 		let (signal1Input, signal1) = Signal<Int>.create()
 		let (signal2Input, signal2) = Signal<Double>.create()
-		let combined = signal1.combineLatest(second: signal2) {
-			"\($0) \($1)"
+		let combined = signal1.combineLatest(signal2).map { tuple in
+			"\(tuple.0) \(tuple.1)"
 		}
 		let ep = combined.subscribe { (r: Result<String>) -> Void in
 			results.append(r)
@@ -1276,8 +1276,8 @@ class SignalReactiveTests: XCTestCase {
 		let (signal1Input, signal1) = Signal<Int>.create()
 		let (signal2Input, signal2) = Signal<Double>.create()
 		let (signal3Input, signal3) = Signal<String>.create()
-		let combined = signal1.combineLatest(second: signal2, third: signal3) {
-			"\($0) \($1) \($2)"
+		let combined = signal1.combineLatest(signal2, signal3).map { tuple in
+			"\(tuple.0) \(tuple.1) \(tuple.2)"
 		}
 		let ep = combined.subscribe { (r: Result<String>) -> Void in
 			results.append(r)
@@ -1312,8 +1312,8 @@ class SignalReactiveTests: XCTestCase {
 		let (signal2Input, signal2) = Signal<Double>.create()
 		let (signal3Input, signal3) = Signal<String>.create()
 		let (signal4Input, signal4) = Signal<Int>.create()
-		let combined = signal1.combineLatest(second: signal2, third: signal3, fourth: signal4) {
-			"\($0) \($1) \($2) \($3)"
+		let combined = signal1.combineLatest(signal2, signal3, signal4).map { tuple in
+			"\(tuple.0) \(tuple.1) \(tuple.2) \(tuple.3)"
 		}
 		let ep = combined.subscribe { (r: Result<String>) -> Void in
 			results.append(r)
@@ -1351,8 +1351,8 @@ class SignalReactiveTests: XCTestCase {
 		let (signal3Input, signal3) = Signal<String>.create()
 		let (signal4Input, signal4) = Signal<Int>.create()
 		let (signal5Input, signal5) = Signal<Bool>.create()
-		let combined = signal1.combineLatest(second: signal2, third: signal3, fourth: signal4, fifth: signal5) {
-			"\($0) \($1) \($2) \($3) \($4)"
+		let combined = signal1.combineLatest(signal2, signal3, signal4, signal5).map { tuple in
+			"\(tuple.0) \(tuple.1) \(tuple.2) \(tuple.3) \(tuple.4)"
 		}
 		let ep = combined.subscribe { (r: Result<String>) -> Void in
 			results.append(r)
@@ -1682,7 +1682,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<(Int, Int)>]()
 		let (input1, signal1) = Signal<Int>.create()
 		let (input2, signal2) = Signal<Int>.create()
-		let ep = signal1.zip(second: signal2).subscribe { (r: Result<(Int, Int)>) in
+		let ep = signal1.zip(signal2).subscribe { (r: Result<(Int, Int)>) in
 			results.append(r)
 		}
 		input1.send(value: 0)
@@ -1711,7 +1711,7 @@ class SignalReactiveTests: XCTestCase {
 		let (input1, signal1) = Signal<Int>.create()
 		let (input2, signal2) = Signal<Int>.create()
 		let (input3, signal3) = Signal<Int>.create()
-		let ep = signal1.zip(second: signal2, third: signal3).subscribe { (r: Result<(Int, Int, Int)>) in
+		let ep = signal1.zip(signal2, signal3).subscribe { (r: Result<(Int, Int, Int)>) in
 			results.append(r)
 		}
 		input1.send(value: 0)
@@ -1747,7 +1747,7 @@ class SignalReactiveTests: XCTestCase {
 		let (input2, signal2) = Signal<Int>.create()
 		let (input3, signal3) = Signal<Int>.create()
 		let (input4, signal4) = Signal<Int>.create()
-		let ep = signal1.zip(second: signal2, third: signal3, fourth: signal4).subscribe { (r: Result<(Int, Int, Int, Int)>) in
+		let ep = signal1.zip(signal2, signal3, signal4).subscribe { (r: Result<(Int, Int, Int, Int)>) in
 			results.append(r)
 		}
 		input4.send(value: 30)
@@ -1788,7 +1788,7 @@ class SignalReactiveTests: XCTestCase {
 		let (input3, signal3) = Signal<Int>.create()
 		let (input4, signal4) = Signal<Int>.create()
 		let (input5, signal5) = Signal<Int>.create()
-		let ep = signal1.zip(second: signal2, third: signal3, fourth: signal4, fifth: signal5).subscribe { (r: Result<(Int, Int, Int, Int, Int)>) in
+		let ep = signal1.zip(signal2, signal3, signal4, signal5).subscribe { (r: Result<(Int, Int, Int, Int, Int)>) in
 			results.append(r)
 		}
 		input4.send(value: 30)

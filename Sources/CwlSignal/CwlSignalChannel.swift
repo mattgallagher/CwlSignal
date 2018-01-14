@@ -123,36 +123,36 @@ extension SignalChannel {
 		return next { $0.transform(initialState: initialState, context: context, handler: handler) }
 	}
 	
-	public func combine<U: SignalInterface, V>(second: U, context: Exec = .direct, handler: @escaping (EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> SignalChannel<InputValue, Input, V, Signal<V>> {
-		return next { $0.combine(second: second, context: context, handler: handler) }
+	public func combine<U: SignalInterface, V>(_ second: U, context: Exec = .direct, handler: @escaping (EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> SignalChannel<InputValue, Input, V, Signal<V>> {
+		return next { $0.combine(second, context: context, handler: handler) }
 	}
 	
-	public func combine<U: SignalInterface, V: SignalInterface, W>(second: U, third: V, context: Exec = .direct, handler: @escaping (EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> SignalChannel<InputValue, Input, W, Signal<W>> {
-		return next { $0.combine(second: second, third: third, context: context, handler: handler) }
+	public func combine<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, handler: @escaping (EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> SignalChannel<InputValue, Input, W, Signal<W>> {
+		return next { $0.combine(second, third, context: context, handler: handler) }
 	}
 	
-	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(second: U, third: V, fourth: W, context: Exec = .direct, handler: @escaping (EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> SignalChannel<InputValue, Input, X, Signal<X>> {
-		return next { $0.combine(second: second, third: third, fourth: fourth, context: context, handler: handler) }
+	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, handler: @escaping (EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> SignalChannel<InputValue, Input, X, Signal<X>> {
+		return next { $0.combine(second, third, fourth, context: context, handler: handler) }
 	}
 	
-	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(second: U, third: V, fourth: W, fifth: X, context: Exec = .direct, handler: @escaping (EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> SignalChannel<InputValue, Input, Y, Signal<Y>> {
-		return next { $0.combine(second: second, third: third, fourth: fourth, fifth: fifth, context: context, handler: handler) }
+	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, handler: @escaping (EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> SignalChannel<InputValue, Input, Y, Signal<Y>> {
+		return next { $0.combine(second, third, fourth, fifth, context: context, handler: handler) }
 	}
 	
-	public func combine<S, U: SignalInterface, V>(initialState: S, second: U, context: Exec = .direct, handler: @escaping (inout S, EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> SignalChannel<InputValue, Input, V, Signal<V>> {
-		return next { $0.combine(initialState: initialState, second: second, context: context, handler: handler) }
+	public func combine<S, U: SignalInterface, V>(initialState: S, _ second: U, context: Exec = .direct, handler: @escaping (inout S, EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> SignalChannel<InputValue, Input, V, Signal<V>> {
+		return next { $0.combine(initialState: initialState, second, context: context, handler: handler) }
 	}
 	
-	public func combine<S, U: SignalInterface, V: SignalInterface, W>(initialState: S, second: U, third: V, context: Exec = .direct, handler: @escaping (inout S, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> SignalChannel<InputValue, Input, W, Signal<W>> {
-		return next { $0.combine(initialState: initialState, second: second, third: third, context: context, handler: handler) }
+	public func combine<S, U: SignalInterface, V: SignalInterface, W>(initialState: S, _ second: U, _ third: V, context: Exec = .direct, handler: @escaping (inout S, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> SignalChannel<InputValue, Input, W, Signal<W>> {
+		return next { $0.combine(initialState: initialState, second, third, context: context, handler: handler) }
 	}
 	
-	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(initialState: S, second: U, third: V, fourth: W, context: Exec = .direct, handler: @escaping (inout S, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> SignalChannel<InputValue, Input, X, Signal<X>> {
-		return next { $0.combine(initialState: initialState, second: second, third: third, fourth: fourth, context: context, handler: handler) }
+	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(initialState: S, _ second: U, _ third: V, _ fourth: W, context: Exec = .direct, handler: @escaping (inout S, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> SignalChannel<InputValue, Input, X, Signal<X>> {
+		return next { $0.combine(initialState: initialState, second, third, fourth, context: context, handler: handler) }
 	}
 	
-	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(initialState: S, second: U, third: V, fourth: W, fifth: X, context: Exec = .direct, handler: @escaping (inout S, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> SignalChannel<InputValue, Input, Y, Signal<Y>> {
-		return next { $0.combine(initialState: initialState, second: second, third: third, fourth: fourth, fifth: fifth, context: context, handler: handler) }
+	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(initialState: S, _ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, handler: @escaping (inout S, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> SignalChannel<InputValue, Input, Y, Signal<Y>> {
+		return next { $0.combine(initialState: initialState, second, third, fourth, fifth, context: context, handler: handler) }
 	}
 	
 	public func continuous(initialValue: OutputValue) -> SignalChannel<InputValue, Input, OutputValue, SignalMulti<OutputValue>> {
@@ -482,20 +482,20 @@ extension SignalChannel {
 		return next { $0.takeLast(count) }
 	}
 	
-	public func combineLatest<U: SignalInterface, V>(second: U, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue) -> V) -> SignalChannel<InputValue, Input, V, Signal<V>> {
-		return next { $0.combineLatest(second: second, context: context, processor) }
+	public func combineLatest<U: SignalInterface>(_ second: U) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue), Signal<(OutputValue, U.OutputValue)>> {
+		return next { $0.combineLatest(second) }
 	}
 	
-	public func combineLatest<U: SignalInterface, V: SignalInterface, W>(second: U, third: V, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue) -> W) -> SignalChannel<InputValue, Input, W, Signal<W>> {
-		return next { $0.combineLatest(second: second, third: third, context: context, processor) }
+	public func combineLatest<U: SignalInterface, V: SignalInterface>(_ second: U, _ third: V) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue, V.OutputValue), Signal<(OutputValue, U.OutputValue, V.OutputValue)>> {
+		return next { $0.combineLatest(second, third) }
 	}
 	
-	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(second: U, third: V, fourth: W, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue) -> X) -> SignalChannel<InputValue, Input, X, Signal<X>> {
-		return next { $0.combineLatest(second: second, third: third, fourth: fourth, context: context, processor) }
+	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface>(_ second: U, _ third: V, _ fourth: W) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue), Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)>> {
+		return next { $0.combineLatest(second, third, fourth) }
 	}
 	
-	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(second: U, third: V, fourth: W, fifth: X, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue) -> Y) -> SignalChannel<InputValue, Input, Y, Signal<Y>> {
-		return next { $0.combineLatest(second: second, third: third, fourth: fourth, fifth: fifth, context: context, processor) }
+	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(_ second: U, _ third: V, _ fourth: W, _ fifth: X) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue), Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)>> {
+		return next { $0.combineLatest(second, third, fourth, fifth) }
 	}
 	
 	public func intersect<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(withRight: U, leftEnd: @escaping (OutputValue) -> V, rightEnd: @escaping (U.OutputValue) -> W, context: Exec = .direct, _ processor: @escaping ((OutputValue, U.OutputValue)) -> X) -> SignalChannel<InputValue, Input, X, Signal<X>> {
@@ -534,20 +534,20 @@ extension SignalChannel {
 		return next { $0.switchLatest() }
 	}
 
-	public func zip<U: SignalInterface>(second: U) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue), Signal<(OutputValue, U.OutputValue)>> {
-		return next { $0.zip(second: second) }
+	public func zip<U: SignalInterface>(_ second: U) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue), Signal<(OutputValue, U.OutputValue)>> {
+		return next { $0.zip(second) }
 	}
 	
-	public func zip<U: SignalInterface, V: SignalInterface>(second: U, third: V) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue, V.OutputValue), Signal<(OutputValue, U.OutputValue, V.OutputValue)>> {
-		return next { $0.zip(second: second, third: third) }
+	public func zip<U: SignalInterface, V: SignalInterface>(_ second: U, _ third: V) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue, V.OutputValue), Signal<(OutputValue, U.OutputValue, V.OutputValue)>> {
+		return next { $0.zip(second, third) }
 	}
 	
-	public func zip<U: SignalInterface, V: SignalInterface, W: SignalInterface>(second: U, third: V, fourth: W) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue), Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)>> {
-		return next { $0.zip(second: second, third: third, fourth: fourth) }
+	public func zip<U: SignalInterface, V: SignalInterface, W: SignalInterface>(_ second: U, _ third: V, _ fourth: W) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue), Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)>> {
+		return next { $0.zip(second, third, fourth) }
 	}
 	
-	public func zip<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(second: U, third: V, fourth: W, fifth: X) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue), Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)>> {
-		return next { $0.zip(second: second, third: third, fourth: fourth, fifth: fifth) }
+	public func zip<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(_ second: U, _ third: V, _ fourth: W, _ fifth: X) -> SignalChannel<InputValue, Input, (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue), Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)>> {
+		return next { $0.zip(second, third, fourth, fifth) }
 	}
 	
 	public func catchError<S: Sequence>(context: Exec = .direct, recover: @escaping (Error) -> (S, Error)) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where S.Iterator.Element == OutputValue {

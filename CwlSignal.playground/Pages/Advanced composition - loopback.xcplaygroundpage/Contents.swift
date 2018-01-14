@@ -22,7 +22,7 @@ let (input, signal) = Signal<String>.create()
 let (loopbackInput, loopbackSignal) = Signal<()>.create()
 let semaphore = DispatchSemaphore(value: 0)
 
-signal.combine(initialState: [Result<String>](), second: loopbackSignal, context: .global) { (queue: inout [Result<String>], either: EitherResult2<String, ()>, next: SignalNext<String>) in
+signal.combine(initialState: [Result<String>](), loopbackSignal, context: .global) { (queue: inout [Result<String>], either: EitherResult2<String, ()>, next: SignalNext<String>) in
 	switch either {
 	case .result1(let r) where queue.isEmpty:
 		print("Received input \(r). Sending immediately.")

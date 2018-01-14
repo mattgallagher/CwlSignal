@@ -1015,7 +1015,7 @@ class SignalTests: XCTestCase {
 			let (input2, signal2) = Signal<Int>.create()
 			let signal3 = signal2.map { $0 }
 			
-			let combined = signal1.combine(second: signal3) { (cr: EitherResult2<Int, Int>, next: SignalNext<Int>) in
+			let combined = signal1.combine(signal3) { (cr: EitherResult2<Int, Int>, next: SignalNext<Int>) in
 				switch cr {
 				case .result1(let r): next.send(result: r)
 				case .result2(let r): next.send(result: r)
@@ -1396,7 +1396,7 @@ class SignalTests: XCTestCase {
 		let (input2, signal2) = Signal<Double>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(second: signal2, context: context) { (cr: EitherResult2<Int, Double>, n: SignalNext<String>) in
+		let combined = signal1.combine(signal2, context: context) { (cr: EitherResult2<Int, Double>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			switch cr {
 			case .result1(.success(let v)): n.send(value: "1 v: \(v)")
@@ -1433,7 +1433,7 @@ class SignalTests: XCTestCase {
 		let (input2, signal2) = Signal<Double>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(initialState: "", second: signal2, context: context) { (state: inout String, cr: EitherResult2<Int, Double>, n: SignalNext<String>) in
+		let combined = signal1.combine(initialState: "", signal2, context: context) { (state: inout String, cr: EitherResult2<Int, Double>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			state += "\(results.count)"
 			switch cr {
@@ -1472,7 +1472,7 @@ class SignalTests: XCTestCase {
 		let (input3, signal3) = Signal<Int8>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(second: signal2, third: signal3, context: context) { (cr: EitherResult3<Int, Double, Int8>, n: SignalNext<String>) in
+		let combined = signal1.combine(signal2, signal3, context: context) { (cr: EitherResult3<Int, Double, Int8>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			switch cr {
 			case .result1(.success(let v)): n.send(value: "1 v: \(v)")
@@ -1518,7 +1518,7 @@ class SignalTests: XCTestCase {
 		let (input3, signal3) = Signal<Int8>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(initialState: "", second: signal2, third: signal3, context: context) { (state: inout String, cr: EitherResult3<Int, Double, Int8>, n: SignalNext<String>) in
+		let combined = signal1.combine(initialState: "", signal2, signal3, context: context) { (state: inout String, cr: EitherResult3<Int, Double, Int8>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			state += "\(results.count)"
 			switch cr {
@@ -1566,7 +1566,7 @@ class SignalTests: XCTestCase {
 		let (input4, signal4) = Signal<Int16>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(second: signal2, third: signal3, fourth: signal4, context: context) { (cr: EitherResult4<Int, Double, Int8, Int16>, n: SignalNext<String>) in
+		let combined = signal1.combine(signal2, signal3, signal4, context: context) { (cr: EitherResult4<Int, Double, Int8, Int16>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			switch cr {
 			case .result1(.success(let v)): n.send(value: "1 v: \(v)")
@@ -1621,7 +1621,7 @@ class SignalTests: XCTestCase {
 		let (input4, signal4) = Signal<Int16>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(initialState: "", second: signal2, third: signal3, fourth: signal4, context: context) { (state: inout String, cr: EitherResult4<Int, Double, Int8, Int16>, n: SignalNext<String>) in
+		let combined = signal1.combine(initialState: "", signal2, signal3, signal4, context: context) { (state: inout String, cr: EitherResult4<Int, Double, Int8, Int16>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			state += "\(results.count)"
 			switch cr {
@@ -1678,7 +1678,7 @@ class SignalTests: XCTestCase {
 		let (input5, signal5) = Signal<Int32>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(second: signal2, third: signal3, fourth: signal4, fifth: signal5, context: context) { (cr: EitherResult5<Int, Double, Int8, Int16, Int32>, n: SignalNext<String>) in
+		let combined = signal1.combine(signal2, signal3, signal4, signal5, context: context) { (cr: EitherResult5<Int, Double, Int8, Int16, Int32>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			switch cr {
 			case .result1(.success(let v)): n.send(value: "1 v: \(v)")
@@ -1740,7 +1740,7 @@ class SignalTests: XCTestCase {
 		let (input5, signal5) = Signal<Int32>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(initialState: "", second: signal2, third: signal3, fourth: signal4, fifth: signal5, context: context) { (state: inout String, cr: EitherResult5<Int, Double, Int8, Int16, Int32>, n: SignalNext<String>) in
+		let combined = signal1.combine(initialState: "", signal2, signal3, signal4, signal5, context: context) { (state: inout String, cr: EitherResult5<Int, Double, Int8, Int16, Int32>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			state += "\(results.count)"
 			switch cr {

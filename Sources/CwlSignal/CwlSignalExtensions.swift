@@ -55,29 +55,29 @@ extension SignalInterface {
 	public func transform<S, U>(initialState: S, context: Exec = .direct, handler: @escaping (inout S, Result<OutputValue>, SignalNext<U>) -> Void) -> Signal<U> {
 		return signal.transform(initialState: initialState, context: context, handler: handler)
 	}
-	public func combine<U: SignalInterface, V>(second: U, context: Exec = .direct, handler: @escaping (EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> Signal<V> {
-		return signal.combine(second: second, context: context, handler: handler)
+	public func combine<U: SignalInterface, V>(_ second: U, context: Exec = .direct, handler: @escaping (EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> Signal<V> {
+		return signal.combine(second, context: context, handler: handler)
 	}
-	public func combine<U: SignalInterface, V: SignalInterface, W>(second: U, third: V, context: Exec = .direct, handler: @escaping (EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> Signal<W> {
-		return signal.combine(second: second, third: third, context: context, handler: handler)
+	public func combine<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, handler: @escaping (EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> Signal<W> {
+		return signal.combine(second, third, context: context, handler: handler)
 	}
-	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(second: U, third: V, fourth: W, context: Exec = .direct, handler: @escaping (EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> Signal<X> {
-		return signal.combine(second: second, third: third, fourth: fourth, context: context, handler: handler)
+	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, handler: @escaping (EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> Signal<X> {
+		return signal.combine(second, third, fourth, context: context, handler: handler)
 	}
-	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(second: U, third: V, fourth: W, fifth: X, context: Exec = .direct, handler: @escaping (EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> Signal<Y> {
-		return signal.combine(second: second, third: third, fourth: fourth, fifth: fifth, context: context, handler: handler)
+	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, handler: @escaping (EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> Signal<Y> {
+		return signal.combine(second, third, fourth, fifth, context: context, handler: handler)
 	}
-	public func combine<S, U: SignalInterface, V>(initialState: S, second: U, context: Exec = .direct, handler: @escaping (inout S, EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> Signal<V> {
-		return signal.combine(initialState: initialState, second: second, context: context, handler: handler)
+	public func combine<S, U: SignalInterface, V>(initialState: S, _ second: U, context: Exec = .direct, handler: @escaping (inout S, EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> Signal<V> {
+		return signal.combine(initialState: initialState, second, context: context, handler: handler)
 	}
-	public func combine<S, U: SignalInterface, V: SignalInterface, W>(initialState: S, second: U, third: V, context: Exec = .direct, handler: @escaping (inout S, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> Signal<W> {
-		return signal.combine(initialState: initialState, second: second, third: third, context: context, handler: handler)
+	public func combine<S, U: SignalInterface, V: SignalInterface, W>(initialState: S, _ second: U, _ third: V, context: Exec = .direct, handler: @escaping (inout S, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> Signal<W> {
+		return signal.combine(initialState: initialState, second, third, context: context, handler: handler)
 	}
-	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(initialState: S, second: U, third: V, fourth: W, context: Exec = .direct, handler: @escaping (inout S, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> Signal<X> {
-		return signal.combine(initialState: initialState, second: second, third: third, fourth: fourth, context: context, handler: handler)
+	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(initialState: S, _ second: U, _ third: V, _ fourth: W, context: Exec = .direct, handler: @escaping (inout S, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> Signal<X> {
+		return signal.combine(initialState: initialState, second, third, fourth, context: context, handler: handler)
 	}
-	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(initialState: S, second: U, third: V, fourth: W, fifth: X, context: Exec = .direct, handler: @escaping (inout S, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> Signal<Y> {
-		return signal.combine(initialState: initialState, second: second, third: third, fourth: fourth, fifth: fifth, context: context, handler: handler)
+	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(initialState: S, _ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, handler: @escaping (inout S, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> Signal<Y> {
+		return signal.combine(initialState: initialState, second, third, fourth, fifth, context: context, handler: handler)
 	}
 	public func continuous(initialValue: OutputValue) -> SignalMulti<OutputValue> {
 		return signal.continuous(initialValue: initialValue)
@@ -280,8 +280,8 @@ extension SignalInterface {
 	///
 	/// - Parameter second: another signal
 	/// - Returns: Signal<EitherValue2<OutputValue, U.OutputValue>>
-	public func combineValues<U: SignalInterface>(second: U, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue2<OutputValue, U.OutputValue>> {
-		return signal.combine(initialState: (false, false), second: second.signal) { (closed: inout (Bool, Bool), either: EitherResult2<OutputValue, U.OutputValue>, next: SignalNext<EitherValue2<OutputValue, U.OutputValue>>) in
+	public func combineValues<U: SignalInterface>(_ second: U, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue2<OutputValue, U.OutputValue>> {
+		return signal.combine(initialState: (false, false), second.signal) { (closed: inout (Bool, Bool), either: EitherResult2<OutputValue, U.OutputValue>, next: SignalNext<EitherValue2<OutputValue, U.OutputValue>>) in
 			switch either {
 			case .result1(.failure(let e)):
 				if closed.1 || closePropagation.shouldPropagateError(e) {
@@ -299,8 +299,8 @@ extension SignalInterface {
 		}
 	}
 
-	public func combineValues<U: SignalInterface, V: SignalInterface>(second: U, third: V, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue3<OutputValue, U.OutputValue, V.OutputValue>> {
-		return signal.combine(initialState: (false, false, false), second: second.signal, third: third.signal) { (closed: inout (Bool, Bool, Bool), either: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, next: SignalNext<EitherValue3<OutputValue, U.OutputValue, V.OutputValue>>) in
+	public func combineValues<U: SignalInterface, V: SignalInterface>(_ second: U, _ third: V, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue3<OutputValue, U.OutputValue, V.OutputValue>> {
+		return signal.combine(initialState: (false, false, false), second.signal, third.signal) { (closed: inout (Bool, Bool, Bool), either: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, next: SignalNext<EitherValue3<OutputValue, U.OutputValue, V.OutputValue>>) in
 			switch either {
 			case .result1(.failure(let e)):
 				if (closed.1 && closed.2) || closePropagation.shouldPropagateError(e) {
@@ -327,8 +327,8 @@ extension SignalInterface {
 		}
 	}
 	
-	public func combineValues<U: SignalInterface, V: SignalInterface, W: SignalInterface>(second: U, third: V, fourth: W, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> {
-		return signal.combine(initialState: (false, false, false, false), second: second.signal, third: third.signal, fourth: fourth.signal) { (closed: inout (Bool, Bool, Bool, Bool), either: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, next: SignalNext<EitherValue4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>>) in
+	public func combineValues<U: SignalInterface, V: SignalInterface, W: SignalInterface>(_ second: U, _ third: V, fourth: W, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> {
+		return signal.combine(initialState: (false, false, false, false), second.signal, third.signal, fourth.signal) { (closed: inout (Bool, Bool, Bool, Bool), either: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, next: SignalNext<EitherValue4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>>) in
 			switch either {
 			case .result1(.failure(let e)):
 				if (closed.1 && closed.2 && closed.3) || closePropagation.shouldPropagateError(e) {
@@ -362,8 +362,8 @@ extension SignalInterface {
 		}
 	}
 	
-	public func combineValues<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(second: U, third: V, fourth: W, fifth: X, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> {
-		return signal.combine(initialState: (false, false, false, false, false), second: second.signal, third: third.signal, fourth: fourth.signal, fifth: fifth.signal) { (closed: inout (Bool, Bool, Bool, Bool, Bool), either: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, next: SignalNext<EitherValue5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>>) in
+	public func combineValues<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> {
+		return signal.combine(initialState: (false, false, false, false, false), second.signal, third.signal, fourth.signal, fifth.signal) { (closed: inout (Bool, Bool, Bool, Bool, Bool), either: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, next: SignalNext<EitherValue5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>>) in
 			switch either {
 			case .result1(.failure(let e)):
 				if (closed.1 && closed.2 && closed.3 && closed.4) || closePropagation.shouldPropagateError(e) {
@@ -567,7 +567,7 @@ extension SignalInterface {
 					innerInput.send(error: e)
 				}
 			}
-			let prefixedInnerSignal = Signal<(Int, OutputValue?)>.preclosed(values: [(count, Optional(v))]).combine(second: innerSignal) { (r: EitherResult2<(Int, OutputValue?), (Int, OutputValue?)>, n: SignalNext<(Int, OutputValue?)>) in
+			let prefixedInnerSignal = Signal<(Int, OutputValue?)>.preclosed(values: [(count, Optional(v))]).combine(innerSignal) { (r: EitherResult2<(Int, OutputValue?), (Int, OutputValue?)>, n: SignalNext<(Int, OutputValue?)>) in
 				switch r {
 				case .result1(.success(let v)): n.send(value: v)
 				case .result1(.failure): break
