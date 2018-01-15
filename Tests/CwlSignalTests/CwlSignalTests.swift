@@ -1433,7 +1433,7 @@ class SignalTests: XCTestCase {
 		let (input2, signal2) = Signal<Double>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(initialState: "", signal2, context: context) { (state: inout String, cr: EitherResult2<Int, Double>, n: SignalNext<String>) in
+		let combined = signal1.combine(signal2, initialState: "", context: context) { (state: inout String, cr: EitherResult2<Int, Double>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			state += "\(results.count)"
 			switch cr {
@@ -1518,7 +1518,7 @@ class SignalTests: XCTestCase {
 		let (input3, signal3) = Signal<Int8>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(initialState: "", signal2, signal3, context: context) { (state: inout String, cr: EitherResult3<Int, Double, Int8>, n: SignalNext<String>) in
+		let combined = signal1.combine(signal2, signal3, initialState: "", context: context) { (state: inout String, cr: EitherResult3<Int, Double, Int8>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			state += "\(results.count)"
 			switch cr {
@@ -1621,7 +1621,7 @@ class SignalTests: XCTestCase {
 		let (input4, signal4) = Signal<Int16>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(initialState: "", signal2, signal3, signal4, context: context) { (state: inout String, cr: EitherResult4<Int, Double, Int8, Int16>, n: SignalNext<String>) in
+		let combined = signal1.combine(signal2, signal3, signal4, initialState: "", context: context) { (state: inout String, cr: EitherResult4<Int, Double, Int8, Int16>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			state += "\(results.count)"
 			switch cr {
@@ -1740,7 +1740,7 @@ class SignalTests: XCTestCase {
 		let (input5, signal5) = Signal<Int32>.create()
 		
 		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
-		let combined = signal1.combine(initialState: "", signal2, signal3, signal4, signal5, context: context) { (state: inout String, cr: EitherResult5<Int, Double, Int8, Int16, Int32>, n: SignalNext<String>) in
+		let combined = signal1.combine(signal2, signal3, signal4, signal5, initialState: "", context: context) { (state: inout String, cr: EitherResult5<Int, Double, Int8, Int16, Int32>, n: SignalNext<String>) in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
 			state += "\(results.count)"
 			switch cr {
