@@ -482,19 +482,19 @@ extension SignalChannel {
 		return next { $0.takeLast(count) }
 	}
 	
-	public func combineLatest<U: SignalInterface, V>(second: U, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue) -> V) -> SignalChannel<InputValue, Input, V, Signal<V>> {
+	public func combineLatest<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue) -> V) -> SignalChannel<InputValue, Input, V, Signal<V>> {
 		return next { $0.combineLatest(second, context: context, processor) }
 	}
 	
-	public func combineLatest<U: SignalInterface, V: SignalInterface, W>(second: U, third: V, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue) -> W) -> SignalChannel<InputValue, Input, W, Signal<W>> {
+	public func combineLatest<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue) -> W) -> SignalChannel<InputValue, Input, W, Signal<W>> {
 		return next { $0.combineLatest(second, third, context: context, processor) }
 	}
 	
-	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(second: U, third: V, fourth: W, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue) -> X) -> SignalChannel<InputValue, Input, X, Signal<X>> {
+	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue) -> X) -> SignalChannel<InputValue, Input, X, Signal<X>> {
 		return next { $0.combineLatest(second, third, fourth, context: context, processor) }
 	}
 	
-	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(second: U, third: V, fourth: W, fifth: X, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue) -> Y) -> SignalChannel<InputValue, Input, Y, Signal<Y>> {
+	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue) -> Y) -> SignalChannel<InputValue, Input, Y, Signal<Y>> {
 		return next { $0.combineLatest(second, third, fourth, fifth, context: context, processor) }
 	}
 	
