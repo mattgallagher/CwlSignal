@@ -40,44 +40,44 @@ extension SignalNext: SignalSender {}
 
 // All transformations on a Signal are built on top of the following functions, implemented in CwlSignal.swift
 extension SignalInterface {
-	public func subscribe(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) -> SignalEndpoint<OutputValue> {
-		return signal.subscribe(context: context, handler: handler)
+	public func subscribe(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) -> SignalEndpoint<OutputValue> {
+		return signal.subscribe(context: context, handler)
 	}
-	public func subscribeWhile(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Bool) {
-		return signal.subscribeWhile(context: context, handler: handler)
+	public func subscribeWhile(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Bool) {
+		return signal.subscribeWhile(context: context, handler)
 	}
 	public func junction() -> SignalJunction<OutputValue> {
 		return signal.junction()
 	}
-	public func transform<U>(context: Exec = .direct, handler: @escaping (Result<OutputValue>, SignalNext<U>) -> Void) -> Signal<U> {
-		return signal.transform(context: context, handler: handler)
+	public func transform<U>(context: Exec = .direct, _ processor: @escaping (Result<OutputValue>, SignalNext<U>) -> Void) -> Signal<U> {
+		return signal.transform(context: context, processor)
 	}
-	public func transform<S, U>(initialState: S, context: Exec = .direct, handler: @escaping (inout S, Result<OutputValue>, SignalNext<U>) -> Void) -> Signal<U> {
-		return signal.transform(initialState: initialState, context: context, handler: handler)
+	public func transform<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, Result<OutputValue>, SignalNext<U>) -> Void) -> Signal<U> {
+		return signal.transform(initialState: initialState, context: context, processor)
 	}
-	public func combine<U: SignalInterface, V>(_ second: U, context: Exec = .direct, handler: @escaping (EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> Signal<V> {
-		return signal.combine(second, context: context, handler: handler)
+	public func combine<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> Signal<V> {
+		return signal.combine(second, context: context, processor)
 	}
-	public func combine<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, handler: @escaping (EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> Signal<W> {
-		return signal.combine(second, third, context: context, handler: handler)
+	public func combine<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, _ processor: @escaping (EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> Signal<W> {
+		return signal.combine(second, third, context: context, processor)
 	}
-	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, handler: @escaping (EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> Signal<X> {
-		return signal.combine(second, third, fourth, context: context, handler: handler)
+	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, _ processor: @escaping (EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> Signal<X> {
+		return signal.combine(second, third, fourth, context: context, processor)
 	}
-	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, handler: @escaping (EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> Signal<Y> {
-		return signal.combine(second, third, fourth, fifth, context: context, handler: handler)
+	public func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, _ processor: @escaping (EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> Signal<Y> {
+		return signal.combine(second, third, fourth, fifth, context: context, processor)
 	}
-	public func combine<S, U: SignalInterface, V>(_ second: U, initialState: S, context: Exec = .direct, handler: @escaping (inout S, EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> Signal<V> {
-		return signal.combine(second, initialState: initialState, context: context, handler: handler)
+	public func combine<S, U: SignalInterface, V>(_ second: U, initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> Signal<V> {
+		return signal.combine(second, initialState: initialState, context: context, processor)
 	}
-	public func combine<S, U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, initialState: S, context: Exec = .direct, handler: @escaping (inout S, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> Signal<W> {
-		return signal.combine(second, third, initialState: initialState, context: context, handler: handler)
+	public func combine<S, U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, SignalNext<W>) -> Void) -> Signal<W> {
+		return signal.combine(second, third, initialState: initialState, context: context, processor)
 	}
-	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, initialState: S, context: Exec = .direct, handler: @escaping (inout S, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> Signal<X> {
-		return signal.combine(second, third, fourth, initialState: initialState, context: context, handler: handler)
+	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, SignalNext<X>) -> Void) -> Signal<X> {
+		return signal.combine(second, third, fourth, initialState: initialState, context: context, processor)
 	}
-	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, initialState: S, context: Exec = .direct, handler: @escaping (inout S, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> Signal<Y> {
-		return signal.combine(second, third, fourth, fifth, initialState: initialState, context: context, handler: handler)
+	public func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, SignalNext<Y>) -> Void) -> Signal<Y> {
+		return signal.combine(second, third, fourth, fifth, initialState: initialState, context: context, processor)
 	}
 	public func continuous(initialValue: OutputValue) -> SignalMulti<OutputValue> {
 		return signal.continuous(initialValue: initialValue)
@@ -97,11 +97,11 @@ extension SignalInterface {
 	public func multicast() -> SignalMulti<OutputValue> {
 		return signal.multicast()
 	}
-	public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout Error?, _ incoming: Result<OutputValue>) -> Void) -> SignalMulti<OutputValue> {
-		return signal.customActivation(initialValues: initialValues, context: context, updater: updater)
+	public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, _ updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout Error?, _ incoming: Result<OutputValue>) -> Void) -> SignalMulti<OutputValue> {
+		return signal.customActivation(initialValues: initialValues, context: context, updater)
 	}
-	public func reduce<State>(initialState: State, context: Exec = .direct, reducer: @escaping (_ state: inout State, _ message: OutputValue) throws -> State) -> SignalMulti<State> {
-		return signal.reduce(initialState: initialState, context: context, reducer: reducer)
+	public func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: inout State, _ message: OutputValue) throws -> State) -> SignalMulti<State> {
+		return signal.reduce(initialState: initialState, context: context, reducer)
 	}
 	public func capture() -> SignalCapture<OutputValue> {
 		return signal.capture()
@@ -245,12 +245,12 @@ extension SignalInterface {
 	///
 	/// - Parameters:
 	///   - context: the `Exec` context used to invoke the `handler`
-	///   - handler: the function invoked for each received `Result.success`
+	///   - processor: the function invoked for each received `Result.success`
 	/// - Returns: the created `Signal`
-	public func transformValues<U>(context: Exec = .direct, handler: @escaping (OutputValue, SignalNext<U>) -> Void) -> Signal<U> {
+	public func transformValues<U>(context: Exec = .direct, _ processor: @escaping (OutputValue, SignalNext<U>) -> Void) -> Signal<U> {
 		return signal.transform(context: context) { (result: Result<OutputValue>, next: SignalNext<U>) in
 			switch result {
-			case .success(let v): handler(v, next)
+			case .success(let v): processor(v, next)
 			case .failure(let e): next.send(error: e)
 			}
 		}
@@ -265,12 +265,12 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - initialState: the initial value for a state value associated with the handler. This value is retained and if the signal graph is deactivated, the state value is reset to this value.
 	///   - context: the `Exec` context used to invoke the `handler`
-	///   - handler: the function invoked for each received `Result.success`
+	///   - processor: the function invoked for each received `Result.success`
 	/// - Returns: the created `Signal`
-	public func transformValues<S, U>(initialState: S, context: Exec = .direct, handler: @escaping (inout S, OutputValue, SignalNext<U>) -> Void) -> Signal<U> {
+	public func transformValues<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue, SignalNext<U>) -> Void) -> Signal<U> {
 		return signal.transform(initialState: initialState, context: context) { (state: inout S, result: Result<OutputValue>, next: SignalNext<U>) in
 			switch result {
-			case .success(let v): handler(&state, v, next)
+			case .success(let v): processor(&state, v, next)
 			case .failure(let e): next.send(error: e)
 			}
 		}
@@ -411,8 +411,8 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
-	public func subscribeUntilEnd(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> Void) {
-        return signal.subscribeWhile(context: context, handler: { (result: Result<OutputValue>) -> Bool in
+	public func subscribeUntilEnd(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) {
+        return signal.subscribeWhile(context: context, { (result: Result<OutputValue>) -> Bool in
 			handler(result)
 			return true
 		})
@@ -424,7 +424,7 @@ extension SignalInterface {
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received
 	/// - Returns: the `SignalEndpoint` created by this function
-	public func subscribeValues(context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalEndpoint<OutputValue> {
+	public func subscribeValues(context: Exec = .direct, _ handler: @escaping (OutputValue) -> Void) -> SignalEndpoint<OutputValue> {
 		return signal.subscribe(context: context) { r in
 			if case .success(let v) = r {
 				handler(v)
@@ -439,7 +439,7 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
-	public func subscribeValuesUntilEnd(context: Exec = .direct, handler: @escaping (OutputValue) -> Void) {
+	public func subscribeValuesUntilEnd(context: Exec = .direct, _ handler: @escaping (OutputValue) -> Void) {
 		signal.subscribeUntilEnd(context: context) { r in
 			if case .success(let v) = r {
 				handler(v)
@@ -454,7 +454,7 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
-	public func subscribeValuesWhile(context: Exec = .direct, handler: @escaping (OutputValue) -> Bool) {
+	public func subscribeValuesWhile(context: Exec = .direct, _ handler: @escaping (OutputValue) -> Bool) {
 		signal.subscribeWhile(context: context) { r in
 			if case .success(let v) = r {
 				return handler(v)
@@ -546,8 +546,8 @@ extension SignalInterface {
 	///   - context: the context where `duration` will be invoked
 	///   - duration: for each value emitted by `self`, emit a signal
 	/// - Returns: a signal of two element tuples
-	public func valueDurations<Interface: SignalInterface>(closePropagation: SignalClosePropagation = .none, context: Exec = .direct, duration: @escaping (OutputValue) -> Interface) -> Signal<(Int, OutputValue?)> {
-		return valueDurations(initialState: (), closePropagation: closePropagation, context: context, duration: { (state: inout (), value: OutputValue) -> Interface in duration(value) })
+	public func valueDurations<Interface: SignalInterface>(closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ duration: @escaping (OutputValue) -> Interface) -> Signal<(Int, OutputValue?)> {
+		return valueDurations(initialState: (), closePropagation: closePropagation, context: context, { (state: inout (), value: OutputValue) -> Interface in duration(value) })
 	}
 
 	/// A utility function, used by ReactiveX implementations, that generates "window" durations in single signal from the values in self and a "duration" function that returns duration signals for each value.
@@ -558,7 +558,7 @@ extension SignalInterface {
 	///   - context: the context where `duration` will be invoked
 	///   - duration: for each value emitted by `self`, emit a signal
 	/// - Returns: a signal of two element tuples
-	public func valueDurations<Interface: SignalInterface, V>(initialState: V, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, duration: @escaping (inout V, OutputValue) -> Interface) -> Signal<(Int, OutputValue?)> {
+	public func valueDurations<Interface: SignalInterface, V>(initialState: V, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ duration: @escaping (inout V, OutputValue) -> Interface) -> Signal<(Int, OutputValue?)> {
 		return transformFlatten(initialState: (index: 0, userState: initialState), closePropagation: closePropagation, context: context) { (state: inout (index: Int, userState: V), v: OutputValue, mergedInput: SignalMergedInput<(Int, OutputValue?)>) in
 			let count = state.index
 			let innerSignal = duration(&state.userState, v).transform { (innerResult: Result<Interface.OutputValue>, innerInput: SignalNext<(Int, OutputValue?)>) in
@@ -718,7 +718,7 @@ extension SignalCapture {
 		let (input, output) = Signal<OutputValue>.create()
 		// This can't be `loop` but `duplicate` is a precondition failure
 		try! bind(to: input, resend: resend)
-		return output.subscribeValues(context: context, handler: handler)
+		return output.subscribeValues(context: context, handler)
 	}
 	
 	/// A convenience version of `subscribe` that only invokes the `processor` on `Result.success`
@@ -733,7 +733,7 @@ extension SignalCapture {
 		let (input, output) = Signal<OutputValue>.create()
 		// This can't be `loop` but `duplicate` is a precondition failure
 		try! bind(to: input, resend: resend, onError: onError)
-		return output.subscribeValues(context: context, handler: handler)
+		return output.subscribeValues(context: context, handler)
 	}
 }
 

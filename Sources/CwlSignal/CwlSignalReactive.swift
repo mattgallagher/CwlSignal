@@ -1477,8 +1477,8 @@ extension SignalInterface {
 	///   - processor: invoked with the corresponding `left` and `right` values when a `left` value is emitted during a `right`->`rightEnd` window or a `right` value is received during a `left`->`leftEnd` window
 	/// - Returns: a signal that emits the values from the processor and closes when any of the last of the observed windows closes.
 	public func intersect<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(withRight: U, leftEnd: @escaping (OutputValue) -> V, rightEnd: @escaping (U.OutputValue) -> W, context: Exec = .direct, _ processor: @escaping ((OutputValue, U.OutputValue)) -> X) -> Signal<X> {
-		let leftDurations = valueDurations(duration: { t in leftEnd(t).takeWhile { _ in false } })
-		let rightDurations = withRight.valueDurations(duration: { u in rightEnd(u).takeWhile { _ in false } })
+		let leftDurations = valueDurations({ t in leftEnd(t).takeWhile { _ in false } })
+		let rightDurations = withRight.valueDurations({ u in rightEnd(u).takeWhile { _ in false } })
 		let a = leftDurations.combine(rightDurations, initialState: ([Int: OutputValue](), [Int: U.OutputValue]())) { (state: inout (activeLeft: [Int: OutputValue], activeRight: [Int: U.OutputValue]), cr: EitherResult2<(Int, OutputValue?), (Int, U.OutputValue?)>, next: SignalNext<(OutputValue, U.OutputValue)>) in
 			switch cr {
 			case .result1(.success(let leftIndex, .some(let leftValue))):
@@ -1505,8 +1505,8 @@ extension SignalInterface {
 	///   - processor: when a `left` value is received, this function is invoked with the `left` value and a `Signal` that will emit all the `right` values encountered until the `left`->`leftEnd` window closes. The value returned by this function will be emitted as part of the `Signal` returned from `groupIntersect`.
 	/// - Returns: a signal that emits the values from the processor and closes when any of the last of the observed windows closes.
 	public func groupIntersect<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(withRight: U, leftEnd: @escaping (OutputValue) -> V, rightEnd: @escaping (U.OutputValue) -> W, context: Exec = .direct, _ processor: @escaping ((OutputValue, Signal<U.OutputValue>)) -> X) -> Signal<X> {
-		let leftDurations = valueDurations(duration: { u in leftEnd(u).takeWhile { _ in false } })
-		let rightDurations = withRight.valueDurations(duration: { u in rightEnd(u).takeWhile { _ in false } })
+		let leftDurations = valueDurations({ u in leftEnd(u).takeWhile { _ in false } })
+		let rightDurations = withRight.valueDurations({ u in rightEnd(u).takeWhile { _ in false } })
 		return leftDurations.combine(rightDurations, initialState: ([Int: SignalInput<U.OutputValue>](), [Int: U.OutputValue]())) { (state: inout (activeLeft: [Int: SignalInput<U.OutputValue>], activeRight: [Int: U.OutputValue]), cr: EitherResult2<(Int, OutputValue?), (Int, U.OutputValue?)>, next: SignalNext<(OutputValue, Signal<U.OutputValue>)>) in
 			switch cr {
 			case .result1(.success(let leftIndex, .some(let leftValue))):
@@ -2133,7 +2133,7 @@ extension SignalInterface {
 	///   - offset: a function that, when passed the current state value emits a signal, the first value of which will trigger the end of the delay
 	/// - Returns: a mirror of `self` where values are offset according to `offset` – closing occurs when `self` closes or when the last delayed value is sent (whichever occurs last).
 	public func delay<U, V>(initialState: V, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, offset: @escaping (inout V, OutputValue) -> Signal<U>) -> Signal<OutputValue> {
-		return valueDurations(initialState: initialState, closePropagation: closePropagation, context: context, duration: offset).transform(initialState: [Int: OutputValue]()) { (values: inout [Int: OutputValue], r: Result<(Int, OutputValue?)>, n: SignalNext<OutputValue>) in
+		return valueDurations(initialState: initialState, closePropagation: closePropagation, context: context, offset).transform(initialState: [Int: OutputValue]()) { (values: inout [Int: OutputValue], r: Result<(Int, OutputValue?)>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let index, .some(let t)): values[index] = t
 			case .success(let index, .none): _ = values[index].map { n.send(value: $0) }
@@ -2148,7 +2148,7 @@ extension SignalInterface {
 	///   - context: where the handler will be invoked
 	///   - handler: invoked when self is activated
 	/// - Returns: a signal that emits the same outputs as self
-	public func onActivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<OutputValue> {
+	public func onActivate(context: Exec = .direct, _ handler: @escaping () -> ()) -> Signal<OutputValue> {
         let j = junction()
         let s = Signal<OutputValue>.generate { input in
             if let i = input {
@@ -2167,7 +2167,7 @@ extension SignalInterface {
 	///   - context: where the handler will be invoked
 	///   - handler: invoked when self is deactivated
 	/// - Returns: a signal that emits the same outputs as self
-	public func onDeactivate(context: Exec = .direct, handler: @escaping () -> ()) -> Signal<OutputValue> {
+	public func onDeactivate(context: Exec = .direct, _ handler: @escaping () -> ()) -> Signal<OutputValue> {
         let j = junction()
         let s = Signal<OutputValue>.generate { input in
             if let i = input {
@@ -2186,7 +2186,7 @@ extension SignalInterface {
 	///   - context: where the handler will be invoked
 	///   - handler: invoked for each `Result` in the signal
 	/// - Returns: a signal that emits the same outputs as self
-	public func onResult(context: Exec = .direct, handler: @escaping (Result<OutputValue>) -> ()) -> Signal<OutputValue> {
+	public func onResult(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> ()) -> Signal<OutputValue> {
 		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
 			handler(r)
 			n.send(result: r)
@@ -2199,7 +2199,7 @@ extension SignalInterface {
 	///   - context: where the handler will be invoked
 	///   - handler: invoked for each value (Result.success) in the signal
 	/// - Returns: a signal that emits the same outputs as self
-	public func onValue(context: Exec = .direct, handler: @escaping (OutputValue) -> ()) -> Signal<OutputValue> {
+	public func onValue(context: Exec = .direct, _ handler: @escaping (OutputValue) -> ()) -> Signal<OutputValue> {
 		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v):
@@ -2217,7 +2217,7 @@ extension SignalInterface {
 	///   - context: where the handler will be invoked
 	///   - handler: invoked for each error (Result.failure) in the signal
 	/// - Returns: a signal that emits the same outputs as self
-	public func onError(context: Exec = .direct, catchSignalComplete: Bool = false, handler: @escaping (Error) -> ()) -> Signal<OutputValue> {
+	public func onError(context: Exec = .direct, catchSignalComplete: Bool = false, _ handler: @escaping (Error) -> ()) -> Signal<OutputValue> {
 		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v):

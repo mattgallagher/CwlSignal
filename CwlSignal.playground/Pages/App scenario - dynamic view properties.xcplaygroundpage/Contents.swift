@@ -89,8 +89,7 @@ class ViewController: NSViewController {
 			self.filesSelectedLabel.stringValue = "Selected file count: \(r.value?.count ?? 0)"
 		}
 		endpoints += login.signal
-			.combineLatest(fileSelection.signal)
-			.map {tuple in tuple.0 && !tuple.1.isEmpty }
+			.combineLatest(fileSelection.signal) { $0 && !$1.isEmpty }
 			.subscribe(context: .main) { result in
 				self.addToFavoritesButton.isEnabled = result.value ?? false
 			}

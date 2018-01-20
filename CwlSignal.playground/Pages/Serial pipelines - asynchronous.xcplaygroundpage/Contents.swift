@@ -36,6 +36,8 @@ let (input, endpoint) = Signal<Int>.channel()
 input.send(values: 1, 2, 3, 4, 5, 6, 7, 8, 9)
 input.close()
 
+print("Derp")
+
 // In reactive programming, blocking is normally "bad" but we need to block or the playground will finish before the background work.
 semaphore.wait()
 
