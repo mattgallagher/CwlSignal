@@ -558,7 +558,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"$CARTHAGE\" == \"YES\" ]; then\n  cp -Rf \"$SRCROOT/Carthage/Build/iOS/CwlUtils.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  exit\nfi\n\"$DEVELOPER_BIN_DIR/xcodebuild\" -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtils_iOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\" MODULE_CACHE_DIR=\"$MODULE_CACHE_DIR\" DSTROOT=\"$DSTROOT\" CACHE_ROOT=\"$CACHE_ROOT\"";
+			shellScript = "if [ \"$CARTHAGE\" == \"YES\" ]; then\n  rm -Rf \"$BUILT_PRODUCTS_DIR/CwlUtils.framework\"\n  cp -R \"$SRCROOT/Carthage/Build/iOS/CwlUtils.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  exit\nfi\n\"$DEVELOPER_BIN_DIR/xcodebuild\" -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtils_iOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\" MODULE_CACHE_DIR=\"$MODULE_CACHE_DIR\" DSTROOT=\"$DSTROOT\" CACHE_ROOT=\"$CACHE_ROOT\"";
 			showEnvVarsInLog = 0;
 		};
 		C9351F9E1F0B70840038F4E0 /* ShellScript */ = {
@@ -574,7 +574,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"$CARTHAGE\" == \"YES\" ]; then\n  cp -Rf \"$SRCROOT/Carthage/Build/Mac/CwlUtils.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  exit\nfi\n\"$DEVELOPER_BIN_DIR/xcodebuild\" -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtils_macOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\" MODULE_CACHE_DIR=\"$MODULE_CACHE_DIR\" DSTROOT=\"$DSTROOT\" CACHE_ROOT=\"$CACHE_ROOT\"";
+			shellScript = "if [ \"$CARTHAGE\" == \"YES\" ]; then\n  rm -Rf \"$BUILT_PRODUCTS_DIR/CwlUtils.framework\"\n  cp -Rf \"$SRCROOT/Carthage/Build/Mac/CwlUtils.framework\" \"$BUILT_PRODUCTS_DIR/\"\n  exit\nfi\n\"$DEVELOPER_BIN_DIR/xcodebuild\" -project \"$OBJROOT/cwl_symlinks/CwlUtils/CwlUtils.xcodeproj\" -target CwlUtils_macOS -sdk \"$SDKROOT\" -configuration \"$CONFIGURATION\" $ACTION SRCROOT=\"$SRCROOT\" SYMROOT=\"$SYMROOT\" OBJROOT=\"$OBJROOT\" ARCHS=\"$ARCHS\" ONLY_ACTIVE_ARCH=\"$ONLY_ACTIVE_ARCH\" BITCODE_GENERATION_MODE=\"$BITCODE_GENERATION_MODE\" MODULE_CACHE_DIR=\"$MODULE_CACHE_DIR\" DSTROOT=\"$DSTROOT\" CACHE_ROOT=\"$CACHE_ROOT\"";
 			showEnvVarsInLog = 0;
 		};
 		C9351FAC1F0B710E0038F4E0 /* ShellScript */ = {
