@@ -662,6 +662,60 @@ extension SignalInterface {
 	}
 }
 
+/// This class is used for disconnecting and reconnecting a preceeding signal subgraph from the succeeding signal subgraph. This is useful in cases where you have a generating signal that will automatically pause itself when disconnected (like `Signal.timer`) and you want to disconnect it and reconnect to take advantage of that pause and restart functionality.
+/// Internally, this class is a wrapper around a `SignalJunction` (which disconnects the succeeding graph) and a `Signal` (which is the head of the succeeding graph) and 
+public struct SignalReconnector<OutputValue>: Cancellable {
+	let queue = PThreadMutex()
+	var disconnectedInput: SignalInput<OutputValue>?
+	let junction: SignalJunction<OutputValue>
+	
+	public mutating func reconnect() {
+		let input = queue.sync { () -> SignalInput<OutputValue>? in
+			let di = disconnectedInput
+			disconnectedInput = nil
+			return di
+		}
+		if let i = input {
+			_ = try? junction.bind(to: i)
+		}
+	}
+	
+	public mutating func cancel() {
+		junction.cancel()
+		queue.sync {
+			disconnectedInput?.cancel()
+			disconnectedInput = nil
+		}
+	}
+	
+	public mutating func disconnect() {
+		if let i = junction.disconnect() {
+			queue.sync {
+				disconnectedInput = i
+			}
+		}
+	}
+	
+	public init(preceeding: Signal<OutputValue>, succeeding: SignalInput<OutputValue>, initiallyConnected: Bool = true) {
+		disconnectedInput = succeeding
+		junction = preceeding.junction()
+		if initiallyConnected {
+			reconnect()
+		}
+	}
+}
+
+extension SignalInterface {
+	/// Create a `SignalReconnector` and a downstream `Signal`. The `SignalReconnector` is used for disconnecting and reconnecting the downstream signal from `self`. This is useful in cases where `self` is a generating signal that automatically pauses itself when disconnected from all outputs (like `Signal.timer`) and you want to take advantage of that pause and restart functionality.
+	///
+	/// - Parameter initiallyConnected: should the downstream signal be connected when this function returns
+	/// - Returns: a tuple of `SignalReconnector` and `Signal`. The reconnector disconnects `self` (upstream) from the `Signal` in the tuple (downstream). 
+	public func reconnector(initiallyConnected: Bool = true) -> (SignalReconnector<OutputValue>, Signal<OutputValue>) {
+		let (i, s) = Signal<OutputValue>.create()
+		return (SignalReconnector<OutputValue>(preceeding: signal, succeeding: i, initiallyConnected: initiallyConnected), s)
+	}
+}
+
 /// This wrapper around `SignalEndpoint` saves the last received value from the signal so that it can be 'polled' (read synchronously from an arbitrary execution context). This class ensures thread-safety on the read operation.
 ///
 /// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Holding a `SignalPollingEndpoint` set to run in the same context as the delegate (e.g. .main) will allow the delegate to synchronously respond with the latest value.

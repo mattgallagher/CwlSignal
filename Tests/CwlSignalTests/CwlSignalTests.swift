@@ -1894,6 +1894,43 @@ class SignalTests: XCTestCase {
 		withExtendedLifetime(input) { }
 		withExtendedLifetime(ep) { }
 	}
+	
+	func testReconnector() {
+		var results = [Result<Int>]()
+		var input: SignalInput<Int>? = nil
+		let upstream = Signal<Int>.generate { i in
+			input = i
+		}
+		var (reconnector, downstream) = upstream.reconnector()
+		let ep = downstream.subscribe { r in
+			results.append(r)
+		}
+		input?.send(values: 0, 1, 2)
+		reconnector.disconnect()
+		input?.send(values: 3, 4, 5)
+		reconnector.reconnect()
+		input?.send(values: 6, 7, 8)
+		reconnector.disconnect()
+		reconnector.disconnect()
+		input?.send(values: 9, 10, 11)
+		reconnector.reconnect()
+		reconnector.reconnect()
+		input?.send(values: 12, 13, 14)
+		
+		XCTAssert(results.count == 9)
+		XCTAssert(results.at(0)?.value == 0)
+		XCTAssert(results.at(1)?.value == 1)
+		XCTAssert(results.at(2)?.value == 2)
+		XCTAssert(results.at(3)?.value == 6)
+		XCTAssert(results.at(4)?.value == 7)
+		XCTAssert(results.at(5)?.value == 8)
+		XCTAssert(results.at(6)?.value == 12)
+		XCTAssert(results.at(7)?.value == 13)
+		XCTAssert(results.at(8)?.value == 14)
+		
+		withExtendedLifetime(input) {}
+		withExtendedLifetime(ep) {}
+	}
 }
 
 class SignalTimingTests: XCTestCase {
