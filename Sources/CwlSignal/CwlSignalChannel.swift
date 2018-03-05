@@ -308,28 +308,12 @@ extension SignalChannel {
 		return next { $0.buffer(interval: interval, timeshift: timeshift, context: context) }
 	}
 	
-	public func filterMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U?) -> SignalChannel<InputValue, Input, U, Signal<U>> {
-		return next { $0.filterMap(context: context, processor) }
+	public func compactMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U?) -> SignalChannel<InputValue, Input, U, Signal<U>> {
+		return next { $0.compactMap(context: context, processor) }
 	}
 	
-	public func filterMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) -> U?) -> SignalChannel<InputValue, Input, U, Signal<U>> {
-		return next { $0.filterMap(initialState: initialState, context: context, processor) }
-	}
-	
-	public func failableMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
-		return next { $0.failableMap(context: context, processor) }
-	}
-	
-	public func failableMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) throws -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
-		return next { $0.failableMap(initialState: initialState, context: context, processor) }
-	}
-	
-	public func failableFilterMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U?) -> SignalChannel<InputValue, Input, U, Signal<U>> {
-		return next { $0.failableFilterMap(context: context, processor) }
-	}
-	
-	public func failableFilterMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) -> U?) throws -> SignalChannel<InputValue, Input, U, Signal<U>> {
-		return next { $0.failableFilterMap(initialState: initialState, context: context, processor) }
+	public func compactMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) throws -> U?) -> SignalChannel<InputValue, Input, U, Signal<U>> {
+		return next { $0.compactMap(initialState: initialState, context: context, processor) }
 	}
 	
 	public func flatMap<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> Interface) -> SignalChannel<InputValue, Input, Interface.OutputValue, Signal<Interface.OutputValue>> {
@@ -360,11 +344,11 @@ extension SignalChannel {
 		return next { $0.mapErrors(context: context, processor) }
 	}
 	
-	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
+	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
 		return next { $0.map(context: context, processor) }
 	}
 	
-	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
+	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) throws -> U) -> SignalChannel<InputValue, Input, U, Signal<U>> {
 		return next { $0.map(initialState: initialState, context: context, processor) }
 	}
 	

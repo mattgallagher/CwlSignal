@@ -99,7 +99,7 @@ class SignalCocoaTests: XCTestCase {
 					sen.target = sat
 					sen.action = sat.selector
 					
-					endpoint = sat.signal.filterMap { $0 as? String }.subscribeValues { v in results.append(v) }
+					endpoint = sat.signal.compactMap { $0 as? String }.subscribeValues { v in results.append(v) }
 					
 					sen.sendSingle()
 				}
@@ -120,8 +120,8 @@ class SignalCocoaTests: XCTestCase {
 		let sat = SignalDoubleActionTarget()
 		var results1 = [String]()
 		var results2 = [String]()
-		let ep1 = sat.signal.filterMap { $0 as? String }.subscribeValues { v in results1.append(v) }
-		let ep2 = sat.secondSignal.filterMap { $0 as? String }.subscribeValues { v in results2.append(v) }
+		let ep1 = sat.signal.compactMap { $0 as? String }.subscribeValues { v in results1.append(v) }
+		let ep2 = sat.secondSignal.compactMap { $0 as? String }.subscribeValues { v in results2.append(v) }
 		let sel1 = sat.selector
 		let sel2 = sat.secondSelector
 		

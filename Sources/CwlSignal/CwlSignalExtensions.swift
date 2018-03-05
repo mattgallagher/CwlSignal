@@ -662,7 +662,7 @@ extension SignalInterface {
 	}
 }
 
-/// This class is used for disconnecting and reconnecting a preceeding signal subgraph from the succeeding signal subgraph. This is useful in cases where you have a generating signal that will automatically pause itself when disconnected (like `Signal.timer`) and you want to disconnect it and reconnect to take advantage of that pause and restart functionality.
+/// This class is used for disconnecting and reconnecting a preceeding signal subgraph from the succeeding signal subgraph. This is useful in cases where you have a generating signal that will automatically pause itself when disconnected (like `Signal.interval`) and you want to disconnect it and reconnect to take advantage of that pause and restart functionality.
 /// Internally, this class is a wrapper around a `SignalJunction` (which disconnects the succeeding graph) and a `Signal` (which is the head of the succeeding graph) and 
 public struct SignalReconnector<OutputValue>: Cancellable {
 	let queue = PThreadMutex()
@@ -706,7 +706,7 @@ public struct SignalReconnector<OutputValue>: Cancellable {
 }
 
 extension SignalInterface {
-	/// Create a `SignalReconnector` and a downstream `Signal`. The `SignalReconnector` is used for disconnecting and reconnecting the downstream signal from `self`. This is useful in cases where `self` is a generating signal that automatically pauses itself when disconnected from all outputs (like `Signal.timer`) and you want to take advantage of that pause and restart functionality.
+	/// Create a `SignalReconnector` and a downstream `Signal`. The `SignalReconnector` is used for disconnecting and reconnecting the downstream signal from `self`. This is useful in cases where `self` is a generating signal that automatically pauses itself when disconnected from all outputs (like `Signal.interval`) and you want to take advantage of that pause and restart functionality.
 	///
 	/// - Parameter initiallyConnected: should the downstream signal be connected when this function returns
 	/// - Returns: a tuple of `SignalReconnector` and `Signal`. The reconnector disconnects `self` (upstream) from the `Signal` in the tuple (downstream). 

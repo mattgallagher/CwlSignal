@@ -620,7 +620,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testFilterMap() {
 		var results = [Result<Int>]()
-		_ = Signal.from(values: 1...5).filterMap { v -> Int? in
+		_ = Signal.from(values: 1...5).compactMap { v -> Int? in
 			if v % 2 == 0 {
 				return v * 2
 			} else {

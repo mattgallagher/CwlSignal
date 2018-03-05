@@ -489,87 +489,7 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func filterMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U?) -> Signal<U> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<U>) in
-			switch r {
-			case .success(let v):
-				if let u = processor(v) {
-					n.send(value: u)
-				}
-			case .failure(let e): n.send(error: e)
-			}
-		}
-	}
-	
-	/// Implementation of map and filter. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over child `Optional`s.
-	///
-	/// - Parameters:
-	///   - initialState: an initial value for a state parameter that will be passed to the processor on each iteration.
-	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
-	///   - processor: for each value emitted by `self`, outputs a new `Signal`
-	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func filterMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) -> U?) -> Signal<U> {
-		return transform(initialState: initialState, context: context) { (s: inout S, r: Result<OutputValue>, n: SignalNext<U>) in
-			switch r {
-			case .success(let v):
-				if let u = processor(&s, v) {
-					n.send(value: u)
-				}
-			case .failure(let e): n.send(error: e)
-			}
-		}
-	}
-	
-	/// Implementation of map where the closure can throw. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over values or thrown errors.
-	///
-	/// - Parameters:
-	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
-	///   - processor: for each value emitted by `self`, outputs a new `Signal`
-	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func failableMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U) -> Signal<U> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<U>) in
-			switch r {
-			case .success(let v):
-				do {
-					let u = try processor(v)
-					n.send(value: u)
-				} catch {
-					n.send(error: error)
-				}
-			case .failure(let e): n.send(error: e)
-			}
-		}
-	}
-	
-	/// Implementation of map where the closure can throw. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over values or thrown errors.
-	///
-	/// - Parameters:
-	///   - initialState: an initial value for a state parameter that will be passed to the processor on each iteration.
-	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
-	///   - processor: for each value emitted by `self`, outputs a new `Signal`
-	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func failableMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) throws -> U) -> Signal<U> {
-		return transform(initialState: initialState, context: context) { (s: inout S, r: Result<OutputValue>, n: SignalNext<U>) in
-			switch r {
-			case .success(let v):
-				do {
-					let u = try processor(&s, v)
-					n.send(value: u)
-				} catch {
-					n.send(error: error)
-				}
-			case .failure(let e): n.send(error: e)
-			}
-		}
-	}
-	
-	/// Implementation of map where the closure can throw. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over values or thrown errors.
-	///
-	/// - Parameters:
-	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
-	///   - processor: for each value emitted by `self`, outputs a new `Signal`
-	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func failableFilterMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U?) -> Signal<U> {
+	public func compactMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U?) -> Signal<U> {
 		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<U>) in
 			switch r {
 			case .success(let v):
@@ -585,14 +505,14 @@ extension SignalInterface {
 		}
 	}
 	
-	/// Implementation of map where the closure can throw. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over values or thrown errors.
+	/// Implementation of map and filter. Essentially a flatMap but instead of flattening over child `Signal`s like the standard Reactive implementation, this flattens over child `Optional`s.
 	///
 	/// - Parameters:
 	///   - initialState: an initial value for a state parameter that will be passed to the processor on each iteration.
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func failableFilterMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) throws -> U?) -> Signal<U> {
+	public func compactMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) throws -> U?) -> Signal<U> {
 		return transform(initialState: initialState, context: context) { (s: inout S, r: Result<OutputValue>, n: SignalNext<U>) in
 			switch r {
 			case .success(let v):
@@ -773,10 +693,10 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a value for the output `Signal`
 	/// - Returns: a `Signal` where all the values have been transformed by the `processor`. Any error is emitted in the output without change.
-	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U) -> Signal<U> {
+	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U) -> Signal<U> {
 		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<U>) in
 			switch r {
-			case .success(let v): n.send(value: processor(v))
+			case .success(let v): n.send(result: Result { try processor(v) })
 			case .failure(let e): n.send(error: e)
 			}
 		}
@@ -789,10 +709,10 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a value for the output `Signal`
 	/// - Returns: a `Signal` where all the values have been transformed by the `processor`. Any error is emitted in the output without change.
-	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) -> U) -> Signal<U> {
+	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) throws -> U) -> Signal<U> {
 		return transform(initialState: initialState, context: context) { (s: inout V, r: Result<OutputValue>, n: SignalNext<U>) in
 			switch r {
-			case .success(let v): n.send(value: processor(&s, v))
+			case .success(let v): n.send(result: Result { try processor(&s, v) })
 			case .failure(let e): n.send(error: e)
 			}
 		}

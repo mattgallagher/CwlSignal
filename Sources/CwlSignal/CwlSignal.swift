@@ -98,7 +98,7 @@ public class Signal<OutputValue>: SignalInterface {
 	// Accordingly, the `holdCount` should only have a value in the range [0, 2]
 	fileprivate final var holdCount: UInt8 = 0
 	
-	// When the handler for a given `Result` is being involed, the `itemProcessing` is set to `true`. The effect is equivalent to `holdCount`.
+	// When a `Result` is popped from the queue and the handler is being invoked, the `itemProcessing` is set to `true`. The effect is equivalent to `holdCount`.
 	fileprivate final var itemProcessing: Bool = false
 	
 	// Notifications for the inverse of `delivery == .disabled`, accessed exclusively through the `generate` constructor. Can be used for lazy construction/commencement, resetting to initial state on graph disconnect and reconnect or cleanup after graph deletion.
@@ -110,10 +110,10 @@ public class Signal<OutputValue>: SignalInterface {
 	/// If Swift gains an `OrderedSet` type, it should be used here in place of this `Set` and the `sortedPreceeding` accessor, below.
 	fileprivate final var preceeding: Set<OrderedSignalPredecessor>
 	
-	// A total of all preceeding ever added (this value is used to reject predecessors that are not up-to-date with the latest graph structure)
+	// A monotonically increasing counter that is incremented every time the set of connected, preceeding handlers changes. This value is used to reject predecessors that are not up-to-date with the latest graph structure (i.e. have been asynchronously removed or invalidated).
 	fileprivate final var preceedingCount: Int = 0
 	
-	// The destination of this `Signal`. This value is `nil` on construction and may be set non-nil once only.
+	// The destination of this `Signal`. This value is `nil` on construction.
 	fileprivate final weak var signalHandler: SignalHandler<OutputValue>? = nil { didSet { itemContextNeedsRefresh = true } }
 	
 	// This is a cache of values that can be read outside the lock by the current owner of the `itemProcessing` flag.
