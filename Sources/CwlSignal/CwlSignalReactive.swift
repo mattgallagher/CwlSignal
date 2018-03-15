@@ -1155,7 +1155,7 @@ extension SignalInterface {
 		}
 	}
 	
-	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output also includes the value from the trigger signal.
+	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output also includes the value from the trigger signal, like a `withLatestFrom` with self and the parameter reversed.
 	///
 	/// - Parameter trigger: instructs the result to emit the last value from `self`
 	/// - Returns: a signal that, when a value is received from `trigger`, emits the last value (if any) received from `self`.
@@ -1187,7 +1187,7 @@ extension SignalInterface {
 		}
 	}
 	
-	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output also includes the value from the trigger signal.
+	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output also includes the value from the trigger signal (this behavior is sometimes called `withLatestFrom`).
 	///
 	/// - Parameter source: the latest value is emitted when `self` emits
 	/// - Returns: a signal that, when a value is received from `self`, emits the last value (if any) received from `source`.

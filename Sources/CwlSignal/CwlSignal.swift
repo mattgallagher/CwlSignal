@@ -1306,7 +1306,7 @@ private struct ItemContext<OutputValue> {
 // If `Signal<OutputValue>` is a delivery channel, then `SignalHandler` is the destination to which it delivers.
 // While the base `SignalHandler<OutputValue>` is not "abstract" in any technical sense, it doesn't do anything by default. Subclasses include `SignalEndpoint` (the user "exit" point for signal results), `SignalProcessor` (used for transforming signals between instances of `Signal<OutputValue>`), `SignalJunction` (for enabling dynamic graph connection and disconnections).
 // `SignalHandler<OutputValue>` is never directly created or held by users of the CwlSignal library. It is implicitly created when one of the listening or transformation methods on `Signal<OutputValue>` are invoked.
-fileprivate class SignalHandler<OutputValue> {
+public class SignalHandler<OutputValue> {
 	final let signal: Signal<OutputValue>
 	final let context: Exec
 	final var handler: (Result<OutputValue>) -> Void { didSet { signal.itemContextNeedsRefresh = true } }
@@ -1490,7 +1490,7 @@ extension SignalPredecessor {
 
 // All `Signal`s, except those with endpoint handlers, are fed to another `Signal`. A `SignalProcessor` is how this is done. This is the abstract base for all handlers that connect to another `Signal`. The default implementation can only connect to a single output (concrete subclass `SignalMultiprocessor` is used for multiple outputs) but a majority of the architecture for any number of outputs is contained in this class.
 // This class allows its outputs to have a different value type compared to the Signal for this class, although only SignalTransformer, SignalTransformerWithState and SignalCombiner take advantage – all other subclasses derive from SignalProcessor<OutputValue, OutputValue>.
-fileprivate class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, SignalPredecessor {
+public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, SignalPredecessor {
 	typealias OutputsArray = Array<(destination: Weak<Signal<U>>, activationCount: Int?)>
 	var outputs = OutputsArray()
 	
