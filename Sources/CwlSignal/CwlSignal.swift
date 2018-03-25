@@ -2454,24 +2454,30 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 		return outputs.count > 0 ? false : true
 	}
 	
-	/// Accessor for any captured values or error. Activation signals captured can be accessed through this property between construction and activating an output (after that point, capture signals are cleared).
+	/// Shortcut for `error != nil ? values.last : nil`
 	///
-	/// - Returns: and array of values (which may be empty) and an optional error, which are the signals received during activation.
-	public var activation: (values: [OutputValue], error: Error?) {
+	/// - Returns: last captured value, if the captured error is nil, otherwise nil.
+	public var currentValue: OutputValue? {
 		return sync {
-			return (values: capturedValues, error: capturedError)
+			return capturedError == nil ? capturedValues.last : nil
 		}
 	}
 	
-	/// Accessor for the most recent captured value. Activation signals captured can be accessed through this property between construction and activating an output (after that point, capture signals are cleared).
+	/// Accessor for any captured values. Activation signals captured can be accessed through this property between construction and activating an output (after that point, capture signals are cleared).
 	///
-	/// - Returns: the last captured value, if the captured error is nil
-	public var latestValue: OutputValue? {
+	/// - Returns: and array of values (which may be empty) and an optional error, which are the signals received during activation.
+	public var values: [OutputValue] {
 		return sync {
-			if capturedError == nil {
-				return capturedValues.last
-			}
-			return nil
+			return capturedValues
+		}
+	}
+	
+	/// Accessor for any captured error. Activation signals captured can be accessed through this property between construction and activating an output (after that point, capture signals are cleared).
+	///
+	/// - Returns: and array of values (which may be empty) and an optional error, which are the signals received during activation.
+	public var error: Error? {
+		return sync {
+			return capturedError
 		}
 	}
 	

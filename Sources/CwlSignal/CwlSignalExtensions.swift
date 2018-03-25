@@ -760,7 +760,7 @@ extension SignalInterface {
 	
 	/// Internally creates a `SignalCapture` which reads the latest activation value and is immediately discarded.
 	public func peek() -> OutputValue? {
-		return signal.capture().latestValue
+		return signal.capture().currentValue
 	}
 }
 

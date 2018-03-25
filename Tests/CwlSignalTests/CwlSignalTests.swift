@@ -642,7 +642,7 @@ class SignalTests: XCTestCase {
 		// Send a value between construction and bind. This must be *blocked* in the capture queue.
 		XCTAssert(input.send(value: 5) == nil)
 		
-		let (values, error) = capture.activation
+		let (values, error) = (capture.values, capture.error)
 		do {
 			try capture.bind(to: subsequentInput)
 		} catch {
@@ -670,7 +670,7 @@ class SignalTests: XCTestCase {
 		
 		do {
 			let capture = output.capture()
-			let (values, error) = capture.activation
+			let (values, error) = (capture.values, capture.error)
 			XCTAssert(values == [2])
 			XCTAssert(error == nil)
 			
@@ -684,7 +684,7 @@ class SignalTests: XCTestCase {
 		
 		do {
 			let capture = output.capture()
-			let (values, error) = capture.activation
+			let (values, error) = (capture.values, capture.error)
 			XCTAssert(values == [3])
 			XCTAssert(error == nil)
 			
@@ -706,7 +706,7 @@ class SignalTests: XCTestCase {
 		
 		do {
 			let capture = output.capture()
-			let (values, error) = capture.activation
+			let (values, error) = (capture.values, capture.error)
 			XCTAssert(values == [2])
 			XCTAssert(error == nil)
 			
@@ -720,7 +720,7 @@ class SignalTests: XCTestCase {
 		
 		do {
 			let capture = output.capture()
-			let (values, error) = capture.activation
+			let (values, error) = (capture.values, capture.error)
 			XCTAssert(values == [3])
 			XCTAssert(error == nil)
 			
@@ -747,7 +747,7 @@ class SignalTests: XCTestCase {
 			results.append(r)
 		}
 		
-		let (values, error) = capture.activation
+		let (values, error) = (capture.values, capture.error)
 		
 		do {
 			try capture.bind(to: subsequentInput) { (c: SignalCapture<Int>, e: Error, i: SignalInput<Int>) in
@@ -769,13 +769,13 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(0)?.value == 3)
 		XCTAssert(results.at(1)?.error as? TestError == .twoValue)
 		
-		let (values2, error2) = capture.activation
+		let (values2, error2) = (capture.values, capture.error)
 		XCTAssert(values2.count == 0)
 		XCTAssert(error2 as? SignalComplete == .closed)
 		
 		let pc = Signal<Int>.preclosed(values: [], error: TestError.oneValue)
 		let capture2 = pc.capture()
-		let (values3, error3) = capture2.activation
+		let (values3, error3) = (capture2.values, capture2.error)
 		
 		var results2 = [Result<Int>]()
 		let (subsequentInput2, subsequentSignal2) = Signal<Int>.create()
