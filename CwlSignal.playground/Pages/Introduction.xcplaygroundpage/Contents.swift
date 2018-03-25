@@ -2,6 +2,20 @@
 
 # Introduction
 
+## A little about CwlSignal
+
+CwlSignal is an implementation of "reactive programming". Reactive programming is programming by observing and transforming streams of values. In CwlSignal, this "stream of values" is called a "signal" and is managed through the `Signal` class. The stream is threadsafe, potentially asynchronous and includes logic for processing, merging and combining streams. Signals can be used to implement the observer-pattern, communication channels, command queues, dependency graphs, stream-processors, state reducers (catamorphisms) or async promises.
+
+Processing a `Signal` uses language similar to Swift's `Collection` processing. Functions with some of the same names, including `map`, `filter`, `flatMap`, `compactMap` and `zip`. Where Swift's `Collection` usually processes values from a single buffer (e.g. an array), `Signal` processes values that will be delivered over time. Each time processing operations are applied to a `Signal`, a new `Signal` is returned and the structured of all connected `Signal`s is called the "signal graph".
+
+### Some differences between CwlSignal an other reactive programming implementations
+
+CwlSignal uses separate input (`SignalInput`) and output (`Signal`) interfaces – there are no "subjects". The whole signal graph is mutable, even while signals are being asynchronously delivered and everything remains threadsafe. There's no re-entrancy (it is detected and serialized using queues).
+
+CwlSignal is "single listener by default". This means that a normal `Signal` may be transformed or subscribed just once. This is an important point for graph coherence – if a signal is exposed to multiple potential listeners, you must use multi-listener transformations (like `continuous()`, `playback()` or `multicast()`) that return `SignalMulti`, which supports multiple listeners. These multi-listener transformations encode how additional listeners will be brought up-to-speed upon joining.
+
+An important concept in CwlSignal is "activation", which allows CwlSignal to avoid the need for ReactiveX-style "cold observables" or ReactiveSwift-style "signal producers". The idea behind activation is that values must go somewhere: either to an endpoint (where values can escape the signal graph) or to a signal that can cache values for later delivery. Until an endpoint or caching signal is added to the graph, the graph is "inactive" (sending values will have no effect) and upon activation, certain lazy generation can start (or be restarted). Between the "inactive" and "active" phases, the signal graph goes through a special phase called "activation" where cached values in the graph are delivered to new listeners. Values delivered in this special activation phase can be read separately, if desired.
+
 ## Build instructions
 
 This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme. To satisfy this requirement:

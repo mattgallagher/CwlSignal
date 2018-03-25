@@ -718,21 +718,21 @@ extension SignalInterface {
 
 /// This wrapper around `SignalEndpoint` saves the last received value from the signal so that it can be 'polled' (read synchronously from an arbitrary execution context). This class ensures thread-safety on the read operation.
 ///
-/// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Holding a `SignalPollingEndpoint` set to run in the same context as the delegate (e.g. .main) will allow the delegate to synchronously respond with the latest value.
+/// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Holding a `SignalCachedEndpoint` set to run in the same context as the delegate (e.g. .main) will allow the delegate to synchronously respond with the latest value.
 ///
-/// Note that there is a semantic difference between this class which is intended to be left active for some time and polled periodically and `SignalCapture` which captures the *activation* value (leaving it running for a duration is pointless). For that reason, the standalone `poll()` function actually uses `SignalCapture` rather than this class (`SignalCapture` is more consistent in the presence of multi-threaded updates since there is no possibility of asychronous updates between creation and reading).
+/// Note that there is a semantic difference between this class which is intended to be left active for some time and polled periodically and `SignalCapture` which captures the *activation* value (leaving it running for a duration is pointless). For that reason, the standalone `peek()` function actually uses `SignalCapture` rather than this class (`SignalCapture` is more consistent in the presence of multi-threaded updates since there is no possibility of asychronous updates between creation and reading).
 ///
-/// However, `SignalCapture` can only read activation values (not regular values). Additionally, `poll()` will be less efficient than this class if multiple reads are required since the `SignalCapture` is created and thrown away each time.
+/// However, `SignalCapture` can only read activation values (not regular values). Additionally, `peek()` will be less efficient than this class if multiple reads are required since the `SignalCapture` is created and thrown away each time.
 ///
 /// **WARNING**: this class should be avoided where possible since it removes the "reactive" part of reactive programming (changes in the polled value must be detected through other means, usually another subscriber to the underlying `Signal`).
 ///
-public final class SignalPollingEndpoint<OutputValue> {
+public final class SignalLatest<OutputValue>: Cancellable {
 	var endpoint: SignalEndpoint<OutputValue>? = nil
 	var latest: Result<OutputValue>? = nil
 	let mutex = PThreadMutex()
 	
-	public init(signal: Signal<OutputValue>, context: Exec = .direct) {
-		endpoint = signal.subscribe(context: context) { [weak self] r in
+	public init(signal: Signal<OutputValue>) {
+		endpoint = signal.subscribe { [weak self] r in
 			if let s = self {
 				s.mutex.sync { s.latest = r }
 			}
@@ -746,17 +746,21 @@ public final class SignalPollingEndpoint<OutputValue> {
 	public var latestValue: OutputValue? {
 		return mutex.sync { latest?.value }
 	}
+	
+	public func cancel() {
+		endpoint?.cancel()
+	}
 }
 
 extension SignalInterface {
-	/// Appends a `SignalPollingEndpoint` listener to the value emitted from this `Signal`. The endpoint will "activate" this `Signal` and all direct antecedents in the graph (which may start lazy operations deferred until activation).
-	public func pollingEndpoint() -> SignalPollingEndpoint<OutputValue> {
-		return SignalPollingEndpoint(signal: signal)
+	/// Appends a `SignalLatest` listener to the value emitted from this `Signal`. `SignalLatest` adds an endpoint to the signal and remembers the latest result emitted. This latest result can be accessed in a thread-safe way, using `latestValue` or `latestResult`.
+	public func cacheLatest() -> SignalLatest<OutputValue> {
+		return SignalLatest(signal: signal)
 	}
 	
-	/// Internally creates a `SignalCapture` which is activated and immediately discarded to get the latest activation value from the stream.
-	public func poll() -> OutputValue? {
-		return signal.capture().activation().values.last
+	/// Internally creates a `SignalCapture` which reads the latest activation value and is immediately discarded.
+	public func peek() -> OutputValue? {
+		return signal.capture().latestValue
 	}
 }
 

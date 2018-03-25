@@ -50,7 +50,7 @@ class SignalReactiveTests: XCTestCase {
 		let capture = Signal<Int>.from(values: [1, 3, 5, 7, 11]).capture()
 		let (input, signal) = Signal<Int>.create()
 		let ep = signal.subscribe { r in results.append(r) }
-		let (values, error) = capture.activation()
+		let (values, error) = capture.activation
 		do {
 			try capture.bind(to: input)
 		} catch {

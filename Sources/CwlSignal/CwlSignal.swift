@@ -51,8 +51,8 @@ public protocol SignalInputInterface {
 /// # INTERNAL DESIGN
 ///
 /// The primary design goals for this implementation are:
-///	1. All possible actions are threadsafe
-///	2. No possible action results in undefined, corrupt or assertion failure behavior
+///	1. All possible actions are threadsafe (no possible action results in undefined or corrupt memory behavior)
+///   2. Deadlocks on internally created mutexes will never occur.
 ///	3. Values will never be delivered out-of-order.
 ///	4. After a disconnection and reconnection, only values from the latest connection will be delivered.
 ///	5. Loopback (sending to an antecedent input from a subsequent signal handler) and attempts at re-entrancy to any closure in the graph are permitted. Attempted re-entrancy delivery is simply queued to be delivered after any in-flight behavior completes.
@@ -68,9 +68,9 @@ public protocol SignalInputInterface {
 /// # LIMITS TO THREADSAFETY
 ///
 /// While all actions on `Signal` are threadsafe, there are some points to keep in mind:
-///   1. Threadsafe means that the internal members of the `Signal` class will remain threadsafe and your own closures will always be invoked correctly on the provided `Exec` context. However, this doesn't mean that work you perform in processing closures is always threadsafe; shared references or mutable captures in your closures will still require mutual exclusion. The easiest way to do this involves specifying an `Exec` context on your signal processing stages that apply mutual exclusion automatically when invoking the processor.
-///   2. Related to the previous point... synchronous pipelines are processed in nested fashion. More specifically, when `send` is invoked on a `SignalNext`, the next stage in the signal graph is invoked while the previous stage is still on the call-stack. If you use a mutex on a synchronous stage, do not attempt to re-enter the mutex on subsequent stages or you risk deadlock. If you want to apply a mutex to your processing stages, you should either ensure the stages are invoked *asynchronously* (choose an async `Exec` context) or you should apply the mutex to the first stage and use `.direct` for subsquent stages (knowing that they'll be protected by the mutex from the *first* stage).
-///   3. Delivery of signal values is guaranteed to be in-order but other guarantees are conditional. Specifically, synchronous delivery through signal processing closures is only guaranteed when signals are sent from a single thread. If a subsequent result is sent to a `Signal` on a second thread while the `Signal` is processing a previous result from a first thread the subsequent result will be *queued* and handled on the *first* thread once it completes processing the earlier values.
+///   1. Threadsafe means that the internal members of the `Signal` class will remain threadsafe and your own closures will always be serially and non-reentrantly invoked on the provided `Exec` context. However, this doesn't mean that work you perform in processing closures is always threadsafe; shared references or mutable captures in your closures will still require mutual exclusion.
+///   2. Synchronous pipelines are processed in nested fashion. More specifically, when `send` is invoked on a `SignalNext`, the next stage in the signal graph is invoked while the previous stage is still on the call-stack. If you use a user-created mutex on a synchronous stage, do not attempt to re-enter the mutex on subsequent stages or you risk deadlock. If you want to apply a mutex to your processing stages, you should either ensure the stages are invoked *asynchronously* (choose an async `Exec` context) or you should apply the mutex to the first stage and use `.direct` for subsquent stages (knowing that they'll be protected by the mutex from the *first* stage).
+///   3. Delivery of signal values is guaranteed to be in-order and within appropriate mutexes but is not guaranteed to be executed on the sending thread. If subsequent results are sent to a `Signal` from a second thread while the `Signal` is processing a previous result from a first thread the subsequent result will be *queued* and handled on the *first* thread once it completes processing the earlier values.
 ///   4. Handlers, captured values and state values will be released *outside* all contexts or mutexes. If you capture an object with `deinit` behavior in a processing closure, you must apply any synchronization context yourself.
 public class Signal<OutputValue>: SignalInterface {
 	public var signal: Signal<OutputValue> { return self }
@@ -2454,12 +2454,24 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 		return outputs.count > 0 ? false : true
 	}
 	
-	/// Any activation signals captured can be accessed through this property between construction and activating an output (after that point, capture signals are cleared).
+	/// Accessor for any captured values or error. Activation signals captured can be accessed through this property between construction and activating an output (after that point, capture signals are cleared).
 	///
 	/// - Returns: and array of values (which may be empty) and an optional error, which are the signals received during activation.
-	public func activation() -> (values: [OutputValue], error: Error?) {
+	public var activation: (values: [OutputValue], error: Error?) {
 		return sync {
 			return (values: capturedValues, error: capturedError)
+		}
+	}
+	
+	/// Accessor for the most recent captured value. Activation signals captured can be accessed through this property between construction and activating an output (after that point, capture signals are cleared).
+	///
+	/// - Returns: the last captured value, if the captured error is nil
+	public var latestValue: OutputValue? {
+		return sync {
+			if capturedError == nil {
+				return capturedValues.last
+			}
+			return nil
 		}
 	}
 	

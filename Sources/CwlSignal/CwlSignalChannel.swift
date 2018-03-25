@@ -276,8 +276,8 @@ extension SignalChannel {
 		return input
 	}
 	
-	public func pollingEndpoint() -> (input: Input, endpoint: SignalPollingEndpoint<OutputValue>) {
-		let tuple = final { SignalPollingEndpoint(signal: $0) }
+	public func latestEndpoint() -> (input: Input, endpoint: SignalLatestEndpoint<OutputValue>) {
+		let tuple = final { SignalLatestEndpoint(signal: $0) }
 		return (input: tuple.input, endpoint: tuple.output)
 	}
 }

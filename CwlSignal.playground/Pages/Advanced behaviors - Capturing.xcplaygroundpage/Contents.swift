@@ -23,9 +23,8 @@ pair.input.send(value: 2)
 
 // Capture the "2" activation value cached by the `continuous` signal
 let capture = pair.signal.capture()
-let (values, error) = capture.activation()
 
-print("Activation values: \(values)")
+print("Activation: \(capture.activation)")
 
 // Capturing blocks signal delivery so *both* of these will be queued for later
 pair.input.send(value: 3)
