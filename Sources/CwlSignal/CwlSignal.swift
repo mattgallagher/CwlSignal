@@ -915,12 +915,10 @@ public class Signal<OutputValue>: SignalInterface {
 			if !hasHandler {
 				return SignalSendError.inactive
 			}
-			mutex.unbalancedLock()
 		} else {
 			itemProcessing = true
+			mutex.unbalancedUnlock()
 		}
-		
-		mutex.unbalancedUnlock()
 		
 		// As an optimization/ARC-avoidance, the common path through the `dispatch` and `invokeHandler` functions is manually inlined here.
 		// I'd love to express this two layer switch as `switch (itemContext.context, result)` but without specialization, it malloc's.
