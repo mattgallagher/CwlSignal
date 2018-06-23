@@ -3,7 +3,7 @@
 //  CwlSignal
 //
 //  Created by Matt Gallagher on 2016/06/08.
-//  Copyright © 2016 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.
+//  Copyright © 2016 Matt Gallagher ( https://www.cocoawithlove.com ). All rights reserved.
 //
 //  Permission to use, copy, modify, and/or distribute this software for any
 //  purpose with or without fee is hereby granted, provided that the above
@@ -2094,7 +2094,7 @@ class SignalTimingTests: XCTestCase {
 			// This is a hack but it avoids the need for conditional compilation options.
 			#if DEBUG
 				sequenceLength = 10_000
-				expected = 0.02 // +/- 0.15
+				expected = 0.2 // +/- 0.15
 				upperThreshold = 3.0
 			#endif
 			

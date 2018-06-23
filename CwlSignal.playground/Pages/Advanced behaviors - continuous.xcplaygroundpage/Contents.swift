@@ -1,7 +1,7 @@
 /*:
 # Advanced behaviors 1
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Introduction](Introduction) page.
 
 ## Continuous
 
@@ -41,9 +41,7 @@ let endpoint2 = output.subscribeValues { value in print("Endpoint 2 received: \(
 SOMETHING TO TRY: replace `.channel().continuous().tuple` at the top with `.create()`. In that case, `output` will be a `Signal`, instead of a `SignalMulti` and adding a second listener like this will be a "**Fatal error**". Unless you know you have a `SignalMulti` (a signal which supports multiple listeners), like the one created by `.continuous()`, you may subscribe or transform it *only once*.
 */
 
-// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
-endpoint1.cancel()
-endpoint2.cancel()
+print("Done.")
 
 /*:
 ---

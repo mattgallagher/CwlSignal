@@ -3,7 +3,7 @@
 //  CwlSignal
 //
 //  Created by Matt Gallagher on 2017/06/27.
-//  Copyright © 2017 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.
+//  Copyright © 2017 Matt Gallagher ( https://www.cocoawithlove.com ). All rights reserved.
 //
 //  Permission to use, copy, modify, and/or distribute this software for any purpose with or without
 //  fee is hereby granted, provided that the above copyright notice and this permission notice

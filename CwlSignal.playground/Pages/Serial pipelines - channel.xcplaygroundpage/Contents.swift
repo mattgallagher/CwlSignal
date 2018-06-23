@@ -24,9 +24,6 @@ let (input, endpoint) = Signal<Int>.channel().map { $0 * 2 }.subscribeValues { p
 input.send(values: 1, 2, 3)
 input.close()
 
-// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
-endpoint.cancel()
-
 /*:
 ---
 

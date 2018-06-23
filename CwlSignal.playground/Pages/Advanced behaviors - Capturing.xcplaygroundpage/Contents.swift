@@ -1,7 +1,7 @@
 /*:
 # Advanced behaviors 3
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Introduction](Introduction) page.
 
 ## Capturing
 
@@ -36,8 +36,6 @@ print("Values sent during capture are paused until we subscribe.")
 // SOMETHING TO TRY: replace `subscribeValues` with `subscribeValues(resend: true)`
 let ep = capture.subscribeValues { value in print("Value: \(value)") }
 
-// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
-ep.cancel()
 /*:
 ---
 

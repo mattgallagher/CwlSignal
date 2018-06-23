@@ -1,7 +1,7 @@
 /*:
 # Advanced behaviors 2
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Introduction](Introduction) page.
 
 ## Lazy generation
 
@@ -33,11 +33,7 @@ let endpoint = output.subscribe { result in
 	}
 }
 
-print("We're just about to cancel the endpoint")
-
-// The signal will already be cancelled before we reach this point because we didn't hold onto the `input` in the `generate` function and it cancelled itself when it reached the end of the scope.
 // SOMETHING TO TRY: replace the `generate` with `retainedGenerate` and the `input` will be automatically held until all endpoints are cancelled.
-endpoint.cancel()
 
 print("Done")
 

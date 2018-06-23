@@ -8,7 +8,7 @@
 
 The previous example merely passed values from the input through to the endpoint. The real strength of reactive programming starts when we add multiple stages to the channel that process values as they pass through.
 
-There are lots of different "operator" functions for chaining `Signal` instances together (including names like `map` and `flatMap` that you might recognize from `Sequence` and `Collection` processing in Swift) but most are implemented on top of the underlying `transform` function.
+There are lots of different "operator" functions for chaining `Signal` instances together (including names like `map` and `compactMap` that you might recognize from `Sequence` and `Collection` processing in Swift) but most are implemented on top of the underlying `transform` function.
 
 In this example, we turn each `Int` value that passes through the channel into an equal number of `Beep` strings.
 
@@ -31,6 +31,7 @@ let endpoint = o.transform { (result: Result<Int>, next: SignalNext<String>) in
 
 i.send(value: 3)
 i.close()
+
 /*:
 ---
 

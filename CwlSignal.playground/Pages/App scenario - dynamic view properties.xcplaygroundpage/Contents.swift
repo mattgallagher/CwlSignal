@@ -2,7 +2,7 @@
 
 # App scenario, part 2
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Introduction](Introduction) page.
 
 ## Dynamic view properties
 
@@ -82,14 +82,18 @@ class ViewController: NSViewController {
 		view.layoutSubtreeIfNeeded()
 		
 		// Configure dynamic properties
-		endpoints += login.signal.subscribe(context: .main) { r in
-			self.loggedInStatusButton.state = (r.value ?? false) ? .on : .off
-		}
-		endpoints += fileSelection.signal.subscribe(context: .main) { r in
-			self.filesSelectedLabel.stringValue = "Selected file count: \(r.value?.count ?? 0)"
-		}
 		endpoints += login.signal
-			.combineLatest(fileSelection.signal) { $0 && !$1.isEmpty }
+			.subscribe(context: .main) { loginResult in
+				self.loggedInStatusButton.state = (loginResult.value ?? false) ? .on : .off
+			}
+		endpoints += fileSelection.signal
+			.subscribe(context: .main) { r in
+				self.filesSelectedLabel.stringValue = "Selected file count: \(r.value?.count ?? 0)"
+			}
+		endpoints += login.signal
+			.combineLatest(fileSelection.signal) { isLoggedIn, selectedIndices in
+				isLoggedIn && !selectedIndices.isEmpty
+			}
 			.subscribe(context: .main) { result in
 				self.addToFavoritesButton.isEnabled = result.value ?? false
 			}
@@ -98,6 +102,7 @@ class ViewController: NSViewController {
 		self.view = view
 	}
 }
+
 /*:
 ---
 

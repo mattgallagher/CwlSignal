@@ -2,6 +2,8 @@
 
 # Experiment with CwlSignal
 
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Introduction](Introduction) page.
+
 This page contains a couple quick and simple examples you can play with to try and understand some of the basics of CwlSignal.
 
 */
@@ -30,6 +32,7 @@ let aggregated = Signal<String>
 	.toSequence()
 	.next()!
 print(aggregated)
+
 /*:
 ---
 
