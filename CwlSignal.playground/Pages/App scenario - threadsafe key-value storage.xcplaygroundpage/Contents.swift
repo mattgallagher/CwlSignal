@@ -2,7 +2,7 @@
 
 # App scenario 1
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Contents](Contents) page.
 
 ## A threadsafe, notifying key-value storage
 
@@ -22,15 +22,15 @@ import CwlSignal
 let dv = DocumentValues()
 
 // Watch the contents
-let ep = dv.signal.subscribeValues { v in print("Latest update: \(v)") }
+let out = dv.signal.subscribeValues { v in print("Latest update: \(v)") }
 
 // Change the contents
 dv.setValue("Hi, there.", forKey: "Oh!")
 dv.removeValue(forKey: "Oh!")
 dv.setValue("World", forKey: "Hello")
 
-// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
-ep.cancel()
+// We normally store outputs in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
+out.cancel()
 
 /// A threadsafe key-value storage using reactive programming
 class DocumentValues {
@@ -57,11 +57,11 @@ class DocumentValues {
    }
    
 	func removeValue(forKey key: AnyHashable) {
-		input.send(value: (key, nil))
+		input.send((key, nil))
 	}
 	
 	func setValue(_ value: Any, forKey key: AnyHashable) {
-		input.send(value: (key, value))
+		input.send((key, value))
 	}
 }
 

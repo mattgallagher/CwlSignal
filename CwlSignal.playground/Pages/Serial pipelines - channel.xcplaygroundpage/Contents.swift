@@ -1,7 +1,7 @@
 /*:
 # Serial pipelines 3: channel
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Contents](Contents) page.
 
 ## Nicer syntax for pipelines
 
@@ -18,10 +18,10 @@ Here's the example from the previous page, using `Signal<Int>.channel()` instead
 import CwlSignal
 
 // On the previous page, this line required two separate lines and an otherwise unusued `signal` declaration.
-let (input, endpoint) = Signal<Int>.channel().map { $0 * 2 }.subscribeValues { print("Value received: \($0)") }
+let (input, output) = Signal.channel().map { $0 * 2 }.subscribeValues { print("Value received: \($0)") }
 
 // Send values to the input end
-input.send(values: 1, 2, 3)
+input.send(1, 2, 3)
 input.close()
 
 /*:

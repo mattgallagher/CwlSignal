@@ -2,7 +2,7 @@
 
 # Serial pipelines 4: asynchrony
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Contents](Contents) page.
 
 ## Using the `context` parameter.
 
@@ -20,9 +20,9 @@ let semaphore = DispatchSemaphore(value: 0)
 let completionContext = Exec.asyncQueue()
 
 // Create an input/output pair
-let (input, endpoint) = Signal<Int>.channel()
+let (input, output) = Signal<Int>.channel()
 	.map(context: .global) { value in
-		// Perform the background work
+		// Perform the background work on the default global concurrent DispatchQueue
 		return sqrt(Double(value))
 	}
 	.subscribe(context: completionContext) { result in
@@ -34,7 +34,7 @@ let (input, endpoint) = Signal<Int>.channel()
 	}
 
 // Send values to the input end
-input.send(values: 1, 2, 3, 4, 5, 6, 7, 8, 9)
+input.send(1, 2, 3, 4, 5, 6, 7, 8, 9)
 input.close()
 
 // In reactive programming, blocking is normally discouraged (you should subscribe to all

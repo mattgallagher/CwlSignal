@@ -17,14 +17,15 @@
 //  OF THIS SOFTWARE.
 //
 
+import Foundation
+
 #if SWIFT_PACKAGE
-	import Foundation
 	import CwlUtils
 #endif
 
 /// A `SignalChannel` forms a basic wrapper around a `SignalInput`/`Signal` pair and exists for syntactic convenience when building a series of pipeline stages and returning the head and tail of the pipeline.
 ///
-/// e.g.: let (input, endpoint) = Signal<Int>.channel().map { $0 + 1 }.subscribe { print($0) }
+/// e.g.: let (input, output) = Signal<Int>.channel().map { $0 + 1 }.subscribe { print($0) }
 ///
 /// Every transform in the CwlSignal library that can be applied to `Signal<OutputValue>` can also be applied to `SignalChannel<OutputValue>`. Where possible, the result is another `SignalChannel` so the result can be immediately transformed again.
 /// Since Swift can't represent higher-kinded types, this type uses two pairs of parameters, with each pair consisting of a free type and a constrained type, cooperating to acheive the desired effect. Unfortunately, this makes the `SignalChannel` little clumsy. If you need to declare a variable, you might want to consider one of the SignalPair typealiases since these remove the redundancy.
@@ -101,9 +102,9 @@ extension Signal {
 
 // Implementation of Signal.swift
 extension SignalChannel {
-	public func subscribe(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) -> (input: Input, endpoint: SignalEndpoint<OutputValue>) {
+	public func subscribe(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) -> (input: Input, output: SignalOutput<OutputValue>) {
 		let tuple = final { $0.subscribe(context: context, handler) }
-		return (input: tuple.input, endpoint: tuple.output)
+		return (input: tuple.input, output: tuple.output)
 	}
 	
 	public func subscribeWhile(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Bool) -> Input {
@@ -179,13 +180,17 @@ extension SignalChannel {
 		return next { $0.multicast() }
 	}
 	
-	public func multicast(_ interfaces: SignalInput<OutputValue>...) -> Input {
+	public func multicast(sequence: [SignalInput<OutputValue>]) -> Input {
 		return final {
 			let multi = $0.multicast()
-			for i in interfaces {
+			for i in sequence {
 				multi.bind(to: i)
 			}
 		}.input
+	}
+	
+	public func multicast(_ interfaces: SignalInput<OutputValue>...) -> Input {
+		return multicast(sequence: interfaces)
 	}
 	
 	public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, _ updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout Error?, _ incoming: Result<OutputValue>) -> Void) -> SignalChannel<InputValue, Input, OutputValue, SignalMulti<OutputValue>> {
@@ -224,9 +229,9 @@ extension SignalChannel {
 		return final { $0.subscribeUntilEnd(context: context, handler) }.input
 	}
 	
-	public func subscribeValues(context: Exec = .direct, _ handler: @escaping (OutputValue) -> Void) -> (input: Input, endpoint: SignalEndpoint<OutputValue>) {
+	public func subscribeValues(context: Exec = .direct, _ handler: @escaping (OutputValue) -> Void) -> (input: Input, output: SignalOutput<OutputValue>) {
 		let tuple = final { $0.subscribeValues(context: context, handler) }
-		return (input: tuple.input, endpoint: tuple.output)
+		return (input: tuple.input, output: tuple.output)
 	}
 	
 	public func subscribeValuesUntilEnd(context: Exec = .direct, _ handler: @escaping (OutputValue) -> Void) -> Input {
@@ -276,9 +281,9 @@ extension SignalChannel {
 		return input
 	}
 	
-	public func cacheLatest() -> (input: Input, endpoint: SignalLatest<OutputValue>) {
+	public func cacheLatest() -> (input: Input, output: SignalLatest<OutputValue>) {
 		let tuple = final { SignalLatest(signal: $0) }
-		return (input: tuple.input, endpoint: tuple.output)
+		return (input: tuple.input, output: tuple.output)
 	}
 }
 
@@ -380,7 +385,7 @@ extension SignalChannel {
 		return next { $0.window(interval: interval, timeshift: timeshift, context: context) }
 	}
 	
-	public func debounce(interval: DispatchTimeInterval, flushOnClose: Bool = true, context: Exec = .direct) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+	public func debounce(interval: DispatchTimeInterval, flushOnClose: Bool = false, context: Exec = .direct) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.debounce(interval: interval, flushOnClose: flushOnClose, context: context) }
 	}
 	
@@ -438,16 +443,12 @@ extension SignalChannel {
 		return next { $0.sample(trigger) }
 	}
 	
-	public func sampleCombine<Interface: SignalInterface>(_ trigger: Interface) -> SignalChannel<InputValue, Input, (sample: OutputValue, trigger: Interface.OutputValue), Signal<(sample: OutputValue, trigger: Interface.OutputValue)>> {
-		return next { $0.sampleCombine(trigger) }
+	public func throttleFirst<Interface: SignalInterface>(_ trigger: Interface) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where Interface.OutputValue == () {
+		return next { $0.throttleFirst(trigger) }
 	}
 	
-	public func trigger<Interface: SignalInterface>(_ source: Interface) -> SignalChannel<InputValue, Input, Interface.OutputValue, Signal<Interface.OutputValue>> {
-		return next { $0.trigger(source) }
-	}
-	
-	public func triggerCombine<Interface: SignalInterface>(_ source: Interface) -> SignalChannel<InputValue, Input, (trigger: OutputValue, sample: Interface.OutputValue), Signal<(trigger: OutputValue, sample: Interface.OutputValue)>> {
-		return next { $0.triggerCombine(source) }
+	public func withLatestFrom<Interface: SignalInterface>(_ sample: Interface) -> SignalChannel<InputValue, Input, (trigger: OutputValue, sample: Interface.OutputValue), Signal<(trigger: OutputValue, sample: Interface.OutputValue)>> {
+		return next { $0.withLatestFrom(sample) }
 	}
 	
 	public func skip(_ count: Int) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
@@ -491,27 +492,27 @@ extension SignalChannel {
 	}
 	
 	public func mergeWith(_ sources: Signal<OutputValue>...) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
-		return next { $0.mergeWith(sources) }
+		return next { $0.mergeWith(sequence: sources) }
 	}
 	
-	public func mergeWith<S: Sequence>(_ sequence: S) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where S.Iterator.Element == Signal<OutputValue> {
-		return next { $0.mergeWith(sequence) }
+	public func mergeWith<S: Sequence>(sequence: S) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where S.Iterator.Element == Signal<OutputValue> {
+		return next { $0.mergeWith(sequence: sequence) }
 	}
 	
-	public func startWith<S: Sequence>(_ sequence: S) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where S.Iterator.Element == OutputValue {
-		return next { $0.startWith(sequence) }
+	public func startWith<S: Sequence>(sequence: S) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where S.Iterator.Element == OutputValue {
+		return next { $0.startWith(sequence: sequence) }
 	}
 	
 	public func startWith(_ values: OutputValue...) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
-		return next { $0.startWith(values) }
+		return next { $0.startWith(sequence: values) }
 	}
 	
 	public func endWith<U: Sequence>(_ sequence: U, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where U.Iterator.Element == OutputValue {
-		return next { $0.endWith(sequence, conditional: conditional) }
+		return next { $0.endWith(sequence: sequence, conditional: conditional) }
 	}
 	
-	func endWith(_ value: OutputValue, conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
-		return next { $0.endWith(value, conditional: conditional) }
+	func endWith(_ values: OutputValue..., conditional: @escaping (Error) -> Error? = { e in e }) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+		return next { $0.endWith(sequence: values, conditional: conditional) }
 	}
 	
 	public func switchLatest<U>() -> SignalChannel<InputValue, Input, U, Signal<U>> where OutputValue: Signal<U> {
@@ -534,11 +535,7 @@ extension SignalChannel {
 		return next { $0.zip(second, third, fourth, fifth) }
 	}
 	
-	public func catchError<S: Sequence>(context: Exec = .direct, recover: @escaping (Error) -> (S, Error)) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> where S.Iterator.Element == OutputValue {
-		return next { $0.catchError(context: context, recover: recover) }
-	}
-	
-	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<OutputValue>?) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
+	public func catchError(context: Exec = .direct, recover: @escaping (Error) -> Signal<OutputValue>) -> SignalChannel<InputValue, Input, OutputValue, Signal<OutputValue>> {
 		return next { $0.catchError(context: context, recover: recover) }
 	}
 	
@@ -606,14 +603,18 @@ extension SignalChannel {
 		return next { $0.all(context: context, test: test) }
 	}
 	
-	public func some(context: Exec = .direct, test: @escaping (OutputValue) -> Bool) -> SignalChannel<InputValue, Input, Bool, Signal<Bool>> {
-		return next { $0.some(context: context, test: test) }
+	public func find(context: Exec = .direct, test: @escaping (OutputValue) -> Bool) -> SignalChannel<InputValue, Input, Bool, Signal<Bool>> {
+		return next { $0.find(context: context, test: test) }
+	}
+	
+	public func findIndex(context: Exec = .direct, test: @escaping (OutputValue) -> Bool) -> SignalChannel<InputValue, Input, Int?, Signal<Int?>> {
+		return next { $0.findIndex(context: context, test: test) }
 	}
 }
 
 extension SignalChannel where OutputValue: Equatable {
-	public func contains(value: OutputValue) -> SignalChannel<InputValue, Input, Bool, Signal<Bool>> {
-		return next { $0.contains(value: value) }
+	public func find(value: OutputValue) -> SignalChannel<InputValue, Input, Bool, Signal<Bool>> {
+		return next { $0.find(value: value) }
 	}
 }
 

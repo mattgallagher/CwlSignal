@@ -1,7 +1,7 @@
 /*:
 # Advanced behaviors 2
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Contents](Contents) page.
 
 ## Lazy generation
 
@@ -14,10 +14,10 @@ The `generate` function's closure will also be invoke with a `nil` value when th
 import CwlSignal
 
 // Create an output immediately but only start creating data to feed into the pipeline after a listener connects.
-let output = Signal<Int>.generate { input in
+let signal = Signal<Int>.generate { input in
    if let i = input {
 		print("Signal has activated")
-      i.send(values: 1, 2, 3)
+      i.send(1, 2, 3)
    } else {
 		print("Signal has deactivated")
 	}
@@ -26,14 +26,14 @@ let output = Signal<Int>.generate { input in
 print("We're just about to subscribe.")
 
 // Subscribe to listen to the values output by the channel
-let endpoint = output.subscribe { result in
+let output = signal.subscribe { result in
 	switch result {
 	case .success(let value): print("Value: \(value)")
 	case .failure(let error): print("End of signal: \(error)")
 	}
 }
 
-// SOMETHING TO TRY: replace the `generate` with `retainedGenerate` and the `input` will be automatically held until all endpoints are cancelled.
+// SOMETHING TO TRY: replace the `generate` with `retainedGenerate` and the `input` will be automatically held until all outputs are cancelled.
 
 print("Done")
 

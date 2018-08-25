@@ -2,7 +2,7 @@
 
 # Serial pipelines 2: map
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Contents](Contents) page.
 
 ## The `map` function.
 
@@ -17,10 +17,10 @@ import CwlSignal
 let (input, signal) = Signal<Int>.create()
 
 // Transform and listen to the signal
-let endpoint = signal.map { $0 * 2 }.subscribeValues { print("Value received: \($0)") }
+let output = signal.map { $0 * 2 }.subscribeValues { print("Value received: \($0)") }
 
 // Send values to the input end
-input.send(values: 1, 2, 3)
+input.send(1, 2, 3)
 input.close()
 
 /*:

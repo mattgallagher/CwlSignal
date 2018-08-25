@@ -68,7 +68,7 @@ class SignalCocoaTests: XCTestCase {
 		var target: Target? = Target()
 		target?.intProperty = 123
 		var results = [Result<Int>]()
-		let endpoint = Signal<Int>.keyValueObserving(target!, keyPath: #keyPath(Target.intProperty)).subscribe { result in
+		let output = Signal<Int>.keyValueObserving(target!, keyPath: #keyPath(Target.intProperty)).subscribe { result in
 			results.append(result)
 		}
 		
@@ -80,7 +80,7 @@ class SignalCocoaTests: XCTestCase {
 		XCTAssert(results.at(1)?.value == 456)
 		XCTAssert(results.at(2)?.error as? SignalComplete == .closed)
 		
-		withExtendedLifetime(endpoint) {}
+		withExtendedLifetime(output) {}
 	}
 	
 	func testSignalActionTarget() {
@@ -91,22 +91,22 @@ class SignalCocoaTests: XCTestCase {
 			let sen = Sender()
 			weakSender = sen
 			do {
-				var endpoint: SignalEndpoint<String>? = nil
+				var output: SignalOutput<String>? = nil
 				do {
 					let sat = SignalActionTarget()
 					weakSat = sat
 					
 					sen.target = sat
-					sen.action = sat.selector
+					sen.action = SignalActionTarget.selector
 					
-					endpoint = sat.signal.compactMap { $0 as? String }.subscribeValues { v in results.append(v) }
+					output = sat.signal.compactMap { $0 as? String }.subscribeValues { v in results.append(v) }
 					
 					sen.sendSingle()
 				}
 				
 				XCTAssert(weakSender != nil)
 				XCTAssert(weakSat != nil)
-				endpoint?.cancel()
+				output?.cancel()
 			}
 			XCTAssert(weakSat == nil)
 			XCTAssert(sen.action == #selector(SignalActionTarget.cwlSignalAction(_:)))
@@ -122,8 +122,8 @@ class SignalCocoaTests: XCTestCase {
 		var results2 = [String]()
 		let ep1 = sat.signal.compactMap { $0 as? String }.subscribeValues { v in results1.append(v) }
 		let ep2 = sat.secondSignal.compactMap { $0 as? String }.subscribeValues { v in results2.append(v) }
-		let sel1 = sat.selector
-		let sel2 = sat.secondSelector
+		let sel1 = SignalActionTarget.selector
+		let sel2 = SignalDoubleActionTarget.secondSelector
 		
 		// Look the function up using the Obj-C runtime and call it directly. It's the closest that we can get in pure Swift to "performSelector".
 		var imp1 = class_getMethodImplementation(SignalDoubleActionTarget.self, sel1)!
@@ -150,12 +150,12 @@ class SignalCocoaTests: XCTestCase {
 	func testSignalFromNotifications() {
 		let source = NSObject()
 		var results = [String]()
-		let ep = Signal.notifications(object: source).subscribeValues { v in
+		let out = Signal.notifications(object: source).subscribeValues { v in
 			results.append("\(v.name)")
 		}
 		NotificationCenter.default.post(name: Notification.Name.NSThreadWillExit, object: source)
 		NotificationCenter.default.post(name: Notification.Name.NSFileHandleDataAvailable, object: source)
 		XCTAssert(results == ["\(Notification.Name.NSThreadWillExit)", "\(Notification.Name.NSFileHandleDataAvailable)"])
-		ep.cancel()
+		out.cancel()
 	}
 }

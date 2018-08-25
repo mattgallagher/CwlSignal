@@ -2,11 +2,11 @@
 
 # Serial pipelines 1: transform
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Contents](Contents) page.
 
 ## The `transform` function
 
-The previous example merely passed values from the input through to the endpoint. The real strength of reactive programming starts when we add multiple stages to the channel that process values as they pass through.
+The previous example merely passed values from the input through to the output. The real strength of reactive programming starts when we add multiple stages to the channel that process values as they pass through.
 
 There are lots of different "operator" functions for chaining `Signal` instances together (including names like `map` and `compactMap` that you might recognize from `Sequence` and `Collection` processing in Swift) but most are implemented on top of the underlying `transform` function.
 
@@ -16,21 +16,23 @@ In this example, we turn each `Int` value that passes through the channel into a
  */
 import CwlSignal
 
-let (i, o) = Signal<Int>.create()
+let (input, signal) = Signal<Int>.create()
 
 // Transform into signal that emits the string "Beep", a number of times equal to the integer received
-let endpoint = o.transform { (result: Result<Int>, next: SignalNext<String>) in
+let output = signal.transform { (result: Result<Int>, next: SignalNext<String>) in
 	switch result {
-	case .success(let intValue): (0..<intValue).forEach { i in next.send(value: "Beep \(i + 1)") }
-	case .failure(let error): next.send(error: error)
+	case .success(let v): next.send(sequence: (0..<v).map { i in "Beep \(v): \(i + 1)" })
+	case .failure(let e): next.send(error: e)
 	}
 }.subscribeValues { value in
 	// In this example, we use `subscribeValues` which works like `subcribe` but unwraps the `Result<T>` automatically, ignoring errors (good if you don't need to know about end-of-stream conditions).
 	print(value)
 }
 
-i.send(value: 3)
-i.close()
+input.send(1)
+input.send(2)
+input.send(3)
+input.close()
 
 /*:
 ---
