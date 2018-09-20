@@ -561,9 +561,8 @@
 				"$(BUILT_PRODUCTS_DIR)/CwlUtils.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = "/usr/bin/xcrun --sdk macosx swift $(SRCROOT)/.build/symlinks/CwlUtils/Scripts/CwlPackageBuild/main.swift";
-			shellScript = "
-";
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CARTHAGE\" == \"YES\" ]; then CHECKOUTS=\"$SRCROOT/Carthage/Checkouts\"; else CHECKOUTS=\"$SRCROOT/.build/symlinks\"; fi\n/usr/bin/xcrun --sdk macosx swift \"$CHECKOUTS/CwlUtils/Scripts/CwlPackageBuild/main.swift\"\n";
 		};
 		C94E59B6211C6C7300FF7E19 /* Invoke CwlPackageBuild/main.swift to build CwlUtils */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -583,9 +582,8 @@
 				"$(BUILT_PRODUCTS_DIR)/CwlUtils.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = "/usr/bin/xcrun --sdk macosx swift $(SRCROOT)/.build/symlinks/CwlUtils/Scripts/CwlPackageBuild/main.swift";
-			shellScript = "
-";
+			shellPath = /bin/sh;
+			shellScript = "if [ \"$CARTHAGE\" == \"YES\" ]; then CHECKOUTS=\"$SRCROOT/Carthage/Checkouts\"; else CHECKOUTS=\"$SRCROOT/.build/symlinks\"; fi\n/usr/bin/xcrun --sdk macosx swift \"$CHECKOUTS/CwlUtils/Scripts/CwlPackageBuild/main.swift\"\n";
 		};
 		C97DBABC213147BF00996588 /* Invoke CwlPackageBuild/main.swift to build CwlPreconditionTesting */ = {
 			isa = PBXShellScriptBuildPhase;
