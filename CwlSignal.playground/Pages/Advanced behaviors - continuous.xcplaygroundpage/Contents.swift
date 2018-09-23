@@ -1,7 +1,7 @@
 /*:
 # Advanced behaviors 1
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Contents](Contents) page.
 
 ## Continuous
 
@@ -20,30 +20,28 @@ import CwlSignal
 let (input, output) = Signal<Int>.channel().continuous().tuple
 
 // Send values before a subscriber exists
-input.send(value: 1)
-input.send(value: 2)
+input.send(1)
+input.send(2)
 
 print("We just sent a '2' but we weren't listening. Now let's subscribe and get the last value.")
 
 // Subscribe to listen to the values output by the channel
-let endpoint1 = output.subscribeValues { value in print("Endpoint 1 received: \(value)") }
+let output1 = output.subscribeValues { value in print("Output 1 received: \(value)") }
 
 print("We're already listening so the next value will be immediately delivered to us.")
 
 // Send a value after a subscriber exists
-input.send(value: 3)
+input.send(3)
 
 print("A new listener to the same signal will receive just the latest value.")
 
-let endpoint2 = output.subscribeValues { value in print("Endpoint 2 received: \(value)") }
+let output2 = output.subscribeValues { value in print("Output 2 received: \(value)") }
 
 /*:
 SOMETHING TO TRY: replace `.channel().continuous().tuple` at the top with `.create()`. In that case, `output` will be a `Signal`, instead of a `SignalMulti` and adding a second listener like this will be a "**Fatal error**". Unless you know you have a `SignalMulti` (a signal which supports multiple listeners), like the one created by `.continuous()`, you may subscribe or transform it *only once*.
 */
 
-// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
-endpoint1.cancel()
-endpoint2.cancel()
+print("Done.")
 
 /*:
 ---

@@ -3,7 +3,7 @@
 //  CwlSignal
 //
 //  Created by Matt Gallagher on 2016/06/08.
-//  Copyright © 2016 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.
+//  Copyright © 2016 Matt Gallagher ( https://www.cocoawithlove.com ). All rights reserved.
 //
 //  Permission to use, copy, modify, and/or distribute this software for any
 //  purpose with or without fee is hereby granted, provided that the above
@@ -36,16 +36,16 @@ private enum TestError: Error {
 class SignalTests: XCTestCase {
 	func testBasics() {
 		var results = [Result<Int>]()
-		let (i1, ep) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
+		let (i1, out) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
 		i1.send(result: .success(1))
 		i1.send(value: 3)
-		XCTAssert(ep.isClosed == false)
-		ep.cancel()
-		XCTAssert(ep.isClosed == true)
+		XCTAssert(out.isClosed == false)
+		out.cancel()
+		XCTAssert(out.isClosed == true)
 		i1.send(value: 5)
 		XCTAssert(results.at(0)?.value == 1)
 		XCTAssert(results.at(1)?.value == 3)
-		withExtendedLifetime(ep) {}
+		withExtendedLifetime(out) {}
 		
 		let (i2, ep2) = Signal<Int>.create { $0.transform { r, n in n.send(result: r) }.subscribe { r in results.append(r) } }
 		i2.send(result: .success(5))
@@ -83,7 +83,7 @@ class SignalTests: XCTestCase {
 			}
 		}
 
-		// A subscribeAndKeepAlive retains itself (i.e. doesn't return an endpoint that you must hold) until the signal is closed or until you return false
+		// A subscribeAndKeepAlive retains itself (i.e. doesn't return an output that you must hold) until the signal is closed or until you return false
 		var results2 = Array<String>()
 		generatedSignal.subscribeValuesWhile {
 			results2 += $0
@@ -94,7 +94,7 @@ class SignalTests: XCTestCase {
 	}
 	
 	func testLifetimes() {
-		weak var weakEndpoint1: SignalEndpoint<Int>? = nil
+		weak var weakOutput1: SignalOutput<Int>? = nil
 		weak var weakToken: NSObject? = nil
 		weak var weakSignal1: Signal<Int>? = nil
 		weak var weakSignal2: Signal<Int>? = nil
@@ -108,15 +108,15 @@ class SignalTests: XCTestCase {
 				let endPoint = signal1.subscribe { (r: Result<Int>) in
 					results1.append(r)
 				}
-				weakEndpoint1 = endPoint
+				weakOutput1 = endPoint
 				input1.send(result: .success(5))
-				XCTAssert(weakEndpoint1 != nil)
+				XCTAssert(weakOutput1 != nil)
 				XCTAssert(weakSignal1 != nil)
 				
 				withExtendedLifetime(endPoint) {}
 			}
 			
-			XCTAssert(weakEndpoint1 == nil)
+			XCTAssert(weakOutput1 == nil)
 			
 			let (input2, signal2) = Signal<Int>.create()
 			weakSignal2 = signal2
@@ -602,7 +602,7 @@ class SignalTests: XCTestCase {
 	
 	func testPreclosed() {
 		var results1 = [Result<Int>]()
-		_ = Signal<Int>.preclosed(values: [1, 3, 5], error: TestError.oneValue).subscribe { r in
+		_ = Signal<Int>.preclosed(1, 3, 5, error: TestError.oneValue).subscribe { r in
 			results1.append(r)
 		}
 		XCTAssert(results1.count == 4)
@@ -635,7 +635,7 @@ class SignalTests: XCTestCase {
 		let capture = signal.capture()
 		var results = [Result<Int>]()
 		let (subsequentInput, subsequentSignal) = Signal<Int>.create()
-		let ep = subsequentSignal.subscribe { (r: Result<Int>) in
+		let out = subsequentSignal.subscribe { (r: Result<Int>) in
 			results.append(r)
 		}
 		
@@ -660,7 +660,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(1)?.value == 3)
 		XCTAssert(results.at(2)?.isSignalComplete == true)
 		
-		withExtendedLifetime(ep) {}
+		withExtendedLifetime(out) {}
 	}
 	
 	func testCaptureAndSubscribe() {
@@ -773,7 +773,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(values2.count == 0)
 		XCTAssert(error2 as? SignalComplete == .closed)
 		
-		let pc = Signal<Int>.preclosed(values: [], error: TestError.oneValue)
+		let pc = Signal<Int>.preclosed(error: TestError.oneValue)
 		let capture2 = pc.capture()
 		let (values3, error3) = (capture2.values, capture2.error)
 		
@@ -806,10 +806,10 @@ class SignalTests: XCTestCase {
 	func testGenerate() {
 		var count = 0
 		var results = [Result<Int>]()
-		weak var lifetimeCheck: Box<()>? = nil
+		weak var lifetimeCheck: Box<Void>? = nil
 		var nilCount = 0
 		do {
-			let closureLifetime = Box<()>(())
+			let closureLifetime = Box<Void>(())
 			lifetimeCheck = closureLifetime
 			let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 			let s = Signal<Int>.generate(context: context) { input in
@@ -897,7 +897,7 @@ class SignalTests: XCTestCase {
 		
 		do {
 			let (i1, s) = Signal<Int>.create()
-			let ep = s.subscribe { results.append($0) }
+			let out = s.subscribe { results.append($0) }
 			let d = sequence1.junction()
 			try d.bind(to: i1)
 			i1.send(value: 3)
@@ -929,7 +929,7 @@ class SignalTests: XCTestCase {
 			} else {
 				XCTFail()
 			}
-			withExtendedLifetime(ep) {}
+			withExtendedLifetime(out) {}
 		} catch {
 			XCTFail()
 		}
@@ -961,7 +961,7 @@ class SignalTests: XCTestCase {
 	
 	func testJunctionSignal() {
 		var results = [Result<Int>]()
-		var endpoints = [Cancellable]()
+		var outputs = [Cancellable]()
 		
 		do {
 			let signal = Signal<Int>.generate { i in _ = i?.send(value: 5) }
@@ -970,7 +970,7 @@ class SignalTests: XCTestCase {
 				XCTAssert(err as? SignalComplete == .cancelled)
 				input.close()
 			}
-			endpoints += output.subscribe { r in results += r }
+			outputs += output.subscribe { r in results += r }
 			XCTAssert(results.count == 2)
 			XCTAssert(results.at(1)?.isSignalComplete == true)
 		}
@@ -993,7 +993,7 @@ class SignalTests: XCTestCase {
 			let (junctionInput, output) = Signal<Int>.create()
 			let junction = signal.junction()
 			try! junction.bind(to: junctionInput)
-			endpoints += output.subscribe { r in results += r }
+			outputs += output.subscribe { r in results += r }
 			XCTAssert(results.count == 1)
 			XCTAssert(results.at(0)?.value == 5)
 			junction.rebind()
@@ -1158,7 +1158,7 @@ class SignalTests: XCTestCase {
 		let (input, signal) = Signal<Int>.create()
 		var escapedNext: SignalNext<Double>? = nil
 		var escapedValue: Int = 0
-		let ep = signal.transform { (r: Result<Int>, n: SignalNext<Double>) in
+		let out = signal.transform { (r: Result<Int>, n: SignalNext<Double>) in
 			switch r {
 			case .success(let v):
 				escapedNext = n
@@ -1212,7 +1212,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(escapedNext == nil)
 		XCTAssert(escapedValue == 5)
 		
-		withExtendedLifetime(ep) {}
+		withExtendedLifetime(out) {}
 	}
 	
 	func testEscapingTransformerWithState() {
@@ -1220,7 +1220,7 @@ class SignalTests: XCTestCase {
 		let (input, signal) = Signal<Int>.create()
 		var escapedNext: SignalNext<Double>? = nil
 		var escapedValue: Int = 0
-		let ep = signal.transform(initialState: 0) { (s: inout Int, r: Result<Int>, n: SignalNext<Double>) in
+		let out = signal.transform(initialState: 0) { (s: inout Int, r: Result<Int>, n: SignalNext<Double>) in
 			switch r {
 			case .success(let v):
 				escapedNext = n
@@ -1274,7 +1274,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(escapedNext == nil)
 		XCTAssert(escapedValue == 5)
 		
-		withExtendedLifetime(ep) {}
+		withExtendedLifetime(out) {}
 	}
 	
 	func testClosedTriangleGraphLeft() {
@@ -1289,11 +1289,11 @@ class SignalTests: XCTestCase {
 		let (mergedInput, mergedSignal) = Signal<Int>.createMergedInput()
 		mergedInput.add(left, closePropagation: .all)
 		mergedInput.add(signal, closePropagation: .all)
-		let ep = mergedSignal.subscribe { r in results.append(r) }
+		let out = mergedSignal.subscribe { r in results.append(r) }
 		input.send(value: 3)
 		input.send(value: 5)
 		input.close()
-		withExtendedLifetime(ep) {}
+		withExtendedLifetime(out) {}
 		
 		XCTAssert(results.count == 5)
 		XCTAssert(results.at(0)?.value == 30)
@@ -1308,7 +1308,7 @@ class SignalTests: XCTestCase {
 		let (input, signal) = Signal<Int>.create { s in s.multicast() }
 		let (mergedInput, mergedSignal) = Signal<Int>.createMergedInput()
 		mergedInput.add(signal, closePropagation: .all)
-		let ep = mergedSignal.subscribe { r in results.append(r) }
+		let out = mergedSignal.subscribe { r in results.append(r) }
 		let right = signal.transform { (r: Result<Int>, n: SignalNext<Int>) in
 			switch r {
 			case .success(let v): n.send(value: v * 10)
@@ -1319,7 +1319,7 @@ class SignalTests: XCTestCase {
 		input.send(value: 3)
 		input.send(value: 5)
 		input.close()
-		withExtendedLifetime(ep) {}
+		withExtendedLifetime(out) {}
 		
 		XCTAssert(results.count == 5)
 		XCTAssert(results.at(0)?.value == 3)
@@ -1333,7 +1333,7 @@ class SignalTests: XCTestCase {
 		do {
 			var results = [Result<Int>]()
 			let (mergedInput, mergeSignal) = Signal<Int>.createMergedInput()
-			let (input, ep) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
+			let (input, out) = Signal<Int>.create { $0.subscribe { r in results.append(r) } }
 			let disconnector = mergeSignal.junction()
 			try disconnector.bind(to: input)
 		
@@ -1373,7 +1373,7 @@ class SignalTests: XCTestCase {
 			XCTAssert(results.at(5)?.value == 8)
 			XCTAssert(results.at(6)?.isSignalComplete == true)
 		
-			withExtendedLifetime(ep) {}
+			withExtendedLifetime(out) {}
 		} catch {
 			XCTFail()
 		}
@@ -1806,7 +1806,7 @@ class SignalTests: XCTestCase {
 	
 	func testToggle() {
 		var results = [Result<Bool>]()
-		let (i, ep) = Signal<()>.channel().toggle(initialState: true).subscribe {
+		let (i, out) = Signal<Void>.channel().toggle(initialState: true).subscribe {
 			results.append($0)
 		}
 		i.send(value: ())
@@ -1817,12 +1817,12 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(1)?.value == false)
 		XCTAssert(results.at(2)?.value == true)
 		XCTAssert(results.at(3)?.error?.isSignalComplete == true)
-		ep.cancel()
+		out.cancel()
 	}
 	
 	func testOptionalToArray() {
 		var results = [Result<[Int]>]()
-		let (i, ep) = Signal<Int?>.channel().optionalToArray().subscribe {
+		let (i, out) = Signal<Int?>.channel().optionalToArray().subscribe {
 			results.append($0)
 		}
 		i.send(value: 1)
@@ -1838,7 +1838,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(2)?.value?.at(0) == 2)
 		XCTAssert(results.at(3)?.value?.count == 0)
 		XCTAssert(results.at(4)?.error?.isSignalComplete == true)
-		ep.cancel()
+		out.cancel()
 	}
 	
 	func testReactivateDeadlockBugAndStartWithActivationBug() {
@@ -1846,10 +1846,10 @@ class SignalTests: XCTestCase {
 		// It also tests startWith to ensure that it correctly sends *before* activation values, even though it normally sends during normal phase.
 		var results = [Result<String?>]()
 		let sig1 = Signal<String?>.create { s in s.continuous(initialValue: "hello") }
-		let sig2 = sig1.composed.startWith(["boop"])
+		let sig2 = sig1.composed.startWith("boop")
 		for _ in 1...3 {
-			let ep = sig2.subscribe(context: .main) { r in results.append(r) }
-			ep.cancel()
+			let out = sig2.subscribe(context: .main) { r in results.append(r) }
+			out.cancel()
 		}
 		
 		XCTAssert(results.count == 6)
@@ -1866,7 +1866,7 @@ class SignalTests: XCTestCase {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
 		let (input, signal) = Signal<Int>.create()
-		let ep = signal.continuous(initialValue: 3).deferActivation().map(context: coordinator.mainAsync) { $0 * 2 }.subscribe { r in
+		let out = signal.continuous(initialValue: 3).deferActivation().map(context: coordinator.mainAsync) { $0 * 2 }.subscribe { r in
 			results.append(r)
 		}
 		XCTAssert(results.isEmpty)
@@ -1877,13 +1877,13 @@ class SignalTests: XCTestCase {
 		XCTAssert(coordinator.currentTime == 1)
 		
 		withExtendedLifetime(input) { }
-		withExtendedLifetime(ep) { }
+		withExtendedLifetime(out) { }
 	}
 	
 	func testDropActivation() {
 		var results = [Result<Int>]()
 		let (input, signal) = Signal<Int>.create()
-		let ep = signal.continuous(initialValue: 3).dropActivation().subscribe { r in
+		let out = signal.continuous(initialValue: 3).dropActivation().subscribe { r in
 			results.append(r)
 		}
 		XCTAssert(results.isEmpty)
@@ -1892,7 +1892,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(0)?.value == 5)
 		
 		withExtendedLifetime(input) { }
-		withExtendedLifetime(ep) { }
+		withExtendedLifetime(out) { }
 	}
 	
 	func testReconnector() {
@@ -1902,20 +1902,20 @@ class SignalTests: XCTestCase {
 			input = i
 		}
 		var (reconnector, downstream) = upstream.reconnector()
-		let ep = downstream.subscribe { r in
+		let out = downstream.subscribe { r in
 			results.append(r)
 		}
-		input?.send(values: 0, 1, 2)
+		input?.send(0, 1, 2)
 		reconnector.disconnect()
-		input?.send(values: 3, 4, 5)
+		input?.send(3, 4, 5)
 		reconnector.reconnect()
-		input?.send(values: 6, 7, 8)
+		input?.send(6, 7, 8)
 		reconnector.disconnect()
 		reconnector.disconnect()
-		input?.send(values: 9, 10, 11)
+		input?.send(9, 10, 11)
 		reconnector.reconnect()
 		reconnector.reconnect()
-		input?.send(values: 12, 13, 14)
+		input?.send(12, 13, 14)
 		
 		XCTAssert(results.count == 9)
 		XCTAssert(results.at(0)?.value == 0)
@@ -1929,7 +1929,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(8)?.value == 14)
 		
 		withExtendedLifetime(input) {}
-		withExtendedLifetime(ep) {}
+		withExtendedLifetime(out) {}
 	}
 }
 
@@ -2054,7 +2054,7 @@ class SignalTimingTests: XCTestCase {
 			let ex = expectation(description: "Waiting for signal")
 			
 			// A basic test designed to exercise (sequence -> SignalInput -> SignalNode -> SignalQueue) performance.
-			let ep = Signal<Int>.generate { input in
+			let out = Signal<Int>.generate { input in
 				guard let i = input else { return }
 				for v in 0..<sequenceLength {
 					_ = i.send(value: v)
@@ -2066,7 +2066,7 @@ class SignalTimingTests: XCTestCase {
 				}
 			}
 			waitForExpectations(timeout: 1e2, handler: nil)
-			withExtendedLifetime(ep) {}
+			withExtendedLifetime(out) {}
 			
 			precondition(count1 == sequenceLength)
 			let elapsed1 = 1e-9 * Double(mach_absolute_time() - t1)
@@ -2094,7 +2094,7 @@ class SignalTimingTests: XCTestCase {
 			// This is a hack but it avoids the need for conditional compilation options.
 			#if DEBUG
 				sequenceLength = 10_000
-				expected = 0.02 // +/- 0.15
+				expected = 0.2 // +/- 0.15
 				upperThreshold = 3.0
 			#endif
 			
@@ -2102,7 +2102,7 @@ class SignalTimingTests: XCTestCase {
 			let t = mach_absolute_time()
 			var count = 0
 			
-			// Similar to the "Single" performance test but further inserts 100 map nodes between the initial node and the endpoint
+			// Similar to the "Single" performance test but further inserts 100 map nodes between the initial node and the output
 			var signal = Signal<Int>.generate { (input) in
 				if let i = input {
 					for x in 0..<sequenceLength {
@@ -2170,7 +2170,7 @@ class SignalTimingTests: XCTestCase {
 		let depth = 10
 		var completionCount = 0
 		var failureCount = 0
-		var allEndpoints = [String: SignalEndpoint<(thread: Int, iteration: Int, value: Int)>]()
+		var allOutputs = [String: SignalOutput<(thread: Int, iteration: Int, value: Int)>]()
 		let junction = Signal<Int>.generate { (input) in
 			if let i = input {
 				for x in 0..<sequenceLength {
@@ -2213,7 +2213,7 @@ class SignalTimingTests: XCTestCase {
 						}
 					}
 					var results = [String]()
-					let ep = signal.subscribe(context: .direct) { r in
+					let out = signal.subscribe(context: .direct) { r in
 						switch r {
 						case .success(let v): results.append(triple(v.thread, v.iteration, v.value))
 						case .failure(SignalComplete.closed):
@@ -2226,8 +2226,8 @@ class SignalTimingTests: XCTestCase {
 							}
 							DispatchQueue.main.async {
 								completionCount += 1
-								XCTAssert(allEndpoints[double(j, i)] != nil)
-								allEndpoints.removeValue(forKey: double(j, i))
+								XCTAssert(allOutputs[double(j, i)] != nil)
+								allOutputs.removeValue(forKey: double(j, i))
 								if completionCount + failureCount == iterations * threadCount {
 									ex.fulfill()
 								}
@@ -2242,15 +2242,15 @@ class SignalTimingTests: XCTestCase {
 							}
 							DispatchQueue.main.async {
 								failureCount += 1
-								XCTAssert(allEndpoints[double(j, i)] != nil)
-								allEndpoints.removeValue(forKey: double(j, i))
+								XCTAssert(allOutputs[double(j, i)] != nil)
+								allOutputs.removeValue(forKey: double(j, i))
 								if completionCount + failureCount == iterations * threadCount {
 									ex.fulfill()
 								}
 							}
 						}
 					}
-					DispatchQueue.main.async { allEndpoints[double(j, i)] = ep }
+					DispatchQueue.main.async { allOutputs[double(j, i)] = out }
 					_ = junction.disconnect()
 					_ = try? junction.bind(to: input, closePropagation: .all)
 				}

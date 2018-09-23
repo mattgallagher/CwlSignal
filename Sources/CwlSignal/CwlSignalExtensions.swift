@@ -3,7 +3,7 @@
 //  CwlSignal
 //
 //  Created by Matt Gallagher on 2016/08/04.
-//  Copyright © 2016 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.
+//  Copyright © 2016 Matt Gallagher ( https://www.cocoawithlove.com ). All rights reserved.
 //
 //  Permission to use, copy, modify, and/or distribute this software for any
 //  purpose with or without fee is hereby granted, provided that the above
@@ -18,8 +18,9 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
+import Foundation
+
 #if SWIFT_PACKAGE
-	import Foundation
 	import CwlUtils
 #endif
 
@@ -40,7 +41,7 @@ extension SignalNext: SignalSender {}
 
 // All transformations on a Signal are built on top of the following functions, implemented in CwlSignal.swift
 extension SignalInterface {
-	public func subscribe(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) -> SignalEndpoint<OutputValue> {
+	public func subscribe(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) -> SignalOutput<OutputValue> {
 		return signal.subscribe(context: context, handler)
 	}
 	public func subscribeWhile(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Bool) {
@@ -151,7 +152,7 @@ extension SignalSender {
 	/// - Parameter value: will be wrapped and sent
 	/// - Returns: the return value from the underlying `send(result:)` function
 	@discardableResult
-	public func send(values: InputValue...) -> SignalSendError? {
+	public func send(_ values: InputValue...) -> SignalSendError? {
 		for v in values {
 			if let e = send(result: .success(v)) {
 				return e
@@ -404,13 +405,13 @@ extension SignalInterface {
 		}
 	}
 
-	/// A version of `subscribe` that retains the `SignalEndpoint` internally, keeping the signal graph alive. The `SignalEndpoint` is cancelled and released when the signal closes.
+	/// A version of `subscribe` that retains the `SignalOutput` internally, keeping the signal graph alive. The `SignalOutput` is cancelled and released when the signal closes.
 	///
 	/// NOTE: this subscriber deliberately creates a reference counted loop. If the signal is never closed, it will result in a memory leak. This function should be used only when `self` is guaranteed to close.
 	///
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
-	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
+	///   - handler: will be invoked with each value received and if returns `false`, the output will be cancelled and released
 	public func subscribeUntilEnd(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) {
         return signal.subscribeWhile(context: context, { (result: Result<OutputValue>) -> Bool in
 			handler(result)
@@ -423,8 +424,8 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received
-	/// - Returns: the `SignalEndpoint` created by this function
-	public func subscribeValues(context: Exec = .direct, _ handler: @escaping (OutputValue) -> Void) -> SignalEndpoint<OutputValue> {
+	/// - Returns: the `SignalOutput` created by this function
+	public func subscribeValues(context: Exec = .direct, _ handler: @escaping (OutputValue) -> Void) -> SignalOutput<OutputValue> {
 		return signal.subscribe(context: context) { r in
 			if case .success(let v) = r {
 				handler(v)
@@ -438,7 +439,7 @@ extension SignalInterface {
 	///
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
-	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
+	///   - handler: will be invoked with each value received and if returns `false`, the output will be cancelled and released
 	public func subscribeValuesUntilEnd(context: Exec = .direct, _ handler: @escaping (OutputValue) -> Void) {
 		signal.subscribeUntilEnd(context: context) { r in
 			if case .success(let v) = r {
@@ -453,7 +454,7 @@ extension SignalInterface {
 	///
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
-	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
+	///   - handler: will be invoked with each value received and if returns `false`, the output will be cancelled and released
 	public func subscribeValuesWhile(context: Exec = .direct, _ handler: @escaping (OutputValue) -> Bool) {
 		signal.subscribeWhile(context: context) { r in
 			if case .success(let v) = r {
@@ -567,7 +568,7 @@ extension SignalInterface {
 					innerInput.send(error: e)
 				}
 			}
-			let prefixedInnerSignal = Signal<(Int, OutputValue?)>.preclosed(values: [(count, Optional(v))]).combine(innerSignal) { (r: EitherResult2<(Int, OutputValue?), (Int, OutputValue?)>, n: SignalNext<(Int, OutputValue?)>) in
+			let prefixedInnerSignal = Signal<(Int, OutputValue?)>.preclosed((count, Optional(v))).combine(innerSignal) { (r: EitherResult2<(Int, OutputValue?), (Int, OutputValue?)>, n: SignalNext<(Int, OutputValue?)>) in
 				switch r {
 				case .result1(.success(let v)): n.send(value: v)
 				case .result1(.failure): break
@@ -716,9 +717,9 @@ extension SignalInterface {
 	}
 }
 
-/// This wrapper around `SignalEndpoint` saves the last received value from the signal so that it can be 'polled' (read synchronously from an arbitrary execution context). This class ensures thread-safety on the read operation.
+/// This wrapper around `SignalOutput` saves the last received value from the signal so that it can be 'polled' (read synchronously from an arbitrary execution context). This class ensures thread-safety on the read operation.
 ///
-/// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Holding a `SignalCachedEndpoint` set to run in the same context as the delegate (e.g. .main) will allow the delegate to synchronously respond with the latest value.
+/// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Holding a `SignalCachedOutput` set to run in the same context as the delegate (e.g. .main) will allow the delegate to synchronously respond with the latest value.
 ///
 /// Note that there is a semantic difference between this class which is intended to be left active for some time and polled periodically and `SignalCapture` which captures the *activation* value (leaving it running for a duration is pointless). For that reason, the standalone `peek()` function actually uses `SignalCapture` rather than this class (`SignalCapture` is more consistent in the presence of multi-threaded updates since there is no possibility of asychronous updates between creation and reading).
 ///
@@ -727,12 +728,12 @@ extension SignalInterface {
 /// **WARNING**: this class should be avoided where possible since it removes the "reactive" part of reactive programming (changes in the polled value must be detected through other means, usually another subscriber to the underlying `Signal`).
 ///
 public final class SignalLatest<OutputValue>: Cancellable {
-	var endpoint: SignalEndpoint<OutputValue>? = nil
+	var output: SignalOutput<OutputValue>? = nil
 	var latest: Result<OutputValue>? = nil
 	let mutex = PThreadMutex()
 	
 	public init(signal: Signal<OutputValue>) {
-		endpoint = signal.subscribe { [weak self] r in
+		output = signal.subscribe { [weak self] r in
 			if let s = self {
 				s.mutex.sync { s.latest = r }
 			}
@@ -748,12 +749,12 @@ public final class SignalLatest<OutputValue>: Cancellable {
 	}
 	
 	public func cancel() {
-		endpoint?.cancel()
+		output?.cancel()
 	}
 }
 
 extension SignalInterface {
-	/// Appends a `SignalLatest` listener to the value emitted from this `Signal`. `SignalLatest` adds an endpoint to the signal and remembers the latest result emitted. This latest result can be accessed in a thread-safe way, using `latestValue` or `latestResult`.
+	/// Appends a `SignalLatest` listener to the value emitted from this `Signal`. `SignalLatest` adds an output to the signal and remembers the latest result emitted. This latest result can be accessed in a thread-safe way, using `latestValue` or `latestResult`.
 	public func cacheLatest() -> SignalLatest<OutputValue> {
 		return SignalLatest(signal: signal)
 	}
@@ -771,8 +772,8 @@ extension SignalCapture {
 	///   - resend: if true, captured values are sent to the new output as the first values in the stream, otherwise, captured values are not sent (default is false)
 	///   - context: the execution context where the `processor` will be invoked
 	///   - processor: will be invoked with each value received
-	/// - Returns: the `SignalEndpoint` created by this function
-	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalEndpoint<OutputValue> {
+	/// - Returns: the `SignalOutput` created by this function
+	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalOutput<OutputValue> {
 		let (input, output) = Signal<OutputValue>.create()
 		// This can't be `loop` but `duplicate` is a precondition failure
 		try! bind(to: input, resend: resend)
@@ -786,8 +787,8 @@ extension SignalCapture {
 	///   - onError: if nil, errors from self will be passed through to `toInput`'s `Signal` normally. If non-nil, errors will not be sent, instead, the `Signal` will be disconnected and the `onError` function will be invoked with the disconnected `SignalCapture` and the input created by calling `disconnect` on it.
 	///   - context: the execution context where the `processor` will be invoked
 	///   - processor: will be invoked with each value received
-	/// - Returns: the `SignalEndpoint` created by this function
-	public func subscribeValues(resend: Bool = false, onError: @escaping (SignalCapture<OutputValue>, Error, SignalInput<OutputValue>) -> (), context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalEndpoint<OutputValue> {
+	/// - Returns: the `SignalOutput` created by this function
+	public func subscribeValues(resend: Bool = false, onError: @escaping (SignalCapture<OutputValue>, Error, SignalInput<OutputValue>) -> (), context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalOutput<OutputValue> {
 		let (input, output) = Signal<OutputValue>.create()
 		// This can't be `loop` but `duplicate` is a precondition failure
 		try! bind(to: input, resend: resend, onError: onError)

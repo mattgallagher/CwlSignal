@@ -2,7 +2,7 @@
 
 # Advanced composition
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Contents](Contents) page.
 
 ## Signals containing Signals
 
@@ -39,7 +39,7 @@ struct Service {
 	
 	static func fakeConnectionLogic() -> Signal<String> {
 		// Simulate a network connection that takes a couple seconds and returns a string
-		return Signal<String>.timer(interval: .fromSeconds(2), value: "Hello, world!")
+		return Signal<String>.timer(interval: .from(seconds: 2), value: "Hello, world!")
 	}
 }
 
@@ -47,7 +47,7 @@ struct Service {
 let service = Service()
 
 // Subscribe to the output of the service. Since we've used `materialize`, we'll get the values *and* the errors from the child `connect()` signals wrapped in `.success` cases of the enclosing `Service.signal`.
-let endpoint = service.signal.subscribe { result in
+let output = service.signal.subscribe { result in
 	switch result {
 	case .success(.success(let message)): print("Connected with message: \(message)")
 	case .success(.failure(SignalComplete.closed)): print("Connection closed successfully")
@@ -57,13 +57,11 @@ let endpoint = service.signal.subscribe { result in
 }
 
 // SOMETHING TO TRY: replace 3 seconds with 1
-service.startWithTimeout.send(value: .seconds(3))
+service.startWithTimeout.send(.seconds(3))
 
 // Let everything run for 10 seconds.
 RunLoop.current.run(until: Date(timeIntervalSinceNow: 10.0))
 
-// We normally store endpoints in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
-endpoint.cancel()
 /*:
 ---
 

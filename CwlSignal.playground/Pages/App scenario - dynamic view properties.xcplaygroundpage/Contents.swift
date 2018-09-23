@@ -2,7 +2,7 @@
 
 # App scenario, part 2
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Contents](Contents) page.
 
 ## Dynamic view properties
 
@@ -43,7 +43,7 @@ PlaygroundPage.current.liveView = ViewController(nibName: nil, bundle: nil).view
 // This is a dummy Login class. Every 3.0 seconds, it toggles login on the background thread
 class Login {
 	let signal = Signal
-		.interval(.fromSeconds(3.0))
+		.interval(.from(seconds: 3.0))
 		.map { v in v % 2 == 0 }
 		.continuous(initialValue: false)
 }
@@ -51,7 +51,7 @@ class Login {
 // This is a FileSelection class. Every 0.75 seconds, it changes the number of selected files on the main thread
 class FileSelection {
 	let signal = Signal
-		.interval(.fromSeconds(0.75), context: .main)
+		.interval(.from(seconds: 0.75), context: .main)
 		.map { v in Array<Int>(repeating: 0, count: v % 3) }
 		.continuous(initialValue: Array<Int>())
 }
@@ -65,7 +65,7 @@ class ViewController: NSViewController {
 	// Connections to model objects
 	let login = Login()
 	let fileSelection = FileSelection()
-	var endpoints = [Cancellable]()
+	var outputs = [Cancellable]()
 
 	override func loadView() {
 		// The view is an NSStackView (for layout convenience)
@@ -82,14 +82,18 @@ class ViewController: NSViewController {
 		view.layoutSubtreeIfNeeded()
 		
 		// Configure dynamic properties
-		endpoints += login.signal.subscribe(context: .main) { r in
-			self.loggedInStatusButton.state = (r.value ?? false) ? .on : .off
-		}
-		endpoints += fileSelection.signal.subscribe(context: .main) { r in
-			self.filesSelectedLabel.stringValue = "Selected file count: \(r.value?.count ?? 0)"
-		}
-		endpoints += login.signal
-			.combineLatest(fileSelection.signal) { $0 && !$1.isEmpty }
+		outputs += login.signal
+			.subscribe(context: .main) { loginResult in
+				self.loggedInStatusButton.state = (loginResult.value ?? false) ? .on : .off
+			}
+		outputs += fileSelection.signal
+			.subscribe(context: .main) { r in
+				self.filesSelectedLabel.stringValue = "Selected file count: \(r.value?.count ?? 0)"
+			}
+		outputs += login.signal
+			.combineLatest(fileSelection.signal) { isLoggedIn, selectedIndices in
+				isLoggedIn && !selectedIndices.isEmpty
+			}
 			.subscribe(context: .main) { result in
 				self.addToFavoritesButton.isEnabled = result.value ?? false
 			}
@@ -98,6 +102,7 @@ class ViewController: NSViewController {
 		self.view = view
 	}
 }
+
 /*:
 ---
 

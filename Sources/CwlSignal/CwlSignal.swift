@@ -3,7 +3,7 @@
 //  CwlSignal
 //
 //  Created by Matt Gallagher on 2016/06/05.
-//  Copyright © 2016 Matt Gallagher ( http://cocoawithlove.com ). All rights reserved.
+//  Copyright © 2016 Matt Gallagher ( https://www.cocoawithlove.com ). All rights reserved.
 //
 //  Permission to use, copy, modify, and/or distribute this software for any purpose with or without
 //  fee is hereby granted, provided that the above copyright notice and this permission notice
@@ -17,8 +17,9 @@
 //  OF THIS SOFTWARE.
 //
 
+import Foundation
+
 #if SWIFT_PACKAGE
-	import Foundation
 	import CwlUtils
 #endif
 
@@ -34,91 +35,44 @@ public protocol SignalInputInterface {
 	var input: SignalInput<InputValue> { get }
 }
 
-/// A composable one-way communication channel that delivers a sequence of `Result<OutputValue>` items to a `handler` function running in a potentially different execution context. Delivery is serial (FIFO) queuing as required.
+/// A composable, one-way, potentially asynchronous, FIFO communication channel that delivers a sequence of `Result<OutputValue>`.
 ///
-/// # NOTE:
+/// In conjunction with various transformation functions, this class forms the core of a reactive programming system. Try the playgrounds for a better walkthrough of concepts and usage.
 ///
-/// Explaining reactive programming and usage of this class is *far* beyond the scope of this class code-comment. This is mostly a set of notes to myself about the implementation. Try the playgrounds for a better walkthrough of concepts and usage. Code comments on some of the methods within this class might also be helpful.
-///
-/// # Terminology:
+/// # Terminology
 ///
 /// The word "signal" may be used in a number of ways, so keep in mind:
-///	- `Signal`: this class
-///	- signal graph: one or more `Signal` instances connected together via handlers (instances of the private class `SignalHandler`)
-///	- signal: the sequence of `Result` instances, or individual instances of `Result` that pass through instances of `Signal`
-///	- `signal`: when used as a parameter label, refers to an instance of `Signal` (invidivual `Result` instances are identified as `result`, `value` or `error` in parameter labels).
-///
-/// # INTERNAL DESIGN
-///
-/// The primary design goals for this implementation are:
-///	1. All possible actions are threadsafe (no possible action results in undefined or corrupt memory behavior)
-///   2. Deadlocks on internally created mutexes will never occur.
-///	3. Values will never be delivered out-of-order.
-///	4. After a disconnection and reconnection, only values from the latest connection will be delivered.
-///	5. Loopback (sending to an antecedent input from a subsequent signal handler) and attempts at re-entrancy to any closure in the graph are permitted. Attempted re-entrancy delivery is simply queued to be delivered after any in-flight behavior completes.
-///
-/// That's quite a list of goals but it's largely covered by two ideas:
-///	1. No user code ever invoked inside a mutex
-///	2. Delivery to a `Signal` includes the "predecessor" and the "activationCount". If either fail to match the internal state of the `Signal`, then the delivery is out-of-date and can be discarded.
-///
-/// The first of these points is ensured through the use of `itemProcessing`, `holdCount` and `DeferredWork`. The `itemProcessing` and `holdCount` block a queue while out-of-mutex work is performed. The `DeferredWork` defers work to be performed later, once the stack has unwound and no mutexes are held.
-/// This ensures that no problematic work is performed inside a mutex but it means that we often have "in-flight" work occurring outside a mutex that might no longer be valid. So we need to combine this work identifiers that allow us to reject out-of-date work. That's where the second point becomes important.
-/// The "activationCount" for an `Signal` changes any time a manual input control is generated (`SignalInput`/`SignalMergedInput`), any time a first predecessor is added or any time there are predecessors connected and the `delivery` state changes to or from `.disabled`. Combined with the fact that it is not possible to disconnect and re-add the same predecessor to a multi-input Signal (SignalMergedInput or SignalCombiner) this guarantees any messages from out-of-date but still in-flight deliveries are ignored.
-///
-/// # LIMITS TO THREADSAFETY
-///
-/// While all actions on `Signal` are threadsafe, there are some points to keep in mind:
-///   1. Threadsafe means that the internal members of the `Signal` class will remain threadsafe and your own closures will always be serially and non-reentrantly invoked on the provided `Exec` context. However, this doesn't mean that work you perform in processing closures is always threadsafe; shared references or mutable captures in your closures will still require mutual exclusion.
-///   2. Synchronous pipelines are processed in nested fashion. More specifically, when `send` is invoked on a `SignalNext`, the next stage in the signal graph is invoked while the previous stage is still on the call-stack. If you use a user-created mutex on a synchronous stage, do not attempt to re-enter the mutex on subsequent stages or you risk deadlock. If you want to apply a mutex to your processing stages, you should either ensure the stages are invoked *asynchronously* (choose an async `Exec` context) or you should apply the mutex to the first stage and use `.direct` for subsquent stages (knowing that they'll be protected by the mutex from the *first* stage).
-///   3. Delivery of signal values is guaranteed to be in-order and within appropriate mutexes but is not guaranteed to be executed on the sending thread. If subsequent results are sent to a `Signal` from a second thread while the `Signal` is processing a previous result from a first thread the subsequent result will be *queued* and handled on the *first* thread once it completes processing the earlier values.
-///   4. Handlers, captured values and state values will be released *outside* all contexts or mutexes. If you capture an object with `deinit` behavior in a processing closure, you must apply any synchronization context yourself.
+///	- `Signal`: refers to this class
+///	- signal graph: one or more `Signal` instances, connected together, from `SignalInput` to `SignalOutput`
+///	- signal: the sequence of `Result` instances, from activation to close, that pass through a signal graph
 public class Signal<OutputValue>: SignalInterface {
-	public var signal: Signal<OutputValue> { return self }
 	
-	// Protection for all mutable members on this class and any attached `signalHandler`.
-	// NOTE 1: This mutex may be shared between synchronous serially connected `Signal`s (for memory and performance efficiency).
-	// NOTE 2: It is noted that a `DispatchQueue` mutex would be preferrable since it respects libdispatch's QoS, however, it is not possible (as of Swift 4) to use `DispatchQueue` as a mutex without incurring a heap allocated closure capture so `PThreadMutex` is used instead to avoid a factor of 10 performance loss.
-	fileprivate final var mutex: PThreadMutex
+	// # GOALS
+	//
+	// The primary design goals for this implementation are:
+	//	1. All possible actions are threadsafe (no possible action results in undefined or corrupt memory behavior)
+	//   2. Deadlocks on internally created mutexes will never occur.
+	//	3. Values will never be delivered out-of-order.
+	//	4. After a disconnection and reconnection, only values from the latest connection will be delivered.
+	//	5. Loopback (sending to an antecedent input from a subsequent signal handler) and attempts at re-entrancy to any closure in the graph are permitted. Attempted re-entrancy delivery is simply queued to be delivered after any in-flight behavior completes.
+	//
+	// That's quite a list of goals but it's largely covered by two ideas:
+	//	1. No user code ever invoked inside a mutex
+	//	2. Delivery to a `Signal` includes the "predecessor" and the "activationCount". If either fail to match the internal state of the `Signal`, then the delivery is out-of-date and can be discarded.
+	//
+	// The first of these points is ensured through the use of `itemProcessing`, `holdCount` and `DeferredWork`. The `itemProcessing` and `holdCount` block a queue while out-of-mutex work is performed. The `DeferredWork` defers work to be performed later, once the stack has unwound and no mutexes are held.
+	// This ensures that no problematic work is performed inside a mutex but it means that we often have "in-flight" work occurring outside a mutex that might no longer be valid. So we need to combine this work identifiers that allow us to reject out-of-date work. That's where the second point becomes important.
+	// The "activationCount" for an `Signal` changes any time a manual input control is generated (`SignalInput`/`SignalMergedInput`), any time a first predecessor is added or any time there are predecessors connected and the `delivery` state changes to or from `.disabled`. Combined with the fact that it is not possible to disconnect and re-add the same predecessor to a multi-input Signal (SignalMergedInput or SignalCombiner) this guarantees any messages from out-of-date but still in-flight deliveries are ignored.
+	//
+	// # LIMITS TO THREADSAFETY
+	//
+	// While all actions on `Signal` are threadsafe, there are some points to keep in mind:
+	//   1. Threadsafe means that the internal members of the `Signal` class will remain threadsafe and your own closures will always be serially and non-reentrantly invoked on the provided `Exec` context. However, this doesn't mean that work you perform in processing closures is always threadsafe; shared references or mutable captures in your closures will still require mutual exclusion.
+	//   2. Synchronous pipelines are processed in nested fashion. More specifically, when `send` is invoked on a `SignalNext`, the next stage in the signal graph is invoked while the previous stage is still on the call-stack. If you use a user-created mutex on a synchronous stage, do not attempt to re-enter the mutex on subsequent stages or you risk deadlock. If you want to apply a mutex to your processing stages, you should either ensure the stages are invoked *asynchronously* (choose an async `Exec` context) or you should apply the mutex to the first stage and use `.direct` for subsquent stages (knowing that they'll be protected by the mutex from the *first* stage).
+	//   3. Delivery of signal values is guaranteed to be in-order and within appropriate mutexes but is not guaranteed to be executed on the sending thread. If subsequent results are sent to a `Signal` from a second thread while the `Signal` is processing a previous result from a first thread the subsequent result will be *queued* and handled on the *first* thread once it completes processing the earlier values.
+	//   4. Handlers, captured values and state values will be released *outside* all contexts or mutexes. If you capture an object with `deinit` behavior in a processing closure, you must apply any synchronization context yourself.
 	
-	// The graph can be disconnected and reconnected and various actions may occur outside locks, it's helpful to determine which actions are no longer relevant. The `Signal` controls this through `delivery` and `activationCount`. The `delivery` controls the basic lifecycle of a simple connected graph through 4 phases: `.disabled` (pre-connection) -> `.sychronous` (connecting) -> `.normal` (connected) -> `.disabled` (disconnected).
-	fileprivate final var delivery = SignalDelivery.disabled { didSet { itemContextNeedsRefresh = true } }
-	
-	// The graph can be disconnected and reconnected and various actions may occur outside locks, it's helpful to determine which actions are no longer relevant because they are associated with a phase of a previous connection.
-	// When connected to a preceeding `SignalPredecessor`, `activationCount` is incremented on each connection and disconnection to ensure that actions associated with a previous phase of a previous connection are rejected. 
-	// When connected to a preceeding `SignalInput`, `activationCount` is incremented solely when a new `SignalInput` is attached or the current input is invalidated (joined using an `SignalJunction`).
-	fileprivate final var activationCount: Int = 0 { didSet { itemContextNeedsRefresh = true } }
-	
-	// Queue of values pending dispatch (NOTE: the current `item` is not stored in the queue)
-	// Normally the queue is FIFO but when an `Signal` has multiple inputs, the "activation" from each input will be considered before any post-activation inputs.
-	fileprivate final var queue = Deque<Result<OutputValue>>()
-	
-	// A `holdCount` may indefinitely block the queue for one of two reasons:
-	// 1. a `SignalNext` is retained outside its handler function for asynchronous processing of an item
-	// 2. a `SignalCapture` handler has captured the activation but a `Signal` to receive the remainder is not currently connected
-	// Accordingly, the `holdCount` should only have a value in the range [0, 2]
-	fileprivate final var holdCount: UInt8 = 0
-	
-	// When a `Result` is popped from the queue and the handler is being invoked, the `itemProcessing` is set to `true`. The effect is equivalent to `holdCount`.
-	fileprivate final var itemProcessing: Bool = false
-	
-	// Notifications for the inverse of `delivery == .disabled`, accessed exclusively through the `generate` constructor. Can be used for lazy construction/commencement, resetting to initial state on graph disconnect and reconnect or cleanup after graph deletion.
-	// A signal is used here instead of a simple function callback since re-entrancy-safe queueing and context delivery are needed.
-	// WARNING: this is actually a (Signal<SignalInput<OutputValue>?>, SignalEndpont<SignalInput<OutputValue>?>)? but we use `Any` to avoid huge optimization overheads.
-	fileprivate final var newInputSignal: (Signal<Any?>, SignalEndpoint<Any?>)? = nil
-	
-	// If there is a preceeding `Signal` in the graph, its `SignalProcessor` is stored in this variable. Note that `SignalPredecessor` is always an instance of `SignalProcessor`.
-	/// If Swift gains an `OrderedSet` type, it should be used here in place of this `Set` and the `sortedPreceeding` accessor, below.
-	fileprivate final var preceeding: Set<OrderedSignalPredecessor>
-	
-	// A monotonically increasing counter that is incremented every time the set of connected, preceeding handlers changes. This value is used to reject predecessors that are not up-to-date with the latest graph structure (i.e. have been asynchronously removed or invalidated).
-	fileprivate final var preceedingCount: Int = 0
-	
-	// The destination of this `Signal`. This value is `nil` on construction.
-	fileprivate final weak var signalHandler: SignalHandler<OutputValue>? = nil { didSet { itemContextNeedsRefresh = true } }
-	
-	// This is a cache of values that can be read outside the lock by the current owner of the `itemProcessing` flag.
-	fileprivate final var itemContext = ItemContext<OutputValue>(activationCount: 0)
-	fileprivate final var itemContextNeedsRefresh = true
+	// MARK: - Signal static construction functions
 	
 	/// Create a manual input/output pair where values sent to the `SignalInput` are passed through the `Signal` output.
 	///
@@ -168,37 +122,73 @@ public class Signal<OutputValue>: SignalInterface {
 		return s
 	}
 	
-	/// Appends a `SignalEndpoint` listener to the value emitted from this `Signal`. The endpoint will "activate" this `Signal` and all direct antecedents in the graph (which may start lazy operations deferred until activation).
+	/// Constructs a `SignalMulti` with an array of "activation" values and a closing error.
+	///
+	/// - Parameters:
+	///   - values: an array of values
+	///   - error: the closing error for the `Signal`
+	/// - Returns: a `SignalMulti`
+	public static func preclosed<S: Sequence>(sequence: S, error: Error = SignalComplete.closed) -> SignalMulti<OutputValue> where S.Iterator.Element == OutputValue {
+		return SignalMulti<OutputValue>(processor: Signal<OutputValue>().attach { (s, dw) in
+			SignalMultiProcessor(signal: s, values: (Array(sequence), error), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
+		})
+	}
+	
+	/// Constructs a `SignalMulti` with a single activation value and a closing error.
+	///
+	/// - Parameters:
+	///   - value: a single value
+	///   - error: the closing error for the `Signal`
+	/// - Returns: a `SignalMulti`
+	public static func preclosed(_ values: OutputValue..., error: Error = SignalComplete.closed) -> SignalMulti<OutputValue> {
+		return preclosed(sequence: values, error: error)
+	}
+	
+	/// Constructs a `SignalMulti` that is already closed with an error.
+	///
+	/// - Parameter error: the closing error for the `Signal`
+	/// - Returns: a `SignalMulti`
+	public static func preclosed(error: Error = SignalComplete.closed) -> SignalMulti<OutputValue> {
+		return SignalMulti<OutputValue>(processor: Signal<OutputValue>().attach { (s, dw) in
+			SignalMultiProcessor(signal: s, values: ([], error), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
+		})
+	}
+	
+	// MARK: - Signal public transformation functions
+	
+	public var signal: Signal<OutputValue> { return self }
+	
+	/// Appends a `SignalOutput` listener to the value emitted from this `Signal`. The output will "activate" this `Signal` and all direct antecedents in the graph (which may start lazy operations deferred until activation).
 	///
 	/// - Parameters:
 	///   - context: context: the `Exec` context used to invoke the `handler`
 	///   - handler: the function invoked for each received `Result`
-	/// - Returns: the created `SignalEndpoint` (if released, the subscription will be cancelled).
-	public final func subscribe(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) -> SignalEndpoint<OutputValue> {
+	/// - Returns: the created `SignalOutput` (if released, the subscription will be cancelled).
+	public final func subscribe(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) -> SignalOutput<OutputValue> {
 		return attach { (s, dw) in
-			SignalEndpoint<OutputValue>(signal: s, dw: &dw, context: context, handler: handler)
+			SignalOutput<OutputValue>(signal: s, dw: &dw, context: context, handler: handler)
 		}
 	}
 	
-	/// A version of `subscribe` that retains the `SignalEndpoint` internally, keeping the signal graph alive. The `SignalEndpoint` is cancelled and released if the signal closes or if the handler returns `false` after any signal.
+	/// A version of `subscribe` that retains the `SignalOutput` internally, keeping the signal graph alive. The `SignalOutput` is cancelled and released if the signal closes or if the handler returns `false` after any signal.
 	///
 	/// NOTE: this subscriber deliberately creates a reference counted loop. If the signal is never closed and the handler never returns false, it will result in a memory leak. This function should be used only when `self` is guaranteed to close or the handler `false` condition is guaranteed.
 	///
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
-	///   - handler: will be invoked with each value received and if returns `false`, the endpoint will be cancelled and released
+	///   - handler: will be invoked with each value received and if returns `false`, the output will be cancelled and released
 	public final func subscribeWhile(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Bool) {
 		_ = attach { (s, dw) in
-			var handlerRetainedEndpoint: SignalEndpoint<OutputValue>? = nil
-			let endpoint = SignalEndpoint<OutputValue>(signal: s, dw: &dw, context: context, handler: { r in
-				withExtendedLifetime(handlerRetainedEndpoint) {}
+			var handlerRetainedOutput: SignalOutput<OutputValue>? = nil
+			let output = SignalOutput<OutputValue>(signal: s, dw: &dw, context: context, handler: { r in
+				withExtendedLifetime(handlerRetainedOutput) {}
 				if !handler(r) || r.isError {
-					handlerRetainedEndpoint?.cancel()
-					handlerRetainedEndpoint = nil
+					handlerRetainedOutput?.cancel()
+					handlerRetainedOutput = nil
 				}
 			})
-			handlerRetainedEndpoint = endpoint
-			return endpoint
+			handlerRetainedOutput = output
+			return output
 		}
 	}
 	
@@ -208,6 +198,15 @@ public class Signal<OutputValue>: SignalInterface {
 	public final func junction() -> SignalJunction<OutputValue> {
 		return attach { (s, dw) -> SignalJunction<OutputValue> in
 			return SignalJunction<OutputValue>(signal: s, dw: &dw)
+		}
+	}
+	
+	/// Appends an immediately activated handler that captures any activation values from this `Signal`. The captured values can be accessed from the `SignalCapture<OutputValue>` using the `activation()` function. The `SignalCapture<OutputValue>` can then be joined to further `Signal`s using the `bind(to:)` function on the `SignalCapture<OutputValue>`.
+	///
+	/// - Returns: the handler than can be used to obtain activation values and bind to subsequent nodes.
+	public final func capture() -> SignalCapture<OutputValue> {
+		return attach { (s, dw) -> SignalCapture<OutputValue> in
+			SignalCapture<OutputValue>(signal: s, dw: &dw)
 		}
 	}
 	
@@ -234,18 +233,6 @@ public class Signal<OutputValue>: SignalInterface {
 		return Signal<U>(processor: attach { (s, dw) in
 			SignalTransformerWithState<OutputValue, U, S>(signal: s, initialState: initialState, dw: &dw, context: context, processor: processor)
 		})
-	}
-	
-	// Internal wrapper used by the `combine` functions to ignore error `Results` (which would only be due to graph changes between internal nodes) and process the values with the user handler.
-	//
-	// - Parameter handler: the user handler
-	@discardableResult private static func successProcessor<U, V>(_ processor: @escaping (U, SignalNext<V>) -> Void) -> (Result<U>, SignalNext<V>) -> Void {
-		return { (r: Result<U>, n: SignalNext<V>) in
-			switch r {
-			case .success(let v): processor(v, n)
-			case .failure(let e): n.send(result: .failure(e))
-			}
-		}
 	}
 	
 	/// Appends a handler function that receives inputs from this and another `Signal<U>`. The `handler` function applies any transformation it wishes an emits a (potentially) third `Signal` type.
@@ -324,18 +311,6 @@ public class Signal<OutputValue>: SignalInterface {
 		}).addPreceeding(processor: fifth.signal.attach { (s5, dw) -> SignalCombiner<X.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s5, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result5)
 		}).transform(context: context, Signal.successProcessor(processor))
-	}
-	
-	// Internal wrapper used by the `combine(initialState:...)` functions to ignore error `Results` (which would only be due to graph changes between internal nodes) and process the values with the user handler.
-	//
-	// - Parameter handler: the user handler
-	@discardableResult private static func successProcessorWithState<S, U, V>(_ processor: @escaping (inout S, U, SignalNext<V>) -> Void) -> (inout S, Result<U>, SignalNext<V>) -> Void {
-		return { (s: inout S, r: Result<U>, n: SignalNext<V>) in
-			switch r {
-			case .success(let v): processor(&s, v, n)
-			case .failure(let e): n.send(result: .failure(e))
-			}
-		}
 	}
 	
 	/// Similar to `combine(second:context:handler:)` with an additional "state" value.
@@ -454,7 +429,7 @@ public class Signal<OutputValue>: SignalInterface {
 		})
 	}
 	
-	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` does not immediately activate (it waits until an endpoint activates it normally). The first activator receives no cached values but subsequent activators will receive the most recent value. Upon deactivation, the cached value is discarded and deactivation is propagated normally to antecedents.
+	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` does not immediately activate (it waits until an output activates it normally). The first activator receives no cached values but subsequent activators will receive the most recent value. Upon deactivation, the cached value is discarded and deactivation is propagated normally to antecedents.
 	///
 	/// - returns: a continuous `SignalMulti`
 	public final func continuousWhileActive() -> SignalMulti<OutputValue> {
@@ -553,47 +528,91 @@ public class Signal<OutputValue>: SignalInterface {
 		})
 	}
 	
-	/// Constructs a `SignalMulti` with an array of "activation" values and a closing error.
-	///
-	/// - Parameters:
-	///   - values: an array of values
-	///   - error: the closing error for the `Signal`
-	/// - Returns: a `SignalMulti`
-	public static func preclosed<S: Sequence>(values: S, error: Error = SignalComplete.closed) -> SignalMulti<OutputValue> where S.Iterator.Element == OutputValue {
-		return SignalMulti<OutputValue>(processor: Signal<OutputValue>().attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: (Array(values), error), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
-		})
-	}
+	// MARK: - Signal private properties
 	
-	/// Constructs a `SignalMulti` with a single activation value and a closing error.
-	///
-	/// - Parameters:
-	///   - value: a single value
-	///   - error: the closing error for the `Signal`
-	/// - Returns: a `SignalMulti`
-	public static func preclosed(_ value: OutputValue, error: Error = SignalComplete.closed) -> SignalMulti<OutputValue> {
-		return SignalMulti<OutputValue>(processor: Signal<OutputValue>().attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: ([value], error), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
-		})
-	}
-	
-	/// Constructs a `SignalMulti` that is already closed with an error.
-	///
-	/// - Parameter error: the closing error for the `Signal`
-	/// - Returns: a `SignalMulti`
-	public static func preclosed(error: Error = SignalComplete.closed) -> SignalMulti<OutputValue> {
-		return SignalMulti<OutputValue>(processor: Signal<OutputValue>().attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: ([], error), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
-		})
-	}
-	
-	/// Appends an immediately activated handler that captures any activation values from this `Signal`. The captured values can be accessed from the `SignalCapture<OutputValue>` using the `activation()` function. The `SignalCapture<OutputValue>` can then be joined to further `Signal`s using the `bind(to:)` function on the `SignalCapture<OutputValue>`.
-	///
-	/// - Returns: the handler than can be used to obtain activation values and bind to subsequent nodes.
-	public final func capture() -> SignalCapture<OutputValue> {
-		return attach { (s, dw) -> SignalCapture<OutputValue> in
-			SignalCapture<OutputValue>(signal: s, dw: &dw)
+	// A struct that stores data associated with the current handler. Under the `Signal` mutex, if the `itemProcessing` flag is acquired, the fields of this struct are filled in using `Signal` and `SignalHandler` data and the contents of the struct can be used by the current thread *outside* the mutex.
+	private struct ItemContext<OutputValue> {
+		let context: Exec
+		let handler: (Result<OutputValue>) -> Void
+		let activationCount: Int
+		
+		init(context: Exec, synchronous: Bool, handler: @escaping (Result<OutputValue>) -> Void, activationCount: Int) {
+			self.activationCount = activationCount
+			self.context = context
+			if case .direct = context {
+				self.handler = handler
+			} else if context.type.isImmediate || synchronous {
+				self.handler = { r in context.invokeAndWait { handler(r) } }
+			} else {
+				self.handler = handler
+			}
 		}
+	}
+	
+	// Protection for all mutable members on this class and any attached `signalHandler`.
+	// NOTE 1: This mutex may be shared between synchronous serially connected `Signal`s (for memory and performance efficiency).
+	// NOTE 2: It is noted that a `DispatchQueue` mutex would be preferrable since it respects libdispatch's QoS, however, it is not possible (as of Swift 4) to use `DispatchQueue` as a mutex without incurring a heap allocated closure capture so `PThreadMutex` is used instead to avoid a factor of 10 performance loss.
+	fileprivate final var mutex: PThreadMutex
+	
+	// The graph can be disconnected and reconnected and various actions may occur outside locks, it's helpful to determine which actions are no longer relevant. The `Signal` controls this through `delivery` and `activationCount`. The `delivery` controls the basic lifecycle of a simple connected graph through 4 phases: `.disabled` (pre-connection) -> `.sychronous` (connecting) -> `.normal` (connected) -> `.disabled` (disconnected).
+	fileprivate final var delivery = SignalDelivery.disabled { didSet { handlerContextNeedsRefresh = true } }
+	
+	// The graph can be disconnected and reconnected and various actions may occur outside locks, it's helpful to determine which actions are no longer relevant because they are associated with a phase of a previous connection.
+	// When connected to a preceeding `SignalPredecessor`, `activationCount` is incremented on each connection and disconnection to ensure that actions associated with a previous phase of a previous connection are rejected. 
+	// When connected to a preceeding `SignalInput`, `activationCount` is incremented solely when a new `SignalInput` is attached or the current input is invalidated (joined using an `SignalJunction`).
+	fileprivate final var activationCount: Int = 0 { didSet { handlerContextNeedsRefresh = true } }
+	
+	// If there is a preceeding `Signal` in the graph, its `SignalProcessor` is stored in this variable. Note that `SignalPredecessor` is always an instance of `SignalProcessor`.
+	/// If Swift gains an `OrderedSet` type, it should be used here in place of this `Set` and the `sortedPreceeding` accessor, below.
+	fileprivate final var preceeding: Set<OrderedSignalPredecessor>
+	
+	// The destination of this `Signal`. This value is `nil` on construction.
+	fileprivate final weak var signalHandler: SignalHandler<OutputValue>? = nil { didSet { handlerContextNeedsRefresh = true } }
+	
+	fileprivate final var handlerContextNeedsRefresh = true
+	
+	// Queue of values pending dispatch (NOTE: the current `item` is not stored in the queue)
+	// Normally the queue is FIFO but when an `Signal` has multiple inputs, the "activation" from each input will be considered before any post-activation inputs.
+	private final var queue = Deque<Result<OutputValue>>()
+	
+	// A `holdCount` may indefinitely block the queue for one of two reasons:
+	// 1. a `SignalNext` is retained outside its handler function for asynchronous processing of an item
+	// 2. a `SignalCapture` handler has captured the activation but a `Signal` to receive the remainder is not currently connected
+	// Accordingly, the `holdCount` should only have a value in the range [0, 2]
+	private final var holdCount: UInt8 = 0
+	
+	// When a `Result` is popped from the queue and the handler is being invoked, the `itemProcessing` is set to `true`. The effect is equivalent to `holdCount`.
+	private final var itemProcessing: Bool = false
+	
+	// Notifications for the inverse of `delivery == .disabled`, accessed exclusively through the `generate` constructor. Can be used for lazy construction/commencement, resetting to initial state on graph disconnect and reconnect or cleanup after graph deletion.
+	// A signal is used here instead of a simple function callback since re-entrancy-safe queueing and context delivery are needed.
+	// WARNING: this is actually a (Signal<SignalInput<OutputValue>?>, SignalEndpont<SignalInput<OutputValue>?>)? but we use `Any` to avoid huge optimization overheads.
+	private final var newInputSignal: (Signal<Any?>, SignalOutput<Any?>)? = nil
+	
+	// A monotonically increasing counter that is incremented every time the set of connected, preceeding handlers changes. This value is used to reject predecessors that are not up-to-date with the latest graph structure (i.e. have been asynchronously removed or invalidated).
+	private final var preceedingCount: Int = 0
+	
+	// This is a cache of values that can be read outside the lock by the current owner of the `itemProcessing` flag.
+	private final var handlerContext = ItemContext<OutputValue>(context: .direct, synchronous: false, handler: { _ in }, activationCount: 0)
+	
+	// MARK: - Signal private functions
+
+	// Invokes `removeAllPreceedingInternal` if and only if the `forDisconnector` matches the current `preceeding.first`
+	//
+	// - Parameter forDisconnector: the disconnector requesting this change
+	// - Returns: if the predecessor matched, then a new `SignalInput<OutputValue>` for this `Signal`, otherwise `nil`.
+	fileprivate final func newInput(forDisconnector: SignalProcessor<OutputValue, OutputValue>) -> SignalInput<OutputValue>? {
+		var dw = DeferredWork()
+		let result = mutex.sync { () -> SignalInput<OutputValue>? in
+			if preceeding.count == 1, let p = preceeding.first?.base, p === forDisconnector {
+				removeAllPreceedingInternal(dw: &dw)
+				return SignalInput(signal: self, activationCount: activationCount)
+			} else {
+				return nil
+			}
+		}
+		dw.runWork()
+		return result
 	}
 	
 	/// If this `Signal` can attach a new handler, this function runs the provided closure (which is expected to construct and set the new handler) and returns the handler. If this `Signal` can't attach a new handler, returns the result of running the closure inside the mutex of a separate preclosed `Signal`.
@@ -618,19 +637,6 @@ public class Signal<OutputValue>: SignalInterface {
 		}
 	}
 	
-	/// Returns a copy of the preceeding set, sorted by "order". This allows deterministic sending of results through the graph – older connections are prioritized over newer.
-	fileprivate var sortedPreceeding: Array<OrderedSignalPredecessor> {
-		return preceeding.sorted(by: { (a, b) -> Bool in
-			return a.order < b.order
-		})
-	}
-	
-	/// Constructor for signal graph head. Called from `create`.
-	fileprivate init() {
-		mutex = PThreadMutex()
-		preceeding = []
-	}
-	
 	/// Constructor for a `Signal` that is the output for a `SignalProcessor`.
 	///
 	/// - Parameter processor: input source for this `Signal`
@@ -651,17 +657,6 @@ public class Signal<OutputValue>: SignalInterface {
 			}
 			dw.runWork()
 		}
-	}
-	
-	// Need to close the `newInputSignal` and detach from all predecessors on deinit.
-	deinit {
-		_ = newInputSignal?.0.send(result: .failure(SignalComplete.cancelled), predecessor: nil, activationCount: 0, activated: true)
-		
-		var dw = DeferredWork()
-		mutex.sync {
-			removeAllPreceedingInternal(dw: &dw)
-		}
-		dw.runWork()
 	}
 	
 	// Connects this `Signal` to a preceeding SignalPredecessor. Other connection functions must go through this.
@@ -699,20 +694,6 @@ public class Signal<OutputValue>: SignalInterface {
 		}
 	}
 	
-	// A wrapper around addPreceedingInternal for use outside the mutex. Only used by the `combine` functions (which is why it returns `self` – it's a syntactic convenience in those methods).
-	//
-	// - Parameter processor: the preceeding SignalPredecessor to add
-	// - Returns: self (for syntactic convenience in the `combine` methods)
-	fileprivate final func addPreceeding(processor: SignalPredecessor) -> Signal<OutputValue> {
-		var dw = DeferredWork()
-		mutex.sync {
-			// Since this is for use only by the `combine` functions, it cann't be `duplicate` or `loop`
-			try! addPreceedingInternal(processor, param: nil, dw: &dw)
-		}
-		dw.runWork()
-		return self
-	}
-	
 	// Removes a (potentially) non-unique predecessor. Used only from `SignalMergeSet` and `SignalMergeProcessor`. This is one of two, independent, functions for removing preceeding. The other being `removeAllPreceedingInternal`.
 	//
 	// - Parameters:
@@ -738,114 +719,6 @@ public class Signal<OutputValue>: SignalInterface {
 			preceeding = []
 		}
 		updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw)
-	}
-	
-	// Increment the activation count.
-	//
-	// - Parameters:
-	//   - andInvalidateAllPrevious: if true, removes all items from the queue (should be false only when transitioning from synchronous to normal).
-	//   - dw: required
-	fileprivate final func updateActivationInternal(andInvalidateAllPrevious: Bool, dw: inout DeferredWork) {
-		assert(mutex.unbalancedTryLock() == false)
-		
-		activationCount = activationCount &+ 1
-		
-		if andInvalidateAllPrevious {
-			let oldItems = Array<Result<OutputValue>>(queue)
-			dw.append { withExtendedLifetime(oldItems) {} }
-			queue.removeAll()
-			holdCount = 0
-		} else {
-			assert(holdCount == 0)
-		}
-		
-		switch delivery {
-		case .synchronous:
-			if andInvalidateAllPrevious, let h = signalHandler {
-				// Any outstanding end activation won't resolve now so we need to apply it directly.
-				h.endActivationInternal(dw: &dw)
-				return
-			}
-			fallthrough
-		case .normal:
-			// Careful to use *sorted* preceeding to propagate graph changes deterministically
-			for p in sortedPreceeding {
-				p.base.outputActivatedSuccessorInternal(self, activationCount: activationCount, dw: &dw)
-			}
-		case .disabled:
-			// Careful to use *sorted* preceeding to propagate graph changes deterministically
-			for p in sortedPreceeding {
-				p.base.outputDeactivatedSuccessorInternal(self, dw: &dw)
-			}
-		}
-	}
-	
-	// Invokes `removeAllPreceedingInternal` if and only if the `forDisconnector` matches the current `preceeding.first`
-	//
-	// - Parameter forDisconnector: the disconnector requesting this change
-	// - Returns: if the predecessor matched, then a new `SignalInput<OutputValue>` for this `Signal`, otherwise `nil`.
-	fileprivate final func newInput(forDisconnector: SignalProcessor<OutputValue, OutputValue>) -> SignalInput<OutputValue>? {
-		var dw = DeferredWork()
-		let result = mutex.sync { () -> SignalInput<OutputValue>? in
-			if preceeding.count == 1, let p = preceeding.first?.base, p === forDisconnector {
-				removeAllPreceedingInternal(dw: &dw)
-				return SignalInput(signal: self, activationCount: activationCount)
-			} else {
-				return nil
-			}
-		}
-		dw.runWork()
-		return result
-	}
-	
-	// Tests whether a `Result` from a `predecessor` with `activationCount` should be accepted or rejected.
-	//
-	// - Parameters:
-	//   - predecessor: the source of the `Result`
-	//   - activationCount: the `activationCount` when the source was connected
-	// - Returns: true if `preceeding` contains `predecessor` and `self.activationCount` matches `activationCount`
-	fileprivate final func isCurrent(_ predecessor: Unmanaged<AnyObject>?, _ activationCount: Int) -> Bool {
-		if activationCount != self.activationCount {
-			return false
-		}
-		if preceeding.count == 1, let expected = preceeding.first?.base {
-			return predecessor?.takeUnretainedValue() === expected
-		} else if preceeding.count == 0 {
-			return predecessor == nil
-		}
-		
-		guard let p = predecessor?.takeUnretainedValue() as? SignalPredecessor else { return false }
-		return preceeding.contains(p.wrappedWithOrder(0))
-	}
-	
-	// The `itemContext` holds information uniquely used by the currently processing item so it can be read outside the mutex. This may only be called immediately before calling `blockInternal` to start a processing item (e.g. from `send` or `resume`.
-	//
-	// - Parameter dw: required
-	// - Returns: false if the `signalHandler` was `nil`, true otherwise.
-	fileprivate final func refreshItemContextInternal(_ dw: inout DeferredWork) -> Bool {
-		assert(mutex.unbalancedTryLock() == false)
-		assert(holdCount == 0 && itemProcessing == false)
-		if itemContextNeedsRefresh {
-			if let h = signalHandler {
-				dw.append { [itemContext] in withExtendedLifetime(itemContext) {} }
-				itemContext = ItemContext(activationCount: activationCount, context: h.context, synchronous: delivery.isSynchronous, handler: h.handler)
-				itemContextNeedsRefresh = false
-			} else {
-				return false
-			}
-		}
-		return true
-	}
-	
-	// Sets the `itemContext` back to an "idle" state (releasing any handler closure and setting `activationCount` to zero.
-	// This function may be called only from `specializedSyncPop` or `pop`.
-	///
-	/// - Returns: an empty/idle `ItemContext`
-	fileprivate final func clearItemContextInternal() -> ItemContext<OutputValue> {
-		assert(mutex.unbalancedTryLock() == false)
-		let oldContext = itemContext
-		itemContext = ItemContext(activationCount: 0)
-		return oldContext
 	}
 	
 	// The primary `send` function (although the `push` functions do also send).
@@ -901,7 +774,7 @@ public class Signal<OutputValue>: SignalInterface {
 		
 		assert(holdCount == 0 && itemProcessing == false)
 		
-		if itemContextNeedsRefresh {
+		if handlerContextNeedsRefresh {
 			var dw = DeferredWork()
 			let hasHandler = refreshItemContextInternal(&dw)
 			if hasHandler {
@@ -909,7 +782,7 @@ public class Signal<OutputValue>: SignalInterface {
 			}
 			mutex.unbalancedUnlock()
 			
-			// We need to be extremely careful that any previous handlers, replaced in the `refreshItemContextInternal` function are released *here* if we're going to re-enter the lock and that we've *already* acquired the `itemProcessing` Bool. There's a little bit of dancing around in this `if itemContextNeedsRefresh` block to ensure these two things are true.
+			// We need to be extremely careful that any previous handlers, replaced in the `refreshItemContextInternal` function are released *here* if we're going to re-enter the lock and that we've *already* acquired the `itemProcessing` Bool. There's a little bit of dancing around in this `if handlerContextNeedsRefresh` block to ensure these two things are true.
 			dw.runWork()
 			
 			if !hasHandler {
@@ -920,23 +793,14 @@ public class Signal<OutputValue>: SignalInterface {
 			mutex.unbalancedUnlock()
 		}
 		
-		// As an optimization/ARC-avoidance, the common path through the `dispatch` and `invokeHandler` functions is manually inlined here.
-		// I'd love to express this two layer switch as `switch (itemContext.context, result)` but without specialization, it malloc's.
-		switch itemContext.context {
-		case .direct:
-			switch result {
-			case .success:
-				itemContext.handler(result)
-				specializedSyncPop()
-				return nil
-			case .failure: break
-			}
-			fallthrough
-		default:
+		if case .direct = handlerContext.context, case .success = result {
+			handlerContext.handler(result)
+			specializedSyncPop()
+			return nil
+		} else {
 			dispatch(result)
+			return nil
 		}
-		
-		return nil
 	}
 	
 	// A secondary send function used to push values and possibly and end-of-stream error onto the `newInputSignal`. The push is not handled immediately but is deferred until the `DeferredWork` runs. Since values are *always* queued, this is less efficient than `send` but it avoids re-entrancy into self if the `newInputSignal` immediately tries to send values back to us.
@@ -1002,123 +866,6 @@ public class Signal<OutputValue>: SignalInterface {
 			return (values, error)
 		}
 		return ([], nil)
-	}
-	
-	// Invoke the user handler and deactivates the `Signal` if `result` is a `failure`.
-	//
-	// - Parameter result: passed to the `itemContext.handler`
-	private final func invokeHandler(_ result: Result<OutputValue>) {
-		// It is subtle but it is more efficient to *repeat* the handler invocation for each case (rather than using a fallthrough or hoisting out of the `switch`), since Swift can handover ownership, rather than retaining.
-		switch result {
-		case .success:
-			itemContext.handler(result)
-		case .failure:
-			itemContext.handler(result)
-			var dw = DeferredWork()
-			mutex.sync {
-				if itemContext.activationCount == activationCount, !delivery.isDisabled {
-					signalHandler?.deactivateInternal(dueToLackOfOutputs: false, dw: &dw)
-				}
-			}
-			dw.runWork()
-		}
-	}
-	
-	// Dispatches the `result` to the current handler in the appropriate context then pops the next `result` and attempts to invoke the handler with the next result (if any)
-	//
-	// - Parameter result: for sending to the handler
-	fileprivate final func dispatch(_ result: Result<OutputValue>) {
-		switch itemContext.context {
-		case .direct:
-			invokeHandler(result)
-			specializedSyncPop()
-		case let c where c.type.isImmediate || itemContext.synchronous:
-			// Other synchronous contexts should be invoked serially in a while loop (recursive invocation could overburden the stack).
-			c.invokeAndWait {
-				self.invokeHandler(result)
-			}
-			while let r = pop() {
-				if c.type.isImmediate || itemContext.synchronous {
-					c.invokeAndWait {
-						self.invokeHandler(r)
-					}
-				} else {
-					dispatch(r)
-					break
-				}
-			}
-		case let c:
-			c.invoke {
-				self.invokeHandler(result)
-				if let r = self.pop() {
-					self.dispatch(r)
-				}
-			}
-		}
-	}
-	
-	/// Gets the next item from the queue for processing and updates the `ItemContext`.
-	///
-	/// - Returns: the next result for processing, if any
-	fileprivate final func pop() -> Result<OutputValue>? {
-		mutex.unbalancedLock()
-		assert(itemProcessing == true)
-		
-		guard itemContext.activationCount == activationCount else {
-			let oldContext = clearItemContextInternal()
-			itemProcessing = false
-			var dw = DeferredWork()
-			resumeIfPossibleInternal(dw: &dw)
-			mutex.unbalancedUnlock()
-			withExtendedLifetime(oldContext) {}
-			dw.runWork()
-			return nil
-		}
-		
-		if !queue.isEmpty, holdCount == 0 {
-			switch delivery {
-			case .synchronous(let count) where count == 0: break
-			case .synchronous(let count):
-				delivery = .synchronous(count - 1)
-				fallthrough
-			default:
-				let result = queue.removeFirst()
-				mutex.unbalancedUnlock()
-				return result
-			}
-		}
-		
-		itemProcessing = false
-		if itemContextNeedsRefresh {
-			let oldContext = clearItemContextInternal()
-			mutex.unbalancedUnlock()
-			withExtendedLifetime(oldContext) {}
-		} else {
-			mutex.unbalancedUnlock()
-		}
-		return nil
-	}
-	
-	/// An optimized version of `pop(_:)` used when context is .direct. The semantics are slightly different: this doesn't pop a result off the queue... rather, it looks to see if there's anything in the queue and handles it internally if there is. This allows optimization for the expected case where there's nothing in the queue.
-	private final func specializedSyncPop() {
-		mutex.unbalancedLock()
-		assert(itemProcessing == true)
-		
-		if itemContext.activationCount != activationCount || !queue.isEmpty {
-			mutex.unbalancedUnlock()
-			while let r = pop() {
-				invokeHandler(r)
-			}
-		} else {
-			itemProcessing = false
-			if itemContextNeedsRefresh {
-				let oldContext = clearItemContextInternal()
-				mutex.unbalancedUnlock()
-				withExtendedLifetime(oldContext) {}
-			} else {
-				mutex.unbalancedUnlock()
-			}
-		}
 	}
 	
 	// Increment the `holdCount`
@@ -1210,12 +957,275 @@ public class Signal<OutputValue>: SignalInterface {
 			_ = newInputSignal?.0.push(values: [Optional<SignalInput<OutputValue>>.none], error: nil, activationCount: 0, activated: true, dw: &dw)
 		}
 	}
+	
+	/// Constructor for signal graph head. Called from `create`.
+	private init() {
+		mutex = PThreadMutex()
+		preceeding = []
+	}
+	
+	// Need to close the `newInputSignal` and detach from all predecessors on deinit.
+	deinit {
+		_ = newInputSignal?.0.send(result: .failure(SignalComplete.cancelled), predecessor: nil, activationCount: 0, activated: true)
+		
+		var dw = DeferredWork()
+		mutex.sync {
+			removeAllPreceedingInternal(dw: &dw)
+		}
+		dw.runWork()
+	}
+	
+	// Internal wrapper used by the `combine` functions to ignore error `Results` (which would only be due to graph changes between internal nodes) and process the values with the user handler.
+	//
+	// - Parameter handler: the user handler
+	@discardableResult private static func successProcessor<U, V>(_ processor: @escaping (U, SignalNext<V>) -> Void) -> (Result<U>, SignalNext<V>) -> Void {
+		return { (r: Result<U>, n: SignalNext<V>) in
+			switch r {
+			case .success(let v): processor(v, n)
+			case .failure(let e): n.send(result: .failure(e))
+			}
+		}
+	}
+	
+	// Internal wrapper used by the `combine(initialState:...)` functions to ignore error `Results` (which would only be due to graph changes between internal nodes) and process the values with the user handler.
+	//
+	// - Parameter handler: the user handler
+	@discardableResult private static func successProcessorWithState<S, U, V>(_ processor: @escaping (inout S, U, SignalNext<V>) -> Void) -> (inout S, Result<U>, SignalNext<V>) -> Void {
+		return { (s: inout S, r: Result<U>, n: SignalNext<V>) in
+			switch r {
+			case .success(let v): processor(&s, v, n)
+			case .failure(let e): n.send(result: .failure(e))
+			}
+		}
+	}
+	
+	/// Returns a copy of the preceeding set, sorted by "order". This allows deterministic sending of results through the graph – older connections are prioritized over newer.
+	private var sortedPreceeding: Array<OrderedSignalPredecessor> {
+		return preceeding.sorted(by: { (a, b) -> Bool in
+			return a.order < b.order
+		})
+	}
+	
+	// A wrapper around addPreceedingInternal for use outside the mutex. Only used by the `combine` functions (which is why it returns `self` – it's a syntactic convenience in those methods).
+	//
+	// - Parameter processor: the preceeding SignalPredecessor to add
+	// - Returns: self (for syntactic convenience in the `combine` methods)
+	private final func addPreceeding(processor: SignalPredecessor) -> Signal<OutputValue> {
+		var dw = DeferredWork()
+		mutex.sync {
+			// Since this is for use only by the `combine` functions, it cann't be `duplicate` or `loop`
+			try! addPreceedingInternal(processor, param: nil, dw: &dw)
+		}
+		dw.runWork()
+		return self
+	}
+	
+	// Increment the activation count.
+	//
+	// - Parameters:
+	//   - andInvalidateAllPrevious: if true, removes all items from the queue (should be false only when transitioning from synchronous to normal).
+	//   - dw: required
+	private final func updateActivationInternal(andInvalidateAllPrevious: Bool, dw: inout DeferredWork) {
+		assert(mutex.unbalancedTryLock() == false)
+		
+		activationCount = activationCount &+ 1
+		
+		if andInvalidateAllPrevious {
+			let oldItems = Array<Result<OutputValue>>(queue)
+			dw.append { withExtendedLifetime(oldItems) {} }
+			queue.removeAll()
+			holdCount = 0
+		} else {
+			assert(holdCount == 0)
+		}
+		
+		switch delivery {
+		case .synchronous:
+			if andInvalidateAllPrevious, let h = signalHandler {
+				// Any outstanding end activation won't resolve now so we need to apply it directly.
+				h.endActivationInternal(dw: &dw)
+				return
+			}
+			fallthrough
+		case .normal:
+			// Careful to use *sorted* preceeding to propagate graph changes deterministically
+			for p in sortedPreceeding {
+				p.base.outputActivatedSuccessorInternal(self, activationCount: activationCount, dw: &dw)
+			}
+		case .disabled:
+			// Careful to use *sorted* preceeding to propagate graph changes deterministically
+			for p in sortedPreceeding {
+				p.base.outputDeactivatedSuccessorInternal(self, dw: &dw)
+			}
+		}
+	}
+	
+	// Tests whether a `Result` from a `predecessor` with `activationCount` should be accepted or rejected.
+	//
+	// - Parameters:
+	//   - predecessor: the source of the `Result`
+	//   - activationCount: the `activationCount` when the source was connected
+	// - Returns: true if `preceeding` contains `predecessor` and `self.activationCount` matches `activationCount`
+	private final func isCurrent(_ predecessor: Unmanaged<AnyObject>?, _ activationCount: Int) -> Bool {
+		if activationCount != self.activationCount {
+			return false
+		}
+		if preceeding.count == 1, let expected = preceeding.first?.base {
+			return predecessor?.takeUnretainedValue() === expected
+		} else if preceeding.count == 0 {
+			return predecessor == nil
+		}
+		
+		guard let p = predecessor?.takeUnretainedValue() as? SignalPredecessor else { return false }
+		return preceeding.contains(p.wrappedWithOrder(0))
+	}
+	
+	// The `handlerContext` holds information uniquely used by the currently processing item so it can be read outside the mutex. This may only be called immediately before calling `blockInternal` to start a processing item (e.g. from `send` or `resume`.
+	//
+	// - Parameter dw: required
+	// - Returns: false if the `signalHandler` was `nil`, true otherwise.
+	private final func refreshItemContextInternal(_ dw: inout DeferredWork) -> Bool {
+		assert(mutex.unbalancedTryLock() == false)
+		assert(holdCount == 0 && itemProcessing == false)
+		if handlerContextNeedsRefresh {
+			if let h = signalHandler {
+				dw.append { [handlerContext] in withExtendedLifetime(handlerContext) {} }
+				handlerContext = ItemContext(context: h.context, synchronous: delivery.isSynchronous, handler: h.handler, activationCount: activationCount)
+				handlerContextNeedsRefresh = false
+			} else {
+				return false
+			}
+		}
+		return true
+	}
+	
+	// Sets the `handlerContext` back to an "idle" state (releasing any handler closure and setting `activationCount` to zero.
+	// This function may be called only from `specializedSyncPop` or `pop`.
+	///
+	/// - Returns: an empty/idle `ItemContext`
+	private final func clearItemContextInternal() -> ItemContext<OutputValue> {
+		assert(mutex.unbalancedTryLock() == false)
+		let oldContext = handlerContext
+		handlerContext = ItemContext<OutputValue>(context: .direct, synchronous: false, handler: { _ in }, activationCount: 0)
+		return oldContext
+	}
+	
+	// Invoke the user handler and deactivates the `Signal` if `result` is a `failure`.
+	//
+	// - Parameter result: passed to the `handlerContext.handler`
+	private final func invokeHandler(_ result: Result<OutputValue>) {
+		// It is subtle but it is more efficient to *repeat* the handler invocation for each case (rather than using a fallthrough or hoisting out of the `switch`), since Swift can handover ownership, rather than retaining.
+		switch result {
+		case .success:
+			handlerContext.handler(result)
+		case .failure:
+			handlerContext.handler(result)
+			var dw = DeferredWork()
+			mutex.sync {
+				if handlerContext.activationCount == activationCount, !delivery.isDisabled {
+					signalHandler?.deactivateInternal(dueToLackOfOutputs: false, dw: &dw)
+				}
+			}
+			dw.runWork()
+		}
+	}
+	
+	// Dispatches the `result` to the current handler in the appropriate context then pops the next `result` and attempts to invoke the handler with the next result (if any)
+	//
+	// - Parameter result: for sending to the handler
+	private final func dispatch(_ result: Result<OutputValue>) {
+		if case .direct = handlerContext.context {
+			invokeHandler(result)
+			specializedSyncPop()
+		} else if handlerContext.context.type.isImmediate {
+			self.invokeHandler(result)
+			while let r = pop() {
+				if handlerContext.context.type.isImmediate {
+					self.invokeHandler(r)
+				} else {
+					dispatch(r)
+					break
+				}
+			}
+		} else {
+			handlerContext.context.invoke {
+				self.invokeHandler(result)
+				if let r = self.pop() {
+					self.dispatch(r)
+				}
+			}
+		}
+	}
+	
+	/// Gets the next item from the queue for processing and updates the `ItemContext`.
+	///
+	/// - Returns: the next result for processing, if any
+	private final func pop() -> Result<OutputValue>? {
+		mutex.unbalancedLock()
+		assert(itemProcessing == true)
+		
+		guard handlerContext.activationCount == activationCount else {
+			let oldContext = clearItemContextInternal()
+			itemProcessing = false
+			var dw = DeferredWork()
+			resumeIfPossibleInternal(dw: &dw)
+			mutex.unbalancedUnlock()
+			withExtendedLifetime(oldContext) {}
+			dw.runWork()
+			return nil
+		}
+		
+		if !queue.isEmpty, holdCount == 0 {
+			switch delivery {
+			case .synchronous(let count) where count == 0: break
+			case .synchronous(let count):
+				delivery = .synchronous(count - 1)
+				fallthrough
+			default:
+				let result = queue.removeFirst()
+				mutex.unbalancedUnlock()
+				return result
+			}
+		}
+		
+		itemProcessing = false
+		if handlerContextNeedsRefresh {
+			let oldContext = clearItemContextInternal()
+			mutex.unbalancedUnlock()
+			withExtendedLifetime(oldContext) {}
+		} else {
+			mutex.unbalancedUnlock()
+		}
+		return nil
+	}
+	
+	/// An optimized version of `pop(_:)` used when context is .direct. The semantics are slightly different: this doesn't pop a result off the queue... rather, it looks to see if there's anything in the queue and handles it internally if there is. This allows optimization for the expected case where there's nothing in the queue.
+	private final func specializedSyncPop() {
+		mutex.unbalancedLock()
+		assert(itemProcessing == true)
+		
+		if handlerContext.activationCount != activationCount || !queue.isEmpty {
+			mutex.unbalancedUnlock()
+			while let r = pop() {
+				invokeHandler(r)
+			}
+		} else {
+			itemProcessing = false
+			if handlerContextNeedsRefresh {
+				let oldContext = clearItemContextInternal()
+				mutex.unbalancedUnlock()
+				withExtendedLifetime(oldContext) {}
+			} else {
+				mutex.unbalancedUnlock()
+			}
+		}
+	}
 }
 
 /// `SignalMulti<OutputValue>` is the only subclass of `Signal<OutputValue>`. It represents a `Signal<OutputValue>` that allows attaching multiple listeners (a normal `Signal<OutputValue>` is "single owner" and will immediately close any subsequent listeners after the first with a `SignalBindError.duplicate` error).
 /// This class is not constructed directly but is instead created from one of the `SignalMulti<OutputValue>` returning functions on `Signal<OutputValue>`, including `playback()`, `multicast()` and `continuous()`.
 public final class SignalMulti<OutputValue>: Signal<OutputValue> {
-	fileprivate let spawnSingle: (SignalPredecessor) -> Signal<OutputValue>
+	private let spawnSingle: (SignalPredecessor) -> Signal<OutputValue>
 	
 	fileprivate override init<U>(processor: SignalProcessor<U, OutputValue>) {
 		assert(processor.multipleOutputsPermitted, "Construction of SignalMulti from a single output processor is illegal.")
@@ -1277,37 +1287,13 @@ public class SignalInput<InputValue>: Cancellable, SignalInputInterface {
 	}
 }
 
-// A struct that stores data associated with the item currently being handled. Under the `Signal` mutex, if the `itemProcessing` flag is acquired, the fields of this struct are filled in using `Signal` and `SignalHandler` data and the contents of the struct can be used by the current thread *outside* the mutex.
-private struct ItemContext<OutputValue> {
-	let context: Exec
-	let synchronous: Bool
-	let handler: (Result<OutputValue>) -> Void
-	let activationCount: Int
-	
-	// Create a blank ItemContext
-	init(activationCount: Int) {
-		self.context = .direct
-		self.synchronous = false
-		self.handler = { r in }
-		self.activationCount = activationCount
-	}
-	
-	// Create a filled-in ItemContext
-	init(activationCount: Int, context: Exec, synchronous: Bool, handler: @escaping (Result<OutputValue>) -> Void) {
-		self.activationCount = activationCount
-		self.context = context
-		self.synchronous = synchronous
-		self.handler = handler
-	}
-}
-
 // If `Signal<OutputValue>` is a delivery channel, then `SignalHandler` is the destination to which it delivers.
-// While the base `SignalHandler<OutputValue>` is not "abstract" in any technical sense, it doesn't do anything by default. Subclasses include `SignalEndpoint` (the user "exit" point for signal results), `SignalProcessor` (used for transforming signals between instances of `Signal<OutputValue>`), `SignalJunction` (for enabling dynamic graph connection and disconnections).
+// While the base `SignalHandler<OutputValue>` is not "abstract" in any technical sense, it doesn't do anything by default. Subclasses include `SignalOutput` (the user "exit" point for signal results), `SignalProcessor` (used for transforming signals between instances of `Signal<OutputValue>`), `SignalJunction` (for enabling dynamic graph connection and disconnections).
 // `SignalHandler<OutputValue>` is never directly created or held by users of the CwlSignal library. It is implicitly created when one of the listening or transformation methods on `Signal<OutputValue>` are invoked.
 public class SignalHandler<OutputValue> {
-	final let signal: Signal<OutputValue>
-	final let context: Exec
-	final var handler: (Result<OutputValue>) -> Void { didSet { signal.itemContextNeedsRefresh = true } }
+	fileprivate final let signal: Signal<OutputValue>
+	fileprivate final let context: Exec
+	fileprivate final var handler: (Result<OutputValue>) -> Void { didSet { signal.handlerContextNeedsRefresh = true } }
 	
 	// Base constructor sets the `signal`, `context` and `handler` and implicitly activates if required.
 	//
@@ -1315,7 +1301,7 @@ public class SignalHandler<OutputValue> {
 	//   - signal: a `SignalHandler` is attached to its predecessor `Signal` for its lifetime
 	//   - dw: used for performing activation outside any enclosing mutex, if necessary
 	//   - context: where the `handler` function should be invoked
-	init(signal: Signal<OutputValue>, dw: inout DeferredWork, context: Exec) {
+	fileprivate init(signal: Signal<OutputValue>, dw: inout DeferredWork, context: Exec) {
 		// Must be passed a `Signal` that does not already have a `signalHandler`
 		assert(signal.signalHandler == nil && signal.mutex.unbalancedTryLock() == false)
 		
@@ -1349,7 +1335,7 @@ public class SignalHandler<OutputValue> {
 	// - Parameter execute: the work to perform inside the mutex
 	// - Returns: the result from the `execute closure
 	// - Throws: basic rethrow from the `execute` closure
-	final func sync<OutputValue>(execute: () throws -> OutputValue) rethrows -> OutputValue {
+	fileprivate final func sync<OutputValue>(execute: () throws -> OutputValue) rethrows -> OutputValue {
 		signal.mutex.unbalancedLock()
 		defer { signal.mutex.unbalancedUnlock() }
 		return try execute()
@@ -1437,7 +1423,7 @@ public class SignalHandler<OutputValue> {
 			dw.append { [handler] in
 				withExtendedLifetime(handler) {}
 				
-				// Endpoints may release themselves on deactivation so we need to keep ourselves alive until outside the lock
+				// Outputs may release themselves on deactivation so we need to keep ourselves alive until outside the lock
 				withExtendedLifetime(self) {}
 			}
 			if !activeWithoutOutputsInternal {
@@ -1486,7 +1472,7 @@ extension SignalPredecessor {
 	}
 }
 
-// All `Signal`s, except those with endpoint handlers, are fed to another `Signal`. A `SignalProcessor` is how this is done. This is the abstract base for all handlers that connect to another `Signal`. The default implementation can only connect to a single output (concrete subclass `SignalMultiprocessor` is used for multiple outputs) but a majority of the architecture for any number of outputs is contained in this class.
+// All `Signal`s, except those with output handlers, are fed to another `Signal`. A `SignalProcessor` is how this is done. This is the abstract base for all handlers that connect to another `Signal`. The default implementation can only connect to a single output (concrete subclass `SignalMultiprocessor` is used for multiple outputs) but a majority of the architecture for any number of outputs is contained in this class.
 // This class allows its outputs to have a different value type compared to the Signal for this class, although only SignalTransformer, SignalTransformerWithState and SignalCombiner take advantage – all other subclasses derive from SignalProcessor<OutputValue, OutputValue>.
 public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, SignalPredecessor {
 	typealias OutputsArray = Array<(destination: Weak<Signal<U>>, activationCount: Int?)>
@@ -1823,7 +1809,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	
 	// Multiprocessors are (usually – not multicast) preactivated and may cache the values or errors
 	// - Returns: a function to use as the handler prior to activation
-	override func initialHandlerInternal() -> (Result<OutputValue>) -> Void {
+	fileprivate override func initialHandlerInternal() -> (Result<OutputValue>) -> Void {
 		assert(signal.mutex.unbalancedTryLock() == false)
 		return { [weak self] r in
 			if let s = self {
@@ -2220,7 +2206,7 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 					if let os = outputSignal {
 						next = SignalNext<U>(signal: os, predecessor: s, activationCount: ac, activated: activated, blockable: s)
 					}
-					s.signal.itemContextNeedsRefresh = true
+					s.signal.handlerContextNeedsRefresh = true
 				}
 				withExtendedLifetime(n) {}
 			}
@@ -2686,7 +2672,7 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 	/// - Parameters:
 	///   - resend: if true, captured values are sent to the new output as the first values in the stream, otherwise, captured values are not sent (default is false)
 	///   - onError: if nil, errors from self will be passed through to `to`'s `Signal` normally. If non-nil, errors will not be sent, instead, the `Signal` will be disconnected and the `onError` function will be invoked with the disconnected `SignalCapture` and the input created by calling `disconnect` on it.
-	/// - returns: the created `SignalEndpoint`
+	/// - returns: the created `SignalOutput`
 	public func resume(resend: Bool = false, onError: @escaping (SignalCapture<OutputValue>, Error, SignalInput<OutputValue>) -> ()) -> Signal<OutputValue> {
 		let (input, output) = Signal<OutputValue>.create()
 		// This could be `duplicate` but that's a precondition failure
@@ -2783,9 +2769,10 @@ fileprivate class SignalMultiInputProcessor<InputValue>: SignalProcessor<InputVa
 	}
 }
 
-/// Technically, a `SignalInput` is threadsafe and you could share it between multiple locations, if you wished. However, you can call `bind(to:)` on a `SignalInput` just once before it is consumed (is no longer connected to the signal graph). If you want an input that can be bound multiple times, you need a `SignalMultiInput`.
-/// There's an important semantic difference here between `SignalInput` and `SignalMultiInput`... when you `bind` to a `SignalInput`, then sending any error through the graph will close the output. With `SignalMultiInput`, sending an error disconnects the preceeding branch of the signal graph but the close is not propagated to the output signal. This is in accordance with the idea that `SignalMultiInput` is a shared interface – the `SignalMultiInput` remains open until all inputs are closed and the `SignalMultiInput` itself is released.
-// Unexpected errors should be handled on single `SignalInput` sections of the signal graph. If you need more precise control about whether incoming signals have the ability to close the outgoing signal, use the `SignalMergedInput` subclass – the default behavior of `SignalMergedInput` is to propgate "unexpected" errors (non-`SignalComplete` errors).
+/// The `SignalMultiInput` class is used as a persistent, rebindable input to a `Signal`.
+/// You can use `SignalMultiInput` as the parameter to `bind(to:)` multiple times, versus `SignalInput` for which subsequent uses after the first will have no effect.
+/// When sending an error to `SignalMultiInput`, the preceeding branch of the signal graph will be disconnected but the close will not be propagated to the output signal. This is in accordance with the idea that `SignalMultiInput` is a shared interface – the `SignalMultiInput` remains open until all inputs are closed and the `SignalMultiInput` itself is released.
+// If you need more precise control about whether incoming signals have the ability to close the outgoing signal, use the `SignalMergedInput` subclass – the default behavior of `SignalMergedInput` is to propgate "unexpected" errors (non-`SignalComplete` errors).
 /// Another difference is that a `SignalInput` is invalidated when the graph deactivates whereas `SignalMultiInput` remains valid.
 public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 	// Constructs a `SignalMergedInput` (typically called from `Signal<InputValue>.createMergedInput`)
@@ -2945,11 +2932,11 @@ public class SignalMergedInput<InputValue>: SignalMultiInput<InputValue> {
 	}
 }
 
-/// The primary "exit point" for a signal graph. `SignalEndpoint` provides two important functions:
+/// The primary "exit point" for a signal graph. `SignalOutput` provides two important functions:
 ///	1. a `handler` function which receives signal values and errors
-///	2. upon connecting to the graph, `SignalEndpoint` "activates" the signal graph (which allows sending through the graph to occur and may trigger some "on activation" behavior).
+///	2. upon connecting to the graph, `SignalOutput` "activates" the signal graph (which allows sending through the graph to occur and may trigger some "on activation" behavior).
 /// This class is instantiated by calling `subscribe` on any `Signal`.
-public final class SignalEndpoint<OutputValue>: SignalHandler<OutputValue>, Cancellable {
+public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Cancellable {
 	private let userHandler: (Result<OutputValue>) -> Void
 	
 	/// Constructor called from `subscribe`
@@ -2971,13 +2958,13 @@ public final class SignalEndpoint<OutputValue>: SignalHandler<OutputValue>, Canc
 		return { [userHandler] r in userHandler(r) }
 	}
 	
-	// A `SignalEndpoint` is active until closed (receives a `failure` signal)
+	// A `SignalOutput` is active until closed (receives a `failure` signal)
 	fileprivate override var activeWithoutOutputsInternal: Bool {
 		assert(signal.mutex.unbalancedTryLock() == false)
 		return true
 	}
 	
-	/// A simple test for whether this endpoint has received an error, yet. Not generally needed (responding to state changes is best done through the handler function itself).
+	/// A simple test for whether this output has received an error, yet. Not generally needed (responding to state changes is best done through the handler function itself).
 	public var isClosed: Bool {
 		return sync { signal.delivery.isDisabled }
 	}
@@ -2994,6 +2981,10 @@ public final class SignalEndpoint<OutputValue>: SignalHandler<OutputValue>, Canc
 		cancel()
 	}
 }
+
+@available(*, deprecated, message:"Renamed to SignalOutput")
+public typealias SignalEndpoint<T> = SignalOutput<T>
+
 
 /// Reflects the activation state of a `Signal`
 /// - normal: Signal will deliver results according to the default behavior of the processing context
@@ -3037,7 +3028,7 @@ public enum SignalComplete: Error {
 /// Possible send-failure return results when sending to a `SignalInput` or `SignalNext`. This type is used as a discardable return type so it does not need to conform to Swift.Error.
 ///
 /// - disconnected:  the signal input has been disconnected from its target signal
-/// - inactive:  the signal graph is not activated (no endpoints in the graph) and the Result was not sent
+/// - inactive:  the signal graph is not activated (no outputs in the graph) and the Result was not sent
 public enum SignalSendError {
 	case disconnected
 	case inactive

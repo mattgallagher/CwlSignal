@@ -2,7 +2,7 @@
 
 # Parallel composition 2
 
-> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing the error: "no such module 'CwlSignal'" follow the Build Instructions on the [Introduction](Introduction) page.
+> **This playground requires the CwlSignal.framework built by the CwlSignal_macOS scheme.** If you're seeing errors finding or building module 'CwlSignal', follow the Build Instructions on the [Contents](Contents) page.
 
 ## Merging
 
@@ -15,9 +15,19 @@ Let's look at how the different merging patterns work by exammining three differ
 import CwlSignal
 
 // Some signals that we'll use for the remainder of this page
-let smileys = Signal<String>.from(values: ["😀", "🙃", "😉", "🤣"], error: nil).playback()
-let spookeys = Signal<String>.from(values: ["👻", "🎃", "👹", "😈"], error: SignalComplete.closed).playback()
-let animals = Signal<String>.from(values: ["🐶", "🐱", "🐭", "🐨"], error: SignalReactiveError.timeout).playback()
+let smileys = Signal<String>.from("😀", "🙃", "😉", "🤣").playback()
+let spookeys = Signal<String>
+	.from(
+		sequence: ["👻", "🎃", "👹", "😈"],
+		error: SignalComplete.closed
+	)
+	.playback()
+let animals = Signal<String>
+	.from(
+		sequence: ["🐶", "🐱", "🐭", "🐨"],
+		error: SignalReactiveError.timeout
+	)
+	.playback()
 //: We can combine them into a single signal with `merge`
 print("Merge:")
 Signal<String>.merge(smileys, spookeys, animals).subscribeValuesUntilEnd {
@@ -26,7 +36,7 @@ Signal<String>.merge(smileys, spookeys, animals).subscribeValuesUntilEnd {
 
 // Should print: 😀🙃😉🤣👻🎃👹😈🐶🐱🐭🐨
 /*:
-NOTE: you won't be able to merge more signals after the `animals` signal because it emits an error other than `SignalComplete`. This *unexpected* error causes the `merge` operator to immediately close, instead of running until the last input closes. This is an example of how `merge` (as well as `concat`, `flatMap` and other combining transformations) distinguish between `SignalComplete` and other kinds of error.
+NOTE: you won't be able to merge more signals after the `animals` signal because it emits an "unexpected error" (any error type except `SignalComplete`). This *unexpected* error causes the `merge` operator to immediately close, instead of running until the last input closes. This is an example of how `merge` (as well as `concat`, `flatMap` and other combining transformations) distinguish between `SignalComplete` and other kinds of error.
 
 If the two signals were interleaved, `merge` would interleave them as they arrived. If you want one signal in its entirety, then the other, you can use `concat` but `concat` which won't emit the second signal until the first has closed. For this to work, you need to know that the first signal is guaranteed to close.
 
@@ -38,14 +48,14 @@ let animals2 = Signal<String>.create()
 smileys2.signal.concat(animals2.signal).subscribeValuesUntilEnd {
 	print($0, terminator: "")
 }
-smileys2.input.send(value: "😀")
-animals2.input.send(value: "🐶")
-smileys2.input.send(value: "🙃")
-animals2.input.send(value: "🐱")
-smileys2.input.send(value: "😉")
-animals2.input.send(value: "🐭")
-smileys2.input.send(value: "🤣")
-animals2.input.send(value: "🐨")
+smileys2.input.send("😀")
+animals2.input.send("🐶")
+smileys2.input.send("🙃")
+animals2.input.send("🐱")
+smileys2.input.send("😉")
+animals2.input.send("🐭")
+smileys2.input.send("🤣")
+animals2.input.send("🐨")
 smileys2.input.close()
 animals2.input.close()
 
@@ -61,11 +71,11 @@ print("\n\nSignalMultiInput:")
 let multiInput = Signal<String>.multiChannel().subscribeValuesUntilEnd {
 	print($0, terminator: "")
 }
-multiInput.send(value: "Start ")
+multiInput.send("Start ")
 smileys.bind(to: multiInput)
 spookeys.bind(to: multiInput)
 animals.bind(to: multiInput)
-multiInput.send(value: " End")
+multiInput.send(" End")
 
 // Should print: Start 😀🙃😉🤣👻🎃👹😈🐶🐱🐭🐨 End
 /*:
@@ -81,11 +91,11 @@ print("\n\nSignalMergeSet:")
 let mergeSet = Signal<String>.mergedChannel().subscribeValuesUntilEnd {
 	print($0, terminator: "")
 }
-mergeSet.send(value: "Start")
+mergeSet.send("Start")
 smileys.bind(to: mergeSet, closePropagation: .all)
 spookeys.bind(to: mergeSet, closePropagation: .all)
 animals.bind(to: mergeSet, closePropagation: .all)
-mergeSet.send(value: "End")
+mergeSet.send("End")
 
 // Should print: Start 😀🙃😉🤣👻🎃👹😈 End
 
