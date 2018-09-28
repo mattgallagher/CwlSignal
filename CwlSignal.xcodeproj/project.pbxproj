@@ -783,6 +783,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CwlSignal/Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
 				TARGET_NAME = CwlUtils;
 			};
 			name = Debug;
@@ -797,6 +798,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CwlSignal/Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
 				TARGET_NAME = CwlUtils;
 			};
 			name = Release;
@@ -811,6 +813,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CwlSignal/Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
 				TARGET_NAME = CwlUtils;
 			};
 			name = Debug;
@@ -825,6 +828,7 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CwlSignal/Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
 				TARGET_NAME = CwlUtils;
 			};
 			name = Release;
