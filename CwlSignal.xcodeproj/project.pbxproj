@@ -560,7 +560,7 @@
 			);
 			inputPaths = (
 				"$(SRCROOT)/.build/dependencies-state.json",
-				"$(SRCROOT)/Carthage/Build/iOS/CwlUtils.framework",
+				"$(SRCROOT)/Carthage/Build/iOS/CwlUtils.framework/CwlUtils",
 			);
 			name = "Invoke CwlPackageBuild/main.swift to build CwlUtils";
 			outputPaths = (
@@ -577,7 +577,7 @@
 			);
 			inputPaths = (
 				"$(SRCROOT)/.build/dependencies-state.json",
-				"$(SRCROOT)/Carthage/Build/Mac/CwlUtils.framework",
+				"$(SRCROOT)/Carthage/Build/Mac/CwlUtils.framework/Versions/A/CwlUtils",
 			);
 			name = "Invoke CwlPackageBuild/main.swift to build CwlUtils";
 			outputPaths = (
@@ -781,6 +781,7 @@
 				CWL_SDK = "$(SDKROOT)";
 				CWL_TARGET_NAME = CwlUtils_iOS;
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CwlSignal/Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -796,6 +797,7 @@
 				CWL_SDK = "$(SDKROOT)";
 				CWL_TARGET_NAME = CwlUtils_iOS;
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CwlSignal/Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -811,6 +813,7 @@
 				CWL_SDK = "$(SDKROOT)";
 				CWL_TARGET_NAME = CwlUtils_macOS;
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CwlSignal/Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
@@ -826,6 +829,7 @@
 				CWL_SDK = "$(SDKROOT)";
 				CWL_TARGET_NAME = CwlUtils_macOS;
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/CwlSignal/Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-macOS";
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
@@ -930,6 +934,7 @@
 		OBJ_192 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ENABLE_MODULES = YES;
 				DEFINES_MODULE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -948,6 +953,7 @@
 		OBJ_193 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ENABLE_MODULES = YES;
 				DEFINES_MODULE = YES;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
