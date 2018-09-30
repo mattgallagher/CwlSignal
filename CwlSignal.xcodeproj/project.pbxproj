@@ -11,10 +11,10 @@
 			isa = PBXAggregateTarget;
 			buildConfigurationList = C9A3803A1EFF923A00BFF2E5 /* Build configuration list for PBXAggregateTarget "CwlSignalConcat" */;
 			buildPhases = (
-				C9110BA82136B0C0007F0FF1 /* Invoke CwlPackageBuild/main.swift to build CwlUtilsConcat */,
 				C9A3803D1EFF924700BFF2E5 /* Invoke CwlConcat/main.swift to concatenate CwlSignal */,
 			);
 			dependencies = (
+				C98C450B2160F5100028B2AC /* PBXTargetDependency */,
 			);
 			name = CwlSignalConcat;
 			productName = CwlSignalConcat;
@@ -24,6 +24,9 @@
 /* Begin PBXBuildFile section */
 		C90BDC541F01FEC300112A54 /* CwlSignalChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */; };
 		C90BDC551F01FEC300112A54 /* CwlSignalChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */; };
+		C98C44ED2160F3660028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */; };
+		C98C44F12160F3AC0028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */; };
+		C98C44FA2160F3CF0028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44E52160F2EA0028B2AC /* CwlUtils.framework */; };
 		C9C1CECF1F6BC58B00A9343F /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlSignalTests.swift */; };
 		C9DD3D771E41CD9000E23B15 /* CwlSignal.h in Headers */ = {isa = PBXBuildFile; fileRef = C9DD3D761E41CD9000E23B15 /* CwlSignal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9DD3D8E1E41DFB600E23B15 /* CwlSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* CwlSignal.swift */; };
@@ -45,6 +48,69 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		C98C44DC2160F2EA0028B2AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C95BDEB61E41688B00AAA64B;
+			remoteInfo = CwlUtils_iOS;
+		};
+		C98C44DE2160F2EA0028B2AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C95BDEDB1E4168B800AAA64B;
+			remoteInfo = CwlUtils_iOSTests;
+		};
+		C98C44E02160F2EA0028B2AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C95A77481E4187FB00659DBD;
+			remoteInfo = CwlUtils_iOSTestApp;
+		};
+		C98C44E22160F2EA0028B2AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C95A775B1E4187FB00659DBD;
+			remoteInfo = CwlUtils_iOSTestAppUITests;
+		};
+		C98C44E42160F2EA0028B2AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = OBJ_84;
+			remoteInfo = CwlUtils_macOS;
+		};
+		C98C44E62160F2EA0028B2AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = OBJ_86;
+			remoteInfo = CwlUtils_macOSTests;
+		};
+		C98C44E82160F2EA0028B2AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C95A77271E4187E600659DBD;
+			remoteInfo = CwlUtils_macOSTestApp;
+		};
+		C98C44EA2160F2EA0028B2AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C95A77371E4187E700659DBD;
+			remoteInfo = CwlUtils_macOSTestAppUITests;
+		};
+		C98C450A2160F5100028B2AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = C9DE4E1521325B1800CE7DAF;
+			remoteInfo = CwlUtilsConcat;
+		};
 		C9DD3D601E41ACAF00E23B15 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
@@ -63,6 +129,7 @@
 
 /* Begin PBXFileReference section */
 		C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalChannel.swift; sourceTree = "<group>"; };
+		C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CwlUtils.xcodeproj; path = CwlUtils/CwlUtils.xcodeproj; sourceTree = "<group>"; };
 		C9DD3D761E41CD9000E23B15 /* CwlSignal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CwlSignal.h; sourceTree = "<group>"; };
 		C9DD3D781E41CD9F00E23B15 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C9DD3D7A1E41D15A00E23B15 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -85,6 +152,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
+				C98C44ED2160F3660028B2AC /* CwlUtils.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -92,6 +160,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
+				C98C44F12160F3AC0028B2AC /* CwlUtils.framework in Frameworks */,
 				C9DD3DA31E41DFBA00E23B15 /* CwlSignal.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -107,6 +176,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
+				C98C44FA2160F3CF0028B2AC /* CwlUtils.framework in Frameworks */,
 				OBJ_230 /* CwlSignal.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -117,8 +187,24 @@
 		C98C44CD2160F22E0028B2AC /* Dependencies */ = {
 			isa = PBXGroup;
 			children = (
+				C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */,
 			);
 			path = Dependencies;
+			sourceTree = "<group>";
+		};
+		C98C44CF2160F2EA0028B2AC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */,
+				C98C44DF2160F2EA0028B2AC /* CwlUtils_iOSTests.xctest */,
+				C98C44E12160F2EA0028B2AC /* CwlUtils_iOSTestApp.app */,
+				C98C44E32160F2EA0028B2AC /* CwlUtils_iOSTestAppUITests.xctest */,
+				C98C44E52160F2EA0028B2AC /* CwlUtils.framework */,
+				C98C44E72160F2EA0028B2AC /* CwlUtils_macOSTests.xctest */,
+				C98C44E92160F2EA0028B2AC /* CwlUtils_macOSTestApp.app */,
+				C98C44EB2160F2EA0028B2AC /* CwlUtils_macOSTestAppUITests.xctest */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		OBJ_13 /* Tests */ = {
@@ -282,7 +368,7 @@
 		OBJ_1 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0930;
+				LastUpgradeCheck = 1000;
 				ORGANIZATIONNAME = "Matt Gallagher ( https://www.cocoawithlove.com )";
 				TargetAttributes = {
 					C9A380371EFF923A00BFF2E5 = {
@@ -313,6 +399,12 @@
 			mainGroup = OBJ_5;
 			productRefGroup = OBJ_69 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = C98C44CF2160F2EA0028B2AC /* Products */;
+					ProjectRef = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				C9DD3D7C1E41DFB600E23B15 /* CwlSignal_iOS */,
@@ -324,22 +416,66 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		C9110BA82136B0C0007F0FF1 /* Invoke CwlPackageBuild/main.swift to build CwlUtilsConcat */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Invoke CwlPackageBuild/main.swift to build CwlUtilsConcat";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = "/usr/bin/xcrun --sdk macosx swift $(SRCROOT)/.build/symlinks/CwlUtils/Scripts/CwlPackageBuild/main.swift";
-			shellScript = "
-";
+/* Begin PBXReferenceProxy section */
+		C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CwlUtils.framework;
+			remoteRef = C98C44DC2160F2EA0028B2AC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		C98C44DF2160F2EA0028B2AC /* CwlUtils_iOSTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = CwlUtils_iOSTests.xctest;
+			remoteRef = C98C44DE2160F2EA0028B2AC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C98C44E12160F2EA0028B2AC /* CwlUtils_iOSTestApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = CwlUtils_iOSTestApp.app;
+			remoteRef = C98C44E02160F2EA0028B2AC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C98C44E32160F2EA0028B2AC /* CwlUtils_iOSTestAppUITests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = CwlUtils_iOSTestAppUITests.xctest;
+			remoteRef = C98C44E22160F2EA0028B2AC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C98C44E52160F2EA0028B2AC /* CwlUtils.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CwlUtils.framework;
+			remoteRef = C98C44E42160F2EA0028B2AC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C98C44E72160F2EA0028B2AC /* CwlUtils_macOSTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = CwlUtils_macOSTests.xctest;
+			remoteRef = C98C44E62160F2EA0028B2AC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C98C44E92160F2EA0028B2AC /* CwlUtils_macOSTestApp.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = CwlUtils_macOSTestApp.app;
+			remoteRef = C98C44E82160F2EA0028B2AC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C98C44EB2160F2EA0028B2AC /* CwlUtils_macOSTestAppUITests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = CwlUtils_macOSTestAppUITests.xctest;
+			remoteRef = C98C44EA2160F2EA0028B2AC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
+
+/* Begin PBXShellScriptBuildPhase section */
 		C9A3803D1EFF924700BFF2E5 /* Invoke CwlConcat/main.swift to concatenate CwlSignal */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -352,7 +488,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/usr/bin/xcrun --sdk macosx swift \"$SRCROOT/.build/symlinks/CwlUtils/Scripts/CwlConcat/main.swift\" -f CwlSignal -n CwlSignal.swift -i \"$SRCROOT/Sources/CwlSignal/CwlSignal.swift\" -x \"$SRCROOT/Sources/CwlSignal/CwlSignal.swift\" -i \"$SRCROOT/Sources/CwlSignal\"\n";
+			shellScript = "/usr/bin/xcrun --sdk macosx swift \"$SRCROOT/Dependencies/CwlUtils/Scripts/CwlConcat/main.swift\" -f CwlSignal -n CwlSignal.swift -i \"$SRCROOT/Sources/CwlSignal/CwlSignal.swift\" -x \"$SRCROOT/Sources/CwlSignal/CwlSignal.swift\" -i \"$SRCROOT/Sources/CwlSignal\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -404,6 +540,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		C98C450B2160F5100028B2AC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CwlUtilsConcat;
+			targetProxy = C98C450A2160F5100028B2AC /* PBXContainerItemProxy */;
+		};
 		C9DD3DAB1E41E52E00E23B15 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = C9DD3D7C1E41DFB600E23B15 /* CwlSignal_iOS */;
