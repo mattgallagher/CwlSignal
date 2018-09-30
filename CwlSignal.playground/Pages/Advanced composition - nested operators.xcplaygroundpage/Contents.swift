@@ -39,7 +39,7 @@ struct Service {
 	
 	static func fakeConnectionLogic() -> Signal<String> {
 		// Simulate a network connection that takes a couple seconds and returns a string
-		return Signal<String>.timer(interval: .from(seconds: 2), value: "Hello, world!")
+		return Signal<String>.timer(interval: .seconds(2), value: "Hello, world!")
 	}
 }
 

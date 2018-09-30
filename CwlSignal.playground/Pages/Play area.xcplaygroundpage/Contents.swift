@@ -25,9 +25,9 @@ Signal<String>.generate { input in
 
 print("Aggregates four smileys into single string:")
 
-// Signal.from(:) creates a signal using the provided values and `toSequence` offers synchronous conversion back to a Swift `Sequence` type. The `aggregate` operator turns a signal of many values into a signal of one value (in this case, by concatenating the strings). The `next()` function is the Swift Standard Library Sequence function – it gets the only value in the sequence after the `aggregate` operator collapsed the four smileys down to a single string.
+// `Signal.just(_:...)` creates a signal using the provided values and `toSequence` offers synchronous conversion back to a Swift `Sequence` type. The `aggregate` operator turns a signal of many values into a signal of one value (in this case, by concatenating the strings). The `next()` function is the Swift Standard Library Sequence function – it gets the only value in the sequence after the `aggregate` operator collapsed the four smileys down to a single string.
 let aggregated = Signal<String>
-	.from("😀", "🙃", "😉", "🤣")
+	.just("😀", "🙃", "😉", "🤣")
 	.aggregate("Start: ") { return $0 + $1 }
 	.toSequence()
 	.next()!

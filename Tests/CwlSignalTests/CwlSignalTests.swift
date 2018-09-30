@@ -961,7 +961,7 @@ class SignalTests: XCTestCase {
 	
 	func testJunctionSignal() {
 		var results = [Result<Int>]()
-		var outputs = [Cancellable]()
+		var outputs = [Lifetime]()
 		
 		do {
 			let signal = Signal<Int>.generate { i in _ = i?.send(value: 5) }
@@ -1935,7 +1935,7 @@ class SignalTests: XCTestCase {
 	func testDeadlockBug() {
 		let context = Exec.asyncQueue()
 		
-		let signal1 = Signal.from(sequence: [1])
+		let signal1 = Signal.from([1])
 			.continuous()
 		
 		let signal2 = signal1

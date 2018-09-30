@@ -18,7 +18,7 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-import Foundation
+import Cocoa
 import CwlSignal
 import XCTest
 
@@ -158,4 +158,40 @@ class SignalCocoaTests: XCTestCase {
 		XCTAssert(results == ["\(Notification.Name.NSThreadWillExit)", "\(Notification.Name.NSFileHandleDataAvailable)"])
 		out.cancel()
 	}
+	
+//	func testViewControllerTest() {
+//		let e = expectation(description: "Waiting")
+//		let latestSelection = FileSelection.currentSelection
+//			.flatMapLatest { possible in possible.selection }
+//			.continuous()
+//		
+//		var count = 0
+//		let lifetime = latestSelection.subscribeValues(context: .main) { value in
+//			print(value)
+//			count += 1
+//			if count == 100 {
+//				e.fulfill()
+//			}
+//		}
+//		
+//		withExtendedLifetime(lifetime) {
+//			waitForExpectations(timeout: 1e2) { e in
+//			}
+//		}
+//	}
+}
+
+class FileSelection {
+	let offset: Int
+	init(offset: Int) { self.offset = offset }
+	
+	lazy var selection: Signal<Int> = Signal
+		.interval(.milliseconds(100))
+		.map { v in 1000 * self.offset + v }
+		.continuous(initialValue: 0)
+	
+	static let currentSelection: Signal<FileSelection> = Signal
+		.interval(.seconds(1), context: .main)
+		.map { v in FileSelection(offset: v) }
+		.continuous(initialValue: FileSelection(offset: 0))
 }
