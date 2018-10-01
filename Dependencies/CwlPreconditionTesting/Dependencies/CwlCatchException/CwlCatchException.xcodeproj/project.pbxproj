@@ -41,7 +41,6 @@
 		C90FA1B61C41E48100996A1F /* CwlCatchException_macOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlCatchException_macOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C90FA1F71C42071A00996A1F /* CwlCatchException.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CwlCatchException.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C90FA2001C42071A00996A1F /* CwlCatchException_iOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlCatchException_iOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C9F3E8581E3D9D8B00984605 /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		C9F3E85A1E3D9DAD00984605 /* CwlCatchException.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlCatchException.swift; sourceTree = "<group>"; };
 		C9F3E85C1E3D9DAD00984605 /* CwlCatchException.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CwlCatchException.m; sourceTree = "<group>"; };
 		C9F3E85E1E3D9DAD00984605 /* CwlCatchException.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CwlCatchException.h; sourceTree = "<group>"; };
@@ -85,21 +84,19 @@
 		C90FA1A21C41E48100996A1F = {
 			isa = PBXGroup;
 			children = (
-				C9F3E8581E3D9D8B00984605 /* Package.swift */,
-				C9F3E8591E3D9DAD00984605 /* CwlCatchException */,
-				C9F3E85B1E3D9DAD00984605 /* CwlCatchExceptionSupport */,
-				C90FA1BA1C41E48100996A1F /* CwlCatchExceptionTests */,
 				C90FA1AD1C41E48100996A1F /* Products */,
+				C98AE76621623D55004259B6 /* Sources */,
+				C98AE76721623D76004259B6 /* Tests */,
 			);
 			sourceTree = "<group>";
 		};
 		C90FA1AD1C41E48100996A1F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C90FA1AC1C41E48100996A1F /* CwlCatchException.framework */,
-				C90FA1B61C41E48100996A1F /* CwlCatchException_macOSTests.xctest */,
 				C90FA1F71C42071A00996A1F /* CwlCatchException.framework */,
 				C90FA2001C42071A00996A1F /* CwlCatchException_iOSTests.xctest */,
+				C90FA1AC1C41E48100996A1F /* CwlCatchException.framework */,
+				C90FA1B61C41E48100996A1F /* CwlCatchException_macOSTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -109,8 +106,24 @@
 			children = (
 				C9F3E8651E3D9DBD00984605 /* CwlCatchExceptionTests.swift */,
 			);
-			name = CwlCatchExceptionTests;
-			path = Tests/CwlCatchExceptionTests;
+			path = CwlCatchExceptionTests;
+			sourceTree = "<group>";
+		};
+		C98AE76621623D55004259B6 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				C9F3E8591E3D9DAD00984605 /* CwlCatchException */,
+				C9F3E85B1E3D9DAD00984605 /* CwlCatchExceptionSupport */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		C98AE76721623D76004259B6 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				C90FA1BA1C41E48100996A1F /* CwlCatchExceptionTests */,
+			);
+			path = Tests;
 			sourceTree = "<group>";
 		};
 		C9F3E8591E3D9DAD00984605 /* CwlCatchException */ = {
@@ -118,8 +131,7 @@
 			children = (
 				C9F3E85A1E3D9DAD00984605 /* CwlCatchException.swift */,
 			);
-			name = CwlCatchException;
-			path = Sources/CwlCatchException;
+			path = CwlCatchException;
 			sourceTree = "<group>";
 		};
 		C9F3E85B1E3D9DAD00984605 /* CwlCatchExceptionSupport */ = {
@@ -128,8 +140,7 @@
 				C9F3E85C1E3D9DAD00984605 /* CwlCatchException.m */,
 				C9F3E85D1E3D9DAD00984605 /* include */,
 			);
-			name = CwlCatchExceptionSupport;
-			path = Sources/CwlCatchExceptionSupport;
+			path = CwlCatchExceptionSupport;
 			sourceTree = "<group>";
 		};
 		C9F3E85D1E3D9DAD00984605 /* include */ = {
