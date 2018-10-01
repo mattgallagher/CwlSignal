@@ -27,6 +27,8 @@
 		C93FBC282160FF9B00DFCF0E /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44E52160F2EA0028B2AC /* CwlUtils.framework */; };
 		C93FBC4D216101A400DFCF0E /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */; };
 		C93FBC4E216101AC00DFCF0E /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */; };
+		C98AE7A02162474D004259B6 /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98AE79E2162473A004259B6 /* CwlCatchException.framework */; };
+		C98AE7A121624753004259B6 /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98AE79E2162473A004259B6 /* CwlCatchException.framework */; };
 		C98C44ED2160F3660028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */; };
 		C98C44F12160F3AC0028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */; };
 		C98C44FA2160F3CF0028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44E52160F2EA0028B2AC /* CwlUtils.framework */; };
@@ -132,7 +134,8 @@
 
 /* Begin PBXFileReference section */
 		C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalChannel.swift; sourceTree = "<group>"; };
-		C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CwlPreconditionTesting.framework; path = "../../../Library/Developer/Xcode/DerivedData/CwlSignal-fgqufulbtgqbuhdidhdglcxriznm/Build/Products/Debug/CwlPreconditionTesting.framework"; sourceTree = "<group>"; };
+		C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CwlPreconditionTesting.framework; sourceTree = "<group>"; };
+		C98AE79E2162473A004259B6 /* CwlCatchException.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CwlCatchException.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CwlUtils.xcodeproj; path = CwlUtils/CwlUtils.xcodeproj; sourceTree = "<group>"; };
 		C9DD3D761E41CD9000E23B15 /* CwlSignal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CwlSignal.h; sourceTree = "<group>"; };
 		C9DD3D781E41CD9F00E23B15 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -167,6 +170,7 @@
 				C98C44F12160F3AC0028B2AC /* CwlUtils.framework in Frameworks */,
 				C9DD3DA31E41DFBA00E23B15 /* CwlSignal.framework in Frameworks */,
 				C93FBC4E216101AC00DFCF0E /* CwlPreconditionTesting.framework in Frameworks */,
+				C98AE7A121624753004259B6 /* CwlCatchException.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -185,6 +189,7 @@
 				C98C44FA2160F3CF0028B2AC /* CwlUtils.framework in Frameworks */,
 				OBJ_230 /* CwlSignal.framework in Frameworks */,
 				C93FBC4D216101A400DFCF0E /* CwlPreconditionTesting.framework in Frameworks */,
+				C98AE7A02162474D004259B6 /* CwlCatchException.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -194,10 +199,11 @@
 		C93FBC452161015700DFCF0E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C98AE79E2162473A004259B6 /* CwlCatchException.framework */,
 				C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
+			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		C98C44CD2160F22E0028B2AC /* Dependencies */ = {
 			isa = PBXGroup;
