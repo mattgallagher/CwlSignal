@@ -24,6 +24,9 @@
 /* Begin PBXBuildFile section */
 		C90BDC541F01FEC300112A54 /* CwlSignalChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */; };
 		C90BDC551F01FEC300112A54 /* CwlSignalChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */; };
+		C93FBC282160FF9B00DFCF0E /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44E52160F2EA0028B2AC /* CwlUtils.framework */; };
+		C93FBC4D216101A400DFCF0E /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */; };
+		C93FBC4E216101AC00DFCF0E /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */; };
 		C98C44ED2160F3660028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */; };
 		C98C44F12160F3AC0028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */; };
 		C98C44FA2160F3CF0028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44E52160F2EA0028B2AC /* CwlUtils.framework */; };
@@ -129,6 +132,7 @@
 
 /* Begin PBXFileReference section */
 		C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalChannel.swift; sourceTree = "<group>"; };
+		C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CwlPreconditionTesting.framework; path = "../../../Library/Developer/Xcode/DerivedData/CwlSignal-fgqufulbtgqbuhdidhdglcxriznm/Build/Products/Debug/CwlPreconditionTesting.framework"; sourceTree = "<group>"; };
 		C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CwlUtils.xcodeproj; path = CwlUtils/CwlUtils.xcodeproj; sourceTree = "<group>"; };
 		C9DD3D761E41CD9000E23B15 /* CwlSignal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CwlSignal.h; sourceTree = "<group>"; };
 		C9DD3D781E41CD9F00E23B15 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -162,6 +166,7 @@
 			files = (
 				C98C44F12160F3AC0028B2AC /* CwlUtils.framework in Frameworks */,
 				C9DD3DA31E41DFBA00E23B15 /* CwlSignal.framework in Frameworks */,
+				C93FBC4E216101AC00DFCF0E /* CwlPreconditionTesting.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -169,6 +174,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
+				C93FBC282160FF9B00DFCF0E /* CwlUtils.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -178,16 +184,26 @@
 			files = (
 				C98C44FA2160F3CF0028B2AC /* CwlUtils.framework in Frameworks */,
 				OBJ_230 /* CwlSignal.framework in Frameworks */,
+				C93FBC4D216101A400DFCF0E /* CwlPreconditionTesting.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C93FBC452161015700DFCF0E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		C98C44CD2160F22E0028B2AC /* Dependencies */ = {
 			isa = PBXGroup;
 			children = (
 				C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */,
+				C93FBC452161015700DFCF0E /* Frameworks */,
 			);
 			path = Dependencies;
 			sourceTree = "<group>";
@@ -693,6 +709,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Dependencies",
+				);
 				INFOPLIST_FILE = Tests/CwlSignalTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				OTHER_LDFLAGS = "$(inherited)";
@@ -707,6 +727,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Dependencies",
+				);
 				INFOPLIST_FILE = Tests/CwlSignalTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
 				OTHER_LDFLAGS = "$(inherited)";
