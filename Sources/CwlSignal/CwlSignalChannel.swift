@@ -313,6 +313,10 @@ extension SignalChannel {
 		return next { $0.buffer(interval: interval, timeshift: timeshift, context: context) }
 	}
 	
+	public func compactOptionals<U>() -> SignalChannel<InputValue, Input, U, Signal<U>> where OutputValue == Optional<U> {
+		return next { $0.compactOptionals() }
+	}
+		
 	public func compactMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U?) -> SignalChannel<InputValue, Input, U, Signal<U>> {
 		return next { $0.compactMap(context: context, processor) }
 	}

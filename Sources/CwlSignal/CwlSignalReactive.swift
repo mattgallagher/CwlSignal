@@ -506,7 +506,7 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func filterOptionals<U>() -> Signal<U> where OutputValue == Optional<U> {
+	public func compactOptionals<U>() -> Signal<U> where OutputValue == Optional<U> {
 		return transform() { (r: Result<Optional<U>>, n: SignalNext<U>) in
 			switch r {
 			case .success(.some(let v)): n.send(value: v)

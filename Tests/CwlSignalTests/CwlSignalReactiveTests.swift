@@ -609,9 +609,9 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(r3?.at(7)?.isSignalComplete == true)
 	}
 	
-	func testFilterOptionals() {
+	func testCompactOptionals() {
 		var results = [Result<Int>]()
-		_ = Signal<Int?>.just(1, nil, 2, nil).filterOptionals().subscribe { r in results.append(r) }
+		_ = Signal<Int?>.just(1, nil, 2, nil).compactOptionals().subscribe { r in results.append(r) }
 		XCTAssert(results.count == 3)
 		XCTAssert(results.at(0)?.value == 1)
 		XCTAssert(results.at(1)?.value == 2)
