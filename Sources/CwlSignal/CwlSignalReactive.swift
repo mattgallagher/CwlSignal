@@ -1200,16 +1200,35 @@ extension SignalInterface {
 		}
 	}
 	
-	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output also includes the value from the trigger signal, like a `withLatestFrom` with self and the parameter reversed.
+	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output is sent every time self emits, not just when sample has changed since self last emitted.
 	///
 	/// See also: `combineLatest`, `sample` and `throttleFirst` which have similar but slightly different emitting scenarios.
 	///
-	/// - Parameter trigger: instructs the result to emit the last value from `self`
-	/// - Returns: a signal that, when a value is received from `trigger`, emits the last value (if any) received from `self`.
-	public func withLatestFrom<Interface: SignalInterface>(_ sample: Interface) -> Signal<(trigger: OutputValue, sample: Interface.OutputValue)> {
-		return combine(sample, initialState: nil, context: .direct) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>, n: SignalNext<(trigger: OutputValue, sample: Interface.OutputValue)>) -> Void in
+	/// - Parameter sample: the latest value from this signal will be emitted whenever `self` emits
+	/// - Returns: a signal that emits the latest value from `sample` each time `self` emits
+	public func withLatestFrom<Interface: SignalInterface>(_ sample: Interface) -> Signal<Interface.OutputValue> {
+		return combine(sample, initialState: nil, context: .direct) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>, n: SignalNext<Interface.OutputValue>) -> Void in
 			switch (c, last) {
-			case (.result1(.success(let t)), .some(let l)): n.send(value: (trigger: t, sample: l))
+			case (.result1(.success), .some(let l)): n.send(value: l)
+			case (.result1(.success), _): break
+			case (.result1(.failure(let e)), _): n.send(error: e)
+			case (.result2(.success(let v)), _): last = v
+			case (.result2(.failure(let e)), _): n.send(error: e)
+			}
+		}
+	}
+	
+	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that a function is run to generate the emitted value each time self emits. The function is passed the value emitted from `self` and the last emitted value from the `sample` signal parameter.
+	///
+	/// See also: `combineLatest`, `sample` and `throttleFirst` which have similar but slightly different emitting scenarios.
+	///
+	/// - Parameter sample: a signal whose latest value will be used each time `self` emits
+	/// - Parameter processor: produces the outputs values
+	/// - Returns: a signal that, when a value is received from `trigger`, emits the result or performing `processor`.
+	public func withLatestFrom<Interface: SignalInterface, R>(_ sample: Interface, context: Exec = .direct, _ processor: @escaping (OutputValue, Interface.OutputValue) -> R) -> Signal<R> {
+		return combine(sample, initialState: nil, context: context) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>, n: SignalNext<R>) -> Void in
+			switch (c, last) {
+			case (.result1(.success(let left)), .some(let right)): n.send(value: processor(left, right))
 			case (.result1(.success), _): break
 			case (.result1(.failure(let e)), _): n.send(error: e)
 			case (.result2(.success(let v)), _): last = v
