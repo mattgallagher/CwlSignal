@@ -224,7 +224,7 @@ class SignalReactiveTests: XCTestCase {
 		}
 		XCTAssert(results.isEmpty)
 		
-		var delays = [Cancellable]()
+		var delays = [Lifetime]()
 		for i in 1...20 {
 			delays += coordinator.direct.singleTimer(interval: .interval(0.45 * Double(i))) {
 				input.send(value: i)
@@ -922,7 +922,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
 		let (input, signal) = Signal<Int>.create()
-		var delayedInputs = [Cancellable]()
+		var delayedInputs = [Lifetime]()
 		let delays: [Int] = [4, 8, 12, 16, 60, 64, 68, 72, 120, 124, 128, 170, 174, 220, 224]
 		for i in 0..<delays.count {
 			delayedInputs.append(coordinator.main.singleTimer(interval: .milliseconds(delays[i])) {
@@ -954,7 +954,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<Int>]()
 		let coordinator = DebugContextCoordinator()
 		let (input, signal) = Signal<Int>.create()
-		var delayedInputs = [Cancellable]()
+		var delayedInputs = [Lifetime]()
 		let delays: [Int] = [4, 8, 12, 16, 60, 64, 68, 72, 120, 124, 128, 170, 174, 220, 224]
 		for i in 0..<delays.count {
 			delayedInputs.append(coordinator.main.singleTimer(interval: .milliseconds(delays[i])) {
@@ -2095,7 +2095,7 @@ class SignalReactiveTests: XCTestCase {
 			results.append(r)
 		}
 
-		var delayedInputs = [Cancellable]()
+		var delayedInputs = [Lifetime]()
 		let delays: [Int] = [20, 80, 150, 250, 300]
 		for i in 0..<delays.count {
 			delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(delays[i])) {
@@ -2130,7 +2130,7 @@ class SignalReactiveTests: XCTestCase {
 			results.append(r)
 		}
 
-		var delayedInputs = [Cancellable]()
+		var delayedInputs = [Lifetime]()
 		let delays: [Int] = [20, 80, 150, 250, 300]
 		for i in 0..<delays.count {
 			delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(delays[i])) {
@@ -2163,7 +2163,7 @@ class SignalReactiveTests: XCTestCase {
 			results.append(r)
 		}
 		
-		var delayedInputs = [Cancellable]()
+		var delayedInputs = [Lifetime]()
 		let delays: [Int] = [20, 80, 150, 250, 300]
 		for i in 0..<delays.count {
 			delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(delays[i])) {

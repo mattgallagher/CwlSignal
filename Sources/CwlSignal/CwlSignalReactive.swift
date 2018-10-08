@@ -209,7 +209,7 @@ extension SignalInterface where OutputValue == Int {
 	public static func interval(_ interval: DispatchTimeInterval = .seconds(1), initial initialInterval: DispatchTimeInterval? = nil, context: Exec = .global) -> Signal<Int> {
 		// We need to protect the `count` variable and make sure that out-of-date timers don't update it so we use a `serialized` context for the `generate` and the timers, since the combination of the two will ensure that these requirements are met.
 		let serialContext = context.serialized()
-		var timer: Cancellable? = nil
+		var timer: Lifetime? = nil
 		var count = 0
 		
 		return Signal<Int>.generate(context: serialContext) { input in
@@ -293,7 +293,7 @@ extension Signal {
 	///   - context: execution context where the timer will be run
 	/// - Returns: the timer signal
 	public static func timer(interval: DispatchTimeInterval, value: OutputValue? = nil, context: Exec = .global) -> Signal<OutputValue> {
-		var timer: Cancellable? = nil
+		var timer: Lifetime? = nil
 		return Signal<OutputValue>.generate(context: context) { input in
 			if let i = input {
 				timer = context.singleTimer(interval: interval) {
@@ -936,7 +936,7 @@ extension SignalInterface {
 	/// - Returns: a signal where a timer is started when a value is received and emitted and further values received within that `interval` will be dropped.
 	public func throttleFirst(interval: DispatchTimeInterval, context: Exec = .direct) -> Signal<OutputValue> {
 		let timerQueue = context.serialized()
-		var timer: Cancellable? = nil
+		var timer: Lifetime? = nil
 		return transform(initialState: nil, context: timerQueue) { (cleanup: inout OnDelete?, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
 			cleanup = cleanup ?? OnDelete {
 				timer = nil
@@ -1932,7 +1932,7 @@ fileprivate class RetryRecovery<U> {
 	let catchTypes: SignalClosePropagation
 	var state: U
 	let context: Exec
-	var timer: Cancellable? = nil
+	var timer: Lifetime? = nil
 	init(shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?, catchTypes: SignalClosePropagation, state: U, context: Exec) {
 		self.shouldRetry = shouldRetry
 		self.catchTypes = catchTypes

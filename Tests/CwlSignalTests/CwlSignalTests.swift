@@ -961,7 +961,7 @@ class SignalTests: XCTestCase {
 	
 	func testJunctionSignal() {
 		var results = [Result<Int>]()
-		var outputs = [Cancellable]()
+		var outputs = [Lifetime]()
 		
 		do {
 			let signal = Signal<Int>.generate { i in _ = i?.send(value: 5) }

@@ -65,7 +65,7 @@ class ViewController: NSViewController {
 	// Connections to model objects
 	let login = Login()
 	let fileSelection = FileSelection()
-	var outputs = [Cancellable]()
+	var lifetimes = [Lifetime]()
 
 	override func loadView() {
 		// The view is an NSStackView (for layout convenience)
@@ -82,15 +82,15 @@ class ViewController: NSViewController {
 		view.layoutSubtreeIfNeeded()
 		
 		// Configure dynamic properties
-		outputs += login.signal
+		lifetimes += login.signal
 			.subscribe(context: .main) { loginResult in
 				self.loggedInStatusButton.state = (loginResult.value ?? false) ? .on : .off
 			}
-		outputs += fileSelection.signal
+		lifetimes += fileSelection.signal
 			.subscribe(context: .main) { r in
 				self.filesSelectedLabel.stringValue = "Selected file count: \(r.value?.count ?? 0)"
 			}
-		outputs += login.signal
+		lifetimes += login.signal
 			.combineLatest(fileSelection.signal) { isLoggedIn, selectedIndices in
 				isLoggedIn && !selectedIndices.isEmpty
 			}

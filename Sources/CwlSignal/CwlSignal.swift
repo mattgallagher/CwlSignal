@@ -1242,7 +1242,7 @@ public final class SignalMulti<OutputValue>: Signal<OutputValue> {
 }
 
 /// An `SignalInput` is used to send values to the "head" `Signal`s in a signal graph. It is created using the `Signal<T>.create()` function.
-public class SignalInput<InputValue>: Cancellable, SignalInputInterface {
+public class SignalInput<InputValue>: Lifetime, SignalInputInterface {
 	fileprivate final weak var signal: Signal<InputValue>?
 	fileprivate final let activationCount: Int
 	
@@ -1273,7 +1273,7 @@ public class SignalInput<InputValue>: Cancellable, SignalInputInterface {
 		return self
 	}
 	
-	/// Implementation of `Cancellable` that sends a `SignalComplete.cancelled`. You wouldn't generally invoke this yourself; it's intended to be invoked if the `SignalInput` owner is released and the `SignalInput` is no longer retained.
+	/// Implementation of `Lifetime` that sends a `SignalComplete.cancelled`. You wouldn't generally invoke this yourself; it's intended to be invoked if the `SignalInput` owner is released and the `SignalInput` is no longer retained.
 	public func cancel() {
 		_ = send(result: .failure(SignalComplete.cancelled))
 	}
@@ -2276,7 +2276,7 @@ fileprivate func bindFunction<OutputValue>(processor: SignalProcessor<OutputValu
 }
 
 /// A junction is a point in the signal graph that can be disconnected and reconnected at any time. Constructed implicitly by calling `bind(to:...)` or explicitly by calling `junction()` on an `Signal`.
-public class SignalJunction<OutputValue>: SignalProcessor<OutputValue, OutputValue>, Cancellable {
+public class SignalJunction<OutputValue>: SignalProcessor<OutputValue, OutputValue>, Lifetime {
 	private var disconnectOnError: ((SignalJunction<OutputValue>, Error, SignalInput<OutputValue>) -> ())? = nil
 	
 	// Constructs a "bind" handler
@@ -2328,12 +2328,12 @@ public class SignalJunction<OutputValue>: SignalProcessor<OutputValue, OutputVal
 		return result
 	}
 	
-	/// Implementation of `Cancellable` simply invokes a `disconnect()`
+	/// Implementation of `Lifetime` simply invokes a `disconnect()`
 	public func cancel() {
 		_ = disconnect()
 	}
 	
-	// Implementation of `Cancellable` requires `cancel` is called in the `deinit`
+	// Implementation of `Lifetime` requires `cancel` is called in the `deinit`
 	deinit {
 		cancel()
 	}
@@ -2416,7 +2416,7 @@ struct SignalCaptureParam<OutputValue> {
 
 /// A "capture" handler separates activation signals (those sent immediately on connection) from normal signals. This allows activation signals to be handled separately or removed from the stream entirely.
 /// NOTE: this handler *blocks* delivery between capture and connecting to the output. Signals sent in the meantime are queued.
-public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, OutputValue>, Cancellable {
+public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, OutputValue>, Lifetime {
 	private var sendAsNormal: Bool = false
 	private var capturedError: Error? = nil
 	private var capturedValues: [OutputValue] = []
@@ -2589,12 +2589,12 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 		return result
 	}
 	
-	/// Implementation of `Cancellable` simply invokes a `disconnect()`
+	/// Implementation of `Lifetime` simply invokes a `disconnect()`
 	public func cancel() {
 		_ = self.disconnect()
 	}
 	
-	// Implementation of `Cancellable` requires `cancel` is called in the `deinit`
+	// Implementation of `Lifetime` requires `cancel` is called in the `deinit`
 	deinit {
 		cancel()
 	}
@@ -2849,7 +2849,7 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 		return singleInput().send(result: result)
 	}
 	
-	/// Implementation of `Cancellable` removes all inputs and sends a `SignalComplete.cancelled` to the destination.
+	/// Implementation of `Lifetime` removes all inputs and sends a `SignalComplete.cancelled` to the destination.
 	public final override func cancel() {
 		guard let sig = signal else { return }
 		var dw = DeferredWork()
@@ -2936,7 +2936,7 @@ public class SignalMergedInput<InputValue>: SignalMultiInput<InputValue> {
 ///	1. a `handler` function which receives signal values and errors
 ///	2. upon connecting to the graph, `SignalOutput` "activates" the signal graph (which allows sending through the graph to occur and may trigger some "on activation" behavior).
 /// This class is instantiated by calling `subscribe` on any `Signal`.
-public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Cancellable {
+public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Lifetime {
 	private let userHandler: (Result<OutputValue>) -> Void
 	
 	/// Constructor called from `subscribe`
@@ -2969,14 +2969,14 @@ public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Cancel
 		return sync { signal.delivery.isDisabled }
 	}
 	
-	/// Implementatation of `Cancellable` forces deactivation
+	/// Implementatation of `Lifetime` forces deactivation
 	public func cancel() {
 		var dw = DeferredWork()
 		sync { if !signal.delivery.isDisabled { deactivateInternal(dueToLackOfOutputs: false, dw: &dw) } }
 		dw.runWork()
 	}
 	
-	// This is likely redundant but it's required by `Cancellable`
+	// This is likely redundant but it's required by `Lifetime`
 	deinit {
 		cancel()
 	}

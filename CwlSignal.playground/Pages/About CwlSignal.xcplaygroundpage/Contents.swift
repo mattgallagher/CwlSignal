@@ -29,7 +29,7 @@ In many cases, the effect is similar to Rx: `Signal`s perform similar work to op
 
 However, compared to the 5 common traits I listed for Rx implementations, CwlSignal has the following traits:
 
-1. there is just one implementation of `Signal` which handles receiving of data from its `SignalInput`, processing of work in the private execution context and delivery of outputs to listeners
+1. there is just one implementation of `Signal` which handles receiving of data from its `SignalInput`, processing of work in the private execution context and delivery of values to listeners
 2. all synchronization, delivery ordering, asychrony, graph construction are managed by the `Signal` implementation
 3. operators in CwlSignal are built on underlying `Signal` operators – primarily `transform`, `combine` and `merge` – often in less than a dozen lines. The result is that custom operators are trivial to implement.
 4. subscribing multiple simultaneous times will never trigger multiple calculations of the same data – if a signal graph can be simultaneously subscribed, it must be constructed with rules stating how the data is shared (e.g. caching last value, replaying all values, sharing future values only)

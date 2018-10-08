@@ -629,12 +629,12 @@ extension SignalInterface {
 		input.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 	}
 	
-	/// Joins this `Signal` to a destination `SignalMultiInput` and returns a `Cancellable` that, when cancelled, will remove the `Signal` from the `SignalMultiInput` again.
+	/// Joins this `Signal` to a destination `SignalMultiInput` and returns a `Lifetime` that, when cancelled, will remove the `Signal` from the `SignalMultiInput` again.
 	///
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
-	/// - Returns: a `Cancellable` that will undo the bind if cancelled or released
-	public func cancellableBind<InputInterface>(to interface: InputInterface) -> Cancellable where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
+	/// - Returns: a `Lifetime` that will undo the bind if cancelled or released
+	public func cancellableBind<InputInterface>(to interface: InputInterface) -> Lifetime where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
 		let input = interface.input
 		if let multiInput = input as? SignalMultiInput<OutputValue> {
 			multiInput.add(signal)
@@ -649,12 +649,12 @@ extension SignalInterface {
 		}
 	}
 	
-	/// Joins this `Signal` to a destination `SignalMultiInput` and returns a `Cancellable` that, when cancelled, will remove the `Signal` from the `SignalMultiInput` again.
+	/// Joins this `Signal` to a destination `SignalMultiInput` and returns a `Lifetime` that, when cancelled, will remove the `Signal` from the `SignalMultiInput` again.
 	///
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
-	/// - Returns: a `Cancellable` that will undo the bind if cancelled or released
-	public func cancellableBind(to input: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) -> Cancellable {
+	/// - Returns: a `Lifetime` that will undo the bind if cancelled or released
+	public func cancellableBind(to input: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) -> Lifetime {
 		input.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return OnDelete { [weak input, weak signal] in
 			guard let i = input, let s = signal else { return }
@@ -665,7 +665,7 @@ extension SignalInterface {
 
 /// This class is used for disconnecting and reconnecting a preceeding signal subgraph from the succeeding signal subgraph. This is useful in cases where you have a generating signal that will automatically pause itself when disconnected (like `Signal.interval`) and you want to disconnect it and reconnect to take advantage of that pause and restart functionality.
 /// Internally, this class is a wrapper around a `SignalJunction` (which disconnects the succeeding graph) and a `Signal` (which is the head of the succeeding graph) and 
-public struct SignalReconnector<OutputValue>: Cancellable {
+public struct SignalReconnector<OutputValue>: Lifetime {
 	let queue = PThreadMutex()
 	var disconnectedInput: SignalInput<OutputValue>?
 	let junction: SignalJunction<OutputValue>
@@ -727,7 +727,7 @@ extension SignalInterface {
 ///
 /// **WARNING**: this class should be avoided where possible since it removes the "reactive" part of reactive programming (changes in the polled value must be detected through other means, usually another subscriber to the underlying `Signal`).
 ///
-public final class SignalLatest<OutputValue>: Cancellable {
+public final class SignalLatest<OutputValue>: Lifetime {
 	var output: SignalOutput<OutputValue>? = nil
 	var latest: Result<OutputValue>? = nil
 	let mutex = PThreadMutex()
