@@ -46,3 +46,16 @@ public protocol Lifetime {
 }
 
 public typealias Cancellable = Lifetime
+
+/// Just an array of Lifetime that conforms to Lifetime. While you can do this through conditional conformance, you can't handle Element == Lifetime at the sme time as Element: Lifetime or Element: LifetimeSubtype in Swift 4.2 so it's best to tread around the issue entirely.
+public struct AggregateLifetime: Lifetime {
+	public var lifetimes: [Lifetime]
+	public init(lifetimes: [Lifetime]) {
+		self.lifetimes = lifetimes
+	}
+	public mutating func cancel() {
+		for i in lifetimes.indices {
+			lifetimes[i].cancel()
+		}
+	}
+}
