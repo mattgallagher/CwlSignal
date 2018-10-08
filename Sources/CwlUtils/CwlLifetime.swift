@@ -20,7 +20,7 @@
 
 import Foundation
 
-/// This protocol exists to provide lifetime and termination capabilities to asynchronous an ongoing tasks (an implementation of the "Disposable" pattern).
+/// This protocol exists to keep alive and terminate-at-will asynchronous and ongoing tasks (an implementation of the "Disposable" pattern).
 ///
 /// While conformance to this protocol requires just one function, conforming to this protocol also signals three important traits:
 ///    1. instances manage an underlying resource
@@ -41,19 +41,11 @@ import Foundation
 ///
 /// The protocol requires the `cancel` function exist but it is up to conforming types to follow the rules.
 public protocol Lifetime {
-    /// Immediately set the resource managed by this instance to an "end-of-life" state.
-    mutating func cancel()
-}
-
-public extension Lifetime {
-	/// Synonym for `cancel()`
-	mutating func dispose() {
-		cancel()
-	}
+	/// Immediately set the resource managed by this instance to an "end-of-life" state.
+	mutating func cancel()
 }
 
 public typealias Cancellable = Lifetime
-public typealias Disposable = Lifetime
 
 /// A simple array, aggregating a number of Lifetime instances into a single Lifetime.
 /// Once conditional conformances are available in Swift (possibly in Swift 4.1 at this stage) this could be replaced with `extension Array: Lifetime where Element: Lifetime`.
