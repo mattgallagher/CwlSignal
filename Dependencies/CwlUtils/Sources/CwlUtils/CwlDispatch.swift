@@ -97,7 +97,7 @@ public extension DispatchTime {
 }
 
 public extension DispatchTimeInterval {
-	public static func from(seconds: Double) -> DispatchTimeInterval {
+	public static func interval(_ seconds: TimeInterval) -> DispatchTimeInterval {
 		if MemoryLayout<Int>.size < 8 {
 			return .milliseconds(Int(seconds * Double(NSEC_PER_SEC / NSEC_PER_MSEC)))
 		} else {
