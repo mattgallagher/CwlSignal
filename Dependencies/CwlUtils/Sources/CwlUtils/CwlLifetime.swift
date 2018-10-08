@@ -48,8 +48,8 @@ public protocol Lifetime {
 public typealias Cancellable = Lifetime
 
 /// A simple array, aggregating a number of Lifetime instances into a single Lifetime.
-/// Once conditional conformances are available in Swift (possibly in Swift 4.1 at this stage) this could be replaced with `extension Array: Lifetime where Element: Lifetime`.
-extension Array: Lifetime where Element: Lifetime {
+/// Ideally, this would be `where Element == Lifetime || Element: Lifetime` but that's not possible.
+extension Array: Lifetime where Element == Lifetime {
 	public mutating func cancel() {
 		for i in self.indices {
 			self[i].cancel()
