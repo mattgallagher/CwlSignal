@@ -161,6 +161,11 @@ class DispatchTests: XCTestCase {
 		withExtendedLifetime(timer) {}
 	}
 	
+	func testFromTimeInterval() {
+		let d = DispatchTimeInterval.interval(1.125)
+		XCTAssert(d.seconds == 1.125)
+	}
+	
 	func testToSeconds() {
 		let s = DispatchTimeInterval.seconds(1).seconds
 		XCTAssert(s > 0.99999999 && s < 1.00000001)

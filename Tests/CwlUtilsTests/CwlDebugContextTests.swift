@@ -552,8 +552,7 @@ class Service {
          }
          
          // Run the timeout timer
-         let timer = self.context.singleTimer(interval:
-            DispatchTimeInterval.from(seconds: seconds)) { [weak timerAndAction] in
+         let timer = self.context.singleTimer(interval: .interval(seconds)) { [weak timerAndAction] in
             // Cancel the connection if the timer fires first
             timerAndAction?.cancel()
             handler(.failure(ServiceError.timeout))
@@ -578,7 +577,7 @@ class StringService: Cancellable {
 	static let value = "Here's a string"
 	var timer: Cancellable
 	init(delay seconds: Double, context: Exec, handler: @escaping (Result<String>) -> ()) {
-		timer = context.singleTimer(interval: DispatchTimeInterval.from(seconds: seconds)) {
+		timer = context.singleTimer(interval: .interval(seconds)) {
 			handler(.success(StringService.value))
    	}
 	}
@@ -597,7 +596,7 @@ class NetworkService: Cancellable {
 	static let value = "Not really a network service"
 	var timer: Cancellable
 	init(context: Exec, handler: @escaping (Result<String>) -> ()) {
-		timer = context.singleTimer(interval: DispatchTimeInterval.from(seconds: 5.0)) {
+		timer = context.singleTimer(interval: .interval(5.0)) {
 			handler(.success(StringService.value))
    	}
 	}
