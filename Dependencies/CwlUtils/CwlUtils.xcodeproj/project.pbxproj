@@ -21,8 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		C95A622B1EA5D90C0059D152 /* CwlCancellable.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A622A1EA5D90C0059D152 /* CwlCancellable.swift */; };
-		C95A622C1EA5D90C0059D152 /* CwlCancellable.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A622A1EA5D90C0059D152 /* CwlCancellable.swift */; };
+		C95A622B1EA5D90C0059D152 /* CwlLifetime.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A622A1EA5D90C0059D152 /* CwlLifetime.swift */; };
+		C95A622C1EA5D90C0059D152 /* CwlLifetime.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A622A1EA5D90C0059D152 /* CwlLifetime.swift */; };
 		C95A772A1E4187E600659DBD /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A77291E4187E600659DBD /* AppDelegate.swift */; };
 		C95A772C1E4187E600659DBD /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A772B1E4187E600659DBD /* ViewController.swift */; };
 		C95A772E1E4187E600659DBD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C95A772D1E4187E600659DBD /* Assets.xcassets */; };
@@ -251,7 +251,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		C95A622A1EA5D90C0059D152 /* CwlCancellable.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlCancellable.swift; sourceTree = "<group>"; };
+		C95A622A1EA5D90C0059D152 /* CwlLifetime.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlLifetime.swift; sourceTree = "<group>"; };
 		C95A77271E4187E600659DBD /* CwlUtils_macOSTestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CwlUtils_macOSTestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C95A77291E4187E600659DBD /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C95A772B1E4187E600659DBD /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -519,7 +519,6 @@
 			isa = PBXGroup;
 			children = (
 				OBJ_16 /* CwlAddressInfo.swift */,
-				C95A622A1EA5D90C0059D152 /* CwlCancellable.swift */,
 				OBJ_17 /* CwlCollection.swift */,
 				OBJ_18 /* CwlDebugContext.swift */,
 				OBJ_19 /* CwlDeferredWork.swift */,
@@ -527,6 +526,7 @@
 				OBJ_21 /* CwlDispatch.swift */,
 				OBJ_22 /* CwlExec.swift */,
 				OBJ_23 /* CwlKeyValueObserver.swift */,
+				C95A622A1EA5D90C0059D152 /* CwlLifetime.swift */,
 				OBJ_24 /* CwlMutex.swift */,
 				OBJ_25 /* CwlOnDelete.swift */,
 				OBJ_26 /* CwlRandom.swift */,
@@ -1038,7 +1038,7 @@
 				C95BDEA81E41688B00AAA64B /* CwlResult.swift in Sources */,
 				C95BDEA91E41688B00AAA64B /* CwlScalarScanner.swift in Sources */,
 				C95BDEAA1E41688B00AAA64B /* CwlStackFrame.swift in Sources */,
-				C95A622C1EA5D90C0059D152 /* CwlCancellable.swift in Sources */,
+				C95A622C1EA5D90C0059D152 /* CwlLifetime.swift in Sources */,
 				C95ADE862144CF3900EA820D /* CwlTransformations.swift in Sources */,
 				C95BDEAB1E41688B00AAA64B /* CwlSysctl.swift in Sources */,
 				C95BDEAC1E41688B00AAA64B /* CwlUnanticipatedError.swift in Sources */,
@@ -1091,7 +1091,7 @@
 				OBJ_165 /* CwlResult.swift in Sources */,
 				OBJ_166 /* CwlScalarScanner.swift in Sources */,
 				OBJ_167 /* CwlStackFrame.swift in Sources */,
-				C95A622B1EA5D90C0059D152 /* CwlCancellable.swift in Sources */,
+				C95A622B1EA5D90C0059D152 /* CwlLifetime.swift in Sources */,
 				C95ADE872144CF3900EA820D /* CwlTransformations.swift in Sources */,
 				OBJ_168 /* CwlSysctl.swift in Sources */,
 				OBJ_169 /* CwlUnanticipatedError.swift in Sources */,

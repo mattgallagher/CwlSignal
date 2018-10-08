@@ -65,7 +65,7 @@ class DebugContextTests: XCTestCase {
 		let coordinator = DebugContextCoordinator()
 		var checkpoint1 = false
 		var checkpoint2 = false
-		var timer2: Cancellable? = nil
+		var timer2: Lifetime? = nil
 		let timer1 = coordinator.direct.singleTimer(interval: .seconds(10), leeway: .seconds(0)) {
 			checkpoint1 = true
 			
@@ -113,7 +113,7 @@ class DebugContextTests: XCTestCase {
 	func testDirectPeriodicTimer() {
 		let coordinator = DebugContextCoordinator()
 		var results = [(Int, UInt64)]()
-		var timer1: Cancellable? = nil
+		var timer1: Lifetime? = nil
 		timer1 = coordinator.direct.periodicTimer(interval: .seconds(3), leeway: .seconds(0)) {
 			results.append((0, coordinator.currentTime))
 			
@@ -121,7 +121,7 @@ class DebugContextTests: XCTestCase {
 				timer1?.cancel()
 			}
 		}
-		var timer2: Cancellable? = nil
+		var timer2: Lifetime? = nil
 		timer2 = coordinator.direct.periodicTimer(interval: .seconds(10), leeway: .seconds(0)) {
 			results.append((1, coordinator.currentTime))
 			
@@ -146,7 +146,7 @@ class DebugContextTests: XCTestCase {
 	func testDirectPeriodicTimerWithParameter() {
 		let coordinator = DebugContextCoordinator()
 		var results = [(Int, UInt64)]()
-		var timer1: Cancellable? = nil
+		var timer1: Lifetime? = nil
 		timer1 = coordinator.direct.periodicTimer(parameter: 23, interval: .seconds(3), leeway: .seconds(0)) { p in
 			XCTAssert(p == 23)
 			results.append((0, coordinator.currentTime))
@@ -155,7 +155,7 @@ class DebugContextTests: XCTestCase {
 				timer1?.cancel()
 			}
 		}
-		var timer2: Cancellable? = nil
+		var timer2: Lifetime? = nil
 		timer2 = coordinator.direct.periodicTimer(parameter: 45, interval: .seconds(10), leeway: .seconds(0)) { p in
 			XCTAssert(p == 45)
 			results.append((1, coordinator.currentTime))
@@ -495,9 +495,9 @@ class DebugContextTests: XCTestCase {
 	}
 }
 
-class CancellableTimerAndAction: Cancellable {
-	var timer: Cancellable? = nil
-	var action: Cancellable? = nil
+class LifetimeTimerAndAction: Lifetime {
+	var timer: Lifetime? = nil
+	var action: Lifetime? = nil
 	init() {
 	}
 	func cancel() {
@@ -510,10 +510,10 @@ class Service {
    // This service performs one action at a time, lifetime tied to the service
 	// The service retains the timeout timer which, in turn, returns the
 	// underlying service
-   var currentAction: Cancellable? = nil
+   var currentAction: Lifetime? = nil
    
 	// Define the interface for the underlying connection
-	typealias ConnectionFunction = (Exec, @escaping (Result<String>) -> ()) -> Cancellable
+	typealias ConnectionFunction = (Exec, @escaping (Result<String>) -> ()) -> Lifetime
 
    // This is the configurable connection to the underlying service
    let underlyingConnect: ConnectionFunction
@@ -529,20 +529,20 @@ class Service {
 
    // This `Service` invokes the `underlyingConnect` and starts a timer
    func connect(timeout seconds: Double, handler: @escaping (Result<String>) -> ()) {
-      var previousAction: Cancellable? = nil
+      var previousAction: Lifetime? = nil
       context.invokeAndWait {
          previousAction = self.currentAction
 
          // The action and the timer need to be cross-linked (each referring to the other).
          // This would be a reference counted loop so we need to make sure they refer to
-         // each other weakly. That is done through this `CancellableTimerAndAction` object
+         // each other weakly. That is done through this `LifetimeTimerAndAction` object
          // which does nothing except hold the timer and action and invoke `cancel` on them
          // when `cancel` is invoked upon it.
          // 
          // Using an "action-specific" object instead of `self` (which might be resused
          // later with another timer and action) prevents this action accidentally
          // interfering with a subsequent action if this action is replaced.
-         let timerAndAction = CancellableTimerAndAction()
+         let timerAndAction = LifetimeTimerAndAction()
 			
       	// Run the underlying connection
          let underlyingAction = self.underlyingConnect(self.context) { [weak timerAndAction] result in
@@ -573,9 +573,9 @@ enum ServiceError: Error {
 }
 
 // Used as a drop-in replacement for NetworkService to illustrate dependency injection.
-class StringService: Cancellable {
+class StringService: Lifetime {
 	static let value = "Here's a string"
-	var timer: Cancellable
+	var timer: Lifetime
 	init(delay seconds: Double, context: Exec, handler: @escaping (Result<String>) -> ()) {
 		timer = context.singleTimer(interval: .interval(seconds)) {
 			handler(.success(StringService.value))
@@ -592,9 +592,9 @@ class StringService: Cancellable {
 }
 
 // Dummy network service used to fulfill interface requirements. Obviously, doesn't really connect to the network but you could imagine something that fetches an HTTP resource.
-class NetworkService: Cancellable {
+class NetworkService: Lifetime {
 	static let value = "Not really a network service"
-	var timer: Cancellable
+	var timer: Lifetime
 	init(context: Exec, handler: @escaping (Result<String>) -> ()) {
 		timer = context.singleTimer(interval: .interval(5.0)) {
 			handler(.success(StringService.value))
