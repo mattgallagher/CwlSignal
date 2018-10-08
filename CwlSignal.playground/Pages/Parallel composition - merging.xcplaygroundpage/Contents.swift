@@ -15,16 +15,16 @@ Let's look at how the different merging patterns work by exammining three differ
 import CwlSignal
 
 // Some signals that we'll use for the remainder of this page
-let smileys = Signal<String>.from("😀", "🙃", "😉", "🤣").playback()
+let smileys = Signal<String>.just("😀", "🙃", "😉", "🤣").playback()
 let spookeys = Signal<String>
 	.from(
-		sequence: ["👻", "🎃", "👹", "😈"],
+		["👻", "🎃", "👹", "😈"],
 		error: SignalComplete.closed
 	)
 	.playback()
 let animals = Signal<String>
 	.from(
-		sequence: ["🐶", "🐱", "🐭", "🐨"],
+		["🐶", "🐱", "🐭", "🐨"],
 		error: SignalReactiveError.timeout
 	)
 	.playback()

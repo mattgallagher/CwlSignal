@@ -43,7 +43,7 @@ PlaygroundPage.current.liveView = ViewController(nibName: nil, bundle: nil).view
 // This is a dummy Login class. Every 3.0 seconds, it toggles login on the background thread
 class Login {
 	let signal = Signal
-		.interval(.from(seconds: 3.0))
+		.interval(.seconds(3))
 		.map { v in v % 2 == 0 }
 		.continuous(initialValue: false)
 }
@@ -51,7 +51,7 @@ class Login {
 // This is a FileSelection class. Every 0.75 seconds, it changes the number of selected files on the main thread
 class FileSelection {
 	let signal = Signal
-		.interval(.from(seconds: 0.75), context: .main)
+		.interval(.interval(0.75), context: .main)
 		.map { v in Array<Int>(repeating: 0, count: v % 3) }
 		.continuous(initialValue: Array<Int>())
 }

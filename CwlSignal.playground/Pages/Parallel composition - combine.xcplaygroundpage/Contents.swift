@@ -17,8 +17,8 @@ import CwlSignal
 let semaphore = DispatchSemaphore(value: 0)
 
 // Two signals compete, over time
-let intSignal = Signal<Int>.timer(interval: .from(seconds: 1), value: 1234)
-let doubleSignal = Signal<Double>.timer(interval: .from(seconds: 0.5), value: 0.1234)
+let intSignal = Signal<Int>.timer(interval: .seconds(1), value: 1234)
+let doubleSignal = Signal<Double>.timer(interval: .interval(0.5), value: 0.1234)
 
 // The signals are combined – first to send a value wins
 // SOMETHING TO TRY: change the `fromSeconds` timing values, above, to let the `Int` signal arrive first.
