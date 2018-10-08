@@ -46,13 +46,3 @@ public protocol Lifetime {
 }
 
 public typealias Cancellable = Lifetime
-
-/// A simple array, aggregating a number of Lifetime instances into a single Lifetime.
-/// Ideally, this would be `where Element == Lifetime || Element: Lifetime` but that's not possible.
-extension Array: Lifetime where Element == Lifetime {
-	public mutating func cancel() {
-		for i in self.indices {
-			self[i].cancel()
-		}
-	}
-}
