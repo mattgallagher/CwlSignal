@@ -53,7 +53,7 @@ extension Signal {
 	/// - parameter error: The error with which to close the sequence. Can be `nil` to leave the sequence open (default: `SignalComplete.closed`)
 	/// - parameter context: the `Exec` where the `SequenceType` will be enumerated (default: .direct).
 	/// - returns: a signal that emits `values` and then closes
-	public static func from<S: Sequence>(sequence: S, error: Error? = SignalComplete.closed, context: Exec = .direct) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
+	public static func from<S: Sequence>(_ sequence: S, error: Error? = SignalComplete.closed, context: Exec = .direct) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
 		if let e = error {
 			return generate(context: context) { input in
 				guard let i = input else { return }
@@ -80,7 +80,7 @@ extension Signal {
 	///
 	/// - returns: a non-sending, non-closing signal of the desired type
 	public static func never() -> Signal<OutputValue> {
-		return .from(sequence: [], error: nil)
+		return .from([], error: nil)
 	}
 	
 	/// - Implementation of [Reactive X operator "Just"](http://reactivex.io/documentation/operators/just.html)
@@ -93,7 +93,7 @@ extension Signal {
 	///   - error: if non-nil, sent after value to close the stream 
 	/// - Returns: a signal that will emit `value` and (optionally) close
 	public static func just(_ values: OutputValue..., error: Error? = SignalComplete.closed) -> Signal<OutputValue> {
-		return Signal<OutputValue>.from(sequence: values, error: error)
+		return Signal<OutputValue>.from(values, error: error)
 	}
 
 	/// - Implementation of [Reactive X operator "Throw"](http://reactivex.io/documentation/operators/empty-never-throw.html)
@@ -106,7 +106,7 @@ extension Signal {
 	///   - error: if non-nil, sent after value to close the stream 
 	/// - Returns: a signal that will emit `value` and (optionally) close
 	public static func error(_ error: Error) -> Signal<OutputValue> {
-		return Signal<OutputValue>.from(sequence: [], error: error)
+		return Signal<OutputValue>.from([], error: error)
 	}
 
 	/// - Implementation of [Reactive X operator "Empty"](http://reactivex.io/documentation/operators/empty-never-throw.html)
@@ -118,7 +118,7 @@ extension Signal {
 	///   - error: if non-nil, sent after value to close the stream 
 	/// - Returns: a signal that will emit `value` and (optionally) close
 	public static func empty() -> Signal<OutputValue> {
-		return Signal<OutputValue>.from(sequence: [])
+		return Signal<OutputValue>.from([])
 	}
 }
 
@@ -1543,7 +1543,7 @@ extension SignalInterface {
 	/// - Parameter sequence: a sequence of values.
 	/// - Returns: a signal that emits every value from `sequence` immediately before it starts mirroring `self`.
 	public func startWith<S: Sequence>(sequence: S) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
-		return Signal.from(sequence: sequence).combine(signal, initialState: false) { (alreadySent: inout Bool, r: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
+		return Signal.from(sequence).combine(signal, initialState: false) { (alreadySent: inout Bool, r: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .result1(.success(let v)):
 				if !alreadySent {
