@@ -20,7 +20,7 @@
 
 import Swift
 
-public final class OnDelete: Cancellable {
+public final class OnDelete: Lifetime {
 	var block: (() -> Void)?
 	
 	public init(_ b: @escaping () -> Void) {
@@ -33,6 +33,7 @@ public final class OnDelete: Cancellable {
 	
 	public func cancel() {
 		block?()
+		block = nil
 	}
 	
 	public var isValid: Bool {

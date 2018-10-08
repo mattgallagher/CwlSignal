@@ -127,8 +127,8 @@ public class DebugContextCoordinator {
 	
 	/// Performs all scheduled actions in a serial loop.
 	///
-	/// - parameter stoppingAfter: If nil, loop will continue until `stop` invoked or until no actions remain. If non-nil, loop will abort after an action matching Cancellable is completed.
-	public func runScheduledTasks(stoppingAfter: (AnyObject & Cancellable)? = nil) {
+	/// - parameter stoppingAfter: If nil, loop will continue until `stop` invoked or until no actions remain. If non-nil, loop will abort after an action matching Lifetime is completed.
+	public func runScheduledTasks(stoppingAfter: (AnyObject & Lifetime)? = nil) {
 		stopRequested = false
 		currentThread = .unspecified
 		while !stopRequested, let nextTimer = runNextTask() {
@@ -145,7 +145,7 @@ public class DebugContextCoordinator {
 	
 	/// Performs all scheduled actions in a serial loop.
 	///
-	/// - parameter stoppingAfter: If nil, loop will continue until `stop` invoked or until no actions remain. If non-nil, loop will abort after an action matching Cancellable is completed.
+	/// - parameter stoppingAfter: If nil, loop will continue until `stop` invoked or until no actions remain. If non-nil, loop will abort after an action matching Lifetime is completed.
 	public func runScheduledTasks(untilTime: UInt64) {
 		stopRequested = false
 		currentThread = .unspecified
@@ -358,26 +358,26 @@ public struct DebugContext: ExecutionContext {
 		}
 	}
 
-	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		guard let c = coordinator else { return DebugContextTimer() }
 		return c.schedule(block: handler, thread: thread, timeInterval: interval.nanoseconds, repeats: false)
 	}
 
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
 		guard let c = coordinator else { return DebugContextTimer() }
 		return c.schedule(block: { handler(parameter) }, thread: thread, timeInterval: interval.nanoseconds, repeats: false)
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		guard let c = coordinator else { return DebugContextTimer() }
 		return c.schedule(block: handler, thread: thread, timeInterval: interval.nanoseconds, repeats: true)
 	}
 
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
 		guard let c = coordinator else { return DebugContextTimer() }
 		return c.schedule(block: { handler(parameter) }, thread: thread, timeInterval: interval.nanoseconds, repeats: true)
 	}
@@ -390,7 +390,7 @@ public struct DebugContext: ExecutionContext {
 }
 
 // All actions scheduled with a `DebugContextCoordinator` are referenced by a DebugContextTimer (even those actions that are simply asynchronous invocations without a delay).
-class DebugContextTimer: Cancellable {
+class DebugContextTimer: Lifetime {
 	let thread: DebugContextThread
 	let rescheduleInterval: UInt64?
 	weak var coordinator: DebugContextCoordinator?
@@ -407,7 +407,7 @@ class DebugContextTimer: Cancellable {
 		self.rescheduleInterval = rescheduleInterval
 	}
 	
-	/// Cancellable implementation
+	/// Lifetime implementation
 	public func cancel() {
 		coordinator?.cancelTimer(self)
 		coordinator = nil

@@ -33,7 +33,7 @@ import Foundation
 /// This class is memory safe even when observations are triggered concurrently from different threads.
 /// Do note though that while all changes are registered under the mutex, callbacks are invoked *outside* the mutex, so it is possible for callbacks to be invoked in a different order than the internal synchronized order.
 /// In general, this shouldn't be a problem (since key-value observing is not itself synchronized so there *isn't* an authoritative ordering). However, this may cause unexpected behavior if you invoke `cancel` on this class. If you `cancel` the `KeyValueObserver` while it is concurrently processing changes on another thread, this might result in callback invocations occurring *after* the call to `cancel`. This will only happen if the changes associated with those callbacks were received *before* the `cancel` - it's just the callback that's getting invoked later.
-public class KeyValueObserver: NSObject, Cancellable {
+public class KeyValueObserver: NSObject, Lifetime {
 	public typealias Callback = (_ change: [NSKeyValueChangeKey: Any], _ reason: CallbackReason) -> Void
 
 	// This is the user-supplied callback function

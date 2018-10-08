@@ -72,29 +72,29 @@ public protocol ExecutionContext {
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
 	func invokeAndWait(_ execute: @escaping () -> Void)
 
-	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Cancellable` is cancelled or released before running occurs.
-	func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable
+	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
+	func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime
 
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Cancellable` is cancelled or released before running occurs.
-	func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Lifetime` is cancelled or released before running occurs.
+	func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime
 
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Cancellable` is cancelled or released before running occurs.
-	func singleTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable
+	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
+	func singleTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime
 
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Cancellable` is cancelled or released before running occurs.
-	func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Lifetime` is cancelled or released before running occurs.
+	func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	func periodicTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	func periodicTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime
 
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime
 	
 	/// Gets a timestamp representing the host uptime the in the current context
 	func timestamp() -> DispatchTime
@@ -102,22 +102,22 @@ public protocol ExecutionContext {
 
 // Since it's not possible to have default parameters in protocols (yet) the "leeway" free functions are all default-implemented to call the "leeway" functions with a 0 second leeway.
 extension ExecutionContext {
-	public func singleTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable {
+	public func singleTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		return singleTimer(interval: interval, leeway: .seconds(0), handler: handler)
 	}
-	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable {
+	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
 		return singleTimer(parameter: parameter, interval: interval, leeway: .seconds(0), handler: handler)
 	}
-	public func periodicTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable {
+	public func periodicTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		return periodicTimer(interval: interval, leeway: .seconds(0), handler: handler)
 	}
-	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable {
+	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
 		return periodicTimer(parameter: parameter, interval: interval, leeway: .seconds(0), handler: handler)
 	}
 }
 
-/// Slightly annoyingly, a `DispatchSourceTimer` is an existential, so we can't extend it to conform to `Cancellable`. Instead, we dynamically downcast to `DispatchSource` and use this extension.
-extension DispatchSource: Cancellable {
+/// Slightly annoyingly, a `DispatchSourceTimer` is an existential, so we can't extend it to conform to `Lifetime`. Instead, we dynamically downcast to `DispatchSource` and use this extension.
+extension DispatchSource: Lifetime {
 }
 
 @available(*, deprecated, message:"Use DispatchQueueContext instead")
@@ -155,23 +155,23 @@ public struct DispatchQueueContext: ExecutionContext {
 		queue.sync(execute: execute)
 	}
 
-	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		return DispatchSource.singleTimer(interval: interval, leeway: leeway, queue: queue, handler: handler) as! DispatchSource
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
 		return DispatchSource.singleTimer(parameter: parameter, interval: interval, leeway: leeway, queue: queue, handler: handler) as! DispatchSource
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		return DispatchSource.repeatingTimer(interval: interval, leeway: leeway, queue: queue, handler: handler) as! DispatchSource
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
 		return DispatchSource.repeatingTimer(parameter: parameter, interval: interval, leeway: leeway, queue: queue, handler: handler) as! DispatchSource
 	}
 
@@ -181,10 +181,10 @@ public struct DispatchQueueContext: ExecutionContext {
 	}
 }
 
-/// A wrapper around Cancellable that applies a mutex on the cancel operation.
-/// This is a class so that `SerializingContext` can hold pass it weakly to the timer closure, avoiding having the timer keep itself alive.
-private class MutexWrappedCancellable: Cancellable {
-	var timer: Cancellable? = nil
+/// A wrapper around Lifetime that applies a mutex on the cancel operation.
+/// This is a class so that `SerializingContext` can pass it weakly to the timer closure, avoiding having the timer keep itself alive.
+private class MutexWrappedLifetime: Lifetime {
+	var lifetime: Lifetime? = nil
 	let mutex: PThreadMutex
 	
 	init(mutex: PThreadMutex) {
@@ -193,8 +193,8 @@ private class MutexWrappedCancellable: Cancellable {
 	
 	func cancel() {
 		mutex.sync {
-			timer?.cancel()
-			timer = nil
+			lifetime?.cancel()
+			lifetime = nil
 		}
 	}
 	
@@ -243,75 +243,75 @@ public struct SerializingContext: ExecutionContext {
 		}
 	}
 
-	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable {
-		return mutex.sync { () -> Cancellable in
-			let wrapper = MutexWrappedCancellable(mutex: mutex)
-			let cancellableTimer = underlying.singleTimer(interval: interval, leeway: leeway) { [weak wrapper] in
+	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
+		return mutex.sync { () -> Lifetime in
+			let wrapper = MutexWrappedLifetime(mutex: mutex)
+			let lifetime = underlying.singleTimer(interval: interval, leeway: leeway) { [weak wrapper] in
 				if let w = wrapper {
 					w.mutex.sync {
 						// Need to perform this double check since the timer may have been cancelled/changed before we
-						if w.timer != nil {
+						if w.lifetime != nil {
 							handler()
 						}
 					}
 				}
 			}
-			wrapper.timer = cancellableTimer
+			wrapper.lifetime = lifetime
 			return wrapper
 		}
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable {
-		return mutex.sync { () -> Cancellable in
-			let wrapper = MutexWrappedCancellable(mutex: mutex)
-			let cancellableTimer = underlying.singleTimer(parameter: parameter, interval: interval, leeway: leeway) { [weak wrapper] p in
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
+		return mutex.sync { () -> Lifetime in
+			let wrapper = MutexWrappedLifetime(mutex: mutex)
+			let lifetime = underlying.singleTimer(parameter: parameter, interval: interval, leeway: leeway) { [weak wrapper] p in
 				if let w = wrapper {
 					w.mutex.sync {
-						if w.timer != nil {
+						if w.lifetime != nil {
 							handler(p)
 						}
 					}
 				}
 			}
-			wrapper.timer = cancellableTimer
+			wrapper.lifetime = lifetime
 			return wrapper
 		}
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Cancellable {
-		return mutex.sync { () -> Cancellable in
-			let wrapper = MutexWrappedCancellable(mutex: mutex)
-			let cancellableTimer = underlying.periodicTimer(interval: interval, leeway: leeway) { [weak wrapper] in
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
+		return mutex.sync { () -> Lifetime in
+			let wrapper = MutexWrappedLifetime(mutex: mutex)
+			let lifetime = underlying.periodicTimer(interval: interval, leeway: leeway) { [weak wrapper] in
 				if let w = wrapper {
 					w.mutex.sync {
-						if w.timer != nil {
+						if w.lifetime != nil {
 							handler()
 						}
 					}
 				}
 			}
-			wrapper.timer = cancellableTimer
+			wrapper.lifetime = lifetime
 			return wrapper
 		}
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Cancellable {
-		return mutex.sync { () -> Cancellable in
-			let wrapper = MutexWrappedCancellable(mutex: mutex)
-			let cancellableTimer = underlying.periodicTimer(parameter: parameter, interval: interval, leeway: leeway) { [weak wrapper] p in
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
+		return mutex.sync { () -> Lifetime in
+			let wrapper = MutexWrappedLifetime(mutex: mutex)
+			let lifetime = underlying.periodicTimer(parameter: parameter, interval: interval, leeway: leeway) { [weak wrapper] p in
 				if let w = wrapper {
 					w.mutex.sync {
-						if w.timer != nil {
+						if w.lifetime != nil {
 							handler(p)
 						}
 					}
 				}
 			}
-			wrapper.timer = cancellableTimer
+			wrapper.lifetime = lifetime
 			return wrapper
 		}
 	}
@@ -452,32 +452,32 @@ public enum Exec: ExecutionContext {
 		return (Exec.custom(cdq), specificKey)
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping () -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping () -> Void) -> Lifetime {
 		if case .custom(let c) = self {
 			return c.singleTimer(interval: interval, leeway: leeway, handler: handler)
 		}
 		return DispatchSource.singleTimer(interval: interval, leeway: leeway, queue: dispatchQueue, handler: handler) as! DispatchSource
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping (T) -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping (T) -> Void) -> Lifetime {
 		if case .custom(let c) = self {
 			return c.singleTimer(parameter: parameter, interval: interval, leeway: leeway, handler: handler)
 		}
 		return DispatchSource.singleTimer(parameter: parameter, interval: interval, leeway: leeway, queue: dispatchQueue, handler: handler) as! DispatchSource
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping () -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping () -> Void) -> Lifetime {
 		if case .custom(let c) = self {
 			return c.periodicTimer(interval: interval, leeway: leeway, handler: handler)
 		}
 		return DispatchSource.repeatingTimer(interval: interval, leeway: leeway, queue: dispatchQueue, handler: handler) as! DispatchSource
 	}
 	
-	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Cancellable` is cancelled or released before running occurs.
-	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping (T) -> Void) -> Cancellable {
+	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
+	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping (T) -> Void) -> Lifetime {
 		if case .custom(let c) = self {
 			return c.periodicTimer(parameter: parameter, interval: interval, leeway: leeway, handler: handler)
 		}
