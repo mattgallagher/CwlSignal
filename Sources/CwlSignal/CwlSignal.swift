@@ -533,12 +533,14 @@ public class Signal<OutputValue>: SignalInterface {
 	// A struct that stores data associated with the current handler. Under the `Signal` mutex, if the `itemProcessing` flag is acquired, the fields of this struct are filled in using `Signal` and `SignalHandler` data and the contents of the struct can be used by the current thread *outside* the mutex.
 	private struct ItemContext<OutputValue> {
 		let context: Exec
+		let synchronous: Bool
 		let handler: (Result<OutputValue>) -> Void
 		let activationCount: Int
 		
 		init(context: Exec, synchronous: Bool, handler: @escaping (Result<OutputValue>) -> Void, activationCount: Int) {
 			self.activationCount = activationCount
 			self.context = context
+			self.synchronous = synchronous
 			if case .direct = context {
 				self.handler = handler
 			} else if context.type.isImmediate || synchronous {
@@ -1137,7 +1139,7 @@ public class Signal<OutputValue>: SignalInterface {
 		if case .direct = handlerContext.context {
 			invokeHandler(result)
 			specializedSyncPop()
-		} else if handlerContext.context.type.isImmediate {
+		} else if handlerContext.context.type.isImmediate || handlerContext.synchronous {
 			self.invokeHandler(result)
 			while let r = pop() {
 				if handlerContext.context.type.isImmediate {

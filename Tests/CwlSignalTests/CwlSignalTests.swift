@@ -1931,6 +1931,28 @@ class SignalTests: XCTestCase {
 		withExtendedLifetime(input) {}
 		withExtendedLifetime(out) {}
 	}
+	
+	func testDeadlockBug() {
+		let context = Exec.asyncQueue()
+		
+		let signal1 = Signal.from(sequence: [1])
+			.continuous()
+		
+		let signal2 = signal1
+			.map(context: context) { 2 * $0 }
+			.continuous()
+		
+		let ex = expectation(description: "Waiting to ensure deadlock doesn't occur")
+		var results = [Result<Int>]()
+		let ep = signal2.subscribe {
+			results.append($0)
+			ex.fulfill()
+		}
+		withExtendedLifetime(ep) {
+			waitForExpectations(timeout: 2) { error in }
+		}
+		XCTAssert(results.at(0)?.isSignalComplete == true)
+	}
 }
 
 class SignalTimingTests: XCTestCase {
