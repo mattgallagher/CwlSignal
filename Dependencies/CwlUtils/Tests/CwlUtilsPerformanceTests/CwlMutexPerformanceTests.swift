@@ -17,11 +17,6 @@ private extension PThreadMutex {
 		return try f()
 	}
 }
-private func fastsync<R>(_ mutex: PThreadMutex, f: () throws -> R) rethrows -> R {
-	pthread_mutex_lock(&mutex.unsafeMutex)
-	defer { pthread_mutex_unlock(&mutex.unsafeMutex) }
-	return try f()
-}
 
 public struct DispatchSemaphoreWrapper {
 	let s = DispatchSemaphore(value: 1)
@@ -46,63 +41,13 @@ class TestClass {
 
 class MutexPerformanceTests: XCTestCase {
 	
-	func testPThreadSync2Performance() {
-		let mutex = PThreadMutex()
-		measure { () -> Void in
-			var total = 0
-			for _ in 0..<iterations {
-				mutex.sync_2(&total) { (t: inout Int) -> Void in
-					t += 1
-				}
-			}
-			XCTAssert(total == iterations)
-		}
-	}
-	
-	func testDispatchCurriedSelfMethodPerformance() {
-		let queue = DispatchQueue(label: "")
-		measure { () -> Void in
-			let test = TestClass()
-			for _ in 0..<iterations {
-				queue.sync(execute: test.increment)
-			}
-			XCTAssert(test.testVariable == iterations)
-		}
-	}
-	
-	func testFreeFunctionWrappingPThreadPerformance() {
-		let mutex = PThreadMutex()
-		measure { () -> Void in
-			var total = 0
-			for _ in 0..<iterations {
-				fastsync(mutex) {
-					total += 1
-				}
-			}
-			XCTAssert(total == iterations)
-		}
-	}
-	
-	func testPThreadSyncPerformance() {
+	func testPThreadCapturingSyncPerformance() {
 		let mutex = PThreadMutex()
 		measure { () -> Void in
 			var total = 0
 			for _ in 0..<iterations {
 				mutex.sync {
 					total += 1
-				}
-			}
-			XCTAssert(total == iterations)
-		}
-	}
-	
-	func testPThreadSync3Performance() {
-		let mutex = PThreadMutex()
-		measure { () -> Void in
-			var total = 0
-			for _ in 0..<iterations {
-				total = mutex.sync_3(&total) { t in
-					return t + 1
 				}
 			}
 			XCTAssert(total == iterations)
@@ -123,6 +68,45 @@ class MutexPerformanceTests: XCTestCase {
 		}
 	}
 	
+	func testPThreadSync3Performance() {
+		let mutex = PThreadMutex()
+		measure { () -> Void in
+			var total = 0
+			for _ in 0..<iterations {
+				total = mutex.sync_3(&total) { t in
+					return t + 1
+				}
+			}
+			XCTAssert(total == iterations)
+		}
+	}
+	
+	func testPThreadSync2Performance() {
+		let mutex = PThreadMutex()
+		measure { () -> Void in
+			var total = 0
+			for _ in 0..<iterations {
+				mutex.sync_2(&total) { (t: inout Int) -> Void in
+					t += 1
+				}
+			}
+			XCTAssert(total == iterations)
+		}
+	}
+	
+	func testPThreadSync1Performance() {
+		let mutex = PThreadMutex()
+		measure { () -> Void in
+			var total = 0
+			for _ in 0..<iterations {
+				mutex.fastsync {
+					total += 1
+				}
+			}
+			XCTAssert(total == iterations)
+		}
+	}
+	
 	func testObjcSyncPerformance() {
 		let mutex = NSObject()
 		measure { () -> Void in
@@ -131,19 +115,6 @@ class MutexPerformanceTests: XCTestCase {
 				objc_sync_enter(mutex)
 				total += 1
 				objc_sync_exit(mutex)
-			}
-			XCTAssert(total == iterations)
-		}
-	}
-	
-	func testPThreadCopiedPerformance() {
-		let mutex = PThreadMutex()
-		measure { () -> Void in
-			var total = 0
-			for _ in 0..<iterations {
-				mutex.fastsync {
-					total += 1
-				}
 			}
 			XCTAssert(total == iterations)
 		}

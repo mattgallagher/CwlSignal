@@ -10,28 +10,28 @@ import Foundation
 import XCTest
 import CwlUtils
 
-let PerformanceIterations = 10_000_000
+let PerformanceIterations = 100_000_000
 
 class RandomPerformanceTests: XCTestCase {
 	
-	func testDevRandom() {
+	func testDevRandomDiv100() {
 		var generator = DevRandom()
 
 		measure { () -> Void in
 			var sum: UInt64 = 0
-			for _ in 0..<PerformanceIterations {
+			for _ in 0..<(PerformanceIterations / 100) {
 				sum = sum &+ generator.next()
 			}
 			XCTAssert(sum != 0)
 		}
 	}
 
-	func testArc4Random() {
-		var generator = Random.default
+	func testArc4RandomDiv10() {
+		var generator = SystemRandomNumberGenerator()
 
 		measure { () -> Void in
 			var sum: UInt64 = 0
-			for _ in 0..<PerformanceIterations {
+			for _ in 0..<(PerformanceIterations / 10) {
 				sum = sum &+ generator.next()
 			}
 			XCTAssert(sum != 0)

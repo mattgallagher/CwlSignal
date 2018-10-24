@@ -22,15 +22,17 @@ import Foundation
 import XCTest
 import CwlUtils
 
+#if DEBUG
+	let outerCount = 100
+#else
+	let outerCount = 100_000
+#endif
+
+let innerCount = 20
+
 class DequePerformanceTests: XCTestCase {
 	func testFIFOPerformance() {
 		measure { () -> Void in
-			#if DEBUG
-				let outerCount = 100
-			#else
-				let outerCount = 100_000
-			#endif
-			let innerCount = 20
 			var accumulator = 0
 			for _ in 1...outerCount {
 				var deque = Deque<Int>()
@@ -49,15 +51,9 @@ class DequePerformanceTests: XCTestCase {
 	
 	func testReferenceArrayPerformance() {
 		measure { () -> Void in
-			#if DEBUG
-				let outerCount = 100
-			#else
-				let outerCount = 100_000
-			#endif
-			let innerCount = 20
 			var accumulator = 0
 			for _ in 1...outerCount {
-				var deque = ContiguousArray<Int>()
+				var deque = Array<Int>()
 				for i in 1...innerCount {
 					deque.append(i)
 					accumulator ^= (deque.last ?? 0)

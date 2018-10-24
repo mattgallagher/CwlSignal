@@ -114,47 +114,86 @@ void init_by_array64(struct mt19937_64* context, unsigned long long init_key[],
 /* generates a random number on [0, 2^64-1]-interval */
 unsigned long long genrand64_int64(struct mt19937_64* context)
 {
-    size_t i;
-    size_t j;
-    unsigned long long result;
-
-    if (context->mti >= NN) {/* generate NN words at one time */
-		size_t mid = NN / 2;
-		unsigned long long stateMid = context->mt[mid];
+	#if 0
+		/* This is the original implementation. It is replaced by the alternate implementation, below. */
+		int i;
 		unsigned long long x;
-		unsigned long long y;
-
-		/* NOTE: this "untwist" code is modified from the original to improve
-		 * performance, as described here:
-		 * http://www.cocoawithlove.com/blog/2016/05/19/random-numbers.html
-		 * These modifications are offered for use under the original icense at
-		 * the top of this file.
-		 */
-		for (i = 0, j = mid; i != mid - 1; i++, j++) {
-			x = (context->mt[i] & UM) | (context->mt[i + 1] & LM);
-			context->mt[i] = context->mt[i + mid] ^ (x >> 1) ^ ((context->mt[i + 1] & 1) * MATRIX_A);
-			y = (context->mt[j] & UM) | (context->mt[j + 1] & LM);
-			context->mt[j] = context->mt[j - mid] ^ (y >> 1) ^ ((context->mt[j + 1] & 1) * MATRIX_A);
+		static unsigned long long mag01[2]={0ULL, MATRIX_A};
+		
+		if (mti >= NN) { /* generate NN words at one time */
+			
+			/* if init_genrand64() has not been called, */
+			/* a default initial seed is used     */
+			if (mti == NN+1) 
+				init_genrand64(5489ULL); 
+			
+			for (i=0;i<NN-MM;i++) {
+				x = (mt[i]&UM)|(mt[i+1]&LM);
+				mt[i] = mt[i+MM] ^ (x>>1) ^ mag01[(int)(x&1ULL)];
+			}
+			for (;i<NN-1;i++) {
+				x = (mt[i]&UM)|(mt[i+1]&LM);
+				mt[i] = mt[i+(MM-NN)] ^ (x>>1) ^ mag01[(int)(x&1ULL)];
+			}
+			x = (mt[NN-1]&UM)|(mt[0]&LM);
+			mt[NN-1] = mt[MM-1] ^ (x>>1) ^ mag01[(int)(x&1ULL)];
+			
+			mti = 0;
 		}
-		x = (context->mt[mid - 1] & UM) | (stateMid & LM);
-		context->mt[mid - 1] = context->mt[NN - 1] ^ (x >> 1) ^ ((stateMid & 1) * MATRIX_A);
-		y = (context->mt[NN - 1] & UM) | (context->mt[0] & LM);
-		context->mt[NN - 1] = context->mt[mid - 1] ^ (y >> 1) ^ ((context->mt[0] & 1) * MATRIX_A);
+		
+		x = mt[mti++];
+		
+		x ^= (x >> 29) & 0x5555555555555555ULL;
+		x ^= (x << 17) & 0x71D67FFFEDA60000ULL;
+		x ^= (x << 37) & 0xFFF7EEE000000000ULL;
+		x ^= (x >> 43);
+		
+		return x;
+	#else
+		/* This is the altered Cocoa with Love implementation. */
+		 size_t i;
+		 size_t j;
+		 unsigned long long result;
 
-		context->mti = 0;
-    }
-	
-    result = context->mt[context->mti];
-    context->mti = context->mti + 1;
+		 if (context->mti >= NN) {/* generate NN words at one time */
+			size_t mid = NN / 2;
+			unsigned long long stateMid = context->mt[mid];
+			unsigned long long x;
+			unsigned long long y;
 
-    result ^= (result >> 29) & 0x5555555555555555ULL;
-    result ^= (result << 17) & 0x71D67FFFEDA60000ULL;
-    result ^= (result << 37) & 0xFFF7EEE000000000ULL;
-    result ^= (result >> 43);
+			/* NOTE: this "untwist" code is modified from the original to improve
+			 * performance, as described here:
+			 * http://www.cocoawithlove.com/blog/2016/05/19/random-numbers.html
+			 * These modifications are offered for use under the original icense at
+			 * the top of this file.
+			 */
+			for (i = 0, j = mid; i != mid - 1; i++, j++) {
+				x = (context->mt[i] & UM) | (context->mt[i + 1] & LM);
+				context->mt[i] = context->mt[i + mid] ^ (x >> 1) ^ ((context->mt[i + 1] & 1) * MATRIX_A);
+				y = (context->mt[j] & UM) | (context->mt[j + 1] & LM);
+				context->mt[j] = context->mt[j - mid] ^ (y >> 1) ^ ((context->mt[j + 1] & 1) * MATRIX_A);
+			}
+			x = (context->mt[mid - 1] & UM) | (stateMid & LM);
+			context->mt[mid - 1] = context->mt[NN - 1] ^ (x >> 1) ^ ((stateMid & 1) * MATRIX_A);
+			y = (context->mt[NN - 1] & UM) | (context->mt[0] & LM);
+			context->mt[NN - 1] = context->mt[mid - 1] ^ (y >> 1) ^ ((context->mt[0] & 1) * MATRIX_A);
 
-    return result;
+			context->mti = 0;
+		 }
+		
+		 result = context->mt[context->mti];
+		 context->mti = context->mti + 1;
+
+		 result ^= (result >> 29) & 0x5555555555555555ULL;
+		 result ^= (result << 17) & 0x71D67FFFEDA60000ULL;
+		 result ^= (result << 37) & 0xFFF7EEE000000000ULL;
+		 result ^= (result >> 43);
+
+		 return result;
+	#endif
 }
 
+	
 /* generates a random number on [0, 2^63-1]-interval */
 long long genrand64_int63(struct mt19937_64* context)
 {
