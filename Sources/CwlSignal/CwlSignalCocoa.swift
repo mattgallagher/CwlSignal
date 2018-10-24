@@ -99,28 +99,22 @@ public enum SignalObservingError: Error {
 ///   - initial: if true, NSKeyValueObservingOptions.initial is included in the options passed to `addObserver(_:forKeyPath:options:context:)`
 /// - Returns: a signal which emits the observation results that match the expected type
 extension Signal {
-	public static func keyValueObserving(_ source: NSObject, keyPath: String, initial: Bool = true) -> Signal<OutputValue> {
-		var observer: KeyValueObserver?
+	public static func keyValueObserving<Source: NSObject>(_ source: Source, keyPath: KeyPath<Source, OutputValue>, initial: Bool = true) -> Signal<OutputValue> {
+		var observer: NSObjectProtocol?
 		return Signal<OutputValue>.generate { [weak source] (input: SignalInput<OutputValue>?) -> Void in
 			guard let i = input, let s = source else {
 				observer = nil
 				return
 			}
 			let options = NSKeyValueObservingOptions.new.union(initial ? NSKeyValueObservingOptions.initial : NSKeyValueObservingOptions())
-			observer = KeyValueObserver(source: s, keyPath: keyPath, options: options, callback: { (change, reason) -> Void in
-				switch (reason, change[NSKeyValueChangeKey.newKey]) {
-				case (.sourceDeleted, _): i.close()
-				case (_, .some(let v as OutputValue)): i.send(value: v)
-				default: assertionFailure("Dictionary unexpectedly missing new value")
+			observer = s.observe(keyPath, options: options) { (object, value) in
+				if let nv = value.newValue {
+					i.send(nv)
 				}
-			})
+			}
 			withExtendedLifetime(observer) {}
 		}
 	}
-}
-@available(*, deprecated, message: "Use Signal.keyValueObserving")
-public func signalKeyValueObserving(_ source: NSObject, keyPath: String, initial: Bool = true) -> Signal<Any> {
-	return Signal.keyValueObserving(source, keyPath: keyPath, initial: initial)
 }
 
 extension Signal where OutputValue == Notification {

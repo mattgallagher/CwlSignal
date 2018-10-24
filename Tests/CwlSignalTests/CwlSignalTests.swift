@@ -176,7 +176,10 @@ class SignalTests: XCTestCase {
 				XCTFail()
 			#else
 				XCTAssert(results2.count == 1)
-				XCTAssert(results2.at(0)?.error as? SignalSendError == SignalSendError.duplicate)
+				if case .some(.duplicate) = results2.at(0)?.error as? SignalBindError<Int> {
+				} else {
+					XCTFail()
+				}
 			#endif
 			withExtendedLifetime(ep2) {}
 		}
@@ -438,7 +441,10 @@ class SignalTests: XCTestCase {
 				#else
 					// Ensure error received
 					XCTAssert(results2.count == 1)
-					XCTAssert(results2.at(0)?.error as? SignalSendError == SignalSendError.duplicate)
+					if case .some(.duplicate) = results2.at(0)?.error as? SignalBindError<Int> {
+					} else {
+						XCTFail()
+					}
 				#endif
 				
 				withExtendedLifetime(ep2) {}

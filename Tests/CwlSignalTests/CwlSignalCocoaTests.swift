@@ -68,17 +68,16 @@ class SignalCocoaTests: XCTestCase {
 		var target: Target? = Target()
 		target?.intProperty = 123
 		var results = [Result<Int>]()
-		let output = Signal<Int>.keyValueObserving(target!, keyPath: #keyPath(Target.intProperty)).subscribe { result in
+		let output = Signal.keyValueObserving(target!, keyPath: \.intProperty).subscribe { result in
 			results.append(result)
 		}
 		
 		target?.intProperty = 456
 		target = nil
 		
-		XCTAssert(results.count == 3)
+		XCTAssert(results.count == 2)
 		XCTAssert(results.at(0)?.value == 123)
 		XCTAssert(results.at(1)?.value == 456)
-		XCTAssert(results.at(2)?.error as? SignalComplete == .closed)
 		
 		withExtendedLifetime(output) {}
 	}

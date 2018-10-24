@@ -64,7 +64,7 @@ class ViewController: NSViewController {
 	let serverStatusButton = NSButton(checkboxWithTitle: "", target: nil, action: nil)
 	let filesSelectedLabel = NSTextField(labelWithString: "")
 	
-	// Lifetimes of observations
+	// Maintain the lifetime of the observations as long as the view controller lasts
 	var lifetimes = [Lifetime]()
 	
 	override func loadView() {
@@ -83,7 +83,7 @@ class ViewController: NSViewController {
 		
 		// Transform the current selection, which may be nil, into a stream that's empty instead of nil
 		let latestSelection = FileSelection.currentSelection
-			.flatMapLatest { possible in possible?.selection ?? .just([]) }
+			.flatMapLatest { cur in cur?.selection.map(Optional.some) ?? .just(nil) }
 			.continuous()
 
 		// Configure dynamic properties
@@ -93,14 +93,12 @@ class ViewController: NSViewController {
 				serverStatusButton.title = server.map { s in "Server name: \(s.name)" } ?? "None"
 			}
 		lifetimes += latestSelection
-			.subscribeValues(context: .main) { [filesSelectedLabel] selection in
-				filesSelectedLabel.stringValue = "Selected file count: \(selection.count)"
+			.subscribeValues(context: .main) { [filesSelectedLabel] s in
+				filesSelectedLabel.stringValue = s.map { "Selected file count: \($0.count)" } ?? "Selection empty"
 			}
 		lifetimes += Server.currentServer
-			.combineLatest(latestSelection) { server, selection in server != nil && !selection.isEmpty }
-			.subscribeValues(context: .main) { [uploadButton] canUpload in
-				uploadButton.isEnabled = canUpload
-			}
+			.combineLatest(latestSelection) { server, selection in server != nil && selection?.isEmpty == false }
+			.subscribeValues(context: .main) { [uploadButton] canUpload in uploadButton.isEnabled = canUpload }
 		
 		// Set the view
 		self.view = view
