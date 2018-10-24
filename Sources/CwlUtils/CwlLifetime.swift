@@ -20,42 +20,52 @@
 
 import Foundation
 
-/// This protocol exists to keep alive and terminate-at-will asynchronous and ongoing tasks (an implementation of the "Disposable" pattern).
+/// This protocol exists to keep alive and terminate-at-will asynchronous and ongoing tasks. It is an
+/// implementation of the "Disposable" pattern.
 ///
 /// While conformance to this protocol requires just one function, conforming to this protocol also signals three important traits:
 ///    1. instances manage an underlying resource
-///    2. the resource will last until one the first of the following end-conditions occurs:
-///        a. It terminates on its own
+///	 2. the resource will last until one the first of the following end-conditions occurs:
+///        a. The resource terminates on its own
 ///        b. All references to the Lifetime instance are released
 ///        c. The `cancel()` function is invoked
-///    3. subsequent calls to `cancel()` after a previous end-condition will have no effect
 ///
 /// ideally, as well:
 ///
-///    4. `cancel()` and releasing all references to the instance should have the same effect
-///    5. no further effects or actions of any kind will occur after the first end-condition is registered in the
-///       resource's context.
+///    3. no further effects or actions of any kind will occur after the first end-condition is registered in the
+///       resource's context, no further messages or notifications sent or received, no resurrection possible
+///    4. any subsequent end conditions after the first are safe and have no effect
+///    5. if Self is a reference type, `cancel` should be explicitly invoked on deinit
+///    6. `cancel` should invoke `cancel` on any owned child Lifetime instances
 ///
-/// although there are some cases where explicitly sending "cancelled" notifications is valid behavior and where this
-/// type of notification might be triggered when `cancel()` is called but not `deinit`.
-///
-/// The protocol requires the `cancel` function exist but it is up to conforming types to follow the rules.
+/// Examples of violations of the last 4 points exist be should be kept rare.
 public protocol Lifetime {
 	/// Immediately set the resource managed by this instance to an "end-of-life" state.
+	/// This a mutating method and should be called only in executation contexts where changing `self` is threadsafe.
 	mutating func cancel()
 }
 
 public typealias Cancellable = Lifetime
 
-/// Just an array of Lifetime that conforms to Lifetime. While you can do this through conditional conformance, you can't handle Element == Lifetime at the sme time as Element: Lifetime or Element: LifetimeSubtype in Swift 4.2 so it's best to tread around the issue entirely.
-public struct AggregateLifetime: Lifetime {
-	public var lifetimes: [Lifetime]
-	public init(lifetimes: [Lifetime]) {
+/// An array of Lifetime that conforms to Lifetime. Note that a conditional conformance on Array can't properly conform
+// to Lifetime since it would permit adding new lifetimes after the aggregate was cancelled.
+public class AggregateLifetime: Lifetime {
+	private var lifetimes: [Lifetime]?
+	public init(lifetimes: [Lifetime] = []) {
 		self.lifetimes = lifetimes
 	}
-	public mutating func cancel() {
-		for i in lifetimes.indices {
-			lifetimes[i].cancel()
+	public func cancel() {
+		if var ls = lifetimes {
+			for i in ls.indices {
+				ls[i].cancel()
+			}
+			lifetimes = nil
 		}
+	}
+	public static func +=(left: AggregateLifetime, right: Lifetime) {
+		left.lifetimes?.append(right)
+	}
+	deinit {
+		cancel()
 	}
 }

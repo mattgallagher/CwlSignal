@@ -440,46 +440,72 @@ class DebugContextTests: XCTestCase {
 			XCTFail()
 		}
 	}
+
+	#if false
+		func testTimeoutServiceSuccessHostTime() {
+			let ex = expectation(description: "Waiting for timeout callback")
+			
+			// Use our debug `StringService`
+			let service = TimeoutService(work: dummyAsyncWork(duration: 2.0))
+			
+			// Set up the time data we need
+			let startTime = mach_absolute_time()
+			let timeoutTime = 1.0
+			let targetTime = UInt64(timeoutTime * Double(NSEC_PER_SEC))
+			let leeway = UInt64(0.01 * Double(NSEC_PER_SEC))
+			
+			service.start(timeout: timeoutTime) { r in
+				// Measure and test the time elapsed
+				let endTime = mach_absolute_time()
+				XCTAssert(endTime - startTime > targetTime - leeway)
+				XCTAssert(endTime - startTime < targetTime + leeway)
+				
+				XCTAssert(r.value == nil)
+				ex.fulfill()
+			}
+			
+			// Wait for all scheduled actions to occur
+			waitForExpectations(timeout: 10, handler: nil)
+		}
+	#endif
 	
-	func testConnectSuccess() {
+	func testTimeoutServiceSuccess() {
 		let coordinator = DebugContextCoordinator()
 
-		// Test the success case
 		var result: Result<String>? = nil
-		let service = Service(context: coordinator.global, connect: StringService.withDelay(2.0))
-		service.connect(timeout: 10) { r in
+		let service = TimeoutService(context: coordinator.global, work: dummyAsyncWork(duration: 2.0))
+		service.start(timeout: 10) { r in
 			result = r
 		}
 		coordinator.runScheduledTasks()
 		coordinator.reset()
 		withExtendedLifetime(service) {}
-		XCTAssert(result?.value == StringService.value)
-
+		XCTAssert(result?.value == dummySuccessResponse)
 	}
 
-	func testConnectCancelled() {
+	func testTimeoutServiceCancelled() {
 		let coordinator = DebugContextCoordinator()
 		// Test the service released case
 		do {
-			let service = Service(context: coordinator.global, connect: StringService.withDelay(2.0))
-			service.connect(timeout: 10) { r in
+			let service = TimeoutService(context: coordinator.global, work: dummyAsyncWork(duration: 2.0))
+			service.start(timeout: 10) { r in
 				XCTFail()
 			}
 		}
 		coordinator.runScheduledTasks()
 	}
 
-	func testConnectTimeout() {
+	func testTimeoutServiceTimeout() {
 		let coordinator = DebugContextCoordinator()
 		let context = coordinator.syncQueue
 
-		// Construct the `Service` using our debug context
-		let service = Service(context: context, connect: StringService.withDelay(2.0))
+		// Construct the `TimeoutService` using our debug context
+		let service = TimeoutService(context: context, work: dummyAsyncWork(duration: 2.0))
 
 		// Run the `connect` function
 		let timeoutTime = 1.0
 		var result: Result<String>? = nil
-		service.connect(timeout: timeoutTime) { r in
+		service.start(timeout: timeoutTime) { r in
 			result = r
 			XCTAssert(coordinator.currentTime == UInt64(timeoutTime * Double(NSEC_PER_SEC)))
 			XCTAssert(coordinator.currentThread.matches(context))
@@ -489,116 +515,85 @@ class DebugContextTests: XCTestCase {
 		coordinator.runScheduledTasks()
 
 		// Ensure we got the correct result
-		XCTAssert(result?.error as? ServiceError == ServiceError.timeout)
+		XCTAssert(result?.error as? TimeoutService.Timeout != nil)
 
 		withExtendedLifetime(service) {}
 	}
 }
 
-class LifetimeTimerAndAction: Lifetime {
-	var timer: Lifetime? = nil
-	var action: Lifetime? = nil
-	init() {
-	}
-	func cancel() {
-		timer?.cancel()
-		action?.cancel()
-	}
-}
-
-class Service {
-   // This service performs one action at a time, lifetime tied to the service
+class TimeoutService {
+	struct Timeout: Error {}
+	
+	// This service performs one action at a time, lifetime tied to the service
 	// The service retains the timeout timer which, in turn, returns the
 	// underlying service
-   var currentAction: Lifetime? = nil
-   
-	// Define the interface for the underlying connection
-	typealias ConnectionFunction = (Exec, @escaping (Result<String>) -> ()) -> Lifetime
-
-   // This is the configurable connection to the underlying service
-   let underlyingConnect: ConnectionFunction
-
-   // Every action for this service should occur in in this queue
-   let context: Exec
+	var currentAction: Lifetime? = nil
 	
-   // Construction of the Service lets us specify the underlying service
-   init(context: Exec = .global, connect: @escaping ConnectionFunction = NetworkService.init) {
-      self.underlyingConnect = connect
+	// Define the interface for the underlying connection
+	typealias ResultHandler = (Result<String>) -> Void
+	typealias WorkFunction = (Exec, @escaping ResultHandler) -> Lifetime
+
+	// This is the configurable connection to the underlying service
+	let work: WorkFunction
+
+	// Every action for this service should occur in in this queue
+	let context: Exec
+	
+	// Construction of the Service lets us specify the underlying service
+	init(context: Exec = .global, work: @escaping WorkFunction = NetworkService.init) {
+		self.work = work
 		self.context = context.serialized()
-   }
+	}
 
-   // This `Service` invokes the `underlyingConnect` and starts a timer
-   func connect(timeout seconds: Double, handler: @escaping (Result<String>) -> ()) {
-      var previousAction: Lifetime? = nil
-      context.invokeAndWait {
-         previousAction = self.currentAction
+	// This `TimeoutService` invokes the `underlyingConnect` and starts a timer
+	func start(timeout seconds: Double, handler: @escaping ResultHandler) {
+		var previousAction: Lifetime? = nil
+		context.invokeAndWait {
+			previousAction = self.currentAction
 
-         // The action and the timer need to be cross-linked (each referring to the other).
-         // This would be a reference counted loop so we need to make sure they refer to
-         // each other weakly. That is done through this `LifetimeTimerAndAction` object
-         // which does nothing except hold the timer and action and invoke `cancel` on them
-         // when `cancel` is invoked upon it.
-         // 
-         // Using an "action-specific" object instead of `self` (which might be resused
-         // later with another timer and action) prevents this action accidentally
-         // interfering with a subsequent action if this action is replaced.
-         let timerAndAction = LifetimeTimerAndAction()
+			let current = AggregateLifetime()
 			
-      	// Run the underlying connection
-         let underlyingAction = self.underlyingConnect(self.context) { [weak timerAndAction] result in
-            // Cancel the timer if the success occurs first
-            timerAndAction?.cancel()
-            handler(result)
-         }
-         
-         // Run the timeout timer
-         let timer = self.context.singleTimer(interval: .interval(seconds)) { [weak timerAndAction] in
-            // Cancel the connection if the timer fires first
-            timerAndAction?.cancel()
-            handler(.failure(ServiceError.timeout))
-         }
+			// Run the underlying connection
+			let underlyingAction = self.work(self.context) { [weak current] result in
+				// Cancel the timer if the success occurs first
+				current?.cancel()
+				handler(result)
+			}
 			
-			timerAndAction.timer = timer
-			timerAndAction.action = underlyingAction
-         self.currentAction = timerAndAction
-      }
-      
-      // Good rule of thumb: never release lifetime objects inside a mutex
-      withExtendedLifetime(previousAction) {}
-   }
+			// Run the timeout timer
+			let timer = self.context.singleTimer(interval: .interval(seconds)) { [weak current] in
+				// Cancel the connection if the timer fires first
+				current?.cancel()
+				handler(.failure(Timeout()))
+			}
+			
+			current += timer
+			current += underlyingAction
+			self.currentAction = current
+		}
+		
+		// Good rule of thumb: never release lifetime objects inside a mutex
+		withExtendedLifetime(previousAction) {}
+	}
 }
 
-enum ServiceError: Error {
-	case timeout
-}
-
-// Used as a drop-in replacement for NetworkService to illustrate dependency injection.
-class StringService: Lifetime {
-	static let value = "Here's a string"
-	var timer: Lifetime
-	init(delay seconds: Double, context: Exec, handler: @escaping (Result<String>) -> ()) {
-		timer = context.singleTimer(interval: .interval(seconds)) {
-			handler(.success(StringService.value))
-   	}
-	}
-	func cancel() {
-		timer.cancel()
-	}
-	static func withDelay(_ seconds: Double) -> Service.ConnectionFunction {
-		return { context, handler in
-			StringService(delay: seconds, context: context, handler: handler)
+let dummySuccessResponse = "Here's a string"
+func dummyAsyncWork(duration: Double) -> TimeoutService.WorkFunction {
+	return { exec, handler in
+		exec.singleTimer(interval: .interval(duration)) {
+			handler(.success(dummySuccessResponse))
 		}
 	}
 }
 
+
 // Dummy network service used to fulfill interface requirements. Obviously, doesn't really connect to the network but you could imagine something that fetches an HTTP resource.
 class NetworkService: Lifetime {
-	static let value = "Not really a network service"
 	var timer: Lifetime
-	init(context: Exec, handler: @escaping (Result<String>) -> ()) {
+	init(context: Exec, handler: @escaping TimeoutService.ResultHandler) {
 		timer = context.singleTimer(interval: .interval(5.0)) {
-			handler(.success(StringService.value))
-   	}
+			handler(.success(dummySuccessResponse))
+		}
 	}
 	func cancel() {
 		timer.cancel()

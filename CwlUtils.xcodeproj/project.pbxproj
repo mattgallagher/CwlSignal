@@ -45,7 +45,6 @@
 		C95BDE9E1E41688B00AAA64B /* CwlCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlCollection.swift */; };
 		C95BDE9F1E41688B00AAA64B /* CwlDebugContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* CwlDebugContext.swift */; };
 		C95BDEA01E41688B00AAA64B /* CwlDeferredWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_19 /* CwlDeferredWork.swift */; };
-		C95BDEA11E41688B00AAA64B /* CwlDeque.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* CwlDeque.swift */; };
 		C95BDEA21E41688B00AAA64B /* CwlDispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* CwlDispatch.swift */; };
 		C95BDEA31E41688B00AAA64B /* CwlExec.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* CwlExec.swift */; };
 		C95BDEA41E41688B00AAA64B /* CwlKeyValueObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* CwlKeyValueObserver.swift */; };
@@ -78,26 +77,27 @@
 		C95BDED11E4168B800AAA64B /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_54 /* CwlSysctlTests.swift */; };
 		C95BDED41E4168B800AAA64B /* CwlUnanticipatedErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* CwlUnanticipatedErrorTests.swift */; };
 		C95BDED51E4168B800AAA64B /* CwlWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* CwlWrapperTests.swift */; };
+		C9730876217C556F001EF603 /* CwlDeque.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* CwlDeque.swift */; };
+		C973087A217C8F25001EF603 /* CwlRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* CwlRandom.swift */; };
+		C973087F217C9840001EF603 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C61E4171FD00A7408F /* mt19937-64.c */; };
+		C9730880217C9841001EF603 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C61E4171FD00A7408F /* mt19937-64.c */; };
 		C98AE774216243CC004259B6 /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98AE773216243CC004259B6 /* CwlCatchException.framework */; };
 		C98AE77E21624464004259B6 /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98AE773216243CC004259B6 /* CwlCatchException.framework */; };
 		C98C44CB2160EEB00028B2AC /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44BB2160EE670028B2AC /* CwlPreconditionTesting.framework */; };
 		C98C44CC2160EEBA0028B2AC /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44BF2160EE670028B2AC /* CwlPreconditionTesting.framework */; };
 		C9DD3DA91E41E26600E23B15 /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C95BDEB61E41688B00AAA64B /* CwlUtils.framework */; };
-		C9EE87C81E4171FD00A7408F /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C61E4171FD00A7408F /* mt19937-64.c */; };
-		C9EE87C91E4171FD00A7408F /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C61E4171FD00A7408F /* mt19937-64.c */; };
+		C9E6BD58217C177A006DF3C6 /* CwlDeque.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* CwlDeque.swift */; };
 		C9EE87CA1E4171FD00A7408F /* xoshiro256starstar.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C71E4171FD00A7408F /* xoshiro256starstar.c */; };
 		C9EE87CB1E4171FD00A7408F /* xoshiro256starstar.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C71E4171FD00A7408F /* xoshiro256starstar.c */; };
 		OBJ_154 /* CwlAddressInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* CwlAddressInfo.swift */; };
 		OBJ_155 /* CwlCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlCollection.swift */; };
 		OBJ_156 /* CwlDebugContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* CwlDebugContext.swift */; };
 		OBJ_157 /* CwlDeferredWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_19 /* CwlDeferredWork.swift */; };
-		OBJ_158 /* CwlDeque.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_20 /* CwlDeque.swift */; };
 		OBJ_159 /* CwlDispatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_21 /* CwlDispatch.swift */; };
 		OBJ_160 /* CwlExec.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_22 /* CwlExec.swift */; };
 		OBJ_161 /* CwlKeyValueObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_23 /* CwlKeyValueObserver.swift */; };
 		OBJ_162 /* CwlMutex.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_24 /* CwlMutex.swift */; };
 		OBJ_163 /* CwlOnDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_25 /* CwlOnDelete.swift */; };
-		OBJ_164 /* CwlRandom.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_26 /* CwlRandom.swift */; };
 		OBJ_165 /* CwlResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_27 /* CwlResult.swift */; };
 		OBJ_166 /* CwlScalarScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_28 /* CwlScalarScanner.swift */; };
 		OBJ_167 /* CwlStackFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_29 /* CwlStackFrame.swift */; };
@@ -811,7 +811,7 @@
 			isa = PBXProject;
 			attributes = {
 				LastSwiftUpdateCheck = 0900;
-				LastUpgradeCheck = 1000;
+				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Matt Gallagher ( https://www.cocoawithlove.com )";
 				TargetAttributes = {
 					C95A77261E4187E600659DBD = {
@@ -1028,7 +1028,6 @@
 				C95BDE9E1E41688B00AAA64B /* CwlCollection.swift in Sources */,
 				C95BDE9F1E41688B00AAA64B /* CwlDebugContext.swift in Sources */,
 				C95BDEA01E41688B00AAA64B /* CwlDeferredWork.swift in Sources */,
-				C95BDEA11E41688B00AAA64B /* CwlDeque.swift in Sources */,
 				C95BDEA21E41688B00AAA64B /* CwlDispatch.swift in Sources */,
 				C95BDEA31E41688B00AAA64B /* CwlExec.swift in Sources */,
 				C95BDEA41E41688B00AAA64B /* CwlKeyValueObserver.swift in Sources */,
@@ -1036,6 +1035,7 @@
 				C95BDEA61E41688B00AAA64B /* CwlOnDelete.swift in Sources */,
 				C95BDEA71E41688B00AAA64B /* CwlRandom.swift in Sources */,
 				C95BDEA81E41688B00AAA64B /* CwlResult.swift in Sources */,
+				C9E6BD58217C177A006DF3C6 /* CwlDeque.swift in Sources */,
 				C95BDEA91E41688B00AAA64B /* CwlScalarScanner.swift in Sources */,
 				C95BDEAA1E41688B00AAA64B /* CwlStackFrame.swift in Sources */,
 				C95A622C1EA5D90C0059D152 /* CwlLifetime.swift in Sources */,
@@ -1058,11 +1058,11 @@
 				C95BDEC11E4168B800AAA64B /* CwlDequeTests.swift in Sources */,
 				C95BDEC21E4168B800AAA64B /* CwlDispatchTests.swift in Sources */,
 				C95BDEC31E4168B800AAA64B /* CwlExecTests.swift in Sources */,
-				C9EE87C91E4171FD00A7408F /* mt19937-64.c in Sources */,
 				C95BDEC71E4168B800AAA64B /* CwlKeyValueObserverTests.swift in Sources */,
 				C95BDEC81E4168B800AAA64B /* CwlMutexTests.swift in Sources */,
 				C95BDECA1E4168B800AAA64B /* CwlOnDeleteTests.swift in Sources */,
 				C95BDECB1E4168B800AAA64B /* CwlRandomTests.swift in Sources */,
+				C973087F217C9840001EF603 /* mt19937-64.c in Sources */,
 				C95BDECC1E4168B800AAA64B /* CwlResultTests.swift in Sources */,
 				C9EE87CB1E4171FD00A7408F /* xoshiro256starstar.c in Sources */,
 				C95BDECE1E4168B800AAA64B /* CwlScalarScannerTests.swift in Sources */,
@@ -1081,20 +1081,20 @@
 				OBJ_155 /* CwlCollection.swift in Sources */,
 				OBJ_156 /* CwlDebugContext.swift in Sources */,
 				OBJ_157 /* CwlDeferredWork.swift in Sources */,
-				OBJ_158 /* CwlDeque.swift in Sources */,
 				OBJ_159 /* CwlDispatch.swift in Sources */,
 				OBJ_160 /* CwlExec.swift in Sources */,
 				OBJ_161 /* CwlKeyValueObserver.swift in Sources */,
 				OBJ_162 /* CwlMutex.swift in Sources */,
 				OBJ_163 /* CwlOnDelete.swift in Sources */,
-				OBJ_164 /* CwlRandom.swift in Sources */,
 				OBJ_165 /* CwlResult.swift in Sources */,
+				C9730876217C556F001EF603 /* CwlDeque.swift in Sources */,
 				OBJ_166 /* CwlScalarScanner.swift in Sources */,
 				OBJ_167 /* CwlStackFrame.swift in Sources */,
 				C95A622B1EA5D90C0059D152 /* CwlLifetime.swift in Sources */,
 				C95ADE872144CF3900EA820D /* CwlTransformations.swift in Sources */,
 				OBJ_168 /* CwlSysctl.swift in Sources */,
 				OBJ_169 /* CwlUnanticipatedError.swift in Sources */,
+				C973087A217C8F25001EF603 /* CwlRandom.swift in Sources */,
 				OBJ_170 /* CwlWrappers.swift in Sources */,
 				C95BDE861E40B67100AAA64B /* CwlFrameAddress.c in Sources */,
 			);
@@ -1111,7 +1111,6 @@
 				OBJ_207 /* CwlDequeTests.swift in Sources */,
 				OBJ_208 /* CwlDispatchTests.swift in Sources */,
 				OBJ_209 /* CwlExecTests.swift in Sources */,
-				C9EE87C81E4171FD00A7408F /* mt19937-64.c in Sources */,
 				OBJ_210 /* CwlKeyValueObserverTests.swift in Sources */,
 				OBJ_211 /* CwlMutexTests.swift in Sources */,
 				OBJ_212 /* CwlOnDeleteTests.swift in Sources */,
@@ -1121,6 +1120,7 @@
 				OBJ_215 /* CwlScalarScannerTests.swift in Sources */,
 				OBJ_216 /* CwlStackFrameTests.swift in Sources */,
 				OBJ_217 /* CwlSysctlTests.swift in Sources */,
+				C9730880217C9841001EF603 /* mt19937-64.c in Sources */,
 				OBJ_218 /* CwlUnanticipatedErrorTests.swift in Sources */,
 				OBJ_219 /* CwlWrapperTests.swift in Sources */,
 			);
