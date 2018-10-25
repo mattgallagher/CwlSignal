@@ -22,6 +22,8 @@ import Foundation
 import XCTest
 import CwlUtils
 
+#if RUN_DEPRECATED_TESTS
+
 class TestObservable: NSObject {
 	@objc dynamic var someProperty: String
 	@objc dynamic var unrelatedProperty: NSNumber
@@ -199,3 +201,5 @@ class KeyValueObserverTests: XCTestCase {
 		XCTAssert(Set<AnyHashable>(results[6].keys) == [NSKeyValueChangeKey.kindKey, NSKeyValueChangeKey.newKey, NSKeyValueChangeKey.oldKey])
 	}
 }
+
+#endif

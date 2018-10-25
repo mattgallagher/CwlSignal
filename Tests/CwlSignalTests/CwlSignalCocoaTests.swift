@@ -18,7 +18,7 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-import Foundation
+import Cocoa
 import CwlSignal
 import XCTest
 
@@ -68,17 +68,16 @@ class SignalCocoaTests: XCTestCase {
 		var target: Target? = Target()
 		target?.intProperty = 123
 		var results = [Result<Int>]()
-		let output = Signal<Int>.keyValueObserving(target!, keyPath: #keyPath(Target.intProperty)).subscribe { result in
+		let output = Signal.keyValueObserving(target!, keyPath: \.intProperty).subscribe { result in
 			results.append(result)
 		}
 		
 		target?.intProperty = 456
 		target = nil
 		
-		XCTAssert(results.count == 3)
+		XCTAssert(results.count == 2)
 		XCTAssert(results.at(0)?.value == 123)
 		XCTAssert(results.at(1)?.value == 456)
-		XCTAssert(results.at(2)?.error as? SignalComplete == .closed)
 		
 		withExtendedLifetime(output) {}
 	}
@@ -158,4 +157,40 @@ class SignalCocoaTests: XCTestCase {
 		XCTAssert(results == ["\(Notification.Name.NSThreadWillExit)", "\(Notification.Name.NSFileHandleDataAvailable)"])
 		out.cancel()
 	}
+	
+//	func testViewControllerTest() {
+//		let e = expectation(description: "Waiting")
+//		let latestSelection = FileSelection.currentSelection
+//			.flatMapLatest { possible in possible.selection }
+//			.continuous()
+//		
+//		var count = 0
+//		let lifetime = latestSelection.subscribeValues(context: .main) { value in
+//			print(value)
+//			count += 1
+//			if count == 100 {
+//				e.fulfill()
+//			}
+//		}
+//		
+//		withExtendedLifetime(lifetime) {
+//			waitForExpectations(timeout: 1e2) { e in
+//			}
+//		}
+//	}
+}
+
+class FileSelection {
+	let offset: Int
+	init(offset: Int) { self.offset = offset }
+	
+	lazy var selection: Signal<Int> = Signal
+		.interval(.milliseconds(100))
+		.map { v in 1000 * self.offset + v }
+		.continuous(initialValue: 0)
+	
+	static let currentSelection: Signal<FileSelection> = Signal
+		.interval(.seconds(1), context: .main)
+		.map { v in FileSelection(offset: v) }
+		.continuous(initialValue: FileSelection(offset: 0))
 }

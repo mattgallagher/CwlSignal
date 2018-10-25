@@ -176,7 +176,10 @@ class SignalTests: XCTestCase {
 				XCTFail()
 			#else
 				XCTAssert(results2.count == 1)
-				XCTAssert(results2.at(0)?.error as? SignalSendError == SignalSendError.duplicate)
+				if case .some(.duplicate) = results2.at(0)?.error as? SignalBindError<Int> {
+				} else {
+					XCTFail()
+				}
 			#endif
 			withExtendedLifetime(ep2) {}
 		}
@@ -438,7 +441,10 @@ class SignalTests: XCTestCase {
 				#else
 					// Ensure error received
 					XCTAssert(results2.count == 1)
-					XCTAssert(results2.at(0)?.error as? SignalSendError == SignalSendError.duplicate)
+					if case .some(.duplicate) = results2.at(0)?.error as? SignalBindError<Int> {
+					} else {
+						XCTFail()
+					}
 				#endif
 				
 				withExtendedLifetime(ep2) {}
@@ -1930,6 +1936,28 @@ class SignalTests: XCTestCase {
 		
 		withExtendedLifetime(input) {}
 		withExtendedLifetime(out) {}
+	}
+	
+	func testDeadlockBug() {
+		let context = Exec.asyncQueue()
+		
+		let signal1 = Signal.from([1])
+			.continuous()
+		
+		let signal2 = signal1
+			.map(context: context) { 2 * $0 }
+			.continuous()
+		
+		let ex = expectation(description: "Waiting to ensure deadlock doesn't occur")
+		var results = [Result<Int>]()
+		let ep = signal2.subscribe {
+			results.append($0)
+			ex.fulfill()
+		}
+		withExtendedLifetime(ep) {
+			waitForExpectations(timeout: 2) { error in }
+		}
+		XCTAssert(results.at(0)?.isSignalComplete == true)
 	}
 }
 

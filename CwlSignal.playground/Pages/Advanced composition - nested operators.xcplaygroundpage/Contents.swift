@@ -15,20 +15,26 @@ The `timeout` function is used to enforce the timeout. There are also other func
 import CwlSignal
 import Foundation
 
-// When a timeout value is sent to the `startWithTimeout` input, this
-// class starts the `fakeConnectionLogic` connection.
-// If the timeout expires before the the new connection sends a result, an error
-// will be send instead of the connection result.
-// If multiple attempts to start a connection occur, the subsequent attempt will
-// be used and any previous attempt will be cancelled.
-struct Service {
+// Imagine you have a function that performs some asynchronous work (in this case, the function is
+// `basicAsynchronousWork` which returns a message after a few seconds). You might want to apply a
+// timelimit to that work – if it doesn't finish within the time limit, you want to return a timeout
+// error instead of the result of the function.
+//
+// When a timeout value is sent to the `startWithTimeout` input on this `TimeoutService`, the
+// class starts the `asynchronousWork` function that was provided to it on construction. If the timeout
+// elapses before the the asynchronous work sends a result, a `SignalReactiveError.timeout`
+// will be sent instead of the connection result.
+// 
+// If multiple attempts to start a connection occur, any previous attempt will be cancelled and only the
+// latest start will be used.
+struct TimeoutService {
    let startWithTimeout: SignalMultiInput<DispatchTimeInterval>
    let signal: SignalMulti<Result<String>>
 	
-   init() {
+   init(asynchronousWork: @escaping () -> Signal<String>) {
 		(startWithTimeout, signal) = Signal<DispatchTimeInterval>.multiChannel()
 			.map { seconds in
-				Service.fakeConnectionLogic()
+				asynchronousWork()
 					.timeout(interval: seconds)
 					.materialize()
 			}
@@ -36,15 +42,15 @@ struct Service {
 			.multicast()
 			.tuple
    }
-	
-	static func fakeConnectionLogic() -> Signal<String> {
-		// Simulate a network connection that takes a couple seconds and returns a string
-		return Signal<String>.timer(interval: .seconds(2), value: "Hello, world!")
-	}
+}
+
+func basicAsynchronousWork() -> Signal<String> {
+	// Simulate a network connection that takes a couple seconds and returns a string
+	return Signal<String>.timer(interval: .seconds(2), value: "Hello, world!")
 }
 
 // Our "connection" is a timer that will return a string after a fixed delay
-let service = Service()
+let service = TimeoutService(asynchronousWork: basicAsynchronousWork)
 
 // Subscribe to the output of the service. Since we've used `materialize`, we'll get the values *and* the errors from the child `connect()` signals wrapped in `.success` cases of the enclosing `Service.signal`.
 let output = service.signal.subscribe { result in

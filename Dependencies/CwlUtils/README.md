@@ -38,14 +38,6 @@ Minimum requirements are iOS 8 or macOS 10.10.
 2. Drag the "CwlUtils.xcodeproj" file from the Finder to somewhere your in own project's file tree in Xcode
 3. Drag the "CwlUtils.framework" from the "Products" folder of the "CwlUtils" project to the "Copy Files (Frameworks)" build phases of any target that you want to include this module.
 
-That third step is a little tricky if you're unfamiliar with Xcode but it involves:
-
-1. click on your project in the file tree
-2. click on the target to which you want to add this module
-3. select the "Build Phases" tab
-4. if you don't already have a "Copy File" build phase with a "Destination: Frameworks", add one using the "+" button in the top left of the tab
-5. click the "+" within the "Copy File (Frameworks)" phase and from the list that appears, select the "CwlUtils.framework". There will probably be two frameworks with the same name – macOS and iOS versions – so look for the "CwlUtils.framework" that appears immediately *above* the corresponding macOS or iOS CwlUtils testing target
-
 ## Statically included files
 
 This approach generates a concatenated files named CwlUtils.swift that can simply be added to another project (no dynamic frameworks, libraries or other settings required).
@@ -70,6 +62,8 @@ Add the following to the `dependencies` array in your "Package.swift" file:
 Or, if you're using the `swift-tools-version:4.0` package manager, add the following to the `dependencies` array in your "Package.swift" file:
 
     .package(url: "https://github.com/mattgallagher/CwlUtils.git", majorVersion: 1)
+
+> NOTE: even though this git repository includes its dependencies in the Dependencies folder, building via the Swift Package manager fetches and builds these dependencies independently.
 
 ## CocoaPods
 

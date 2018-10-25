@@ -18,6 +18,40 @@ The following is a threadsafe dictionary of values. You might use something simi
  */
 import CwlSignal
 
+/// A threadsafe key-value storage using reactive programming
+class DocumentValues {
+   typealias Dict = Dictionary<AnyHashable, Any>
+   typealias Tuple = (AnyHashable, Any?)
+	
+   private let input: SignalInput<Tuple>
+   
+   // Access to the data is via the signal.
+   public let signal: SignalMulti<Dict>
+
+   init() {
+      // Actual values storage is encapsulated within the signal
+      (self.input, self.signal) = Signal<Tuple>.channel()
+			// All updates pass through this single, common function.
+			.map(initialState: [:]) { (state: inout Dict, update: Tuple) in
+				switch update {
+				case (let key, .some(let value)): state[key] = value
+				case (let key, .none): state.removeValue(forKey: key)
+				}
+				return state
+			}
+			// Convert single `Signal` into multi-subscribable `SignalMulti` with `continuous`
+			.continuous(initialValue: [:]).tuple
+   }
+   
+	func removeValue(forKey key: AnyHashable) {
+		input.send((key, nil))
+	}
+	
+	func setValue(_ value: Any, forKey key: AnyHashable) {
+		input.send((key, value))
+	}
+}
+
 // Create the storage
 let dv = DocumentValues()
 
@@ -31,39 +65,6 @@ dv.setValue("World", forKey: "Hello")
 
 // We normally store outputs in a parent. Without a parent, this `cancel` lets Swift consider the variable "used".
 out.cancel()
-
-/// A threadsafe key-value storage using reactive programming
-class DocumentValues {
-   typealias Dict = Dictionary<AnyHashable, Any>
-   typealias Tuple = (AnyHashable, Any?)
-	
-   private let input: SignalInput<Tuple>
-   
-   // Access to the data is via the signal.
-   public let signal: SignalMulti<Dict>
-
-   init() {
-      // Actual values storage is encapsulated within the signal
-      (self.input, self.signal) = Signal<Tuple>.channel().map(initialState: [:]) { (state: inout Dict, update: Tuple) in
-			// All updates pass through this single, common function.
-			switch update {
-			case (let key, .some(let value)): state[key] = value
-			case (let key, .none): state.removeValue(forKey: key)
-			}
-			return state
-			
-		// Convert single `Signal` into multi-subscribable `SignalMulti` with `continuous`
-		}.continuous(initialValue: [:]).tuple
-   }
-   
-	func removeValue(forKey key: AnyHashable) {
-		input.send((key, nil))
-	}
-	
-	func setValue(_ value: Any, forKey key: AnyHashable) {
-		input.send((key, value))
-	}
-}
 
 /*:
 ---

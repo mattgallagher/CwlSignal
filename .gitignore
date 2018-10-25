@@ -1,7 +1,7 @@
 .DS_Store
 project.xcworkspace/
-xcuserdata/
 *.xcscmblueprint
+xcuserdata/
 .build
 Package.pins
 Package.resolved

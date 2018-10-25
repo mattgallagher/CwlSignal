@@ -637,9 +637,10 @@ extension SignalInterface {
 	public func cancellableBind<InputInterface>(to interface: InputInterface) -> Lifetime where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
 		let input = interface.input
 		if let multiInput = input as? SignalMultiInput<OutputValue> {
-			multiInput.add(signal)
-			return OnDelete { [weak multiInput, weak signal] in
-				guard let mi = multiInput, let s = signal else { return }
+			let sig = signal
+			multiInput.add(sig)
+			return OnDelete { [weak multiInput, weak sig] in
+				guard let mi = multiInput, let s = sig else { return }
 				mi.remove(s)
 			}
 		} else {
@@ -655,9 +656,10 @@ extension SignalInterface {
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	/// - Returns: a `Lifetime` that will undo the bind if cancelled or released
 	public func cancellableBind(to input: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) -> Lifetime {
-		input.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
-		return OnDelete { [weak input, weak signal] in
-			guard let i = input, let s = signal else { return }
+		let sig = signal
+		input.add(sig, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
+		return OnDelete { [weak input, weak sig] in
+			guard let i = input, let s = sig else { return }
 			i.remove(s)
 		}
 	}

@@ -6,20 +6,11 @@
 
 ## Dynamic view properties
 
-This page shows how to implement user-interface controls dependent on multiple sources of changing data using CwlSignal.
+This page shows a fictional scenario: you're selecting files to upload to a server. In the foreground, the user selects files to upload while in the background, the server connection changes between two different servers or not connected at all.
 
-There are two data dependencies in the example:
-
-1. User login status (changes on a background thread)
-2. File selection (changes on the main thread)
-
-In this example, the login is just a `Bool` and the file selection is just an array of `Int` – and they are automatically cycled on a timer – but they should allow you to see how everything is connected and updated.
-
-There are three user-interface controls dependent on this data:
-
-1. Checkbox (checked if user is logged in)
+1. Checkbox (checked if connected to a server, label shows server's name)
 2. Text label (show the count of selected files)
-3. Add to favorites button (enabled only if user is logged in *and* file selection is non-empty).
+3. Add to favorites button (enabled only if server is connected *and* file selection is non-empty).
 
 If you're reading through the code, the most important part to focus on is the three "dynamic properties" at the bottom of the `loadView` function. These take data provided by incoming signals and apply the result to the views.
 
@@ -38,35 +29,44 @@ import Cocoa
 import CwlSignal
 import PlaygroundSupport
 
-PlaygroundPage.current.liveView = ViewController(nibName: nil, bundle: nil).view
+PlaygroundPage.current.liveView = ViewController()
 
-// This is a dummy Login class. Every 3.0 seconds, it toggles login on the background thread
-class Login {
-	let signal = Signal
-		.interval(.seconds(3))
-		.map { v in v % 2 == 0 }
-		.continuous(initialValue: false)
+// This is a dummy Server (all it has is a name).
+class Server {
+	let name: String
+	init(name: String) { self.name = name }
+	
+	// The `currentServer` value changes every five seconds, on a background thread, between no server,
+	// and two different named servers, to simulate changing external conditions.
+	static let currentServer: Signal<Server?> = Signal
+		.interval(.seconds(5))
+		.map { v in v % 3 == 0 ? nil : Server(name: v % 3 == 1 ? "Peach" : "Pear") }
+		.continuous(initialValue: Server(name: "Pear"))
 }
 
-// This is a FileSelection class. Every 0.75 seconds, it changes the number of selected files on the main thread
+// This is a FileSelection class. To simulate changing user actions, every 0.65 seconds, the number of
+// selected items is changed and every 3 seconds the selection object itself is deleted or recreated.
 class FileSelection {
-	let signal = Signal
-		.interval(.interval(0.75), context: .main)
+	let selection: Signal<[Int]> = Signal
+		.interval(.milliseconds(650))
 		.map { v in Array<Int>(repeating: 0, count: v % 3) }
 		.continuous(initialValue: Array<Int>())
+	
+	static let currentSelection: Signal<FileSelection?> = Signal
+		.interval(.seconds(3), context: .main)
+		.map { v in v % 2 == 0 ? FileSelection() : nil }
+		.continuous(initialValue: FileSelection())
 }
 
 class ViewController: NSViewController {
 	// Child controls
-	let addToFavoritesButton = NSButton(title: "Add to favorites", target: nil, action: nil)
-	let loggedInStatusButton = NSButton(checkboxWithTitle: "Logged In", target: nil, action: nil)
+	let uploadButton = NSButton(title: "Upload selection", target: nil, action: nil)
+	let serverStatusButton = NSButton(checkboxWithTitle: "", target: nil, action: nil)
 	let filesSelectedLabel = NSTextField(labelWithString: "")
-
-	// Connections to model objects
-	let login = Login()
-	let fileSelection = FileSelection()
+	
+	// Maintain the lifetime of the observations as long as the view controller lasts
 	var lifetimes = [Lifetime]()
-
+	
 	override func loadView() {
 		// The view is an NSStackView (for layout convenience)
 		let view = NSStackView(frame: NSRect(x: 0, y: 0, width: 150, height: 100))
@@ -74,29 +74,31 @@ class ViewController: NSViewController {
 		// Set static properties
 		view.orientation = .vertical
 		view.setHuggingPriority(.required, for: .horizontal)
-
+		
 		// Construct the view tree
-		view.addView(addToFavoritesButton, in: .center)
-		view.addView(loggedInStatusButton, in: .center)
+		view.addView(uploadButton, in: .center)
+		view.addView(serverStatusButton, in: .center)
 		view.addView(filesSelectedLabel, in: .center)
 		view.layoutSubtreeIfNeeded()
 		
+		// Transform the current selection, which may be nil, into a stream that's empty instead of nil
+		let latestSelection = FileSelection.currentSelection
+			.flatMapLatest { cur in cur?.selection.map(Optional.some) ?? .just(nil) }
+			.continuous()
+
 		// Configure dynamic properties
-		lifetimes += login.signal
-			.subscribe(context: .main) { loginResult in
-				self.loggedInStatusButton.state = (loginResult.value ?? false) ? .on : .off
+		lifetimes += Server.currentServer
+			.subscribeValues(context: .main) { [serverStatusButton] server in
+				serverStatusButton.state = server == nil ? .off : .on
+				serverStatusButton.title = server.map { s in "Server name: \(s.name)" } ?? "None"
 			}
-		lifetimes += fileSelection.signal
-			.subscribe(context: .main) { r in
-				self.filesSelectedLabel.stringValue = "Selected file count: \(r.value?.count ?? 0)"
+		lifetimes += latestSelection
+			.subscribeValues(context: .main) { [filesSelectedLabel] s in
+				filesSelectedLabel.stringValue = s.map { "Selected file count: \($0.count)" } ?? "Selection empty"
 			}
-		lifetimes += login.signal
-			.combineLatest(fileSelection.signal) { isLoggedIn, selectedIndices in
-				isLoggedIn && !selectedIndices.isEmpty
-			}
-			.subscribe(context: .main) { result in
-				self.addToFavoritesButton.isEnabled = result.value ?? false
-			}
+		lifetimes += Server.currentServer
+			.combineLatest(latestSelection) { server, selection in server != nil && selection?.isEmpty == false }
+			.subscribeValues(context: .main) { [uploadButton] canUpload in uploadButton.isEnabled = canUpload }
 		
 		// Set the view
 		self.view = view

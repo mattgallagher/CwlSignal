@@ -468,30 +468,37 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testFlatMapLatest() {
 		var results = [Result<Int>]()
-		_ = Signal.just(1, 3, 5).flatMapLatest { v in
-			return Signal<Int>.generate(context: .direct) { input in
-				guard let i = input else { return }
-				for w in v..<(v * 2) {
-					if let _ = i.send(value: w) {
-						break
-					}
-				}
-				i.close()
-			}
-		}.subscribe { r in
+		let signals = [Signal<Int>.create(), Signal<Int>.create(), Signal<Int>.create()]
+		let wrapper = Signal<Int>.create()
+		let output = wrapper.signal.flatMapLatest { v in signals[v].signal }.subscribe { r in
 			results.append(r)
 		}
+		
+		wrapper.input.send(0)
+		signals[0].input.send(0, 1, 2)
+		wrapper.input.send(1)
+		signals[0].input.send(3, 4, 5)
+		signals[1].input.send(6, 7, 8)
+		wrapper.input.send(2)
+		signals[0].input.send(9, 10, 11)
+		signals[1].input.send(12, 13, 14)
+		signals[2].input.send(15, 16, 17)
+		wrapper.input.close()
+		signals.forEach { $0.input.close() }
+		
 		XCTAssert(results.count == 10)
-		XCTAssert(results.at(0)?.value == 1)
-		XCTAssert(results.at(1)?.value == 3)
-		XCTAssert(results.at(2)?.value == 4)
-		XCTAssert(results.at(3)?.value == 5)
-		XCTAssert(results.at(4)?.value == 5)
-		XCTAssert(results.at(5)?.value == 6)
-		XCTAssert(results.at(6)?.value == 7)
-		XCTAssert(results.at(7)?.value == 8)
-		XCTAssert(results.at(8)?.value == 9)
+		XCTAssert(results.at(0)?.value == 0)
+		XCTAssert(results.at(1)?.value == 1)
+		XCTAssert(results.at(2)?.value == 2)
+		XCTAssert(results.at(3)?.value == 6)
+		XCTAssert(results.at(4)?.value == 7)
+		XCTAssert(results.at(5)?.value == 8)
+		XCTAssert(results.at(6)?.value == 15)
+		XCTAssert(results.at(7)?.value == 16)
+		XCTAssert(results.at(8)?.value == 17)
 		XCTAssert(results.at(9)?.error as? SignalComplete == .closed)
+		
+		withExtendedLifetime(output) {}
 	}
 	
 	func testConcatMap() {
@@ -611,14 +618,14 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testCompactOptionals() {
 		var results = [Result<Int>]()
-		_ = Signal<Int?>.just(1, nil, 2, nil).compactOptionals().subscribe { r in results.append(r) }
+		_ = Signal<Int?>.just(1, nil, 2, nil).compact().subscribe { r in results.append(r) }
 		XCTAssert(results.count == 3)
 		XCTAssert(results.at(0)?.value == 1)
 		XCTAssert(results.at(1)?.value == 2)
 		XCTAssert(results.at(2)?.isSignalComplete == true)
 	}
 	
-	func testFilterMap() {
+	func testCompactMap() {
 		var results = [Result<Int>]()
 		_ = Signal.from(1...5).compactMap { v -> Int? in
 			if v % 2 == 0 {

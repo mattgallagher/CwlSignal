@@ -218,7 +218,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Returns: the created `Signal`
 	public final func transform<U>(context: Exec = .direct, _ processor: @escaping (Result<OutputValue>, SignalNext<U>) -> Void) -> Signal<U> {
 		return Signal<U>(processor: attach { (s, dw) in
-			SignalTransformer<OutputValue, U>(signal: s, dw: &dw, context: context, processor: processor)
+			SignalTransformer<OutputValue, U>(signal: s, dw: &dw, context: context, processor)
 		})
 	}
 	
@@ -231,7 +231,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Returns: the transformed output `Signal`
 	public final func transform<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, Result<OutputValue>, SignalNext<U>) -> Void) -> Signal<U> {
 		return Signal<U>(processor: attach { (s, dw) in
-			SignalTransformerWithState<OutputValue, U, S>(signal: s, initialState: initialState, dw: &dw, context: context, processor: processor)
+			SignalTransformerWithState<OutputValue, U, S>(signal: s, initialState: initialState, dw: &dw, context: context, processor)
 		})
 	}
 	
@@ -533,12 +533,14 @@ public class Signal<OutputValue>: SignalInterface {
 	// A struct that stores data associated with the current handler. Under the `Signal` mutex, if the `itemProcessing` flag is acquired, the fields of this struct are filled in using `Signal` and `SignalHandler` data and the contents of the struct can be used by the current thread *outside* the mutex.
 	private struct ItemContext<OutputValue> {
 		let context: Exec
+		let synchronous: Bool
 		let handler: (Result<OutputValue>) -> Void
 		let activationCount: Int
 		
 		init(context: Exec, synchronous: Bool, handler: @escaping (Result<OutputValue>) -> Void, activationCount: Int) {
 			self.activationCount = activationCount
 			self.context = context
+			self.synchronous = synchronous
 			if case .direct = context {
 				self.handler = handler
 			} else if context.type.isImmediate || synchronous {
@@ -627,7 +629,7 @@ public class Signal<OutputValue>: SignalInterface {
 	fileprivate func attach<R>(constructor: (Signal<OutputValue>, inout DeferredWork) -> R) -> R where R: SignalHandler<OutputValue> {
 		var dw = DeferredWork()
 		let result: R? = mutex.sync {
-			signalHandler == nil ? constructor(self, &dw) : nil
+			self.signalHandler == nil ? constructor(self, &dw) : nil
 		}
 		dw.runWork()
 		if let r = result {
@@ -699,10 +701,12 @@ public class Signal<OutputValue>: SignalInterface {
 	// - Parameters:
 	//   - oldPreceeding: the predecessor to remove
 	//   - dw: required
-	fileprivate final func removePreceedingWithoutInterruptionInternal(_ oldPreceeding: SignalPredecessor, dw: inout DeferredWork) {
+	fileprivate final func removePreceedingWithoutInterruptionInternal(_ oldPreceeding: SignalPredecessor, dw: inout DeferredWork) -> Bool {
 		if preceeding.remove(oldPreceeding.wrappedWithOrder(0)) != nil {
 			oldPreceeding.outputRemovedSuccessorInternal(self, dw: &dw)
+			return true
 		}
+		return false
 	}
 	
 	// Removes all predecessors and invalidate all previous inputs. This is one of two, independent, functions for removing preceeding. The other being `removePreceedingWithoutInterruptionInternal`.
@@ -715,7 +719,7 @@ public class Signal<OutputValue>: SignalInterface {
 			dw.append { [preceeding] in withExtendedLifetime(preceeding) {} }
 			
 			// Careful to use *sorted* preceeding to propagate graph changes deterministically
-			sortedPreceeding.forEach { $0.base.outputRemovedSuccessorInternal(self, dw: &dw) }
+			sortedPreceedingInternal.forEach { $0.base.outputRemovedSuccessorInternal(self, dw: &dw) }
 			preceeding = []
 		}
 		updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw)
@@ -942,7 +946,7 @@ public class Signal<OutputValue>: SignalInterface {
 		case .normal:
 			if oldDelivery.isSynchronous {
 				// Careful to use *sorted* preceeding to propagate graph changes deterministically
-				for p in sortedPreceeding {
+				for p in sortedPreceedingInternal {
 					p.base.outputCompletedActivationSuccessorInternal(self, dw: &dw)
 				}
 			}
@@ -1000,7 +1004,7 @@ public class Signal<OutputValue>: SignalInterface {
 	}
 	
 	/// Returns a copy of the preceeding set, sorted by "order". This allows deterministic sending of results through the graph – older connections are prioritized over newer.
-	private var sortedPreceeding: Array<OrderedSignalPredecessor> {
+	private var sortedPreceedingInternal: Array<OrderedSignalPredecessor> {
 		return preceeding.sorted(by: { (a, b) -> Bool in
 			return a.order < b.order
 		})
@@ -1049,12 +1053,12 @@ public class Signal<OutputValue>: SignalInterface {
 			fallthrough
 		case .normal:
 			// Careful to use *sorted* preceeding to propagate graph changes deterministically
-			for p in sortedPreceeding {
+			for p in sortedPreceedingInternal {
 				p.base.outputActivatedSuccessorInternal(self, activationCount: activationCount, dw: &dw)
 			}
 		case .disabled:
 			// Careful to use *sorted* preceeding to propagate graph changes deterministically
-			for p in sortedPreceeding {
+			for p in sortedPreceedingInternal {
 				p.base.outputDeactivatedSuccessorInternal(self, dw: &dw)
 			}
 		}
@@ -1137,7 +1141,7 @@ public class Signal<OutputValue>: SignalInterface {
 		if case .direct = handlerContext.context {
 			invokeHandler(result)
 			specializedSyncPop()
-		} else if handlerContext.context.type.isImmediate {
+		} else if handlerContext.context.type.isImmediate || handlerContext.synchronous {
 			self.invokeHandler(result)
 			while let r = pop() {
 				if handlerContext.context.type.isImmediate {
@@ -1229,13 +1233,10 @@ public final class SignalMulti<OutputValue>: Signal<OutputValue> {
 	
 	fileprivate override init<U>(processor: SignalProcessor<U, OutputValue>) {
 		assert(processor.multipleOutputsPermitted, "Construction of SignalMulti from a single output processor is illegal.")
-		spawnSingle = { (p: SignalPredecessor) in
-			return Signal<OutputValue>(processor: p as! SignalProcessor<U, OutputValue>)
-		}
+		spawnSingle = { proc in Signal<OutputValue>(processor: proc as! SignalProcessor<U, OutputValue>) }
 		super.init(processor: processor)
 	}
 	
-	// Technically listeners are never attached to the `SignalMulti` itself. Instead, it creates a new `Signal` branching off the preceeding `SignalMultiProcessor<OutputValue>` and the attach is applied to that new `Signal<OutputValue>`.
 	fileprivate override func attach<R>(constructor: (Signal<OutputValue>, inout DeferredWork) -> R) -> R where R: SignalHandler<OutputValue> {
 		return spawnSingle(preceeding.first!.base).attach(constructor: constructor)
 	}
@@ -1461,6 +1462,7 @@ fileprivate protocol SignalPredecessor: class {
 	func outputAddedSuccessorInternal(_ successor: AnyObject, param: Any?, activationCount: Int?, dw: inout DeferredWork) throws
 	func outputRemovedSuccessorInternal(_ successor: AnyObject, dw: inout DeferredWork)
 	func predecessorsSuccessorInternal(loopCheck: AnyObject) -> Bool
+	func outputSignals<U>(ofType: U.Type) -> [Signal<U>]
 	var loopCheckValue: AnyObject { get }
 	func wrappedWithOrder(_ order: Int) -> OrderedSignalPredecessor
 }
@@ -1530,6 +1532,17 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 		}
 		return result
 	}
+	
+	/// Returns the list of outputs, assuming they match the provided type. This method is used when attempting to remove a SignalMulti from the list of inputs to a SignalInputMulti since the whole list of outputs may need to be searched to find one that's actually connected to the SignalInputMulti.
+	///
+	/// - Parameter ofType: specifies the input type of the SignalInputMulti (it will always match but we follow the type system, rather than force matching.
+	/// - Returns: a strong array of outputs
+	func outputSignals<U>(ofType: U.Type) -> [Signal<U>] {
+		return sync {
+			return outputs.compactMap { $0.destination.value as? Signal<U> }
+		}
+	}
+
 	
 	// Pushes activation values to newly joined outputs. By default, there is no activation so this function is intended to be overridden. Currently overridden by `SignalMultiProcessor` and `SignalCacheUntilActive`.
 	//
@@ -2116,7 +2129,7 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 	//   - dw: required
 	//   - context: where the `handler` will be invoked
 	//   - processor: the user supplied processing function
-	init(signal: Signal<OutputValue>, dw: inout DeferredWork, context: Exec, processor: @escaping UserProcessorType) {
+	init(signal: Signal<OutputValue>, dw: inout DeferredWork, context: Exec, _ processor: @escaping UserProcessorType) {
 		self.userProcessor = processor
 		super.init(signal: signal, dw: &dw, context: context)
 	}
@@ -2168,7 +2181,7 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 	//   - dw: required
 	//   - context: where the `handler` will be invoked
 	//   - processor: the user supplied processing function
-	init(signal: Signal<OutputValue>, initialState: S, dw: inout DeferredWork, context: Exec, processor: @escaping (inout S, Result<OutputValue>, SignalNext<U>) -> Void) {
+	init(signal: Signal<OutputValue>, initialState: S, dw: inout DeferredWork, context: Exec, _ processor: @escaping (inout S, Result<OutputValue>, SignalNext<U>) -> Void) {
 		self.userProcessor = processor
 		self.initialState = initialState
 		super.init(signal: signal, dw: &dw, context: context)
@@ -2740,7 +2753,7 @@ fileprivate class SignalMultiInputProcessor<InputValue>: SignalProcessor<InputVa
 			guard let output = outputs.first, let os = output.destination.value, let ac = output.activationCount else { return }
 			os.mutex.sync {
 				guard os.activationCount == ac else { return }
-				os.removePreceedingWithoutInterruptionInternal(self, dw: &dw)
+				_ = os.removePreceedingWithoutInterruptionInternal(self, dw: &dw)
 			}
 		}
 	}
@@ -2758,7 +2771,7 @@ fileprivate class SignalMultiInputProcessor<InputValue>: SignalProcessor<InputVa
 				var dw = DeferredWork()
 				os.mutex.sync {
 					guard os.activationCount == ac else { return }
-					os.removePreceedingWithoutInterruptionInternal(s, dw: &dw)
+					_ = os.removePreceedingWithoutInterruptionInternal(s, dw: &dw)
 					s.multiInput.checkForLastInputRemovedInternal(signal: os, dw: &dw)
 				}
 				dw.runWork()
@@ -2807,25 +2820,41 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 		dw.runWork()
 	}
 	
+	private func remove(mp: SignalMultiInputProcessor<InputValue>, from sig: Signal<InputValue>) -> Bool {
+		var dw = DeferredWork()
+		let result = sig.mutex.sync { () -> Bool in
+			let r = sig.removePreceedingWithoutInterruptionInternal(mp, dw: &dw)
+			checkForLastInputRemovedInternal(signal: sig, dw: &dw)
+			return r
+		}
+		dw.runWork()
+		return result
+	}
+	
 	/// Removes a predecessor from the merge set
+	///
+	/// NOTE: if the predecessor is a `SignalMulti` with multiple connections to the merge set, only the first match will be removed.
 	///
 	/// - Parameter source: the predecessor to remove
 	public final func remove<U: SignalInterface>(_ source: U) where U.OutputValue == InputValue {
-		guard let sig = signal else { return }
-		var dw = DeferredWork()
-		var mergeProcessor: SignalMultiInputProcessor<InputValue>? = nil
-		let s = source.signal
-		s.mutex.sync {
-			mergeProcessor = s.signalHandler as? SignalMultiInputProcessor<InputValue>
-		}
+		guard let targetSignal = signal else { return }
 		
-		if let mp = mergeProcessor {
-			sig.mutex.sync {
-				sig.removePreceedingWithoutInterruptionInternal(mp, dw: &dw)
-				checkForLastInputRemovedInternal(signal: sig, dw: &dw)
+		let sourceSignal = source.signal
+		if let multi = sourceSignal as? SignalMulti<InputValue> {
+			let signals = multi.preceeding.first!.base.outputSignals(ofType: InputValue.self)
+			let mergeProcessors = signals.compactMap { s in
+				s.mutex.sync { s.signalHandler as? SignalMultiInputProcessor<InputValue> }
+			}
+			for mp in mergeProcessors {
+				if remove(mp: mp, from: targetSignal) {
+					break
+				}
+			}
+		} else {
+			if let mp = sourceSignal.mutex.sync(execute: { sourceSignal.signalHandler as? SignalMultiInputProcessor<InputValue> }) {
+				_ = remove(mp: mp, from: targetSignal)
 			}
 		}
-		dw.runWork()
 	}
 	
 	// Overridden by SignalMergeSet to send an error immediately upon last input removed
@@ -2984,7 +3013,6 @@ public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Lifeti
 
 @available(*, deprecated, message:"Renamed to SignalOutput")
 public typealias SignalEndpoint<T> = SignalOutput<T>
-
 
 /// Reflects the activation state of a `Signal`
 /// - normal: Signal will deliver results according to the default behavior of the processing context
