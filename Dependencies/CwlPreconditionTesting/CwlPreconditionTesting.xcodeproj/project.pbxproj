@@ -7,52 +7,30 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		96ACCC611C6E8BFD00FE0B1B /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 96ACCC591C6E8BBE00FE0B1B /* CwlPreconditionTesting.framework */; };
-		C90F356A1C66296900F2FAF9 /* mach_exc.defs in Sources */ = {isa = PBXBuildFile; fileRef = C98707901C3F8952009B413A /* mach_exc.defs */; settings = {ATTRIBUTES = (Server, ); }; };
-		C92A97EB1C68A5B5008905C2 /* CwlPreconditionTesting_POSIX.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C92A97D91C68A4F3008905C2 /* CwlPreconditionTesting_POSIX.framework */; };
+		C92169C82190560700396AB0 /* mach_excServer.c in Sources */ = {isa = PBXBuildFile; fileRef = C958F0FD1E3F698C008BE8E0 /* mach_excServer.c */; };
+		C92169CF2190656E00396AB0 /* CwlCatchBadInstructionPosix.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9BF46761E4575E80040A183 /* CwlCatchBadInstructionPosix.swift */; };
+		C92169D121906A5C00396AB0 /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98707761C3F886F009B413A /* CwlPreconditionTesting.framework */; };
+		C92169D221906A7000396AB0 /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98707761C3F886F009B413A /* CwlPreconditionTesting.framework */; };
 		C958F0F21E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F0F11E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift */; };
-		C958F0F41E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F0F11E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift */; };
 		C958F0F51E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F0F11E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift */; };
 		C958F1061E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = C958F0F91E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m */; };
-		C958F1081E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = C958F0F91E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m */; };
-		C958F1091E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = C958F0F91E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m */; };
 		C958F1161E3F698C008BE8E0 /* CwlBadInstructionException.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F0FF1E3F698C008BE8E0 /* CwlBadInstructionException.swift */; };
 		C958F11A1E3F698C008BE8E0 /* CwlCatchBadInstruction.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F1001E3F698C008BE8E0 /* CwlCatchBadInstruction.swift */; };
 		C958F11E1E3F698C008BE8E0 /* CwlDarwinDefinitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F1011E3F698C008BE8E0 /* CwlDarwinDefinitions.swift */; };
 		C958F1421E3F6D91008BE8E0 /* CwlMachBadInstructionHandler.h in Headers */ = {isa = PBXBuildFile; fileRef = C958F0FB1E3F698C008BE8E0 /* CwlMachBadInstructionHandler.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C978CA2F211EEB64005F8866 /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98707761C3F886F009B413A /* CwlPreconditionTesting.framework */; };
-		C986B0961E724AF70032C9FA /* CwlPreconditionTesting_POSIX.h in Headers */ = {isa = PBXBuildFile; fileRef = C986B0931E724AE90032C9FA /* CwlPreconditionTesting_POSIX.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C986B0971E724AF80032C9FA /* CwlPreconditionTesting_POSIX.h in Headers */ = {isa = PBXBuildFile; fileRef = C986B0931E724AE90032C9FA /* CwlPreconditionTesting_POSIX.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C986B09E1E724C250032C9FA /* CwlPreconditionTesting.h in Headers */ = {isa = PBXBuildFile; fileRef = C986B09B1E724C250032C9FA /* CwlPreconditionTesting.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C9A8AF8020E87A910068E99B /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9A8AF7720E87A900068E99B /* CwlPreconditionTesting.framework */; };
-		C9A8AF9020E87AE10068E99B /* CwlMachBadInstructionHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = C958F0F91E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m */; };
-		C9A8AF9120E87AE10068E99B /* mach_excServer.c in Sources */ = {isa = PBXBuildFile; fileRef = C958F0FD1E3F698C008BE8E0 /* mach_excServer.c */; };
-		C9A8AF9220E87AE10068E99B /* CwlBadInstructionException.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F0FF1E3F698C008BE8E0 /* CwlBadInstructionException.swift */; };
-		C9A8AF9320E87AE10068E99B /* CwlCatchBadInstruction.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F1001E3F698C008BE8E0 /* CwlCatchBadInstruction.swift */; };
-		C9A8AF9420E87AE10068E99B /* CwlDarwinDefinitions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F1011E3F698C008BE8E0 /* CwlDarwinDefinitions.swift */; };
 		C9A8AF9720E87B480068E99B /* CwlCatchBadInstructionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F0F11E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift */; };
-		C9A8AF9920E87F5B0068E99B /* CwlPreconditionTesting.h in Headers */ = {isa = PBXBuildFile; fileRef = C986B09B1E724C250032C9FA /* CwlPreconditionTesting.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C9A8AF9A20E880080068E99B /* CwlMachBadInstructionHandler.h in Headers */ = {isa = PBXBuildFile; fileRef = C958F0FB1E3F698C008BE8E0 /* CwlMachBadInstructionHandler.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		C9BF467D1E4576090040A183 /* CwlCatchBadInstructionPosix.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9BF46761E4575E80040A183 /* CwlCatchBadInstructionPosix.swift */; };
-		C9BF467E1E4576090040A183 /* CwlCatchBadInstructionPosix.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9BF46761E4575E80040A183 /* CwlCatchBadInstructionPosix.swift */; };
-		C9F904892160E15E00C8731F /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9F904812160E13500C8731F /* CwlCatchException.framework */; };
-		C9F9048A2160E19400C8731F /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9F904852160E13500C8731F /* CwlCatchException.framework */; };
+		C9F904892160E15E00C8731F /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9F904812160E13500C8731F /* CwlCatchException.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		96ACCC621C6E8C0100FE0B1B /* PBXContainerItemProxy */ = {
+		C92169CD219064A600396AB0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C987076D1C3F886F009B413A /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 96ACCC581C6E8BBE00FE0B1B;
-			remoteInfo = CwlPreconditionTesting_tvOS;
-		};
-		C92A97E91C68A5A7008905C2 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C987076D1C3F886F009B413A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C92A97C81C68A4F3008905C2;
-			remoteInfo = CwlPreconditionTesting_POSIX;
+			remoteGlobalIDString = C98707751C3F886F009B413A;
+			remoteInfo = CwlPreconditionTesting;
 		};
 		C98707821C3F886F009B413A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -60,13 +38,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = C98707751C3F886F009B413A;
 			remoteInfo = CwlPreconditionTesting;
-		};
-		C9A8AF8120E87A910068E99B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C987076D1C3F886F009B413A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C9A8AF7620E87A900068E99B;
-			remoteInfo = CwlPreconditionTesting_iOS;
 		};
 		C9F904802160E13500C8731F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -81,13 +52,6 @@
 			proxyType = 2;
 			remoteGlobalIDString = C90FA1B61C41E48100996A1F;
 			remoteInfo = CwlCatchException_macOSTests;
-		};
-		C9F904842160E13500C8731F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C9F904792160E13500C8731F /* CwlCatchException.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = C90FA1F71C42071A00996A1F;
-			remoteInfo = CwlCatchException_iOS;
 		};
 		C9F904862160E13500C8731F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -108,22 +72,10 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C92A97E21C68A515008905C2 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		96ACCC481C6E8A7C00FE0B1B /* CwlPreconditionTesting_tvOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlPreconditionTesting_tvOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		96ACCC591C6E8BBE00FE0B1B /* CwlPreconditionTesting.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CwlPreconditionTesting.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C92A97D91C68A4F3008905C2 /* CwlPreconditionTesting_POSIX.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CwlPreconditionTesting_POSIX.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C92A97E61C68A515008905C2 /* CwlPreconditionTesting_POSIXTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlPreconditionTesting_POSIXTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C958F0F11E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlCatchBadInstructionTests.swift; sourceTree = "<group>"; };
 		C958F0F91E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CwlMachBadInstructionHandler.m; sourceTree = "<group>"; };
 		C958F0FB1E3F698C008BE8E0 /* CwlMachBadInstructionHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CwlMachBadInstructionHandler.h; sourceTree = "<group>"; };
@@ -131,15 +83,10 @@
 		C958F0FF1E3F698C008BE8E0 /* CwlBadInstructionException.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlBadInstructionException.swift; sourceTree = "<group>"; };
 		C958F1001E3F698C008BE8E0 /* CwlCatchBadInstruction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlCatchBadInstruction.swift; sourceTree = "<group>"; };
 		C958F1011E3F698C008BE8E0 /* CwlDarwinDefinitions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlDarwinDefinitions.swift; sourceTree = "<group>"; };
-		C978CA0E211EEA5F005F8866 /* CwlCatchExceptionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlCatchExceptionTests.swift; sourceTree = "<group>"; };
-		C978CA5E211EF539005F8866 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C986B0931E724AE90032C9FA /* CwlPreconditionTesting_POSIX.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CwlPreconditionTesting_POSIX.h; sourceTree = "<group>"; };
 		C986B09B1E724C250032C9FA /* CwlPreconditionTesting.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CwlPreconditionTesting.h; sourceTree = "<group>"; };
 		C986B0A21E724D760032C9FA /* mach_excServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mach_excServer.h; sourceTree = "<group>"; };
 		C98707761C3F886F009B413A /* CwlPreconditionTesting.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CwlPreconditionTesting.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C98707801C3F886F009B413A /* CwlPreconditionTesting_macOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlPreconditionTesting_macOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C98707901C3F8952009B413A /* mach_exc.defs */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.mig; name = mach_exc.defs; path = usr/include/mach/mach_exc.defs; sourceTree = SDKROOT; };
-		C9A8AF7720E87A900068E99B /* CwlPreconditionTesting.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CwlPreconditionTesting.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9A8AF7F20E87A910068E99B /* CwlPreconditionTesting_iOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlPreconditionTesting_iOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9A8AF9820E87C480068E99B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C9A8AF9B20E8801F0068E99B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -152,29 +99,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				96ACCC611C6E8BFD00FE0B1B /* CwlPreconditionTesting.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		96ACCC551C6E8BBE00FE0B1B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C92A97D11C68A4F3008905C2 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C92A97E01C68A515008905C2 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C92A97EB1C68A5B5008905C2 /* CwlPreconditionTesting_POSIX.framework in Frameworks */,
+				C92169D221906A7000396AB0 /* CwlPreconditionTesting.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -194,29 +119,28 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C9A8AF7420E87A900068E99B /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C9F9048A2160E19400C8731F /* CwlCatchException.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C9A8AF7C20E87A910068E99B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C9A8AF8020E87A910068E99B /* CwlPreconditionTesting.framework in Frameworks */,
+				C92169D121906A5C00396AB0 /* CwlPreconditionTesting.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C92169CC2190605100396AB0 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C986B09B1E724C250032C9FA /* CwlPreconditionTesting.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
 		C958F0EF1E3F6977008BE8E0 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
-				C978CA0D211EEA5F005F8866 /* CwlCatchExceptionTests */,
 				C958F0F01E3F6977008BE8E0 /* CwlPreconditionTestingTests */,
 			);
 			path = Tests;
@@ -247,7 +171,6 @@
 				C958F0FA1E3F698C008BE8E0 /* include */,
 				C958F0FD1E3F698C008BE8E0 /* mach_excServer.c */,
 				C986B0A21E724D760032C9FA /* mach_excServer.h */,
-				C98707901C3F8952009B413A /* mach_exc.defs */,
 			);
 			path = CwlMachBadInstructionHandler;
 			sourceTree = "<group>";
@@ -264,39 +187,13 @@
 			isa = PBXGroup;
 			children = (
 				C9A8AF9820E87C480068E99B /* Info.plist */,
-				C986B09A1E724C250032C9FA /* Mach */,
-				C986B0921E724AE90032C9FA /* Posix */,
+				C92169CC2190605100396AB0 /* include */,
 				C958F0FF1E3F698C008BE8E0 /* CwlBadInstructionException.swift */,
 				C958F1001E3F698C008BE8E0 /* CwlCatchBadInstruction.swift */,
 				C9BF46761E4575E80040A183 /* CwlCatchBadInstructionPosix.swift */,
 				C958F1011E3F698C008BE8E0 /* CwlDarwinDefinitions.swift */,
 			);
 			path = CwlPreconditionTesting;
-			sourceTree = "<group>";
-		};
-		C978CA0D211EEA5F005F8866 /* CwlCatchExceptionTests */ = {
-			isa = PBXGroup;
-			children = (
-				C978CA5E211EF539005F8866 /* Info.plist */,
-				C978CA0E211EEA5F005F8866 /* CwlCatchExceptionTests.swift */,
-			);
-			path = CwlCatchExceptionTests;
-			sourceTree = "<group>";
-		};
-		C986B0921E724AE90032C9FA /* Posix */ = {
-			isa = PBXGroup;
-			children = (
-				C986B0931E724AE90032C9FA /* CwlPreconditionTesting_POSIX.h */,
-			);
-			path = Posix;
-			sourceTree = "<group>";
-		};
-		C986B09A1E724C250032C9FA /* Mach */ = {
-			isa = PBXGroup;
-			children = (
-				C986B09B1E724C250032C9FA /* CwlPreconditionTesting.h */,
-			);
-			path = Mach;
 			sourceTree = "<group>";
 		};
 		C987076C1C3F886F009B413A = {
@@ -312,14 +209,10 @@
 		C98707771C3F886F009B413A /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C9A8AF7720E87A900068E99B /* CwlPreconditionTesting.framework */,
 				C9A8AF7F20E87A910068E99B /* CwlPreconditionTesting_iOSTests.xctest */,
 				C98707761C3F886F009B413A /* CwlPreconditionTesting.framework */,
 				C98707801C3F886F009B413A /* CwlPreconditionTesting_macOSTests.xctest */,
-				C92A97D91C68A4F3008905C2 /* CwlPreconditionTesting_POSIX.framework */,
-				C92A97E61C68A515008905C2 /* CwlPreconditionTesting_POSIXTests.xctest */,
 				96ACCC481C6E8A7C00FE0B1B /* CwlPreconditionTesting_tvOSTests.xctest */,
-				96ACCC591C6E8BBE00FE0B1B /* CwlPreconditionTesting.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -336,9 +229,8 @@
 			isa = PBXGroup;
 			children = (
 				C9F904812160E13500C8731F /* CwlCatchException.framework */,
-				C9F904832160E13500C8731F /* CwlCatchException_macOSTests.xctest */,
-				C9F904852160E13500C8731F /* CwlCatchException.framework */,
 				C9F904872160E13500C8731F /* CwlCatchException_iOSTests.xctest */,
+				C9F904832160E13500C8731F /* CwlCatchException_macOSTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -346,37 +238,12 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
-		96ACCC561C6E8BBE00FE0B1B /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C986B0961E724AF70032C9FA /* CwlPreconditionTesting_POSIX.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C92A97D21C68A4F3008905C2 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C986B0971E724AF80032C9FA /* CwlPreconditionTesting_POSIX.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C958F13A1E3F6D0E008BE8E0 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				C986B09E1E724C250032C9FA /* CwlPreconditionTesting.h in Headers */,
 				C958F1421E3F6D91008BE8E0 /* CwlMachBadInstructionHandler.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C9A8AF7220E87A900068E99B /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C9A8AF9A20E880080068E99B /* CwlMachBadInstructionHandler.h in Headers */,
-				C9A8AF9920E87F5B0068E99B /* CwlPreconditionTesting.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -394,68 +261,15 @@
 			buildRules = (
 			);
 			dependencies = (
-				96ACCC631C6E8C0100FE0B1B /* PBXTargetDependency */,
 			);
 			name = CwlPreconditionTesting_tvOSTests;
 			productName = CwlPreconditionTestingTVosTests;
 			productReference = 96ACCC481C6E8A7C00FE0B1B /* CwlPreconditionTesting_tvOSTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		96ACCC581C6E8BBE00FE0B1B /* CwlPreconditionTesting_tvOS */ = {
+		C98707751C3F886F009B413A /* CwlPreconditionTesting */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 96ACCC5E1C6E8BBE00FE0B1B /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_tvOS" */;
-			buildPhases = (
-				96ACCC541C6E8BBE00FE0B1B /* Sources */,
-				96ACCC551C6E8BBE00FE0B1B /* Frameworks */,
-				96ACCC561C6E8BBE00FE0B1B /* Headers */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = CwlPreconditionTesting_tvOS;
-			productName = tvframework;
-			productReference = 96ACCC591C6E8BBE00FE0B1B /* CwlPreconditionTesting.framework */;
-			productType = "com.apple.product-type.framework";
-		};
-		C92A97C81C68A4F3008905C2 /* CwlPreconditionTesting_POSIX */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C92A97D61C68A4F3008905C2 /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_POSIX" */;
-			buildPhases = (
-				C92A97C91C68A4F3008905C2 /* Sources */,
-				C92A97D11C68A4F3008905C2 /* Frameworks */,
-				C92A97D21C68A4F3008905C2 /* Headers */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = CwlPreconditionTesting_POSIX;
-			productName = CwlPreconditionTesting;
-			productReference = C92A97D91C68A4F3008905C2 /* CwlPreconditionTesting_POSIX.framework */;
-			productType = "com.apple.product-type.framework";
-		};
-		C92A97DB1C68A515008905C2 /* CwlPreconditionTesting_POSIXTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C92A97E31C68A515008905C2 /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_POSIXTests" */;
-			buildPhases = (
-				C92A97DE1C68A515008905C2 /* Sources */,
-				C92A97E01C68A515008905C2 /* Frameworks */,
-				C92A97E21C68A515008905C2 /* CopyFiles */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				C92A97EA1C68A5A7008905C2 /* PBXTargetDependency */,
-			);
-			name = CwlPreconditionTesting_POSIXTests;
-			productName = CwlPreconditionTesting_OSXTests;
-			productReference = C92A97E61C68A515008905C2 /* CwlPreconditionTesting_POSIXTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		C98707751C3F886F009B413A /* CwlPreconditionTesting_macOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C987078A1C3F886F009B413A /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_macOS" */;
+			buildConfigurationList = C987078A1C3F886F009B413A /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting" */;
 			buildPhases = (
 				C98707711C3F886F009B413A /* Sources */,
 				C98707721C3F886F009B413A /* Frameworks */,
@@ -465,7 +279,7 @@
 			);
 			dependencies = (
 			);
-			name = CwlPreconditionTesting_macOS;
+			name = CwlPreconditionTesting;
 			productName = CwlPreconditionTesting;
 			productReference = C98707761C3F886F009B413A /* CwlPreconditionTesting.framework */;
 			productType = "com.apple.product-type.framework";
@@ -488,23 +302,6 @@
 			productReference = C98707801C3F886F009B413A /* CwlPreconditionTesting_macOSTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		C9A8AF7620E87A900068E99B /* CwlPreconditionTesting_iOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C9A8AF8820E87A910068E99B /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_iOS" */;
-			buildPhases = (
-				C9A8AF7320E87A900068E99B /* Sources */,
-				C9A8AF7420E87A900068E99B /* Frameworks */,
-				C9A8AF7220E87A900068E99B /* Headers */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = CwlPreconditionTesting_iOS;
-			productName = CwlPreconditionTesting_iOS;
-			productReference = C9A8AF7720E87A900068E99B /* CwlPreconditionTesting.framework */;
-			productType = "com.apple.product-type.framework";
-		};
 		C9A8AF7E20E87A910068E99B /* CwlPreconditionTesting_iOSTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C9A8AF8B20E87A910068E99B /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_iOSTests" */;
@@ -516,7 +313,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				C9A8AF8220E87A910068E99B /* PBXTargetDependency */,
+				C92169CE219064A600396AB0 /* PBXTargetDependency */,
 			);
 			name = CwlPreconditionTesting_iOSTests;
 			productName = CwlPreconditionTesting_iOSTests;
@@ -529,14 +326,11 @@
 		C987076D1C3F886F009B413A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 1000;
+				LastSwiftUpdateCheck = 1010;
 				LastUpgradeCheck = 1010;
 				ORGANIZATIONNAME = "Matt Gallagher ( https://www.cocoawithlove.com )";
 				TargetAttributes = {
 					96ACCC471C6E8A7C00FE0B1B = {
-						CreatedOnToolsVersion = 7.2.1;
-					};
-					96ACCC581C6E8BBE00FE0B1B = {
 						CreatedOnToolsVersion = 7.2.1;
 					};
 					C98707751C3F886F009B413A = {
@@ -546,10 +340,6 @@
 					C987077F1C3F886F009B413A = {
 						CreatedOnToolsVersion = 7.2;
 						LastSwiftMigration = 1000;
-					};
-					C9A8AF7620E87A900068E99B = {
-						CreatedOnToolsVersion = 10.0;
-						ProvisioningStyle = Manual;
 					};
 					C9A8AF7E20E87A910068E99B = {
 						CreatedOnToolsVersion = 10.0;
@@ -564,6 +354,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = C987076C1C3F886F009B413A;
 			productRefGroup = C98707771C3F886F009B413A /* Products */;
@@ -576,13 +367,9 @@
 			);
 			projectRoot = "";
 			targets = (
-				C9A8AF7620E87A900068E99B /* CwlPreconditionTesting_iOS */,
+				C98707751C3F886F009B413A /* CwlPreconditionTesting */,
 				C9A8AF7E20E87A910068E99B /* CwlPreconditionTesting_iOSTests */,
-				C98707751C3F886F009B413A /* CwlPreconditionTesting_macOS */,
 				C987077F1C3F886F009B413A /* CwlPreconditionTesting_macOSTests */,
-				C92A97C81C68A4F3008905C2 /* CwlPreconditionTesting_POSIX */,
-				C92A97DB1C68A515008905C2 /* CwlPreconditionTesting_POSIXTests */,
-				96ACCC581C6E8BBE00FE0B1B /* CwlPreconditionTesting_tvOS */,
 				96ACCC471C6E8A7C00FE0B1B /* CwlPreconditionTesting_tvOSTests */,
 			);
 		};
@@ -601,13 +388,6 @@
 			fileType = wrapper.cfbundle;
 			path = CwlCatchException_macOSTests.xctest;
 			remoteRef = C9F904822160E13500C8731F /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		C9F904852160E13500C8731F /* CwlCatchException.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CwlCatchException.framework;
-			remoteRef = C9F904842160E13500C8731F /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		C9F904872160E13500C8731F /* CwlCatchException_iOSTests.xctest */ = {
@@ -645,40 +425,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		96ACCC541C6E8BBE00FE0B1B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C958F1091E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m in Sources */,
-				C9BF467E1E4576090040A183 /* CwlCatchBadInstructionPosix.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C92A97C91C68A4F3008905C2 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C958F1081E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m in Sources */,
-				C9BF467D1E4576090040A183 /* CwlCatchBadInstructionPosix.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C92A97DE1C68A515008905C2 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C958F0F41E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C98707711C3F886F009B413A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				C958F11A1E3F698C008BE8E0 /* CwlCatchBadInstruction.swift in Sources */,
-				C90F356A1C66296900F2FAF9 /* mach_exc.defs in Sources */,
 				C958F1061E3F698C008BE8E0 /* CwlMachBadInstructionHandler.m in Sources */,
 				C958F1161E3F698C008BE8E0 /* CwlBadInstructionException.swift in Sources */,
+				C92169CF2190656E00396AB0 /* CwlCatchBadInstructionPosix.swift in Sources */,
+				C92169C82190560700396AB0 /* mach_excServer.c in Sources */,
 				C958F11E1E3F698C008BE8E0 /* CwlDarwinDefinitions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -688,18 +443,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				C958F0F21E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C9A8AF7320E87A900068E99B /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C9A8AF9020E87AE10068E99B /* CwlMachBadInstructionHandler.m in Sources */,
-				C9A8AF9120E87AE10068E99B /* mach_excServer.c in Sources */,
-				C9A8AF9220E87AE10068E99B /* CwlBadInstructionException.swift in Sources */,
-				C9A8AF9320E87AE10068E99B /* CwlCatchBadInstruction.swift in Sources */,
-				C9A8AF9420E87AE10068E99B /* CwlDarwinDefinitions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -714,25 +457,15 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		96ACCC631C6E8C0100FE0B1B /* PBXTargetDependency */ = {
+		C92169CE219064A600396AB0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 96ACCC581C6E8BBE00FE0B1B /* CwlPreconditionTesting_tvOS */;
-			targetProxy = 96ACCC621C6E8C0100FE0B1B /* PBXContainerItemProxy */;
-		};
-		C92A97EA1C68A5A7008905C2 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = C92A97C81C68A4F3008905C2 /* CwlPreconditionTesting_POSIX */;
-			targetProxy = C92A97E91C68A5A7008905C2 /* PBXContainerItemProxy */;
+			target = C98707751C3F886F009B413A /* CwlPreconditionTesting */;
+			targetProxy = C92169CD219064A600396AB0 /* PBXContainerItemProxy */;
 		};
 		C98707831C3F886F009B413A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = C98707751C3F886F009B413A /* CwlPreconditionTesting_macOS */;
+			target = C98707751C3F886F009B413A /* CwlPreconditionTesting */;
 			targetProxy = C98707821C3F886F009B413A /* PBXContainerItemProxy */;
-		};
-		C9A8AF8220E87A910068E99B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = C9A8AF7620E87A900068E99B /* CwlPreconditionTesting_iOS */;
-			targetProxy = C9A8AF8120E87A910068E99B /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -740,7 +473,8 @@
 		96ACCC4D1C6E8A7C00FE0B1B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				INFOPLIST_FILE = Tests/CwlPreconditionTestingTests/Info.plist;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Tests/CwlPreconditionTestingTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-tvOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -752,136 +486,14 @@
 		96ACCC4E1C6E8A7C00FE0B1B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ENABLE_NS_ASSERTIONS = NO;
-				INFOPLIST_FILE = Tests/CwlPreconditionTestingTests/Info.plist;
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Tests/CwlPreconditionTestingTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-tvOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = appletvos;
 				TVOS_DEPLOYMENT_TARGET = 9.0;
 				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		96ACCC5F1C6E8BBE00FE0B1B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "";
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Sources/CwlPreconditionTesting/Posix",
-					"$(SRCROOT)/Sources/CwlMachBadInstructionHandler/include",
-				);
-				INFOPLIST_FILE = Sources/CwlPreconditionTesting/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-tvOS";
-				PRODUCT_NAME = CwlPreconditionTesting;
-				SDKROOT = appletvos;
-				SKIP_INSTALL = YES;
-				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
-			};
-			name = Debug;
-		};
-		96ACCC601C6E8BBE00FE0B1B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "";
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_NS_ASSERTIONS = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Sources/CwlPreconditionTesting/Posix",
-					"$(SRCROOT)/Sources/CwlMachBadInstructionHandler/include",
-				);
-				INFOPLIST_FILE = Sources/CwlPreconditionTesting/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-tvOS";
-				PRODUCT_NAME = CwlPreconditionTesting;
-				SDKROOT = appletvos;
-				SKIP_INSTALL = YES;
-				TARGETED_DEVICE_FAMILY = 3;
-				TVOS_DEPLOYMENT_TARGET = 9.0;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		C92A97D71C68A4F3008905C2 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_MODULES = YES;
-				COMBINE_HIDPI_IMAGES = YES;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				FRAMEWORK_VERSION = A;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Sources/CwlPreconditionTesting/Posix",
-					"$(SRCROOT)/Sources/CwlMachBadInstructionHandler/include",
-				);
-				INFOPLIST_FILE = Sources/CwlPreconditionTesting/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-POSIX";
-				PRODUCT_NAME = CwlPreconditionTesting_POSIX;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = USE_POSIX_SIGNALS;
-			};
-			name = Debug;
-		};
-		C92A97D81C68A4F3008905C2 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_MODULES = YES;
-				COMBINE_HIDPI_IMAGES = YES;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				FRAMEWORK_VERSION = A;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Sources/CwlPreconditionTesting/Posix",
-					"$(SRCROOT)/Sources/CwlMachBadInstructionHandler/include",
-				);
-				INFOPLIST_FILE = Sources/CwlPreconditionTesting/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-POSIX";
-				PRODUCT_NAME = CwlPreconditionTesting_POSIX;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = USE_POSIX_SIGNALS;
-			};
-			name = Release;
-		};
-		C92A97E41C68A515008905C2 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				INFOPLIST_FILE = Tests/CwlPreconditionTestingTests/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-POSIXTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = USE_POSIX_SIGNALS;
-			};
-			name = Debug;
-		};
-		C92A97E51C68A515008905C2 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				INFOPLIST_FILE = Tests/CwlPreconditionTestingTests/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-POSIXTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = USE_POSIX_SIGNALS;
 			};
 			name = Release;
 		};
@@ -903,12 +515,14 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				ONLY_ACTIVE_ARCH = YES;
+				SUPPORTED_PLATFORMS = "appletvsimulator appletvos macosx iphonesimulator iphoneos";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 4.2;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,3,4";
 				TVOS_DEPLOYMENT_TARGET = 9.0;
+				WATCHOS_DEPLOYMENT_TARGET = 4.0;
 			};
 			name = Debug;
 		};
@@ -923,12 +537,14 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				SUPPORTED_PLATFORMS = "appletvsimulator appletvos macosx iphonesimulator iphoneos";
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				SWIFT_VERSION = 4.2;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,3,4";
 				TVOS_DEPLOYMENT_TARGET = 9.0;
 				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 4.0;
 			};
 			name = Release;
 		};
@@ -942,14 +558,10 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_VERSION = A;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"PRODUCT_NAME=$(PRODUCT_NAME)",
-				);
-				INFOPLIST_FILE = Sources/CwlPreconditionTesting/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/CwlPreconditionTesting/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-macOS";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.cocoawithlove.CwlPreconditionTesting;
 				PRODUCT_NAME = CwlPreconditionTesting;
 				SKIP_INSTALL = YES;
 			};
@@ -965,14 +577,10 @@
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				FRAMEWORK_VERSION = A;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					"PRODUCT_NAME=$(PRODUCT_NAME)",
-				);
-				INFOPLIST_FILE = Sources/CwlPreconditionTesting/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Sources/CwlPreconditionTesting/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-macOS";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.cocoawithlove.CwlPreconditionTesting;
 				PRODUCT_NAME = CwlPreconditionTesting;
 				SKIP_INSTALL = YES;
 			};
@@ -982,10 +590,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				INFOPLIST_FILE = Tests/CwlPreconditionTestingTests/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Tests/CwlPreconditionTestingTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-macOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
@@ -993,55 +602,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				INFOPLIST_FILE = Tests/CwlPreconditionTestingTests/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Tests/CwlPreconditionTestingTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-macOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-			};
-			name = Release;
-		};
-		C9A8AF8920E87A910068E99B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "";
-				CODE_SIGN_STYLE = Manual;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				INFOPLIST_FILE = Sources/CwlPreconditionTesting/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-iOS";
-				PRODUCT_NAME = CwlPreconditionTesting;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_VERSION = 4.2;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		C9A8AF8A20E87A910068E99B /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "";
-				CODE_SIGN_STYLE = Manual;
-				DEFINES_MODULE = YES;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_NS_ASSERTIONS = NO;
-				INFOPLIST_FILE = Sources/CwlPreconditionTesting/Info.plist;
-				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-iOS";
-				PRODUCT_NAME = CwlPreconditionTesting;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 4.2;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SDKROOT = macosx;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -1049,26 +614,15 @@
 		C9A8AF8C20E87A910068E99B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = S7YQ892G6G;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				INFOPLIST_FILE = Tests/CwlPreconditionTestingTests/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Tests/CwlPreconditionTestingTests/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-iOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_VERSION = 4.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -1076,25 +630,15 @@
 		C9A8AF8D20E87A910068E99B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_ENABLE_OBJC_WEAK = YES;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = S7YQ892G6G;
-				ENABLE_NS_ASSERTIONS = NO;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
-				INFOPLIST_FILE = Tests/CwlPreconditionTestingTests/Info.plist;
+				INFOPLIST_FILE = "$(SRCROOT)/Tests/CwlPreconditionTestingTests/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlPreconditionTesting-iOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				SWIFT_VERSION = 4.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
@@ -1112,33 +656,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		96ACCC5E1C6E8BBE00FE0B1B /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_tvOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				96ACCC5F1C6E8BBE00FE0B1B /* Debug */,
-				96ACCC601C6E8BBE00FE0B1B /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		C92A97D61C68A4F3008905C2 /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_POSIX" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C92A97D71C68A4F3008905C2 /* Debug */,
-				C92A97D81C68A4F3008905C2 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		C92A97E31C68A515008905C2 /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_POSIXTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C92A97E41C68A515008905C2 /* Debug */,
-				C92A97E51C68A515008905C2 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		C98707701C3F886F009B413A /* Build configuration list for PBXProject "CwlPreconditionTesting" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1148,7 +665,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C987078A1C3F886F009B413A /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_macOS" */ = {
+		C987078A1C3F886F009B413A /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C987078B1C3F886F009B413A /* Debug */,
@@ -1162,15 +679,6 @@
 			buildConfigurations = (
 				C987078E1C3F886F009B413A /* Debug */,
 				C987078F1C3F886F009B413A /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		C9A8AF8820E87A910068E99B /* Build configuration list for PBXNativeTarget "CwlPreconditionTesting_iOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C9A8AF8920E87A910068E99B /* Debug */,
-				C9A8AF8A20E87A910068E99B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

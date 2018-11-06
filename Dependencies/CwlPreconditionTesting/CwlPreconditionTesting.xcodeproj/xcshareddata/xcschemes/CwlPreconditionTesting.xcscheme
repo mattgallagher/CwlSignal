@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C92A97C81C68A4F3008905C2"
-               BuildableName = "CwlPreconditionTesting_POSIX.framework"
-               BlueprintName = "CwlPreconditionTesting_POSIX"
+               BlueprintIdentifier = "C98707751C3F886F009B413A"
+               BuildableName = "CwlPreconditionTesting.framework"
+               BlueprintName = "CwlPreconditionTesting"
                ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -24,21 +24,20 @@
    </BuildAction>
    <TestAction
       buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = ""
-      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C92A97DB1C68A515008905C2"
-               BuildableName = "CwlPreconditionTesting_POSIXTests.xctest"
-               BlueprintName = "CwlPreconditionTesting_POSIXTests"
-               ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "C98707751C3F886F009B413A"
+            BuildableName = "CwlPreconditionTesting.framework"
+            BlueprintName = "CwlPreconditionTesting"
+            ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </TestAction>
@@ -55,9 +54,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C92A97C81C68A4F3008905C2"
-            BuildableName = "CwlPreconditionTesting_POSIX.framework"
-            BlueprintName = "CwlPreconditionTesting_POSIX"
+            BlueprintIdentifier = "C98707751C3F886F009B413A"
+            BuildableName = "CwlPreconditionTesting.framework"
+            BlueprintName = "CwlPreconditionTesting"
             ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -73,9 +72,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C92A97C81C68A4F3008905C2"
-            BuildableName = "CwlPreconditionTesting_POSIX.framework"
-            BlueprintName = "CwlPreconditionTesting_POSIX"
+            BlueprintIdentifier = "C98707751C3F886F009B413A"
+            BuildableName = "CwlPreconditionTesting.framework"
+            BlueprintName = "CwlPreconditionTesting"
             ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
