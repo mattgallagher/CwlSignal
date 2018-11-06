@@ -19,6 +19,7 @@
 //
 
 import Foundation
+import Swift
 import XCTest
 
 #if USE_POSIX_SIGNALS

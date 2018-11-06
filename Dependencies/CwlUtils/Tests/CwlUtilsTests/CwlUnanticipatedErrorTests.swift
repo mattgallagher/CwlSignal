@@ -28,6 +28,8 @@ enum TestCode: Int, Error {
 	case testValue = 2
 }
 
+#if os(iOS) || os(macOS)
+
 class UnanticipatedErrorTests: XCTestCase {
 	func testUnanticipatedError() {
 		let e = TestCode.testValue.withUnanticipatedErrorRecoveryAttempter()
@@ -60,6 +62,8 @@ class UnanticipatedErrorTests: XCTestCase {
 	}
 }
 
+#endif
+
 #if os(iOS)
 	
 	func pasteboardBackup() -> [Dictionary<String, NSObject>] {
@@ -74,7 +78,7 @@ class UnanticipatedErrorTests: XCTestCase {
 		return UIPasteboard.general.string
 	}
 	
-#else
+#elseif os(macOS)
 	
 	func pasteboardBackup() -> [NSPasteboardItem] {
 		#if swift(>=4)

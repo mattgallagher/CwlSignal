@@ -28,15 +28,18 @@ import CwlPreconditionTesting
 #endif
 
 class DeferredWorkTests: XCTestCase {
-	override func setUp() {
-		// Suppress Swift runtime's direct triggering of the debugger.
-		_swift_reportFatalErrorsToDebugger = false
-	}
-	
-	override func tearDown() {
-		// Undo our debugger change.
-		_swift_reportFatalErrorsToDebugger = true
-	}
+
+	#if os(iOS) || os(macOS)
+		override func setUp() {
+			// Suppress Swift runtime's direct triggering of the debugger.
+			_swift_reportFatalErrorsToDebugger = false
+		}
+		
+		override func tearDown() {
+			// Undo our debugger change.
+			_swift_reportFatalErrorsToDebugger = true
+		}
+	#endif
 	
 	func testDeferredWork() {
 		var dw = DeferredWork()
