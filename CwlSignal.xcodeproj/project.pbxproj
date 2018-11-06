@@ -22,18 +22,20 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		C90BDC541F01FEC300112A54 /* CwlSignalChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */; };
 		C90BDC551F01FEC300112A54 /* CwlSignalChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */; };
-		C93FBC282160FF9B00DFCF0E /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44E52160F2EA0028B2AC /* CwlUtils.framework */; };
 		C93FBC4D216101A400DFCF0E /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */; };
 		C93FBC4E216101AC00DFCF0E /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */; };
+		C94D2BBE2191A41A00B6D53B /* CwlSignalCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* CwlSignalCocoaTests.swift */; };
+		C94D2BBF2191A41A00B6D53B /* CwlSignalReactiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* CwlSignalReactiveTests.swift */; };
+		C94D2BC02191A41A00B6D53B /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlSignalTests.swift */; };
+		C94D2BC22191A41A00B6D53B /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */; };
+		C94D2BC32191A41A00B6D53B /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */; };
+		C94D2BC42191A41A00B6D53B /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98AE79E2162473A004259B6 /* CwlCatchException.framework */; };
 		C98AE7A02162474D004259B6 /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98AE79E2162473A004259B6 /* CwlCatchException.framework */; };
 		C98AE7A121624753004259B6 /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98AE79E2162473A004259B6 /* CwlCatchException.framework */; };
 		C98C44ED2160F3660028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */; };
 		C98C44F12160F3AC0028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */; };
-		C98C44FA2160F3CF0028B2AC /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44E52160F2EA0028B2AC /* CwlUtils.framework */; };
 		C9C1CECF1F6BC58B00A9343F /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlSignalTests.swift */; };
-		C9DD3D771E41CD9000E23B15 /* CwlSignal.h in Headers */ = {isa = PBXBuildFile; fileRef = C9DD3D761E41CD9000E23B15 /* CwlSignal.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9DD3D8E1E41DFB600E23B15 /* CwlSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* CwlSignal.swift */; };
 		C9DD3D8F1E41DFB600E23B15 /* CwlSignalCocoa.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* CwlSignalCocoa.swift */; };
 		C9DD3D901E41DFB600E23B15 /* CwlSignalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* CwlSignalExtensions.swift */; };
@@ -42,17 +44,25 @@
 		C9DD3D9F1E41DFBA00E23B15 /* CwlSignalCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* CwlSignalCocoaTests.swift */; };
 		C9DD3DA01E41DFBA00E23B15 /* CwlSignalReactiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* CwlSignalReactiveTests.swift */; };
 		C9DD3DA11E41DFBA00E23B15 /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlSignalTests.swift */; };
-		C9DD3DA31E41DFBA00E23B15 /* CwlSignal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_77 /* CwlSignal.framework */; };
-		OBJ_195 /* CwlSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* CwlSignal.swift */; };
-		OBJ_196 /* CwlSignalCocoa.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* CwlSignalCocoa.swift */; };
-		OBJ_197 /* CwlSignalExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* CwlSignalExtensions.swift */; };
-		OBJ_198 /* CwlSignalReactive.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_12 /* CwlSignalReactive.swift */; };
 		OBJ_219 /* CwlSignalCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* CwlSignalCocoaTests.swift */; };
 		OBJ_220 /* CwlSignalReactiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* CwlSignalReactiveTests.swift */; };
-		OBJ_230 /* CwlSignal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = OBJ_77 /* CwlSignal.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		C94D2BB82191A40F00B6D53B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C94D2B9921919BEA00B6D53B;
+			remoteInfo = CwlUtils_tvOSTests;
+		};
+		C94D2BBC2191A41A00B6D53B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C9DD3D7C1E41DFB600E23B15;
+			remoteInfo = CwlSignal_iOS;
+		};
 		C98C44DC2160F2EA0028B2AC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
@@ -80,13 +90,6 @@
 			proxyType = 2;
 			remoteGlobalIDString = C95A775B1E4187FB00659DBD;
 			remoteInfo = CwlUtils_iOSTestAppUITests;
-		};
-		C98C44E42160F2EA0028B2AC /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = OBJ_84;
-			remoteInfo = CwlUtils_macOS;
 		};
 		C98C44E62160F2EA0028B2AC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -116,13 +119,6 @@
 			remoteGlobalIDString = C9DE4E1521325B1800CE7DAF;
 			remoteInfo = CwlUtilsConcat;
 		};
-		C9DD3D601E41ACAF00E23B15 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = OBJ_1 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = OBJ_190;
-			remoteInfo = CwlSignal;
-		};
 		C9DD3DAA1E41E52E00E23B15 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = OBJ_1 /* Project object */;
@@ -135,6 +131,7 @@
 /* Begin PBXFileReference section */
 		C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalChannel.swift; sourceTree = "<group>"; };
 		C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CwlPreconditionTesting.framework; sourceTree = "<group>"; };
+		C94D2BC82191A41A00B6D53B /* CwlSignal_tvOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlSignal_tvOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C98AE79E2162473A004259B6 /* CwlCatchException.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CwlCatchException.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CwlUtils.xcodeproj; path = CwlUtils/CwlUtils.xcodeproj; sourceTree = "<group>"; };
 		C9DD3D761E41CD9000E23B15 /* CwlSignal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CwlSignal.h; sourceTree = "<group>"; };
@@ -149,12 +146,21 @@
 		OBJ_15 /* CwlSignalCocoaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalCocoaTests.swift; sourceTree = "<group>"; };
 		OBJ_16 /* CwlSignalReactiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalReactiveTests.swift; sourceTree = "<group>"; };
 		OBJ_17 /* CwlSignalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignalTests.swift; sourceTree = "<group>"; };
-		OBJ_77 /* CwlSignal.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CwlSignal.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_78 /* CwlSignal_macOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = CwlSignal_macOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		OBJ_9 /* CwlSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSignal.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		C94D2BC12191A41A00B6D53B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 0;
+			files = (
+				C94D2BC22191A41A00B6D53B /* CwlUtils.framework in Frameworks */,
+				C94D2BC32191A41A00B6D53B /* CwlPreconditionTesting.framework in Frameworks */,
+				C94D2BC42191A41A00B6D53B /* CwlCatchException.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C9DD3D921E41DFB600E23B15 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
@@ -168,17 +174,8 @@
 			buildActionMask = 0;
 			files = (
 				C98C44F12160F3AC0028B2AC /* CwlUtils.framework in Frameworks */,
-				C9DD3DA31E41DFBA00E23B15 /* CwlSignal.framework in Frameworks */,
 				C93FBC4E216101AC00DFCF0E /* CwlPreconditionTesting.framework in Frameworks */,
 				C98AE7A121624753004259B6 /* CwlCatchException.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		OBJ_199 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 0;
-			files = (
-				C93FBC282160FF9B00DFCF0E /* CwlUtils.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -186,8 +183,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
-				C98C44FA2160F3CF0028B2AC /* CwlUtils.framework in Frameworks */,
-				OBJ_230 /* CwlSignal.framework in Frameworks */,
 				C93FBC4D216101A400DFCF0E /* CwlPreconditionTesting.framework in Frameworks */,
 				C98AE7A02162474D004259B6 /* CwlCatchException.framework in Frameworks */,
 			);
@@ -221,10 +216,10 @@
 				C98C44DF2160F2EA0028B2AC /* CwlUtils_iOSTests.xctest */,
 				C98C44E12160F2EA0028B2AC /* CwlUtils_iOSTestApp.app */,
 				C98C44E32160F2EA0028B2AC /* CwlUtils_iOSTestAppUITests.xctest */,
-				C98C44E52160F2EA0028B2AC /* CwlUtils.framework */,
 				C98C44E72160F2EA0028B2AC /* CwlUtils_macOSTests.xctest */,
 				C98C44E92160F2EA0028B2AC /* CwlUtils_macOSTestApp.app */,
 				C98C44EB2160F2EA0028B2AC /* CwlUtils_macOSTestAppUITests.xctest */,
+				C94D2BB92191A40F00B6D53B /* CwlUtils_tvOSTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -265,8 +260,8 @@
 			children = (
 				C9DD3D991E41DFB600E23B15 /* CwlSignal.framework */,
 				C9DD3DA71E41DFBA00E23B15 /* CwlSignal_iOSTests.xctest */,
-				OBJ_77 /* CwlSignal.framework */,
 				OBJ_78 /* CwlSignal_macOSTests.xctest */,
+				C94D2BC82191A41A00B6D53B /* CwlSignal_tvOSTests.xctest */,
 			);
 			name = Products;
 			sourceTree = BUILT_PRODUCTS_DIR;
@@ -297,14 +292,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
-		C9DD3D751E41CD7100E23B15 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C9DD3D771E41CD9000E23B15 /* CwlSignal.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C9DD3D931E41DFB600E23B15 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -316,9 +303,26 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		C9DD3D7C1E41DFB600E23B15 /* CwlSignal_iOS */ = {
+		C94D2BBA2191A41A00B6D53B /* CwlSignal_tvOSTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C9DD3D961E41DFB600E23B15 /* Build configuration list for PBXNativeTarget "CwlSignal_iOS" */;
+			buildConfigurationList = C94D2BC52191A41A00B6D53B /* Build configuration list for PBXNativeTarget "CwlSignal_tvOSTests" */;
+			buildPhases = (
+				C94D2BBD2191A41A00B6D53B /* Sources */,
+				C94D2BC12191A41A00B6D53B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C94D2BBB2191A41A00B6D53B /* PBXTargetDependency */,
+			);
+			name = CwlSignal_tvOSTests;
+			productName = CwlSignalTests;
+			productReference = C94D2BC82191A41A00B6D53B /* CwlSignal_tvOSTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C9DD3D7C1E41DFB600E23B15 /* CwlSignal */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9DD3D961E41DFB600E23B15 /* Build configuration list for PBXNativeTarget "CwlSignal" */;
 			buildPhases = (
 				C9DD3D7E1E41DFB600E23B15 /* Sources */,
 				C9DD3D921E41DFB600E23B15 /* Frameworks */,
@@ -328,7 +332,7 @@
 			);
 			dependencies = (
 			);
-			name = CwlSignal_iOS;
+			name = CwlSignal;
 			productName = CwlSignal;
 			productReference = C9DD3D991E41DFB600E23B15 /* CwlSignal.framework */;
 			productType = "com.apple.product-type.framework";
@@ -350,23 +354,6 @@
 			productReference = C9DD3DA71E41DFBA00E23B15 /* CwlSignal_iOSTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		OBJ_190 /* CwlSignal_macOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = OBJ_191 /* Build configuration list for PBXNativeTarget "CwlSignal_macOS" */;
-			buildPhases = (
-				OBJ_194 /* Sources */,
-				OBJ_199 /* Frameworks */,
-				C9DD3D751E41CD7100E23B15 /* Headers */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = CwlSignal_macOS;
-			productName = CwlSignal;
-			productReference = OBJ_77 /* CwlSignal.framework */;
-			productType = "com.apple.product-type.framework";
-		};
 		OBJ_214 /* CwlSignal_macOSTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = OBJ_215 /* Build configuration list for PBXNativeTarget "CwlSignal_macOSTests" */;
@@ -377,7 +364,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				OBJ_238 /* PBXTargetDependency */,
 			);
 			name = CwlSignal_macOSTests;
 			productName = CwlSignalTests;
@@ -400,9 +386,6 @@
 						LastSwiftMigration = 0900;
 					};
 					C9DD3D9B1E41DFBA00E23B15 = {
-						LastSwiftMigration = 0900;
-					};
-					OBJ_190 = {
 						LastSwiftMigration = 0900;
 					};
 					OBJ_214 = {
@@ -429,16 +412,23 @@
 			);
 			projectRoot = "";
 			targets = (
-				C9DD3D7C1E41DFB600E23B15 /* CwlSignal_iOS */,
+				C9DD3D7C1E41DFB600E23B15 /* CwlSignal */,
 				C9DD3D9B1E41DFBA00E23B15 /* CwlSignal_iOSTests */,
-				OBJ_190 /* CwlSignal_macOS */,
 				OBJ_214 /* CwlSignal_macOSTests */,
+				C94D2BBA2191A41A00B6D53B /* CwlSignal_tvOSTests */,
 				C9A380371EFF923A00BFF2E5 /* CwlSignalConcat */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		C94D2BB92191A40F00B6D53B /* CwlUtils_tvOSTests.xctest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = CwlUtils_tvOSTests.xctest;
+			remoteRef = C94D2BB82191A40F00B6D53B /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
@@ -465,13 +455,6 @@
 			fileType = wrapper.cfbundle;
 			path = CwlUtils_iOSTestAppUITests.xctest;
 			remoteRef = C98C44E22160F2EA0028B2AC /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		C98C44E52160F2EA0028B2AC /* CwlUtils.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = CwlUtils.framework;
-			remoteRef = C98C44E42160F2EA0028B2AC /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		C98C44E72160F2EA0028B2AC /* CwlUtils_macOSTests.xctest */ = {
@@ -515,6 +498,16 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		C94D2BBD2191A41A00B6D53B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 0;
+			files = (
+				C94D2BBE2191A41A00B6D53B /* CwlSignalCocoaTests.swift in Sources */,
+				C94D2BBF2191A41A00B6D53B /* CwlSignalReactiveTests.swift in Sources */,
+				C94D2BC02191A41A00B6D53B /* CwlSignalTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C9DD3D7E1E41DFB600E23B15 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
@@ -537,18 +530,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		OBJ_194 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 0;
-			files = (
-				OBJ_195 /* CwlSignal.swift in Sources */,
-				C90BDC541F01FEC300112A54 /* CwlSignalChannel.swift in Sources */,
-				OBJ_196 /* CwlSignalCocoa.swift in Sources */,
-				OBJ_197 /* CwlSignalExtensions.swift in Sources */,
-				OBJ_198 /* CwlSignalReactive.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		OBJ_218 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
@@ -562,6 +543,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		C94D2BBB2191A41A00B6D53B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C9DD3D7C1E41DFB600E23B15 /* CwlSignal */;
+			targetProxy = C94D2BBC2191A41A00B6D53B /* PBXContainerItemProxy */;
+		};
 		C98C450B2160F5100028B2AC /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = CwlUtilsConcat;
@@ -569,17 +555,40 @@
 		};
 		C9DD3DAB1E41E52E00E23B15 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = C9DD3D7C1E41DFB600E23B15 /* CwlSignal_iOS */;
+			target = C9DD3D7C1E41DFB600E23B15 /* CwlSignal */;
 			targetProxy = C9DD3DAA1E41E52E00E23B15 /* PBXContainerItemProxy */;
-		};
-		OBJ_238 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = OBJ_190 /* CwlSignal_macOS */;
-			targetProxy = C9DD3D601E41ACAF00E23B15 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		C94D2BC62191A41A00B6D53B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Tests/CwlSignalTests/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @loader_path/Frameworks";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-iOSTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		C94D2BC72191A41A00B6D53B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				INFOPLIST_FILE = "$(SRCROOT)/Tests/CwlSignalTests/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @loader_path/Frameworks";
+				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_SWIFT_FLAGS = "$(inherited)";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-iOSTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+			};
+			name = Release;
+		};
 		C9A380381EFF923A00BFF2E5 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -674,43 +683,6 @@
 			};
 			name = Release;
 		};
-		OBJ_192 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CLANG_ENABLE_MODULES = YES;
-				DEFINES_MODULE = YES;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				ENABLE_TESTABILITY = YES;
-				INFOPLIST_FILE = Sources/CwlSignal/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks @loader_path/Frameworks";
-				OTHER_SWIFT_FLAGS = "$(inherited)";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlSignal-macOS";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				TARGET_NAME = CwlSignal;
-			};
-			name = Debug;
-		};
-		OBJ_193 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				APPLICATION_EXTENSION_API_ONLY = YES;
-				CLANG_ENABLE_MODULES = YES;
-				DEFINES_MODULE = YES;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				INFOPLIST_FILE = Sources/CwlSignal/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks @loader_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlSignal-macOS";
-				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				TARGET_NAME = CwlSignal;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
 		OBJ_216 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -762,9 +734,13 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				ONLY_ACTIVE_ARCH = YES;
+				SUPPORTED_PLATFORMS = "macosx watchsimulator watchos appletvsimulator appletvos iphonesimulator iphoneos";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 4.2;
+				TARGETED_DEVICE_FAMILY = "1,2,3,4";
+				TVOS_DEPLOYMENT_TARGET = 9.0;
+				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Debug;
 		};
@@ -779,15 +755,28 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				SUPPORTED_PLATFORMS = "macosx watchsimulator watchos appletvsimulator appletvos iphonesimulator iphoneos";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_VERSION = 4.2;
+				TARGETED_DEVICE_FAMILY = "1,2,3,4";
+				TVOS_DEPLOYMENT_TARGET = 9.0;
 				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 2.0;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		C94D2BC52191A41A00B6D53B /* Build configuration list for PBXNativeTarget "CwlSignal_tvOSTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C94D2BC62191A41A00B6D53B /* Debug */,
+				C94D2BC72191A41A00B6D53B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		C9A3803A1EFF923A00BFF2E5 /* Build configuration list for PBXAggregateTarget "CwlSignalConcat" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -797,7 +786,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		C9DD3D961E41DFB600E23B15 /* Build configuration list for PBXNativeTarget "CwlSignal_iOS" */ = {
+		C9DD3D961E41DFB600E23B15 /* Build configuration list for PBXNativeTarget "CwlSignal" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C9DD3D971E41DFB600E23B15 /* Debug */,
@@ -811,15 +800,6 @@
 			buildConfigurations = (
 				C9DD3DA51E41DFBA00E23B15 /* Debug */,
 				C9DD3DA61E41DFBA00E23B15 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
-		OBJ_191 /* Build configuration list for PBXNativeTarget "CwlSignal_macOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				OBJ_192 /* Debug */,
-				OBJ_193 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

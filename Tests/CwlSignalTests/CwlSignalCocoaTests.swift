@@ -18,7 +18,7 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-import Cocoa
+import Foundation
 import CwlSignal
 import XCTest
 
