@@ -19,6 +19,9 @@
 //
 
 #import <Foundation/Foundation.h>
+
+#if TARGET_OS_OSX || TARGET_OS_IOS
+
 #import <mach/mach.h>
 
 extern bool _swift_disableExclusivityChecking;
@@ -71,3 +74,5 @@ typedef struct
 } bad_instruction_exception_reply_t;
 
 NS_ASSUME_NONNULL_END
+
+#endif

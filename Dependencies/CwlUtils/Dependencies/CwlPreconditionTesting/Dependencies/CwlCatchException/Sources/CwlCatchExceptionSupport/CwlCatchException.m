@@ -20,7 +20,7 @@
 
 #import "CwlCatchException.h"
 
-#if !SWIFT_PACKAGE && NON_SWIFT_PACKAGE
+#if !SWIFT_PACKAGE
 __attribute__((visibility("hidden")))
 #endif
 NSException* catchExceptionOfKind(Class __nonnull type, void (^ __nonnull inBlock)(void)) {

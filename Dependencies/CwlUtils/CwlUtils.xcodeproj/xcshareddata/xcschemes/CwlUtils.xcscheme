@@ -14,31 +14,40 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "96ACCC581C6E8BBE00FE0B1B"
-               BuildableName = "CwlPreconditionTesting.framework"
-               BlueprintName = "CwlPreconditionTesting_tvOS"
-               ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
+               BlueprintIdentifier = "C95BDE9A1E41688B00AAA64B"
+               BuildableName = "CwlUtils.framework"
+               BlueprintName = "CwlUtils"
+               ReferencedContainer = "container:CwlUtils.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
       buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = ""
-      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
          <TestableReference
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "96ACCC471C6E8A7C00FE0B1B"
-               BuildableName = "CwlPreconditionTesting_tvOSTests.xctest"
-               BlueprintName = "CwlPreconditionTesting_tvOSTests"
-               ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
+               BlueprintIdentifier = "C95BDEB81E4168B800AAA64B"
+               BuildableName = "CwlUtils_iOSTests.xctest"
+               BlueprintName = "CwlUtils_iOSTests"
+               ReferencedContainer = "container:CwlUtils.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "C95BDE9A1E41688B00AAA64B"
+            BuildableName = "CwlUtils.framework"
+            BlueprintName = "CwlUtils"
+            ReferencedContainer = "container:CwlUtils.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </TestAction>
@@ -55,10 +64,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "96ACCC581C6E8BBE00FE0B1B"
-            BuildableName = "CwlPreconditionTesting.framework"
-            BlueprintName = "CwlPreconditionTesting_tvOS"
-            ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
+            BlueprintIdentifier = "C95BDE9A1E41688B00AAA64B"
+            BuildableName = "CwlUtils.framework"
+            BlueprintName = "CwlUtils"
+            ReferencedContainer = "container:CwlUtils.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -73,10 +82,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "96ACCC581C6E8BBE00FE0B1B"
-            BuildableName = "CwlPreconditionTesting.framework"
-            BlueprintName = "CwlPreconditionTesting_tvOS"
-            ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
+            BlueprintIdentifier = "C95BDE9A1E41688B00AAA64B"
+            BuildableName = "CwlUtils.framework"
+            BlueprintName = "CwlUtils"
+            ReferencedContainer = "container:CwlUtils.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </ProfileAction>

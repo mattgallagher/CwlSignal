@@ -652,6 +652,14 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(5)?.isSignalComplete == true)
 	}
 	
+	func testKeyPath() {
+		var results = [Result<String>]()
+		_ = Signal.just("path.name").keyPath(\NSString.pathExtension).subscribe { r in results.append(r) }
+		XCTAssert(results.count == 2)
+		XCTAssert(results.at(0)?.value == "name")
+		XCTAssert(results.at(1)?.isSignalComplete == true)
+	}
+	
 	func testMapWithState() {
 		var results = [Result<Int>]()
 		_ = Signal.from(1...5).map(initialState: 0) { (state: inout Int, v: Int) -> Int in

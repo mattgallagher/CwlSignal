@@ -14,31 +14,30 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C92A97C81C68A4F3008905C2"
-               BuildableName = "CwlPreconditionTesting_POSIX.framework"
-               BlueprintName = "CwlPreconditionTesting_POSIX"
-               ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
+               BlueprintIdentifier = "C90FA1AB1C41E48100996A1F"
+               BuildableName = "CwlCatchException.framework"
+               BlueprintName = "CwlCatchException"
+               ReferencedContainer = "container:CwlCatchException.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
       buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = ""
-      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
-         <TestableReference
-            skipped = "NO">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C92A97DB1C68A515008905C2"
-               BuildableName = "CwlPreconditionTesting_POSIXTests.xctest"
-               BlueprintName = "CwlPreconditionTesting_POSIXTests"
-               ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "C90FA1AB1C41E48100996A1F"
+            BuildableName = "CwlCatchException.framework"
+            BlueprintName = "CwlCatchException"
+            ReferencedContainer = "container:CwlCatchException.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </TestAction>
@@ -55,10 +54,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C92A97C81C68A4F3008905C2"
-            BuildableName = "CwlPreconditionTesting_POSIX.framework"
-            BlueprintName = "CwlPreconditionTesting_POSIX"
-            ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
+            BlueprintIdentifier = "C90FA1AB1C41E48100996A1F"
+            BuildableName = "CwlCatchException.framework"
+            BlueprintName = "CwlCatchException"
+            ReferencedContainer = "container:CwlCatchException.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <AdditionalOptions>
@@ -73,10 +72,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "C92A97C81C68A4F3008905C2"
-            BuildableName = "CwlPreconditionTesting_POSIX.framework"
-            BlueprintName = "CwlPreconditionTesting_POSIX"
-            ReferencedContainer = "container:CwlPreconditionTesting.xcodeproj">
+            BlueprintIdentifier = "C90FA1AB1C41E48100996A1F"
+            BuildableName = "CwlCatchException.framework"
+            BlueprintName = "CwlCatchException"
+            ReferencedContainer = "container:CwlCatchException.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </ProfileAction>

@@ -352,6 +352,10 @@ extension SignalChannel {
 		return next { $0.mapErrors(context: context, processor) }
 	}
 	
+	public func keyPath<U>(_ keyPath: KeyPath<Interface.OutputValue, U>) -> SignalChannel<InputInterface, Signal<U>> {
+		return next { $0.keyPath(keyPath) }
+	}
+	
 	public func map<U>(context: Exec = .direct, processor: @escaping (Interface.OutputValue) throws -> U) -> SignalChannel<InputInterface, Signal<U>> {
 		return next { $0.map(context: context, processor) }
 	}

@@ -735,6 +735,20 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html)
 	///
 	/// - Parameters:
+	///   - keyPath: selects a child value to emit
+	/// - Returns: a `Signal` where all the values have been transformed by the key path.
+	public func keyPath<U>(_ keyPath: KeyPath<OutputValue, U>) -> Signal<U> {
+		return transform { (r: Result<OutputValue>, n: SignalNext<U>) in
+			switch r {
+			case .success(let v): n.send(value: v[keyPath: keyPath])
+			case .failure(let e): n.send(error: e)
+			}
+		}
+	}
+	
+	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html)
+	///
+	/// - Parameters:
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a value for the output `Signal`
 	/// - Returns: a `Signal` where all the values have been transformed by the `processor`. Any error is emitted in the output without change.

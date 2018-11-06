@@ -2,29 +2,27 @@
 import PackageDescription
 
 let package = Package(
-	name: "CwlUtils",
+   name: "CwlSignal",
    products: [
-   	.library(name: "CwlUtils", type: .dynamic, targets: ["CwlUtils"]),
+   	.library(name: "CwlSignal", type: .dynamic, targets: ["CwlSignal"])
 	],
 	dependencies: [
+		.package(url: "https://github.com/mattgallagher/CwlUtils.git", from: "2.0.0"),
 		.package(url: "https://github.com/mattgallagher/CwlPreconditionTesting.git", from: "1.1.0"),
 	],
 	targets: [
 		.target(
-			name: "CwlUtils",
+			name: "CwlSignal",
 			dependencies: [
-				.target(name: "CwlFrameAddress"),
-				.target(name: "ReferenceRandomGenerators")
+				.product(name: "CwlUtils")
 			]
 		),
-		.target(name: "CwlFrameAddress"),
-		.target(name: "ReferenceRandomGenerators"),
 		.testTarget(
-			name: "CwlUtilsTests",
+			name: "CwlSignalTests",
 			dependencies: [
-				.target(name: "CwlUtils"),
+				.target(name: "CwlSignal"),
 				.product(name: "CwlPreconditionTesting")
 			]
-		),
+		)
 	]
 )
