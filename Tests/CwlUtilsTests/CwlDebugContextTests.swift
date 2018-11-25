@@ -472,7 +472,7 @@ class DebugContextTests: XCTestCase {
 	func testTimeoutServiceSuccess() {
 		let coordinator = DebugContextCoordinator()
 
-		var result: Result<String>? = nil
+		var result: Result<String, Error>? = nil
 		let service = TimeoutService(context: coordinator.global, work: dummyAsyncWork(duration: 2.0))
 		service.start(timeout: 10) { r in
 			result = r
@@ -480,7 +480,7 @@ class DebugContextTests: XCTestCase {
 		coordinator.runScheduledTasks()
 		coordinator.reset()
 		withExtendedLifetime(service) {}
-		XCTAssert(result?.value == dummySuccessResponse)
+		XCTAssert(result?.success == dummySuccessResponse)
 	}
 
 	func testTimeoutServiceCancelled() {
@@ -504,7 +504,7 @@ class DebugContextTests: XCTestCase {
 
 		// Run the `connect` function
 		let timeoutTime = 1.0
-		var result: Result<String>? = nil
+		var result: Result<String, Error>? = nil
 		service.start(timeout: timeoutTime) { r in
 			result = r
 			XCTAssert(coordinator.currentTime == UInt64(timeoutTime * Double(NSEC_PER_SEC)))
@@ -515,7 +515,7 @@ class DebugContextTests: XCTestCase {
 		coordinator.runScheduledTasks()
 
 		// Ensure we got the correct result
-		XCTAssert(result?.error as? TimeoutService.Timeout != nil)
+		XCTAssert(result?.failure as? TimeoutService.Timeout != nil)
 
 		withExtendedLifetime(service) {}
 	}
@@ -530,7 +530,7 @@ class TimeoutService {
 	var currentAction: Lifetime? = nil
 	
 	// Define the interface for the underlying connection
-	typealias ResultHandler = (Result<String>) -> Void
+	typealias ResultHandler = (Result<String, Error>) -> Void
 	typealias WorkFunction = (Exec, @escaping ResultHandler) -> Lifetime
 
 	// This is the configurable connection to the underlying service

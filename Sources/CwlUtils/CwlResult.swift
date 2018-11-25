@@ -20,16 +20,70 @@
 
 import Foundation
 
-/// Either a Value value or an ErrorType
-public enum Result<Value> {
-	/// Success wraps a Value value
-	case success(Value)
+public enum Result<Success, Failure> {
+	case success(Success)
+	case failure(Failure)
+}
+
+/// Either a Success value or an Failure error
+public extension Result {
+	/// Convenience tester/getter for the value
+	public var success: Success? {
+		switch self {
+		case .success(let s): return s
+		case .failure: return nil
+		}
+	}
 	
-	/// Failure wraps an ErrorType
-	case failure(Error)
+	/// Convenience tester/getter for the error
+	public var failure: Failure? {
+		switch self {
+		case .success: return nil
+		case .failure(let f): return f
+		}
+	}
+
+	/// Test whether the result is an error.
+	public var isSuccess: Bool {
+		return !isFailure
+	}
+
+	/// Test whether the result is an error.
+	public var isFailure: Bool {
+		switch self {
+		case .success: return false
+		case .failure: return true
+		}
+	}
+
+	/// Chains another Result to this one. In the event that this Result is a .Success, the provided transformer closure is used to transform the value into another value (of a potentially new type) and a new Result is made from that value. In the event that this Result is a .Failure, the next Result will have the same error as this one.
+	public func map<U>(_ transform: (Success) -> U) -> Result<U, Failure> {
+		switch self {
+		case .success(let val): return .success(transform(val))
+		case .failure(let e): return .failure(e)
+		}
+	}
 	
+	/// Chains another Result to this one. In the event that this Result is a .Success, the provided transformer closure is used to transform the value into another value (of a potentially new type) and a new Result is made from that value. In the event that this Result is a .Failure, the next Result will have the same error as this one.
+	public func mapFailure<U>(_ transform: (Failure) -> U) -> Result<Success, U> {
+		switch self {
+		case .success(let s): return .success(s)
+		case .failure(let f): return .failure(transform(f))
+		}
+	}
+	
+	/// Chains another Result to this one. In the event that this Result is a .Success, the provided transformer closure is used to generate another Result (wrapping a potentially new type). In the event that this Result is a .Failure, the next Result will have the same error as this one.
+	public func flatMap<U>(_ transform: (Success) -> Result<U, Failure>) -> Result<U, Failure> {
+		switch self {
+		case .success(let val): return transform(val)
+		case .failure(let e): return .failure(e)
+		}
+	}
+}
+
+public extension Result where Failure == Error {
 	/// Construct a result from a `throws` function
-	public init(_ capturing: () throws -> Value) {
+	public init(_ capturing: () throws -> Success) {
 		do {
 			self = .success(try capturing())
 		} catch {
@@ -37,50 +91,18 @@ public enum Result<Value> {
 		}
 	}
 	
-	/// Convenience tester/getter for the value
-	public var value: Value? {
-		switch self {
-		case .success(let v): return v
-		case .failure: return nil
-		}
-	}
-	
-	/// Convenience tester/getter for the error
-	public var error: Error? {
-		switch self {
-		case .success: return nil
-		case .failure(let e): return e
-		}
-	}
-
-	/// Test whether the result is an error.
-	public var isError: Bool {
-		switch self {
-		case .success: return false
-		case .failure: return true
-		}
-	}
-	
 	/// Adapter method used to convert a Result to a value while throwing on error.
-	public func unwrap() throws -> Value {
+	public func unwrap() throws -> Success {
 		switch self {
 		case .success(let v): return v
 		case .failure(let e): throw e
 		}
 	}
 
-	/// Chains another Result to this one. In the event that this Result is a .Success, the provided transformer closure is used to generate another Result (wrapping a potentially new type). In the event that this Result is a .Failure, the next Result will have the same error as this one.
-	public func flatMap<U>(_ transform: (Value) -> Result<U>) -> Result<U> {
-		switch self {
-		case .success(let val): return transform(val)
-		case .failure(let e): return .failure(e)
-		}
-	}
-
 	/// Chains another Result to this one. In the event that this Result is a .Success, the provided transformer closure is used to transform the value into another value (of a potentially new type) and a new Result is made from that value. In the event that this Result is a .Failure, the next Result will have the same error as this one.
-	public func map<U>(_ transform: (Value) throws -> U) -> Result<U> {
+	public func mapThrows<U>(_ transform: (Success) throws -> U) -> Result<U, Failure> {
 		switch self {
-		case .success(let val): return Result<U> { try transform(val) }
+		case .success(let val): return Result<U, Failure> { try transform(val) }
 		case .failure(let e): return .failure(e)
 		}
 	}
