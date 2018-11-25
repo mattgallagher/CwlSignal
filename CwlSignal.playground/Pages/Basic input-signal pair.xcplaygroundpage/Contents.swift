@@ -7,7 +7,7 @@
 
 The CwlSignal library is centered around one-way communication channels built from the `Signal` type (and a few related friends). The input to a channel is usually a `SignalInput`, then there's a number of `Signal` stages in the middle to transform and process the data moving through the pipeline and then the pipeline ends with a `SignalOutput`.
 
-The data moving through the pipeline are `Result<Value>` instances. This means that they may be *values* –`Result.success(Value)` – or they may be *errors* – `Result.failure(Error)`. The first error received is the end-of-stream (closes the signal). *Expected* errors are instances of `SignalComplete` (indicating signal `.closed` or sender `.cancelled`) and any other kind of error is indicates an *unexpected* error. In either case, a signal pipeline will send no further values after the first error is received.
+The data moving through the pipeline are `Result<Value>` instances. This means that they may be *values*, e.g. `Result.success(Value)`, or they may be *errors*, e.g. `Result.failure(Error)` . The first error received is the end-of-stream (closes the signal). *Expected* errors are instances of `SignalComplete` (indicating signal `.closed` or sender `.cancelled`) and any other kind of error is indicates an *unexpected* error. In either case, a signal pipeline will send no further values after the first error is received.
 
 The `(SignalInput, Signal)` pair returned from `create` lets you start building a channel from the initial input and the first intermediate `Signal`.
 
