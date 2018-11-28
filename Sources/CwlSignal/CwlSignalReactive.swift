@@ -50,11 +50,11 @@ extension Signal {
 	/// NOTE: it is possible to specify a `nil` error to have the signal remain open at the end of the sequence.
 	///
 	/// - parameter values: A Swift `Sequence` that generates the signal values.
-	/// - parameter error: The error with which to close the sequence. Can be `nil` to leave the sequence open (default: `SignalComplete.closed`)
+	/// - parameter end: The error with which to close the sequence. Can be `nil` to leave the sequence open (default: `SignalEnd.complete`)
 	/// - parameter context: the `Exec` where the `SequenceType` will be enumerated (default: .direct).
 	/// - returns: a signal that emits `values` and then closes
-	public static func from<S: Sequence>(_ sequence: S, error: Error? = SignalComplete.closed, context: Exec = .direct) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
-		if let e = error {
+	public static func from<S: Sequence>(_ sequence: S, end: SignalEnd? = .complete, context: Exec = .direct) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
+		if let e = end {
 			return generate(context: context) { input in
 				guard let i = input else { return }
 				for v in sequence {
@@ -62,7 +62,7 @@ extension Signal {
 						break
 					}
 				}
-				i.send(error: e)
+				i.send(end: e)
 			}
 		} else {
 			return retainedGenerate(context: context) { input in
@@ -80,7 +80,7 @@ extension Signal {
 	///
 	/// - returns: a non-sending, non-closing signal of the desired type
 	public static func never() -> Signal<OutputValue> {
-		return .from([], error: nil)
+		return .from([], end: nil)
 	}
 	
 	/// - Implementation of [Reactive X operator "Just"](http://reactivex.io/documentation/operators/just.html)
@@ -90,10 +90,10 @@ extension Signal {
 	///
 	/// - Parameters:
 	///   - value: the value to send
-	///   - error: if non-nil, sent after value to close the stream 
+	///   - end: if non-nil, sent after value to close the stream 
 	/// - Returns: a signal that will emit `value` and (optionally) close
-	public static func just(_ values: OutputValue..., error: Error? = SignalComplete.closed) -> Signal<OutputValue> {
-		return Signal<OutputValue>.from(values, error: error)
+	public static func just(_ values: OutputValue..., end: SignalEnd? = .complete) -> Signal<OutputValue> {
+		return Signal<OutputValue>.from(values, end: end)
 	}
 
 	/// - Implementation of [Reactive X operator "Throw"](http://reactivex.io/documentation/operators/empty-never-throw.html)
@@ -103,20 +103,17 @@ extension Signal {
 	///
 	/// - Parameters:
 	///   - value: the value to send
-	///   - error: if non-nil, sent after value to close the stream 
+	///   - end: if non-nil, sent after value to close the stream 
 	/// - Returns: a signal that will emit `value` and (optionally) close
 	public static func error(_ error: Error) -> Signal<OutputValue> {
-		return Signal<OutputValue>.from([], error: error)
+		return Signal<OutputValue>.from([], end: .error(error))
 	}
 
 	/// - Implementation of [Reactive X operator "Empty"](http://reactivex.io/documentation/operators/empty-never-throw.html)
 	///
 	/// See also: `from(:)`, which sends a sequence of values (optionally on a specific context)
 	///
-	/// - Parameters:
-	///   - value: the value to send
-	///   - error: if non-nil, sent after value to close the stream 
-	/// - Returns: a signal that will emit `value` and (optionally) close
+	/// - Returns: a signal that will emit no values and then close
 	public static func empty() -> Signal<OutputValue> {
 		return Signal<OutputValue>.from([])
 	}
@@ -146,20 +143,20 @@ public class SignalSequence<OutputValue>: Sequence, IteratorProtocol {
 	var queued: Array<OutputValue> = []
 	
 	/// Error type property is `nil` before the end of the signal is reached and contains the error used to close the signal in other cases
-	public var error: Error?
+	public var end: SignalEnd?
 	
 	// Only intended to be constructed by `Signal.toSequence`
 	//
 	// - Parameter signal: the signal whose values will be iterated by this sequence
 	init(_ signal: Signal<OutputValue>) {
-		output = signal.subscribe(context: context) { [weak self] (r: Result<OutputValue>) in
+		output = signal.subscribe(context: context) { [weak self] (r: Result<OutputValue, SignalEnd>) in
 			guard let s = self else { return }
 			switch r {
 			case .success(let v):
 				s.queued.append(v)
 				s.semaphore.signal()
 			case .failure(let e):
-				s.error = e
+				s.end = e
 				s.semaphore.signal()
 			}
 		}
@@ -168,7 +165,7 @@ public class SignalSequence<OutputValue>: Sequence, IteratorProtocol {
 	/// Stops listening to the signal and set the error value to SignalComplete.cancelled
 	public func cancel() {
 		context.invokeAndWait {
-			self.error = SignalComplete.cancelled
+			self.end = .cancelled
 			self.output?.cancel()
 			self.semaphore.signal()
 		}
@@ -191,7 +188,7 @@ public class SignalSequence<OutputValue>: Sequence, IteratorProtocol {
 	}
 	
 	deinit {
-		if error == nil {
+		if end == nil {
 			semaphore.signal()
 		}
 	}
@@ -352,18 +349,18 @@ extension SignalInterface {
 					do {
 						try intervalJunction.bind(to: i)
 					} catch {
-						n.send(error: error)
+						n.send(end: .error(error))
 					}
 				}
 			case .result1(.failure(let e)):
 				// If there's an error on the `self` signal, forward it on.
-				n.send(error: e)
+				n.send(end: e)
 			case .result2(.success):
 				// When the timer fires, trigger the boundary signal
 				send = true
 			case .result2(.failure(let e)):
 				// If there's a timer error, close
-				n.send(error: e)
+				n.send(end: e)
 			}
 			
 			if send {
@@ -391,14 +388,14 @@ extension SignalInterface {
 			case .result1(.failure(let e)):
 				next.send(value: buffer)
 				buffer.removeAll()
-				next.send(error: e)
+				next.send(end: e)
 			case .result2(.success):
 				next.send(value: buffer)
 				buffer.removeAll()
 			case .result2(.failure(let e)):
 				next.send(value: buffer)
 				buffer.removeAll()
-				next.send(error: e)
+				next.send(end: e)
 			}
 		}
 	}
@@ -419,7 +416,7 @@ extension SignalInterface {
 					next.send(value: b)
 				}
 				buffers.removeAll()
-				next.send(error: e)
+				next.send(end: e)
 			case .result2(.success(let index, .some)):
 				buffers[index] = []
 			case .result2(.success(let index, .none)):
@@ -432,7 +429,7 @@ extension SignalInterface {
 					next.send(value: b)
 				}
 				buffers.removeAll()
-				next.send(error: e)
+				next.send(end: e)
 			}
 		}
 	}
@@ -507,11 +504,11 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func compact<U>() -> Signal<U> where OutputValue == Optional<U> {
-		return transform() { (r: Result<Optional<U>>, n: SignalNext<U>) in
+		return transform() { (r: Result<Optional<U>, SignalEnd>, n: SignalNext<U>) in
 			switch r {
 			case .success(.some(let v)): n.send(value: v)
 			case .success: break
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -523,7 +520,7 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func compactMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U?) -> Signal<U> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<U>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			switch r {
 			case .success(let v):
 				do {
@@ -531,9 +528,9 @@ extension SignalInterface {
 						n.send(value: u)
 					}
 				} catch {
-					n.send(error: error)
+					n.send(end: .error(error))
 				}
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -546,7 +543,7 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func compactMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) throws -> U?) -> Signal<U> {
-		return transform(initialState: initialState, context: context) { (s: inout S, r: Result<OutputValue>, n: SignalNext<U>) in
+		return transform(initialState: initialState, context: context) { (s: inout S, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			switch r {
 			case .success(let v):
 				do {
@@ -554,9 +551,9 @@ extension SignalInterface {
 						n.send(value: u)
 					}
 				} catch {
-					n.send(error: error)
+					n.send(end: .error(error))
 				}
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -639,18 +636,18 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is serially concatenated into a single stream
 	public func concatMap<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> Interface) -> Signal<Interface.OutputValue> {
-		return transformFlatten(initialState: 0, closePropagation: .errors, context: context) { (index: inout Int, v: OutputValue, mergedInput: SignalMergedInput<(Int, Result<Interface.OutputValue>)>) in
-			mergedInput.add(processor(v).transform { (r: Result<Interface.OutputValue>, n: SignalNext<Result<Interface.OutputValue>>) in
+		return transformFlatten(initialState: 0, closePropagation: .errors, context: context) { (index: inout Int, v: OutputValue, mergedInput: SignalMergedInput<(Int, Result<Interface.OutputValue, SignalEnd>)>) in
+			mergedInput.add(processor(v).transform { (r: Result<Interface.OutputValue, SignalEnd>, n: SignalNext<Result<Interface.OutputValue, SignalEnd>>) in
 				switch r {
 				case .success:
 					n.send(value: r)
 				case .failure(let e):
 					n.send(value: r)
-					n.send(error: e)
+					n.send(end: e)
 				}
-			}.map { [index] (r: Result<Interface.OutputValue>) -> (Int, Result<Interface.OutputValue>) in (index, r) }, closePropagation: .errors, removeOnDeactivate: true)
+			}.map { [index] (r: Result<Interface.OutputValue, SignalEnd>) -> (Int, Result<Interface.OutputValue, SignalEnd>) in (index, r) }, closePropagation: .errors, removeOnDeactivate: true)
 			index += 1
-		}.transform(initialState: (0, Array<Array<Result<Interface.OutputValue>>>())) { (state: inout (completed: Int, buffers: Array<Array<Result<Interface.OutputValue>>>), result: Result<(Int, Result<Interface.OutputValue>)>, next: SignalNext<Interface.OutputValue>) in
+		}.transform(initialState: (0, Array<Array<Result<Interface.OutputValue, SignalEnd>>>())) { (state: inout (completed: Int, buffers: Array<Array<Result<Interface.OutputValue, SignalEnd>>>), result: Result<(Int, Result<Interface.OutputValue, SignalEnd>), SignalEnd>, next: SignalNext<Interface.OutputValue>) in
 			switch result {
 			case .success(let index, .success(let v)):
 				// We can send results for the first incomplete signal without buffering
@@ -663,18 +660,18 @@ extension SignalInterface {
 					}
 					
 					// Buffer the result
-					state.buffers[index].append(Result<Interface.OutputValue>.success(v))
+					state.buffers[index].append(Result<Interface.OutputValue, SignalEnd>.success(v))
 				}
 			case .success(let index, .failure(let e)):
 				// If its an error, try to send some more buffers
 				if index == state.completed {
 					state.completed += 1
 					for i in state.completed..<state.buffers.count {
-						for j in state.buffers[i] where !j.isError {
+						for j in state.buffers[i] where !j.isFailure {
 							next.send(result: j)
 						}
 						
-						let incomplete = state.buffers[i].last?.isError != true
+						let incomplete = state.buffers[i].last?.isFailure != true
 						state.buffers[i].removeAll()
 						if incomplete {
 							break
@@ -683,9 +680,9 @@ extension SignalInterface {
 					}
 				} else {
 					// If we're not up to that buffer, just record the error
-					state.buffers[index].append(Result<Interface.OutputValue>.failure(e))
+					state.buffers[index].append(Result<Interface.OutputValue, SignalEnd>.failure(e))
 				}
-			case .failure(let error): next.send(error: error)
+			case .failure(let error): next.send(end: error)
 			}
 		}
 	}
@@ -697,7 +694,7 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs the "key" for the output `Signal`
 	/// - Returns: a parent `Signal` where values are tuples of a "key" and a child `Signal` that will contain all values from `self` associated with that "key".
 	public func groupBy<U: Hashable>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U) -> Signal<(U, Signal<OutputValue>)> {
-		return self.transform(initialState: Dictionary<U, SignalInput<OutputValue>>(), context: context) { (outputs: inout Dictionary<U, SignalInput<OutputValue>>, r: Result<OutputValue>, n: SignalNext<(U, Signal<OutputValue>)>) in
+		return self.transform(initialState: Dictionary<U, SignalInput<OutputValue>>(), context: context) { (outputs: inout Dictionary<U, SignalInput<OutputValue>>, r: Result<OutputValue, SignalEnd>, n: SignalNext<(U, Signal<OutputValue>)>) in
 			switch r {
 			case .success(let v):
 				let u = processor(v)
@@ -711,8 +708,8 @@ extension SignalInterface {
 					outputs[u] = input
 				}
 			case .failure(let e):
-				n.send(error: e)
-				outputs.forEach { tuple in tuple.value.send(error: e) }
+				n.send(end: e)
+				outputs.forEach { tuple in tuple.value.send(end: e) }
 			}
 		}
 	}
@@ -723,11 +720,11 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: used to transform the closing error 
 	/// - Returns: when an error is emitted from `self`, emits the result returned from passing that error into `processor`. All values emitted normally.
-	public func mapErrors(context: Exec = .direct, _ processor: @escaping (Error) -> Error) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+	public func mapErrors(context: Exec = .direct, _ processor: @escaping (SignalEnd) -> SignalEnd) -> Signal<OutputValue> {
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v): n.send(value: v)
-			case .failure(let e): n.send(error: processor(e))
+			case .failure(let e): n.send(end: processor(e))
 			}
 		}
 	}
@@ -738,10 +735,10 @@ extension SignalInterface {
 	///   - keyPath: selects a child value to emit
 	/// - Returns: a `Signal` where all the values have been transformed by the key path.
 	public func keyPath<U>(_ keyPath: KeyPath<OutputValue, U>) -> Signal<U> {
-		return transform { (r: Result<OutputValue>, n: SignalNext<U>) in
+		return transform { (r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			switch r {
 			case .success(let v): n.send(value: v[keyPath: keyPath])
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -752,11 +749,11 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a value for the output `Signal`
 	/// - Returns: a `Signal` where all the values have been transformed by the `processor`. Any error is emitted in the output without change.
-	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U) -> Signal<U> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<U>) in
+	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U) -> Signal<U> {
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			switch r {
-			case .success(let v): n.send(result: Result { try processor(v) })
-			case .failure(let e): n.send(error: e)
+			case .success(let v): n.send(result: .success(processor(v)))
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -768,11 +765,11 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a value for the output `Signal`
 	/// - Returns: a `Signal` where all the values have been transformed by the `processor`. Any error is emitted in the output without change.
-	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) throws -> U) -> Signal<U> {
-		return transform(initialState: initialState, context: context) { (s: inout V, r: Result<OutputValue>, n: SignalNext<U>) in
+	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) -> U) -> Signal<U> {
+		return transform(initialState: initialState, context: context) { (s: inout V, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			switch r {
-			case .success(let v): n.send(result: Result { try processor(&s, v) })
-			case .failure(let e): n.send(error: e)
+			case .success(let v): n.send(result: .success(processor(&s, v)))
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -788,13 +785,13 @@ extension SignalInterface {
 	///   - processor: takes the most recently emitted value and the most recent value from `self` and returns the next emitted value
 	/// - Returns: a `Signal` where the result from each invocation of `processor` are emitted
 	public func scan<U>(initialState: U, context: Exec = .direct, _ processor: @escaping (U, OutputValue) -> U) -> Signal<U> {
-		return transform(initialState: initialState, context: context) { (accumulated: inout U, r: Result<OutputValue>, n: SignalNext<U>) in
+		return transform(initialState: initialState, context: context) { (accumulated: inout U, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			switch r {
 			case .success(let v):
 				accumulated = processor(accumulated, v)
 				n.send(value: accumulated)
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -818,12 +815,12 @@ extension SignalInterface {
 					c.send(value: v)
 				}
 			case .result1(.failure(let e)):
-				next.send(error: e)
+				next.send(end: e)
 			case .result2(.success):
 				_ = current?.close()
 				current = nil
 			case .result2(.failure(let e)):
-				next.send(error: e)
+				next.send(end: e)
 			}
 		}
 	}
@@ -844,7 +841,7 @@ extension SignalInterface {
 					}
 				}
 			case .result1(.failure(let e)):
-				next.send(error: e)
+				next.send(end: e)
 			case .result2(.success(let index, .some)):
 				let (i, s) = Signal<OutputValue>.create()
 				children[index] = i
@@ -855,7 +852,7 @@ extension SignalInterface {
 					children.removeValue(forKey: index)
 				}
 			case .result2(.failure(let e)):
-				next.send(error: e)
+				next.send(end: e)
 			}
 		}
 	}
@@ -935,7 +932,7 @@ extension SignalInterface {
 	public func debounce(interval: DispatchTimeInterval, flushOnClose: Bool = false, context: Exec = .direct) -> Signal<OutputValue> {
 		let serialContext = context.serialized()
 		let (mergedInput, signal) = Signal<OutputValue>.createMergedInput()
-		let intermediate = transform(initialState: nil, context: serialContext) { (timer: inout Signal<OutputValue>?, result: Result<OutputValue>, next: SignalNext<OutputValue>) in
+		let intermediate = transform(initialState: nil, context: serialContext) { (timer: inout Signal<OutputValue>?, result: Result<OutputValue, SignalEnd>, next: SignalNext<OutputValue>) in
 			switch result {
 			case .success(let v):
 				if let oldTimer = timer {
@@ -945,7 +942,7 @@ extension SignalInterface {
 				mergedInput.add(newTimer, closePropagation: .none, removeOnDeactivate: true)
 				timer = newTimer
 			case .failure(let e):
-				next.send(error: e)
+				next.send(end: e)
 			}
 		}
 		mergedInput.add(intermediate, closePropagation: .all, removeOnDeactivate: false)
@@ -963,14 +960,14 @@ extension SignalInterface {
 	public func throttleFirst(interval: DispatchTimeInterval, context: Exec = .direct) -> Signal<OutputValue> {
 		let timerQueue = context.serialized()
 		var timer: Lifetime? = nil
-		return transform(initialState: nil, context: timerQueue) { (cleanup: inout OnDelete?, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: nil, context: timerQueue) { (cleanup: inout OnDelete?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			cleanup = cleanup ?? OnDelete {
 				timer = nil
 			}
 			
 			switch r {
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			case .success(let v) where timer == nil:
 				n.send(value: v)
 				timer = timerQueue.singleTimer(interval: interval) {
@@ -988,7 +985,7 @@ extension SignalInterface where OutputValue: Hashable {
 	///
 	/// - Returns: a signal where all values received are remembered and only values not previously received are emitted.
 	public func distinct() -> Signal<OutputValue> {
-		return transform(initialState: Set<OutputValue>()) { (previous: inout Set<OutputValue>, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: Set<OutputValue>()) { (previous: inout Set<OutputValue>, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v):
 				if !previous.contains(v) {
@@ -996,7 +993,7 @@ extension SignalInterface where OutputValue: Hashable {
 					n.send(value: v)
 				}
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1007,7 +1004,7 @@ extension SignalInterface where OutputValue: Equatable {
 	///
 	/// - Returns: a signal that emits the first value but then emits subsequent values only when they are different to the previous value.
 	public func distinctUntilChanged() -> Signal<OutputValue> {
-		return transform(initialState: nil) { (previous: inout OutputValue?, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: nil) { (previous: inout OutputValue?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v):
 				if previous != v {
@@ -1015,7 +1012,7 @@ extension SignalInterface where OutputValue: Equatable {
 					n.send(value: v)
 				}
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1029,7 +1026,7 @@ extension SignalInterface {
 	///   - comparator: a function taking two parameters (the previous and current value in the signal) which should return `false` to indicate the current value should be emitted.
 	/// - Returns: a signal that emits the first value but then emits subsequent values only if the function `comparator` returns `false` when passed the previous and current values.
 	public func distinctUntilChanged(context: Exec = .direct, compare: @escaping (OutputValue, OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(initialState: nil) { (previous: inout OutputValue?, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: nil) { (previous: inout OutputValue?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v):
 				if let p = previous, compare(p, v) {
@@ -1039,7 +1036,7 @@ extension SignalInterface {
 				}
 				previous = v
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1049,7 +1046,7 @@ extension SignalInterface {
 	/// - Parameter index: identifies the element to be emitted.
 	/// - Returns: a signal that emits the zero-indexed element identified by `index` and then closes.
 	public func elementAt(_ index: UInt) -> Signal<OutputValue> {
-		return transform(initialState: 0, context: .direct) { (curr: inout UInt, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: 0, context: .direct) { (curr: inout UInt, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v) where curr == index:
 				n.send(value: v)
@@ -1057,7 +1054,7 @@ extension SignalInterface {
 			case .success:
 				break
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 			curr += 1
 		}
@@ -1070,14 +1067,14 @@ extension SignalInterface {
 	///   - matching: a function which is passed the current value and should return `true` to indicate the value should be emitted.
 	/// - Returns: a signal that emits received values only if the function `matching` returns `true` when passed the value.
 	public func filter(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v) where matching(v):
 				n.send(value: v)
 			case .success:
 				break
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1088,14 +1085,14 @@ extension SignalInterface {
 	///   - type: values will be filtered to this type (NOTE: only the *static* type of this parameter is considered – if the runtime type is more specific, that will be ignored).
 	/// - Returns: a signal that emits received values only if the value can be dynamically cast to the type `U`, specified statically by `type`.
 	public func ofType<U>(_ type: U.Type) -> Signal<U> {
-		return self.transform(initialState: 0) { (curr: inout Int, r: Result<OutputValue>, n: SignalNext<U>) -> Void in
+		return self.transform(initialState: 0) { (curr: inout Int, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) -> Void in
 			switch r {
 			case .success(let v as U):
 				n.send(value: v)
 			case .success:
 				break
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1107,7 +1104,7 @@ extension SignalInterface {
 	///   - matching: run for each value until it returns `true`
 	/// - Returns: a signal that, when an error is received, emits the first value (if any) in the signal where `matching` returns `true` when invoked with the value, followed by the error.
 	public func first(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v) where matching(v):
 				n.send(value: v)
@@ -1115,7 +1112,7 @@ extension SignalInterface {
 			case .success:
 				break
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1125,9 +1122,9 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - context: the `Exec` where `matching` will be evaluated (default: .direct).
 	///   - matching: run for each value
-	/// - Returns: a signal that, if a single value in the sequence, when passed to `matching` returns `true`, then that value will be returned, followed by a SignalComplete.closed when the input signal closes (otherwise a SignalComplete.closed will be emitted without emitting any prior values).
+	/// - Returns: a signal that, if a single value in the sequence, when passed to `matching` returns `true`, then that value will be returned, followed by a SignalEnd.complete when the input signal closes (otherwise a SignalEnd.complete will be emitted without emitting any prior values).
 	public func single(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> Signal<OutputValue> {
-		return transform(initialState: nil, context: context) { (state: inout (firstMatch: OutputValue, unique: Bool)?, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: nil, context: context) { (state: inout (firstMatch: OutputValue, unique: Bool)?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v) where matching(v):
 				if let s = state {
@@ -1150,9 +1147,9 @@ extension SignalInterface {
 	///
 	/// - Returns: a signal that emits the input error, when received, otherwise ignores all values.
 	public func ignoreElements<U>(outputType: U.Type = U.self) -> Signal<U> {
-		return transform { (r: Result<OutputValue>, n: SignalNext<U>) -> Void in
+		return transform { (r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) -> Void in
 			if case .failure(let e) = r {
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1164,7 +1161,7 @@ extension SignalInterface {
 	///   - matching: run for each value
 	/// - Returns: a signal that, when an error is received, emits the last value (if any) in the signal where `matching` returns `true` when invoked with the value, followed by the error.
 	public func last(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> Signal<OutputValue> {
-		return transform(initialState: nil, context: context) { (last: inout OutputValue?, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: nil, context: context) { (last: inout OutputValue?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v) where matching(v): last = v
 			case .success: break
@@ -1190,14 +1187,14 @@ extension SignalInterface {
 			case (.result1(.success(let v)), _):
 				last = v
 			case (.result1(.failure(let e)), _):
-				n.send(error: e)
+				n.send(end: e)
 			case (.result2(.success), .some(let l)):
 				n.send(value: l)
 				last = nil
 			case (.result2(.success), _):
 				break
 			case (.result2(.failure(let e)), _):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1214,14 +1211,14 @@ extension SignalInterface {
 			case (.result1(.success), _):
 				break
 			case (.result1(.failure(let e)), _):
-				n.send(error: e)
+				n.send(end: e)
 			case (.result2(.success), .some(let l)):
 				n.send(value: l)
 				last = nil
 			case (.result2(.success), _):
 				break
 			case (.result2(.failure(let e)), _):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1237,9 +1234,9 @@ extension SignalInterface {
 			switch (c, last) {
 			case (.result1(.success), .some(let l)): n.send(value: l)
 			case (.result1(.success), _): break
-			case (.result1(.failure(let e)), _): n.send(error: e)
+			case (.result1(.failure(let e)), _): n.send(end: e)
 			case (.result2(.success(let v)), _): last = v
-			case (.result2(.failure(let e)), _): n.send(error: e)
+			case (.result2(.failure(let e)), _): n.send(end: e)
 			}
 		}
 	}
@@ -1256,9 +1253,9 @@ extension SignalInterface {
 			switch (c, last) {
 			case (.result1(.success(let left)), .some(let right)): n.send(value: processor(left, right))
 			case (.result1(.success), _): break
-			case (.result1(.failure(let e)), _): n.send(error: e)
+			case (.result1(.failure(let e)), _): n.send(end: e)
 			case (.result2(.success(let v)), _): last = v
-			case (.result2(.failure(let e)), _): n.send(error: e)
+			case (.result2(.failure(let e)), _): n.send(end: e)
 			}
 		}
 	}
@@ -1268,11 +1265,11 @@ extension SignalInterface {
 	/// - Parameter count: the number of values from the start of `self` to drop
 	/// - Returns: a signal that drops `count` values from `self` then mirrors `self`.
 	public func skip(_ count: Int) -> Signal<OutputValue> {
-		return transform(initialState: 0) { (progressCount: inout Int, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: 0) { (progressCount: inout Int, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v) where progressCount >= count: n.send(value: v)
 			case .success: break
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 			progressCount = progressCount + 1
 		}
@@ -1283,14 +1280,14 @@ extension SignalInterface {
 	/// - Parameter count: the number of values from the end of `self` to drop
 	/// - Returns: a signal that buffers `count` values from `self` then for each new value received from `self`, emits the oldest value in the buffer. When `self` closes, all remaining values in the buffer are discarded.
 	public func skipLast(_ count: Int) -> Signal<OutputValue> {
-		return transform(initialState: Array<OutputValue>()) { (buffer: inout Array<OutputValue>, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: Array<OutputValue>()) { (buffer: inout Array<OutputValue>, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v):
 				buffer.append(v)
 				if buffer.count > count {
 					n.send(value: buffer.removeFirst())
 				}
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -1300,14 +1297,14 @@ extension SignalInterface {
 	/// - Parameter count: the number of values from the start of `self` to emit
 	/// - Returns: a signal that emits `count` values from `self` then closes.
 	public func take(_ count: Int) -> Signal<OutputValue> {
-		return transform(initialState: 0) { (progressCount: inout Int, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: 0) { (progressCount: inout Int, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			progressCount = progressCount + 1
 			switch r {
 			case .success(let v) where progressCount >= count:
 				n.send(value: v)
 				n.close()
 			case .success(let v): n.send(value: v)
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -1317,7 +1314,7 @@ extension SignalInterface {
 	/// - Parameter count: the number of values from the end of `self` to emit
 	/// - Returns: a signal that buffers `count` values from `self` then for each new value received from `self`, drops the oldest value in the buffer. When `self` closes, all values in the buffer are emitted, followed by the close.
 	public func takeLast(_ count: Int) -> Signal<OutputValue> {
-		return transform(initialState: Array<OutputValue>()) { (buffer: inout Array<OutputValue>, r: Result<OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: Array<OutputValue>()) { (buffer: inout Array<OutputValue>, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
 			switch r {
 			case .success(let v):
 				buffer.append(v)
@@ -1328,7 +1325,7 @@ extension SignalInterface {
 				for v in buffer {
 					n.send(value: v)
 				}
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1351,8 +1348,8 @@ extension SignalInterface {
 			switch r {
 			case .result1(.success(let v)): state = (v, state.1)
 			case .result2(.success(let v)): state = (state.0, v)
-			case .result1(.failure(let e)): n.send(error: e); return
-			case .result2(.failure(let e)): n.send(error: e); return
+			case .result1(.failure(let e)): n.send(end: e); return
+			case .result2(.failure(let e)): n.send(end: e); return
 			}
 			if let v0 = state.0, let v1 = state.1 {
 				n.send(value: processor(v0, v1))
@@ -1378,9 +1375,9 @@ extension SignalInterface {
 			case .result1(.success(let v)): state = (v, state.1, state.2)
 			case .result2(.success(let v)): state = (state.0, v, state.2)
 			case .result3(.success(let v)): state = (state.0, state.1, v)
-			case .result1(.failure(let e)): n.send(error: e); return
-			case .result2(.failure(let e)): n.send(error: e); return
-			case .result3(.failure(let e)): n.send(error: e); return
+			case .result1(.failure(let e)): n.send(end: e); return
+			case .result2(.failure(let e)): n.send(end: e); return
+			case .result3(.failure(let e)): n.send(end: e); return
 			}
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2 {
 				n.send(value: processor(v0, v1, v2))
@@ -1411,10 +1408,10 @@ extension SignalInterface {
 			case .result2(.success(let v)): state = (state.0, v, state.2, state.3)
 			case .result3(.success(let v)): state = (state.0, state.1, v, state.3)
 			case .result4(.success(let v)): state = (state.0, state.1, state.2, v)
-			case .result1(.failure(let e)): n.send(error: e); return
-			case .result2(.failure(let e)): n.send(error: e); return
-			case .result3(.failure(let e)): n.send(error: e); return
-			case .result4(.failure(let e)): n.send(error: e); return
+			case .result1(.failure(let e)): n.send(end: e); return
+			case .result2(.failure(let e)): n.send(end: e); return
+			case .result3(.failure(let e)): n.send(end: e); return
+			case .result4(.failure(let e)): n.send(end: e); return
 			}
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2, let v3 = state.3 {
 				n.send(value: processor(v0, v1, v2, v3))
@@ -1446,11 +1443,11 @@ extension SignalInterface {
 			case .result3(.success(let v)): state = (state.0, state.1, v, state.3, state.4)
 			case .result4(.success(let v)): state = (state.0, state.1, state.2, v, state.4)
 			case .result5(.success(let v)): state = (state.0, state.1, state.2, state.3, v)
-			case .result1(.failure(let e)): n.send(error: e); return
-			case .result2(.failure(let e)): n.send(error: e); return
-			case .result3(.failure(let e)): n.send(error: e); return
-			case .result4(.failure(let e)): n.send(error: e); return
-			case .result5(.failure(let e)): n.send(error: e); return
+			case .result1(.failure(let e)): n.send(end: e); return
+			case .result2(.failure(let e)): n.send(end: e); return
+			case .result3(.failure(let e)): n.send(end: e); return
+			case .result4(.failure(let e)): n.send(end: e); return
+			case .result5(.failure(let e)): n.send(end: e); return
 			}
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2, let v3 = state.3, let v4 = state.4 {
 				n.send(value: processor(v0, v1, v2, v3, v4))
@@ -1531,7 +1528,7 @@ extension Signal {
 	/// - Parameter sources: a variable parameter list of `Signal<OutputValue>` instances that are merged with `self` to form the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func merge<S: Sequence>(sequence: S) -> Signal<OutputValue> where S.Iterator.Element == Signal<OutputValue> {
-		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalComplete.closed)
+		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: .complete)
 		mergedInput.add(signal, closePropagation: .errors)
 		for s in sequence {
 			mergedInput.add(s, closePropagation: .errors)
@@ -1546,7 +1543,7 @@ extension Signal {
 	/// - Parameter sources: an `Array` where `signal` is merged into the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public static func merge<S: Sequence>(sequence: S) -> Signal<OutputValue> where S.Iterator.Element == Signal<OutputValue> {
-		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalComplete.closed)
+		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: .complete)
 		var sequenceEmpty = true
 		for s in sequence {
 			mergedInput.add(s, closePropagation: .errors)
@@ -1573,7 +1570,7 @@ extension SignalInterface {
 	/// - Parameter sources: a variable parameter list of `Signal<OutputValue>` instances that are merged with `self` to form the result.
 	/// - Returns: a signal that emits every value from every `sources` input `signal`.
 	public func merge(_ sources: Signal<OutputValue>...) -> Signal<OutputValue> {
-		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: SignalComplete.closed)
+		let (mergedInput, sig) = Signal<OutputValue>.createMergedInput(onLastInputClosed: .complete)
 		mergedInput.add(signal, closePropagation: .errors)
 		for s in sources {
 			mergedInput.add(s, closePropagation: .errors)
@@ -1605,7 +1602,7 @@ extension SignalInterface {
 					n.send(sequence: sequence)
 					alreadySent = true
 				}
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -1621,16 +1618,16 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "endWith"](http://reactivex.io/documentation/operators/endwith.html)
 	///
 	/// - Returns: a signal that emits every value from `sequence` on activation and then mirrors `self`.
-	public func endWith<U: Sequence>(sequence: U, conditional: @escaping (Error) -> Error? = { e in e }) -> Signal<OutputValue> where U.Iterator.Element == OutputValue {
-		return transform() { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+	public func endWith<U: Sequence>(sequence: U, conditional: @escaping (SignalEnd) -> SignalEnd? = { e in e }) -> Signal<OutputValue> where U.Iterator.Element == OutputValue {
+		return transform() { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v): n.send(value: v)
 			case .failure(let e):
 				if let newEnd = conditional(e) {
 					sequence.forEach { n.send(value: $0) }
-					n.send(error: newEnd)
+					n.send(end: newEnd)
 				} else {
-					n.send(error: e)
+					n.send(end: e)
 				}
 			}
 		}
@@ -1662,11 +1659,24 @@ extension SignalInterface {
 		}
 	}
 
+	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	public func zip<U: SignalInterface>(_ second: U) -> Signal<(OutputValue, U.OutputValue)> {
+		return zipWith(second)
+	}
+
 	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
 	///
 	/// - Parameter second: another `Signal`
 	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `with`.
-	public func zip<U: SignalInterface>(_ second: U) -> Signal<(OutputValue, U.OutputValue)> {
+	public static func zip<U: SignalInterface>(_ first: Self, _ second: U) -> Signal<(Self.OutputValue, U.OutputValue)> {
+		return first.zipWith(second)
+	}
+	
+	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
+	///
+	/// - Parameter second: another `Signal`
+	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `with`.
+	public func zipWith<U: SignalInterface>(_ second: U) -> Signal<(OutputValue, U.OutputValue)> {
 		return combine(second, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, firstClosed: Bool, secondClosed: Bool), r: EitherResult2<OutputValue, U.OutputValue>, n: SignalNext<(OutputValue, U.OutputValue)>) in
 			switch (r, queues.first.first, queues.second.first) {
 			case (.result1(.success(let first)), _, .some(let second)):
@@ -1679,7 +1689,7 @@ extension SignalInterface {
 				queues.first.append(first)
 			case (.result1(.failure(let e)), _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.firstClosed = true
 				}
@@ -1694,12 +1704,28 @@ extension SignalInterface {
 				queues.second.append(second)
 			case (.result2(.failure(let e)), _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.secondClosed = true
 				}
 			}
 		}
+	}
+	
+	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	public func zip<U: SignalInterface, V: SignalInterface>(_ second: U, _ third: V) -> Signal<(OutputValue, U.OutputValue, V.OutputValue)> {
+		return zipWith(second, third)
+	}
+	
+	
+	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
+	///
+	/// - Parameters:
+	///   - second: another `Signal`
+	///   - third: another `Signal`
+	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `second` and `third`.
+	public static func zip<U: SignalInterface, V: SignalInterface>(_ first: Self, _ second: U, _ third: V) -> Signal<(Self.OutputValue, U.OutputValue, V.OutputValue)> {
+		return first.zipWith(second, third)
 	}
 	
 	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
@@ -1708,7 +1734,7 @@ extension SignalInterface {
 	///   - second: another `Signal`
 	///   - third: another `Signal`
 	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `second` and `third`.
-	public func zip<U: SignalInterface, V: SignalInterface>(_ second: U, _ third: V) -> Signal<(OutputValue, U.OutputValue, V.OutputValue)> {
+	public func zipWith<U: SignalInterface, V: SignalInterface>(_ second: U, _ third: V) -> Signal<(OutputValue, U.OutputValue, V.OutputValue)> {
 		return combine(second, third, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), Array<V.OutputValue>(), false, false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, third: Array<V.OutputValue>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool), r: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, n: SignalNext<(OutputValue, U.OutputValue, V.OutputValue)>) in
 			switch (r, queues.first.first, queues.second.first, queues.third.first) {
 			case (.result1(.success(let first)), _, .some(let second), .some(let third)):
@@ -1722,7 +1748,7 @@ extension SignalInterface {
 				queues.first.append(first)
 			case (.result1(.failure(let e)), _, _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.firstClosed = true
 				}
@@ -1738,7 +1764,7 @@ extension SignalInterface {
 				queues.second.append(second)
 			case (.result2(.failure(let e)), _, _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.secondClosed = true
 				}
@@ -1754,12 +1780,17 @@ extension SignalInterface {
 				queues.third.append(third)
 			case (.result3(.failure(let e)), _, _, _):
 				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.thirdClosed = true
 				}
 			}
 		}
+	}
+	
+	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	public func zip<U: SignalInterface, V: SignalInterface, W: SignalInterface>(_ second: U, _ third: V, _ fourth: W) -> Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)> {
+		return zipWith(second, third, fourth)
 	}
 	
 	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
@@ -1769,7 +1800,18 @@ extension SignalInterface {
 	///   - third: another `Signal`
 	///   - fourth: another `Signal`
 	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `second`,`third` and `fourth`.
-	public func zip<U: SignalInterface, V: SignalInterface, W: SignalInterface>(_ second: U, _ third: V, _ fourth: W) -> Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)> {
+	public static func zip<U: SignalInterface, V: SignalInterface, W: SignalInterface>(_ first: Self, _ second: U, _ third: V, _ fourth: W) -> Signal<(Self.OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)> {
+		return first.zipWith(second, third, fourth)
+	}
+	
+	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
+	///
+	/// - Parameters:
+	///   - second: another `Signal`
+	///   - third: another `Signal`
+	///   - fourth: another `Signal`
+	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `second`,`third` and `fourth`.
+	public func zipWith<U: SignalInterface, V: SignalInterface, W: SignalInterface>(_ second: U, _ third: V, _ fourth: W) -> Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)> {
 		return combine(second, third, fourth, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), Array<V.OutputValue>(), Array<W.OutputValue>(), false, false, false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, third: Array<V.OutputValue>, fourth: Array<W.OutputValue>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool, fourthClosed: Bool), r: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, n: SignalNext<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)>) in
 			switch (r, queues.first.first, queues.second.first, queues.third.first, queues.fourth.first) {
 			case (.result1(.success(let first)), _, .some(let second), .some(let third), .some(let fourth)):
@@ -1784,7 +1826,7 @@ extension SignalInterface {
 				queues.first.append(first)
 			case (.result1(.failure(let e)), _, _, _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.firstClosed = true
 				}
@@ -1801,7 +1843,7 @@ extension SignalInterface {
 				queues.second.append(second)
 			case (.result2(.failure(let e)), _, _, _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.secondClosed = true
 				}
@@ -1818,7 +1860,7 @@ extension SignalInterface {
 				queues.third.append(third)
 			case (.result3(.failure(let e)), _, _, _, _):
 				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.thirdClosed = true
 				}
@@ -1835,12 +1877,17 @@ extension SignalInterface {
 				queues.fourth.append(fourth)
 			case (.result4(.failure(let e)), _, _, _, _):
 				if queues.fourth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.fourthClosed = true
 				}
 			}
 		}
+	}
+	
+	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	public func zip<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(_ second: U, _ third: V, _ fourth: W, _ fifth: X) -> Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)> {
+		return zipWith(second, third, fourth, fifth)
 	}
 	
 	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
@@ -1851,7 +1898,19 @@ extension SignalInterface {
 	///   - fourth: another `Signal`
 	///   - fifth: another `Signal`
 	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `second`,`third`, `fourth` and `fifth`.
-	public func zip<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(_ second: U, _ third: V, _ fourth: W, _ fifth: X) -> Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)> {
+	public static func zip<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(_ first: Self, _ second: U, _ third: V, _ fourth: W, _ fifth: X) -> Signal<(Self.OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)> {
+		return first.zipWith(second, third, fourth, fifth)
+	}
+	
+	/// Implementation of [Reactive X operator "zip"](http://reactivex.io/documentation/operators/zip.html)
+	///
+	/// - Parameters:
+	///   - second: another `Signal`
+	///   - third: another `Signal`
+	///   - fourth: another `Signal`
+	///   - fifth: another `Signal`
+	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `second`,`third`, `fourth` and `fifth`.
+	public func zipWith<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(_ second: U, _ third: V, _ fourth: W, _ fifth: X) -> Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)> {
 		return combine(second, third, fourth, fifth, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), Array<V.OutputValue>(), Array<W.OutputValue>(), Array<X.OutputValue>(), false, false, false, false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, third: Array<V.OutputValue>, fourth: Array<W.OutputValue>, fifth: Array<X.OutputValue>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool, fourthClosed: Bool, fifthClosed: Bool), r: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, n: SignalNext<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)>) in
 			switch (r, queues.first.first, queues.second.first, queues.third.first, queues.fourth.first, queues.fifth.first) {
 			case (.result1(.success(let first)), _, .some(let second), .some(let third), .some(let fourth), .some(let fifth)):
@@ -1867,7 +1926,7 @@ extension SignalInterface {
 				queues.first.append(first)
 			case (.result1(.failure(let e)), _, _, _, _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.firstClosed = true
 				}
@@ -1885,7 +1944,7 @@ extension SignalInterface {
 				queues.second.append(second)
 			case (.result2(.failure(let e)), _, _, _, _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.secondClosed = true
 				}
@@ -1903,7 +1962,7 @@ extension SignalInterface {
 				queues.third.append(third)
 			case (.result3(.failure(let e)), _, _, _, _, _):
 				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.thirdClosed = true
 				}
@@ -1921,7 +1980,7 @@ extension SignalInterface {
 				queues.fourth.append(fourth)
 			case (.result4(.failure(let e)), _, _, _, _, _):
 				if queues.fourth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.fourthClosed = true
 				}
@@ -1939,7 +1998,7 @@ extension SignalInterface {
 				queues.fifth.append(fifth)
 			case (.result5(.failure(let e)), _, _, _, _, _):
 				if queues.fifth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.send(error: e)
+					n.send(end: e)
 				} else {
 					queues.fifthClosed = true
 				}
@@ -1950,50 +2009,50 @@ extension SignalInterface {
 
 // Essentially a closure type used by `catchError`, defined as a separate class so the function can reference itself
 fileprivate class CatchErrorRecovery<OutputValue> {
-	let recover: (Error) -> Signal<OutputValue>
-	let catchTypes: SignalClosePropagation
-	init(recover: @escaping (Error) -> Signal<OutputValue>, catchTypes: SignalClosePropagation) {
+	let recover: (SignalEnd) -> Signal<OutputValue>
+	let catchTypes: SignalEndPropagation
+	init(recover: @escaping (SignalEnd) -> Signal<OutputValue>, catchTypes: SignalEndPropagation) {
 		self.recover = recover
 		self.catchTypes = catchTypes
 	}
-	func catchErrorRejoin(j: SignalJunction<OutputValue>, e: Error, i: SignalInput<OutputValue>) {
-		if catchTypes.shouldPropagateError(e) {
+	func catchErrorRejoin(j: SignalJunction<OutputValue>, e: SignalEnd, i: SignalInput<OutputValue>) {
+		if catchTypes.shouldPropagateEnd(e) {
 			do {
-				let f: (SignalJunction<OutputValue>, Error, SignalInput<OutputValue>) -> () = self.catchErrorRejoin
-				try recover(e).junction().bind(to: i, onError: f)
+				let f: SignalJunction<OutputValue>.Handler = self.catchErrorRejoin
+				try recover(e).junction().bind(to: i, onEnd: f)
 			} catch {
-				i.send(error: error)
+				i.send(end: .error(error))
 			}
 		} else {
-			i.send(error: e)
+			i.send(end: e)
 		}
 	}
 }
 
 // Essentially a closure type used by `retry`, defined as a separate class so the function can reference itself
 fileprivate class RetryRecovery<U> {
-	let shouldRetry: (inout U, Error) -> DispatchTimeInterval?
-	let catchTypes: SignalClosePropagation
+	let shouldRetry: (inout U, SignalEnd) -> DispatchTimeInterval?
+	let catchTypes: SignalEndPropagation
 	var state: U
 	let context: Exec
 	var timer: Lifetime? = nil
-	init(shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?, catchTypes: SignalClosePropagation, state: U, context: Exec) {
+	init(shouldRetry: @escaping (inout U, SignalEnd) -> DispatchTimeInterval?, catchTypes: SignalEndPropagation, state: U, context: Exec) {
 		self.shouldRetry = shouldRetry
 		self.catchTypes = catchTypes
 		self.state = state
 		self.context = context
 	}
-	func retryRejoin<OutputValue>(j: SignalJunction<OutputValue>, e: Error, i: SignalInput<OutputValue>) {
-		if catchTypes.shouldPropagateError(e), let t = shouldRetry(&state, e) {
+	func retryRejoin<OutputValue>(j: SignalJunction<OutputValue>, e: SignalEnd, i: SignalInput<OutputValue>) {
+		if catchTypes.shouldPropagateEnd(e), let t = shouldRetry(&state, e) {
 			timer = context.singleTimer(interval: t) {
 				do {
-					try j.bind(to: i, onError: self.retryRejoin)
+					try j.bind(to: i, onEnd: self.retryRejoin)
 				} catch {
-					i.send(error: error)
+					i.send(end: .error(error))
 				}
 			}
 		} else {
-			i.send(error: e)
+			i.send(end: e)
 		}
 	}
 }
@@ -2003,13 +2062,13 @@ extension SignalInterface {
 	///
 	/// - Parameters:
 	///   - context: context where `recover` will run
-	///   - catchSignalComplete: by default, the `recover` closure will be invoked only for unexpected errors, i.e. when `Error` is *not* a `SignalComplete`. Set this parameter to `true` to invoke the `recover` closure for *all* errors, including `SignalComplete.closed` and `SignalComplete.cancelled`. 
+	///   - catchSignalComplete: by default, the `recover` closure will be invoked only for unexpected errors, i.e. when `Error` is *not* a `SignalComplete`. Set this parameter to `true` to invoke the `recover` closure for *all* errors, including `SignalEnd.complete` and `SignalComplete.cancelled`. 
 	///   - recover: a function that, when passed the `Error` that closed `self`, optionally returns a new signal.
 	/// - Returns: a signal that emits the values from `self` until an error is received and then, if `recover` returns non-`nil` emits the values from `recover` and then emits the error from `recover`, otherwise if `recover` returns `nil`, emits the `Error` from `self`.
-	public func catchError(context: Exec = .direct, catchSignalComplete: Bool = false, recover: @escaping (Error) -> Signal<OutputValue>) -> Signal<OutputValue> {
+	public func catchError(context: Exec = .direct, catchSignalComplete: Bool = false, recover: @escaping (SignalEnd) -> Signal<OutputValue>) -> Signal<OutputValue> {
 		let (input, sig) = Signal<OutputValue>.create()
 		// Both `junction` and `input` are newly created so this can't be an error
-		try! junction().bind(to: input, onError: CatchErrorRecovery(recover: recover, catchTypes: catchSignalComplete ? .all : .errors).catchErrorRejoin)
+		try! junction().bind(to: input, onEnd: CatchErrorRecovery(recover: recover, catchTypes: catchSignalComplete ? .all : .errors).catchErrorRejoin)
 		return sig
 	}
 	
@@ -2020,13 +2079,13 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - initialState:  a mutable state value that will be passed into `shouldRetry`.
 	///   - context: the `Exec` where timed reconnection will occcur (default: .global).
-	///   - catchSignalComplete: by default, the `shouldRetry` closure will be invoked only for unexpected errors, i.e. when `Error` is *not* a `SignalComplete`. Set this parameter to `true` to invoke the `recover` closure for *all* errors, including `SignalComplete.closed` and `SignalComplete.cancelled`. 
+	///   - catchSignalComplete: by default, the `shouldRetry` closure will be invoked only for unexpected errors, i.e. when `Error` is *not* a `SignalComplete`. Set this parameter to `true` to invoke the `recover` closure for *all* errors, including `SignalEnd.complete` and `SignalComplete.cancelled`. 
 	///   - shouldRetry: a function that, when passed the current state value and the `Error` that closed `self`, returns an `Optional<Double>`.
 	/// - Returns: a signal that emits the values from `self` until an error is received and then, if `shouldRetry` returns non-`nil`, disconnects from `self`, delays by the number of seconds returned from `shouldRetry`, and reconnects to `self` (triggering re-activation), otherwise if `shouldRetry` returns `nil`, emits the `Error` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
-	public func retry<U>(_ initialState: U, context: Exec = .direct, catchSignalComplete: Bool = false, shouldRetry: @escaping (inout U, Error) -> DispatchTimeInterval?) -> Signal<OutputValue> {
+	public func retry<U>(_ initialState: U, context: Exec = .direct, catchSignalComplete: Bool = false, shouldRetry: @escaping (inout U, SignalEnd) -> DispatchTimeInterval?) -> Signal<OutputValue> {
 		let (input, sig) = Signal<OutputValue>.create()
 		// Both `junction` and `input` are newly created so this can't be an error
-		try! junction().bind(to: input, onError: RetryRecovery(shouldRetry: shouldRetry, catchTypes: catchSignalComplete ? .all : .errors, state: initialState, context: context).retryRejoin)
+		try! junction().bind(to: input, onEnd: RetryRecovery(shouldRetry: shouldRetry, catchTypes: catchSignalComplete ? .all : .errors, state: initialState, context: context).retryRejoin)
 		return sig
 	}
 	
@@ -2038,11 +2097,11 @@ extension SignalInterface {
 	///   - count: the maximum number of retries
 	///   - delayInterval: the number of seconds between retries
 	///   - context: the `Exec` where timed reconnection will occcur (default: .global).
-	///   - catchSignalComplete: by default, retry attempts will occur only for unexpected errors, i.e. when `Error` is *not* a `SignalComplete`. Set this parameter to `true` to invoke the `recover` closure for *all* errors, including `SignalComplete.closed` and `SignalComplete.cancelled`. 
+	///   - catchSignalComplete: by default, retry attempts will occur only for unexpected errors, i.e. when `Error` is *not* a `SignalComplete`. Set this parameter to `true` to invoke the `recover` closure for *all* errors, including `SignalEnd.complete` and `SignalComplete.cancelled`. 
 	/// - Returns: a signal that emits the values from `self` until an error is received and then, if fewer than `count` retries have occurred, disconnects from `self`, delays by `delaySeconds` and reconnects to `self` (triggering re-activation), otherwise if `count` retries have occurred, emits the `Error` from `self`. If the number of seconds is `0`, the reconnect is synchronous, otherwise it will occur in `context` using `invokeAsync`.
 	public func retry(count: Int, delayInterval: DispatchTimeInterval, context: Exec = .direct, catchSignalComplete: Bool = false) -> Signal<OutputValue> {
-		return retry(0, context: context) { (retryCount: inout Int, e: Error) -> DispatchTimeInterval? in
-			if !catchSignalComplete && e.isSignalComplete {
+		return retry(0, context: context) { (retryCount: inout Int, e: SignalEnd) -> DispatchTimeInterval? in
+			if !catchSignalComplete && e.isComplete {
 				return nil
 			} else if retryCount < count {
 				retryCount += 1
@@ -2061,7 +2120,7 @@ extension SignalInterface {
 	///   - context: the `Exec` where `offset` will run (default: .global).
 	///   - offset: a function that, when passed the current state value and the latest value from `self`, returns the number of seconds that the value should be delayed (values less or equal to 0 are sent immediately).
 	/// - Returns: a mirror of `self` where values are offset according to `offset` – closing occurs when `self` closes or when the last delayed value is sent (whichever occurs last).
-	public func delay<U>(initialState: U, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, offset: @escaping (inout U, OutputValue) -> DispatchTimeInterval) -> Signal<OutputValue> {
+	public func delay<U>(initialState: U, closePropagation: SignalEndPropagation = .none, context: Exec = .direct, offset: @escaping (inout U, OutputValue) -> DispatchTimeInterval) -> Signal<OutputValue> {
 		return delay(initialState: initialState, closePropagation: closePropagation, context: context) { (state: inout U, value: OutputValue) -> Signal<Void> in
 			return Signal<Void>.timer(interval: offset(&state, value), context: context)
 		}
@@ -2084,7 +2143,7 @@ extension SignalInterface {
 	///   - context: the `Exec` where `offset` will run (default: .global).
 	///   - offset: a function that, when passed the current state value emits a signal, the first value of which will trigger the end of the delay
 	/// - Returns: a mirror of `self` where values are offset according to `offset` – closing occurs when `self` closes or when the last delayed value is sent (whichever occurs last).
-	public func delay<U>(closePropagation: SignalClosePropagation = .none, context: Exec = .direct, offset: @escaping (OutputValue) -> Signal<U>) -> Signal<OutputValue> {
+	public func delay<U>(closePropagation: SignalEndPropagation = .none, context: Exec = .direct, offset: @escaping (OutputValue) -> Signal<U>) -> Signal<OutputValue> {
 		return delay(initialState: (), closePropagation: closePropagation, context: context) { (state: inout (), value: OutputValue) -> Signal<U> in return offset(value) }
 	}
 	
@@ -2096,12 +2155,12 @@ extension SignalInterface {
 	///   - context: the `Exec` where `offset` will run (default: .global).
 	///   - offset: a function that, when passed the current state value emits a signal, the first value of which will trigger the end of the delay
 	/// - Returns: a mirror of `self` where values are offset according to `offset` – closing occurs when `self` closes or when the last delayed value is sent (whichever occurs last).
-	public func delay<U, V>(initialState: V, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, offset: @escaping (inout V, OutputValue) -> Signal<U>) -> Signal<OutputValue> {
-		return valueDurations(initialState: initialState, closePropagation: closePropagation, context: context, offset).transform(initialState: [Int: OutputValue]()) { (values: inout [Int: OutputValue], r: Result<(Int, OutputValue?)>, n: SignalNext<OutputValue>) in
+	public func delay<U, V>(initialState: V, closePropagation: SignalEndPropagation = .none, context: Exec = .direct, offset: @escaping (inout V, OutputValue) -> Signal<U>) -> Signal<OutputValue> {
+		return valueDurations(initialState: initialState, closePropagation: closePropagation, context: context, offset).transform(initialState: [Int: OutputValue]()) { (values: inout [Int: OutputValue], r: Result<(Int, OutputValue?), SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let index, .some(let t)): values[index] = t
 			case .success(let index, .none): _ = values[index].map { n.send(value: $0) }
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -2150,8 +2209,8 @@ extension SignalInterface {
 	///   - context: where the handler will be invoked
 	///   - handler: invoked for each `Result` in the signal
 	/// - Returns: a signal that emits the same outputs as self
-	public func onResult(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> ()) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+	public func onResult(context: Exec = .direct, _ handler: @escaping (Result<OutputValue, SignalEnd>) -> ()) -> Signal<OutputValue> {
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			handler(r)
 			n.send(result: r)
 		}
@@ -2164,13 +2223,13 @@ extension SignalInterface {
 	///   - handler: invoked for each value (Result.success) in the signal
 	/// - Returns: a signal that emits the same outputs as self
 	public func onValue(context: Exec = .direct, _ handler: @escaping (OutputValue) -> ()) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v):
 				handler(v)
 				n.send(value: v)
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -2181,30 +2240,30 @@ extension SignalInterface {
 	///   - context: where the handler will be invoked
 	///   - handler: invoked for each error (Result.failure) in the signal
 	/// - Returns: a signal that emits the same outputs as self
-	public func onError(context: Exec = .direct, catchSignalComplete: Bool = false, _ handler: @escaping (Error) -> ()) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+	public func onError(context: Exec = .direct, catchSignalComplete: Bool = false, _ handler: @escaping (SignalEnd) -> ()) -> Signal<OutputValue> {
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v):
 				n.send(value: v)
 			case .failure(let e):
-				if catchSignalComplete || !e.isSignalComplete {
+				if catchSignalComplete || !e.isComplete {
 					handler(e)
 				}
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
 	
 	/// Implementation of [Reactive X operator "materialize"](http://reactivex.io/documentation/operators/materialize-dematerialize.html)
 	///
-	/// WARNING: in CwlSignal, this operator will emit a `SignalComplete.closed` into the output signal immediately after emitting the first wrapped error. Within the "first error closes signal" behavior of CwlSignal, this is the only behavior that makes sense (since no further upstream values will be received), however, it does limit the usefulness of `materialize` to constructions where the `materialize` signal immediately outputs into a `SignalMultiInput` (including abstractions built on top, like `switchLatest` or child signals of a `flatMap`) that ignore non-error close conditions from the source signal.
+	/// WARNING: in CwlSignal, this operator will emit a `SignalEnd.complete` into the output signal immediately after emitting the first wrapped error. Within the "first error closes signal" behavior of CwlSignal, this is the only behavior that makes sense (since no further upstream values will be received), however, it does limit the usefulness of `materialize` to constructions where the `materialize` signal immediately outputs into a `SignalMultiInput` (including abstractions built on top, like `switchLatest` or child signals of a `flatMap`) that ignore non-error close conditions from the source signal.
 	///
 	/// - Returns: a signal where each `Result` emitted from self is further wrapped in a Result.success.
-	public func materialize() -> Signal<Result<OutputValue>> {
+	public func materialize() -> Signal<Result<OutputValue, SignalEnd>> {
 		return transform { r, n in
 			n.send(value: r)
-			if r.isError {
-				n.send(error: SignalComplete.closed)
+			if r.isFailure {
+				n.send(end: .complete)
 			}
 		}
 	}
@@ -2215,12 +2274,12 @@ extension SignalInterface {
 	///
 	/// - Parameter signal: a signal whose OutputValue is a `Result` wrapped version of an underlying type
 	/// - Returns: a signal whose OutputValue is the unwrapped value from the input, with unwrapped errors sent as errors.
-	public static func dematerialize<OutputValue>(_ signal: Signal<Result<OutputValue>>) -> Signal<OutputValue> {
-		return signal.transform { (r: Result<Result<OutputValue>>, n: SignalNext<OutputValue>) in
+	public static func dematerialize<OutputValue>(_ signal: Signal<Result<OutputValue, SignalEnd>>) -> Signal<OutputValue> {
+		return signal.transform { (r: Result<Result<OutputValue, SignalEnd>, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(.success(let v)): n.send(value: v)
-			case .success(.failure(let e)): n.send(error: e)
-			case .failure(let e): n.send(error: e)
+			case .success(.failure(let e)): n.send(end: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -2252,7 +2311,7 @@ extension SignalInterface {
 			} else {
 				_ = junction.disconnect()
 			}
-		}.transform(initialState: nil, context: context) { (lastTime: inout DispatchTime?, r: Result<Void>, n: SignalNext<Double>) in
+		}.transform(initialState: nil, context: context) { (lastTime: inout DispatchTime?, r: Result<Void, SignalEnd>, n: SignalNext<Double>) in
 			switch r {
 			case .success:
 				let currentTime = context.timestamp()
@@ -2260,7 +2319,7 @@ extension SignalInterface {
 					n.send(value: currentTime.since(l).seconds)
 				}
 				lastTime = currentTime
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 		return s
@@ -2285,7 +2344,7 @@ extension SignalInterface {
 					junction.rebind()
 				}
 				n.send(result: r)
-			case .result2: n.send(error: SignalReactiveError.timeout)
+			case .result2: n.send(end: .error(SignalReactiveError.timeout))
 			}
 		}
 	}
@@ -2295,10 +2354,10 @@ extension SignalInterface {
 	/// - Parameter context: used as the source of time
 	/// - Returns: a signal where the values are a two element tuple, first element is self.OutputValue, second element is the `DispatchTime` timestamp that this element was emitted from self.
 	public func timestamp(context: Exec = .direct) -> Signal<(OutputValue, DispatchTime)> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<(OutputValue, DispatchTime)>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<(OutputValue, DispatchTime)>) in
 			switch r {
 			case .success(let v): n.send(value: (v, context.timestamp()))
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -2316,15 +2375,15 @@ extension SignalInterface {
 	///   - test: will be invoked for every value
 	/// - Returns: a signal that emits true and then closes if every value emitted by self returned true from the `test` function and self closed normally, otherwise emits false and then closes
 	public func all(context: Exec = .direct, test: @escaping (OutputValue) -> Bool) -> Signal<Bool> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<Bool>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<Bool>) in
 			switch r {
 			case .success(let v) where !test(v):
 				n.send(value: false)
 				n.close()
-			case .failure(_ as SignalComplete):
+			case .failure(.complete):
 				n.send(value: true)
 				n.close()
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			default: break;
 			}
 		}
@@ -2337,19 +2396,19 @@ extension Signal {
 	/// - Parameter inputs: a set of inputs
 	/// - Returns: connects to all inputs then emits the full set of values from the first of these to emit a value
 	public static func race<S: Sequence>(sequence: S) -> Signal<OutputValue> where S.Iterator.Element == Signal<OutputValue> {
-		let (mergedInput, sig) = Signal<(Int, Result<OutputValue>)>.createMergedInput()
+		let (mergedInput, sig) = Signal<(Int, Result)>.createMergedInput()
 		sequence.enumerated().forEach { s in
 			mergedInput.add(s.element.transform { r, n in
 				n.send(value: (s.offset, r))
 			}, closePropagation: .errors)
 		}
-		return sig.transform(initialState: -1) { (first: inout Int, r: Result<(Int, Result<OutputValue>)>, n: SignalNext<OutputValue>) in
+		return sig.transform(initialState: -1) { (first: inout Int, r: Signal<(Int, Result)>.Result, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let index, let underlying) where first < 0:
 				first = index
 				n.send(result: underlying)
 			case .success(let index, let underlying) where first < 0 || first == index: n.send(result: underlying)
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			default: break
 			}
 		}
@@ -2368,7 +2427,7 @@ extension SignalInterface {
 	///   - test: will be invoked for every value
 	/// - Returns: a signal that emits true and then closes when a value emitted by self returns true from the `test` function, otherwise if no values from self return true, emits false and then closes
 	public func find(context: Exec = .direct, test: @escaping (OutputValue) -> Bool) -> Signal<Bool> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<Bool>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<Bool>) in
 			switch r {
 			case .success(let v) where test(v):
 				n.send(value: true)
@@ -2377,7 +2436,7 @@ extension SignalInterface {
 				break
 			case .failure(let e):
 				n.send(value: false)
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -2389,7 +2448,7 @@ extension SignalInterface {
 	///   - test: will be invoked for every value
 	/// - Returns: a signal that emits true and then closes when a value emitted by self returns true from the `test` function, otherwise if no values from self return true, emits false and then closes
 	public func findIndex(context: Exec = .direct, test: @escaping (OutputValue) -> Bool) -> Signal<Int?> {
-		return transform(initialState: 0, context: context) { (index: inout Int, r: Result<OutputValue>, n: SignalNext<Int?>) in
+		return transform(initialState: 0, context: context) { (index: inout Int, r: Result<OutputValue, SignalEnd>, n: SignalNext<Int?>) in
 			switch r {
 			case .success(let v) where test(v):
 				n.send(value: index)
@@ -2399,7 +2458,7 @@ extension SignalInterface {
 				break
 			case .failure(let e):
 				n.send(value: nil)
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -2421,16 +2480,16 @@ extension SignalInterface {
 	/// - Parameter value: value to emit if self closes without a value
 	/// - Returns: a signal that emits the same values as self or `value` if self closes without emitting a value
 	public func defaultIfEmpty(value: OutputValue) -> Signal<OutputValue> {
-		return transform(initialState: false) { (started: inout Bool, r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+		return transform(initialState: false) { (started: inout Bool, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v):
 				started = true
 				n.send(value: v)
 			case .failure(let e) where !started:
 				n.send(value: value)
-				n.send(error: e)
+				n.send(end: e)
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -2448,11 +2507,11 @@ extension SignalInterface {
 		}
 		
 		// Both `junction` and `input` are newly created so this can't be an error
-		try! junction().bind(to: input) { (j: SignalJunction<OutputValue>, e: Error, i: SignalInput<OutputValue>) in
+		try! junction().bind(to: input) { (j: SignalJunction<OutputValue>, e: SignalEnd, i: SignalInput<OutputValue>) in
 			if let f = fallback {
 				f.bind(to: i)
 			} else {
-				i.send(error: e)
+				i.send(end: e)
 			}
 		}
 		return s
@@ -2492,7 +2551,7 @@ extension SignalInterface where OutputValue: Equatable {
 					} else {
 						n.send(value: false)
 					}
-					n.send(error: e)
+					n.send(end: e)
 				}
 			case (.result2(.failure(let e)), _, _):
 				state.rc = true
@@ -2502,7 +2561,7 @@ extension SignalInterface where OutputValue: Equatable {
 					} else {
 						n.send(value: false)
 					}
-					n.send(error: e)
+					n.send(end: e)
 				}
 			}
 		}
@@ -2519,7 +2578,7 @@ extension SignalInterface {
 			switch cr {
 			case .result1(.success(let v)) where started: n.send(value: v)
 			case .result1(.success): break
-			case .result1(.failure(let e)): n.send(error: e)
+			case .result1(.failure(let e)): n.send(end: e)
 			case .result2(.success): started = true
 			case .result2(.failure): break
 			}
@@ -2533,7 +2592,7 @@ extension SignalInterface {
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values until `condition` returns `true` for one of the values
 	public func skipWhile(context: Exec = .direct, condition: @escaping (OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(initialState: false, context: context) { (started: inout Bool, r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+		return transform(initialState: false, context: context) { (started: inout Bool, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v) where !started && condition(v):
 				break
@@ -2541,7 +2600,7 @@ extension SignalInterface {
 				started = true
 				n.send(value: v)
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -2554,7 +2613,7 @@ extension SignalInterface {
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values until `condition` returns `true` for one of the values
 	public func skipWhile<U>(initialState initial: U, context: Exec = .direct, condition: @escaping (inout U, OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(initialState: (initial, false), context: context) { (started: inout (U, Bool), r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+		return transform(initialState: (initial, false), context: context) { (started: inout (U, Bool), r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v) where !started.1 && condition(&started.0, v):
 				break
@@ -2562,7 +2621,7 @@ extension SignalInterface {
 				started.1 = true
 				n.send(value: v)
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -2576,7 +2635,7 @@ extension SignalInterface {
 			switch cr {
 			case .result1(.success(let v)) where !started: n.send(value: v)
 			case .result1(.success): break
-			case .result1(.failure(let e)): n.send(error: e)
+			case .result1(.failure(let e)): n.send(end: e)
 			case .result2(.success): started = true
 			case .result2(.failure): break
 			}
@@ -2590,11 +2649,11 @@ extension SignalInterface {
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values after `condition` returns `true` for one of the values
 	public func takeWhile(context: Exec = .direct, condition: @escaping (OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v) where condition(v): n.send(value: v)
 			case .success: n.close()
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -2607,11 +2666,11 @@ extension SignalInterface {
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values after `condition` returns `true` for one of the values
 	public func takeWhile<U>(initialState initial: U, context: Exec = .direct, condition: @escaping (inout U, OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(initialState: initial, context: context) { (i: inout U, r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+		return transform(initialState: initial, context: context) { (i: inout U, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v) where condition(&i, v): n.send(value: v)
 			case .success: n.close()
-			case .failure(let e): n.send(error: e)
+			case .failure(let e): n.send(end: e)
 			}
 		}
 	}
@@ -2625,7 +2684,7 @@ extension SignalInterface {
 	///   - fold: invoked for each value emitted by `self` along with the current fold state value
 	/// - Returns: a signal which emits the `finalize` result
 	public func foldAndFinalize<U, V>(_ initial: V, context: Exec = .direct, finalize: @escaping (V) -> U?, fold: @escaping (V, OutputValue) -> V) -> Signal<U> {
-		return transform(initialState: initial, context: context) { (state: inout V, r: Result<OutputValue>, n: SignalNext<U>) in
+		return transform(initialState: initial, context: context) { (state: inout V, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			switch r {
 			case .success(let v):
 				state = fold(state, v)
@@ -2633,7 +2692,7 @@ extension SignalInterface {
 				if let v = finalize(state) {
 					n.send(value: v)
 				}
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -2656,24 +2715,22 @@ extension SignalInterface {
 	/// - Parameter other: a second signal
 	/// - Returns: a signal that emits all the values from `self` followed by all the values from `other` (including those emitted while `self` was still active)
 	public func concat(_ other: Signal<OutputValue>) -> Signal<OutputValue> {
-		return combine(other, initialState: ([OutputValue](), nil, nil)) { (state: inout (secondValues: [OutputValue], firstError: Error?, secondError: Error?), cr: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
+		return combine(other, initialState: ([OutputValue](), nil, nil)) { (state: inout (secondValues: [OutputValue], firstError: SignalEnd?, secondError: SignalEnd?), cr: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
 			switch (cr, state.firstError) {
 			case (.result1(.success(let v)), _):
 				n.send(value: v)
-			case (.result1(.failure(let e1)), _):
-				if e1.isSignalComplete {
-					for v in state.secondValues {
-						n.send(value: v)
-					}
-					if let e2 = state.secondError {
-						n.send(error: e2)
-					} else {
-						state.firstError = e1
-					}
-				} else {
-					// In the event of an "unexpected" error, don't emit the second signal.
-					n.send(error: e1)
+			case (.result1(.failure(.complete)), _):
+				for v in state.secondValues {
+					n.send(value: v)
 				}
+				if let e2 = state.secondError {
+					n.send(end: e2)
+				} else {
+					state.firstError = .complete
+				}
+			case (.result1(.failure(let e1)), _):
+					// In the event of an "unexpected" error, don't emit the second signal.
+					n.send(end: e1)
 			case (.result2(.success(let v)), .none):
 				state.secondValues.append(v)
 			case (.result2(.success(let v)), .some):
@@ -2681,7 +2738,7 @@ extension SignalInterface {
 			case (.result2(.failure(let e2)), .none):
 				state.secondError = e2
 			case (.result2(.failure(let e2)), .some):
-				n.send(error: e2)
+				n.send(end: e2)
 			}
 		}
 	}

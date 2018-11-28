@@ -28,7 +28,26 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "OBJ_214"
+               BuildableName = "CwlSignal_macOSTests.xctest"
+               BlueprintName = "CwlSignal_macOSTests"
+               ReferencedContainer = "container:CwlSignal.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "C9DD3D7C1E41DFB600E23B15"
+            BuildableName = "CwlSignal.framework"
+            BlueprintName = "CwlSignal"
+            ReferencedContainer = "container:CwlSignal.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
       <AdditionalOptions>
       </AdditionalOptions>
    </TestAction>
