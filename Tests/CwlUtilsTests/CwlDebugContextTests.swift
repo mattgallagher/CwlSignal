@@ -480,7 +480,7 @@ class DebugContextTests: XCTestCase {
 		coordinator.runScheduledTasks()
 		coordinator.reset()
 		withExtendedLifetime(service) {}
-		XCTAssert(result?.success == dummySuccessResponse)
+		XCTAssert(result?.value == dummySuccessResponse)
 	}
 
 	func testTimeoutServiceCancelled() {
@@ -515,7 +515,7 @@ class DebugContextTests: XCTestCase {
 		coordinator.runScheduledTasks()
 
 		// Ensure we got the correct result
-		XCTAssert(result?.failure as? TimeoutService.Timeout != nil)
+		XCTAssert(result?.error as? TimeoutService.Timeout != nil)
 
 		withExtendedLifetime(service) {}
 	}
