@@ -16,8 +16,8 @@ import CwlSignal
 // Create an input/output pair
 let (input, signal) = Signal<Int>.create()
 
-// Transform and listen to the signal
-let output = signal.map { $0 * 2 }.subscribeValues { print("Value received: \($0)") }
+// Transform and listen to the signal. The `subscribeValuesUntilEnd` keeps the subscription alive until a close is received.
+signal.map { $0 * 2 }.subscribeValuesUntilEnd { print("Value received: \($0)") }
 
 // Send values to the input end
 input.send(1, 2, 3)

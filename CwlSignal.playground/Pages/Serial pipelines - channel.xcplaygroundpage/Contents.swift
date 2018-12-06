@@ -5,11 +5,9 @@
 
 ## Nicer syntax for pipelines
 
-Programming with `Signal` involves building lots of little pipelines. A "channel" provides cleaner syntax for building piplines.
+Programming with `Signal` involves building lots of little pipelines which we've called "channels" – since they model a structure into which you can send values that will be communicated through to the output. However, the loose tuple of `SignalInput` and `SignalChannel` that `Signal.create()` returns is a clumsy way of manipulating this channel, requiring separate holding and manipulation of both ends.
 
-A `SignalChannel` wraps the same `SignalInput` and `Signal` that are returned from `Signal.create()` but you can apply transformations directly to the `SignalChannel` and it applies the transform to the `Signal` half, returning another `SignalChannel` wrapping the old input and new signal or other result from the transform. This lets you construct a signal pipeline with multiple stages in a single, linear expression.
-
-The constructor `Signal<Value>.channel()` is usually used for starting a channel with a `SignalInput` (variants exist for starting with different kinds of inputs). It is uncommon to use `SignalChannel` directly since its full name is clumsy (`SignalChannel<InputValue, Input, OutputValue, Output>`). If you want to declare a `SignalChannel` variable, you might prefer the typealias, `SignalPair<InputValue, OutputValue>` instead.
+The `Signal.channel()` function returns a `SignalChannel`. This `SignalChannel` wraps the same `SignalInput` and `Signal` that would be returned from `Signal.create()` but you can apply transformations directly to the `SignalChannel` and they are applied to the `Signal` half, returning another `SignalChannel` wrapping the old input and new signal or other result from the transform. This lets you construct a signal pipeline with multiple stages in a single, linear expression.
 
 Here's the example from the previous page, using `Signal<Int>.channel()` instead of `Signal<Int>.create()`.
 
@@ -18,7 +16,7 @@ Here's the example from the previous page, using `Signal<Int>.channel()` instead
 import CwlSignal
 
 // On the previous page, this line required two separate lines and an otherwise unusued `signal` declaration.
-let (input, output) = Signal.channel().map { $0 * 2 }.subscribeValues { print("Value received: \($0)") }
+let input = Signal.channel().map { $0 * 2 }.subscribeValuesUntilEnd { print("Value received: \($0)") }
 
 // Send values to the input end
 input.send(1, 2, 3)
