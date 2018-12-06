@@ -756,7 +756,7 @@ public final class SignalLatest<OutputValue>: Lifetime {
 	}
 	
 	public var latestValue: OutputValue? {
-		return mutex.sync { latest?.success }
+		return mutex.sync { latest?.value }
 	}
 	
 	public func cancel() {

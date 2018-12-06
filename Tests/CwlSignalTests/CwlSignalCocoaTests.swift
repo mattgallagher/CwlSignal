@@ -76,8 +76,8 @@ class SignalCocoaTests: XCTestCase {
 		target = nil
 		
 		XCTAssert(results.count == 2)
-		XCTAssert(results.at(0)?.success == 123)
-		XCTAssert(results.at(1)?.success == 456)
+		XCTAssert(results.at(0)?.value == 123)
+		XCTAssert(results.at(1)?.value == 456)
 		
 		withExtendedLifetime(output) {}
 	}

@@ -32,9 +32,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "C95BDEB81E4168B800AAA64B"
-               BuildableName = "CwlUtils_iOSTests.xctest"
-               BlueprintName = "CwlUtils_iOSTests"
+               BlueprintIdentifier = "OBJ_198"
+               BuildableName = "CwlUtils_macOSTests.xctest"
+               BlueprintName = "CwlUtils_macOSTests"
                ReferencedContainer = "container:CwlUtils.xcodeproj">
             </BuildableReference>
          </TestableReference>

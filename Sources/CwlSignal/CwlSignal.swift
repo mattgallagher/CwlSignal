@@ -1930,7 +1930,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 
 	fileprivate final override func sendActivationToOutputInternal(index: Int, dw: inout DeferredWork) {
 		// Push as *not* activated (i.e. this is the activation)
-		outputs[index].destination.value?.pushInternal(values: state.success.map { [$0] } ?? [], end: state.failure, activated: false, dw: &dw)
+		outputs[index].destination.value?.pushInternal(values: state.value.map { [$0] } ?? [], end: state.error, activated: false, dw: &dw)
 	}
 	
 	// Multiprocessors are (usually – not multicast) preactivated and may cache the values or errors
