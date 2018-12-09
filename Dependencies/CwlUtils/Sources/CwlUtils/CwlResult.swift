@@ -106,12 +106,22 @@ public extension Result where Failure == Error {
 		case .failure(let e): throw e
 		}
 	}
-
+	
 	/// Chains another Result to this one. In the event that this Result is a .Success, the provided transformer closure is used to transform the value into another value (of a potentially new type) and a new Result is made from that value. In the event that this Result is a .Failure, the next Result will have the same error as this one.
 	public func mapThrows<U>(_ transform: (Success) throws -> U) -> Result<U, Failure> {
 		switch self {
 		case .success(let val): return Result<U, Failure> { try transform(val) }
 		case .failure(let e): return .failure(e)
+		}
+	}
+}
+
+public extension Result where Failure: Error {
+	/// Adapter method used to convert a Result to a value while throwing on error.
+	public func get() throws -> Success {
+		switch self {
+		case .success(let v): return v
+		case .failure(let e): throw e
 		}
 	}
 }
