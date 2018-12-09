@@ -1140,10 +1140,14 @@ public class Signal<OutputValue>: SignalInterface {
 	// - Parameter result: for sending to the handler
 	private final func dispatch(_ result: Result) {
 		if case .direct = handlerContext.context {
+			// No execution context required
 			invokeHandler(result)
+			
 			specializedSyncPop()
 		} else if handlerContext.context.type.isImmediate || handlerContext.synchronous {
+			// In this case, the stored handler is already wrapped in the target execution context
 			self.invokeHandler(result)
+			
 			while let r = pop() {
 				if handlerContext.context.type.isImmediate {
 					self.invokeHandler(r)
@@ -1153,13 +1157,33 @@ public class Signal<OutputValue>: SignalInterface {
 				}
 			}
 		} else {
+			// Manual transition to the execution context required
 			handlerContext.context.invoke {
+				// Ensure that the signal hasn't been cancelled while we were transitioning to this context
+				self.mutex.unbalancedLock()
+				guard self.handlerContext.activationCount == self.activationCount else {
+					self.abortQueueProcessingInternalToExternal()
+					return
+				}
+				self.mutex.unbalancedUnlock()
+				
 				self.invokeHandler(result)
 				if let r = self.pop() {
 					self.dispatch(r)
 				}
 			}
 		}
+	}
+	
+	/// When a change in activation count or handler context is detected, end processing the queue in the current context and see if there is any further work to be performed on another context
+	private func abortQueueProcessingInternalToExternal() {
+		let oldContext = clearItemContextInternal()
+		itemProcessing = false
+		var dw = DeferredWork()
+		resumeIfPossibleInternal(dw: &dw)
+		mutex.unbalancedUnlock()
+		withExtendedLifetime(oldContext) {}
+		dw.runWork()
 	}
 	
 	/// Gets the next item from the queue for processing and updates the `ItemContext`.
@@ -1170,13 +1194,7 @@ public class Signal<OutputValue>: SignalInterface {
 		assert(itemProcessing == true)
 		
 		guard handlerContext.activationCount == activationCount else {
-			let oldContext = clearItemContextInternal()
-			itemProcessing = false
-			var dw = DeferredWork()
-			resumeIfPossibleInternal(dw: &dw)
-			mutex.unbalancedUnlock()
-			withExtendedLifetime(oldContext) {}
-			dw.runWork()
+			abortQueueProcessingInternalToExternal()
 			return nil
 		}
 		
@@ -1195,9 +1213,7 @@ public class Signal<OutputValue>: SignalInterface {
 		
 		itemProcessing = false
 		if handlerContextNeedsRefresh {
-			let oldContext = clearItemContextInternal()
-			mutex.unbalancedUnlock()
-			withExtendedLifetime(oldContext) {}
+			abortQueueProcessingInternalToExternal()
 		} else {
 			mutex.unbalancedUnlock()
 		}
@@ -2988,7 +3004,7 @@ public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Lifeti
 	// - Returns: a function to use as the handler prior to activation
 	fileprivate override func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		return { [userHandler] r in userHandler(r) }
+		return userHandler
 	}
 	
 	// A `SignalOutput` is active until closed (receives a `failure` signal)
