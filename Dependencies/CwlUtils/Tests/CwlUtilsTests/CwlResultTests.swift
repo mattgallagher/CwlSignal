@@ -30,14 +30,14 @@ private enum TestError: Error {
 
 class ResultTests: XCTestCase {
 	func testInitWithClosure() {
-		let r = Result<Int> {
+		let r = Result<Int, Error> {
 			return 3
 		}
 		XCTAssert(r.value != nil)
 		XCTAssert(r.error == nil)
 		XCTAssert(r.value! == 3)
 		
-		let s = Result<Int> {
+		let s = Result<Int, Error> {
 			throw TestError.oneValue
 		}
 		XCTAssert(s.value == nil)
@@ -45,12 +45,12 @@ class ResultTests: XCTestCase {
 	}
 	
 	func testInitWithValue() {
-		let r = Result<Int>.success(3)
+		let r = Result<Int, Error>.success(3)
 		XCTAssert(r.value != nil)
 		XCTAssert(r.error == nil)
 		XCTAssert(r.value! == 3)
 		
-		let s = Result<Int>.success(5)
+		let s = Result<Int, Error>.success(5)
 		XCTAssert(r.value != nil)
 		XCTAssert(r.error == nil)
 		XCTAssert(s.value! == 5)
@@ -58,41 +58,41 @@ class ResultTests: XCTestCase {
 	
 	func testInitWithError() {
 		let e1 = NSError(domain: "a", code: 5, userInfo: nil)
-		let r = Result<Int>.failure(NSError(domain: "a", code: 5, userInfo: nil))
+		let r = Result<Int, Error>.failure(NSError(domain: "a", code: 5, userInfo: nil))
 		XCTAssert(r.value == nil)
 		XCTAssert(r.error != nil)
 		XCTAssert(r.error.map { $0 as NSError } == e1)
 		
 		let e2 = NSError(domain: "b", code: 7, userInfo: nil)
-		let s = Result<Int>.failure(e2)
+		let s = Result<Int, Error>.failure(e2)
 		XCTAssert(s.value == nil)
 		XCTAssert(s.error.map { $0 as NSError } == e2)
 	}
 	
 	func testFlatMap() {
 		var x = false
-		let a = Result<Int>.success(3)
-		let c = a.flatMap() { (i: Int) -> Result<Int> in
+		let a = Result<Int, Error>.success(3)
+		let c = a.flatMap() { (i: Int) -> Result<Int, Error> in
 			XCTAssert(i == 3)
 			x = true
-			return Result<Int>.success(5)
+			return Result<Int, Error>.success(5)
 		}
 		let v = c.value
 		XCTAssert(v != nil && v! == 5)
 		XCTAssert(x == true)
 		
 		var y = false
-		let b = Result<Int>.failure(NSError(domain: "a", code: 5, userInfo: nil))
-		let d = b.flatMap() { (i: Int) -> Result<Int> in
+		let b = Result<Int, Error>.failure(NSError(domain: "a", code: 5, userInfo: nil))
+		let d = b.flatMap() { (i: Int) -> Result<Int, Error> in
 			y = true
-			return Result<Int>.success(5)
+			return Result<Int, Error>.success(5)
 		}
 		let w = d.value
 		XCTAssert(w == nil)
 		XCTAssert(y == false)
 		
-		let s = Result<Int>.success(3)
-		let r = s.map { (i: Int) throws -> Bool in
+		let s = Result<Int, Error>.success(3)
+		let r = s.mapThrows { (i: Int) throws -> Bool in
 			throw TestError.oneValue
 		}
 		XCTAssert(r.error != nil)
@@ -100,7 +100,7 @@ class ResultTests: XCTestCase {
 	
 	func testMap() {
 		var x = false
-		let a = Result<Int>.success(3)
+		let a = Result<Int, Error>.success(3)
 		let c = a.map() { (i: Int) -> Int in
 			XCTAssert(i == 3)
 			x = true
@@ -111,7 +111,7 @@ class ResultTests: XCTestCase {
 		XCTAssert(x == true)
 		
 		var y = false
-		let b = Result<Int>.failure(NSError(domain: "a", code: 5, userInfo: nil))
+		let b = Result<Int, Error>.failure(NSError(domain: "a", code: 5, userInfo: nil))
 		let d = b.map() { (i: Int) -> Int in
 			y = true
 			return 5
@@ -125,7 +125,7 @@ class ResultTests: XCTestCase {
 		var e: Error?
 		var i: Int?
 		do {
-			i = try Result<Int>.success(3).unwrap()
+			i = try Result<Int, Error>.success(3).get()
 		} catch {
 			e = error
 		}
@@ -135,7 +135,7 @@ class ResultTests: XCTestCase {
 		var f: Error?
 		var j: Int?
 		do {
-			j = try Result<Int>.failure(TestError.oneValue).unwrap()
+			j = try Result<Int, Error>.failure(TestError.oneValue).get()
 		} catch {
 			f = error
 		}

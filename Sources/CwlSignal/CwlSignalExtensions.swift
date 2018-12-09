@@ -25,7 +25,7 @@ import Foundation
 #endif
 
 /// Used to provide a light abstraction over the `SignalInput` and `SignalNext` types.
-/// In general, the only real purpose of this protocol is to enable the `send(value:)`, `send(error:)`, `close()` extensions in "SignalExternsions.swift"
+/// In general, the only real purpose of this protocol is to enable the `send(value:)`, `send(end:)`, `close()` extensions in "SignalExternsions.swift"
 public protocol SignalSender {
 	associatedtype InputValue
 	
@@ -33,7 +33,7 @@ public protocol SignalSender {
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
 	/// - Returns: `nil` on success. Non-`nil` values include `SignalSendError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalSendError.inactive` if the current `delivery` state is `.disabled`.
-	@discardableResult func send(result: Result<InputValue>) -> SignalSendError?
+	@discardableResult func send(result: Result<InputValue, SignalEnd>) -> SignalSendError?
 }
 
 extension SignalInput: SignalSender {}
@@ -41,19 +41,19 @@ extension SignalNext: SignalSender {}
 
 // All transformations on a Signal are built on top of the following functions, implemented in CwlSignal.swift
 extension SignalInterface {
-	public func subscribe(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) -> SignalOutput<OutputValue> {
+	public func subscribe(context: Exec = .direct, _ handler: @escaping (Result<OutputValue, SignalEnd>) -> Void) -> SignalOutput<OutputValue> {
 		return signal.subscribe(context: context, handler)
 	}
-	public func subscribeWhile(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Bool) {
+	public func subscribeWhile(context: Exec = .direct, _ handler: @escaping (Result<OutputValue, SignalEnd>) -> Bool) {
 		return signal.subscribeWhile(context: context, handler)
 	}
 	public func junction() -> SignalJunction<OutputValue> {
 		return signal.junction()
 	}
-	public func transform<U>(context: Exec = .direct, _ processor: @escaping (Result<OutputValue>, SignalNext<U>) -> Void) -> Signal<U> {
+	public func transform<U>(context: Exec = .direct, _ processor: @escaping (Result<OutputValue, SignalEnd>, SignalNext<U>) -> Void) -> Signal<U> {
 		return signal.transform(context: context, processor)
 	}
-	public func transform<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, Result<OutputValue>, SignalNext<U>) -> Void) -> Signal<U> {
+	public func transform<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, Result<OutputValue, SignalEnd>, SignalNext<U>) -> Void) -> Signal<U> {
 		return signal.transform(initialState: initialState, context: context, processor)
 	}
 	public func combine<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (EitherResult2<OutputValue, U.OutputValue>, SignalNext<V>) -> Void) -> Signal<V> {
@@ -98,10 +98,10 @@ extension SignalInterface {
 	public func multicast() -> SignalMulti<OutputValue> {
 		return signal.multicast()
 	}
-	public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, _ updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout Error?, _ incoming: Result<OutputValue>) -> Void) -> SignalMulti<OutputValue> {
+	public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, _ updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout SignalEnd?, _ incoming: Result<OutputValue, SignalEnd>) -> Void) -> SignalMulti<OutputValue> {
 		return signal.customActivation(initialValues: initialValues, context: context, updater)
 	}
-	public func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: inout State, _ message: OutputValue) throws -> State) -> SignalMulti<State> {
+	public func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: inout State, _ message: OutputValue) -> Result<State, SignalEnd>) -> SignalMulti<State> {
 		return signal.reduce(initialState: initialState, context: context, reducer)
 	}
 	public func capture() -> SignalCapture<OutputValue> {
@@ -181,15 +181,24 @@ extension SignalSender {
 	/// - Returns: the return value from the underlying `send(result:)` function
 	@discardableResult
 	public func send(error: Error) -> SignalSendError? {
-		return send(result: .failure(error))
+		return send(result: .failure(.error(error)))
 	}
 	
-	/// Sends a `Result.failure(SignalComplete.closed)`
+	/// A convenience version of `send` that wraps an error in `Result.failure` before sending
+	///
+	/// - Parameter error: will be wrapped and sent
+	/// - Returns: the return value from the underlying `send(result:)` function
+	@discardableResult
+	public func send(end: SignalEnd) -> SignalSendError? {
+		return send(result: .failure(end))
+	}
+	
+	/// Sends a `Result.failure(SignalEnd.complete)`
 	///
 	/// - Returns: the return value from the underlying `send(result:)` function
 	@discardableResult
 	public func close() -> SignalSendError? {
-		return send(result: .failure(SignalComplete.closed))
+		return send(result: .failure(.complete))
 	}
 }
 
@@ -249,10 +258,10 @@ extension SignalInterface {
 	///   - processor: the function invoked for each received `Result.success`
 	/// - Returns: the created `Signal`
 	public func transformValues<U>(context: Exec = .direct, _ processor: @escaping (OutputValue, SignalNext<U>) -> Void) -> Signal<U> {
-		return signal.transform(context: context) { (result: Result<OutputValue>, next: SignalNext<U>) in
+		return signal.transform(context: context) { (result: Result<OutputValue, SignalEnd>, next: SignalNext<U>) in
 			switch result {
 			case .success(let v): processor(v, next)
-			case .failure(let e): next.send(error: e)
+			case .failure(let e): next.send(end: e)
 			}
 		}
 	}
@@ -269,10 +278,10 @@ extension SignalInterface {
 	///   - processor: the function invoked for each received `Result.success`
 	/// - Returns: the created `Signal`
 	public func transformValues<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue, SignalNext<U>) -> Void) -> Signal<U> {
-		return signal.transform(initialState: initialState, context: context) { (state: inout S, result: Result<OutputValue>, next: SignalNext<U>) in
+		return signal.transform(initialState: initialState, context: context) { (state: inout S, result: Result<OutputValue, SignalEnd>, next: SignalNext<U>) in
 			switch result {
 			case .success(let v): processor(&state, v, next)
-			case .failure(let e): next.send(error: e)
+			case .failure(let e): next.send(end: e)
 			}
 		}
 	}
@@ -281,17 +290,17 @@ extension SignalInterface {
 	///
 	/// - Parameter second: another signal
 	/// - Returns: Signal<EitherValue2<OutputValue, U.OutputValue>>
-	public func combineValues<U: SignalInterface>(_ second: U, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue2<OutputValue, U.OutputValue>> {
+	public func combineValues<U: SignalInterface>(_ second: U, closePropagation: SignalEndPropagation = .errors) -> Signal<EitherValue2<OutputValue, U.OutputValue>> {
 		return signal.combine(second.signal, initialState: (false, false)) { (closed: inout (Bool, Bool), either: EitherResult2<OutputValue, U.OutputValue>, next: SignalNext<EitherValue2<OutputValue, U.OutputValue>>) in
 			switch either {
 			case .result1(.failure(let e)):
-				if closed.1 || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if closed.1 || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.0 = true
 			case .result2(.failure(let e)):
-				if closed.0 || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if closed.0 || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.1 = true
 			case .result1(.success(let v)): next.send(value: .value1(v))
@@ -300,27 +309,27 @@ extension SignalInterface {
 		}
 	}
 
-	public func combineValues<U: SignalInterface, V: SignalInterface>(_ second: U, _ third: V, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue3<OutputValue, U.OutputValue, V.OutputValue>> {
+	public func combineValues<U: SignalInterface, V: SignalInterface>(_ second: U, _ third: V, closePropagation: SignalEndPropagation = .errors) -> Signal<EitherValue3<OutputValue, U.OutputValue, V.OutputValue>> {
 		return signal.combine(second.signal, third.signal, initialState: (false, false, false)) { (closed: inout (Bool, Bool, Bool), either: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, next: SignalNext<EitherValue3<OutputValue, U.OutputValue, V.OutputValue>>) in
 			switch either {
 			case .result1(.failure(let e)):
-				if (closed.1 && closed.2) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.1 && closed.2) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.0 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result2(.failure(let e)):
-				if (closed.0 && closed.2) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.0 && closed.2) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.1 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result3(.failure(let e)):
-				if (closed.0 && closed.1) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.0 && closed.1) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.2 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result1(.success(let v)): next.send(value: .value1(v))
 			case .result2(.success(let v)): next.send(value: .value2(v))
 			case .result3(.success(let v)): next.send(value: .value3(v))
@@ -328,33 +337,33 @@ extension SignalInterface {
 		}
 	}
 	
-	public func combineValues<U: SignalInterface, V: SignalInterface, W: SignalInterface>(_ second: U, _ third: V, fourth: W, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> {
+	public func combineValues<U: SignalInterface, V: SignalInterface, W: SignalInterface>(_ second: U, _ third: V, fourth: W, closePropagation: SignalEndPropagation = .errors) -> Signal<EitherValue4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> {
 		return signal.combine(second.signal, third.signal, fourth.signal, initialState: (false, false, false, false)) { (closed: inout (Bool, Bool, Bool, Bool), either: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, next: SignalNext<EitherValue4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>>) in
 			switch either {
 			case .result1(.failure(let e)):
-				if (closed.1 && closed.2 && closed.3) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.1 && closed.2 && closed.3) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.0 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result2(.failure(let e)):
-				if (closed.0 && closed.2 && closed.3) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.0 && closed.2 && closed.3) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.1 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result3(.failure(let e)):
-				if (closed.0 && closed.1 && closed.3) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.0 && closed.1 && closed.3) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.2 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result4(.failure(let e)):
-				if (closed.0 && closed.1 && closed.2) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.0 && closed.1 && closed.2) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.3 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result1(.success(let v)): next.send(value: .value1(v))
 			case .result2(.success(let v)): next.send(value: .value2(v))
 			case .result3(.success(let v)): next.send(value: .value3(v))
@@ -363,39 +372,39 @@ extension SignalInterface {
 		}
 	}
 	
-	public func combineValues<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, closePropagation: SignalClosePropagation = .errors) -> Signal<EitherValue5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> {
+	public func combineValues<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, closePropagation: SignalEndPropagation = .errors) -> Signal<EitherValue5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> {
 		return signal.combine(second.signal, third.signal, fourth.signal, fifth.signal, initialState: (false, false, false, false, false)) { (closed: inout (Bool, Bool, Bool, Bool, Bool), either: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, next: SignalNext<EitherValue5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>>) in
 			switch either {
 			case .result1(.failure(let e)):
-				if (closed.1 && closed.2 && closed.3 && closed.4) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.1 && closed.2 && closed.3 && closed.4) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.0 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result2(.failure(let e)):
-				if (closed.0 && closed.2 && closed.3 && closed.4) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.0 && closed.2 && closed.3 && closed.4) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.1 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result3(.failure(let e)):
-				if (closed.0 && closed.1 && closed.3 && closed.4) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.0 && closed.1 && closed.3 && closed.4) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.2 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result4(.failure(let e)):
-				if (closed.0 && closed.1 && closed.2 && closed.4) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.0 && closed.1 && closed.2 && closed.4) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.3 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result5(.failure(let e)):
-				if (closed.0 && closed.1 && closed.2 && closed.3) || closePropagation.shouldPropagateError(e) {
-					next.send(error: e)
+				if (closed.0 && closed.1 && closed.2 && closed.3) || closePropagation.shouldPropagateEnd(e) {
+					next.send(end: e)
 				}
 				closed.4 = true
-				next.send(error: e)
+				next.send(end: e)
 			case .result1(.success(let v)): next.send(value: .value1(v))
 			case .result2(.success(let v)): next.send(value: .value2(v))
 			case .result3(.success(let v)): next.send(value: .value3(v))
@@ -412,8 +421,8 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the output will be cancelled and released
-	public func subscribeUntilEnd(context: Exec = .direct, _ handler: @escaping (Result<OutputValue>) -> Void) {
-        return signal.subscribeWhile(context: context, { (result: Result<OutputValue>) -> Bool in
+	public func subscribeUntilEnd(context: Exec = .direct, _ handler: @escaping (Result<OutputValue, SignalEnd>) -> Void) {
+        return signal.subscribeWhile(context: context, { (result: Result<OutputValue, SignalEnd>) -> Bool in
 			handler(result)
 			return true
 		})
@@ -472,7 +481,7 @@ extension SignalInterface {
 	///   - initialSkip: number of values before the first emission
 	/// - Returns: the strided signal
 	public func stride(count: Int, initialSkip: Int = 0) -> Signal<OutputValue> {
-		return signal.transform(initialState: count - initialSkip - 1) { (state: inout Int, r: Result<OutputValue>, n: SignalNext<OutputValue>) in
+		return signal.transform(initialState: count - initialSkip - 1) { (state: inout Int, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
 			switch r {
 			case .success(let v) where state >= count - 1:
 				n.send(value: v)
@@ -480,7 +489,7 @@ extension SignalInterface {
 			case .success:
 				state += 1
 			case .failure(let e):
-				n.send(error: e)
+				n.send(end: e)
 			}
 		}
 	}
@@ -494,7 +503,7 @@ extension SignalInterface {
 	///   - context: the context where the processor will run
 	///   - processor: performs work with values from this `Signal` and the `SignalMergedInput` used for output
 	/// - Returns: output of the merge set
-	public func transformFlatten<U>(closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ processor: @escaping (OutputValue, SignalMergedInput<U>) -> ()) -> Signal<U> {
+	public func transformFlatten<U>(closePropagation: SignalEndPropagation = .none, context: Exec = .direct, _ processor: @escaping (OutputValue, SignalMergedInput<U>) -> ()) -> Signal<U> {
 		return transformFlatten(initialState: (), closePropagation: closePropagation, context: context, { (state: inout (), value: OutputValue, mergedInput: SignalMergedInput<U>) in processor(value, mergedInput) })
 	}
 	
@@ -508,34 +517,34 @@ extension SignalInterface {
 	///   - context: the context where the processor will run
 	///   - processor: performs work with values from this `Signal` and the `SignalMergedInput` used for output
 	/// - Returns: output of the merge set
-	public func transformFlatten<S, U>(initialState: S, closePropagation: SignalClosePropagation = .errors, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue, SignalMergedInput<U>) -> ()) -> Signal<U> {
+	public func transformFlatten<S, U>(initialState: S, closePropagation: SignalEndPropagation = .errors, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue, SignalMergedInput<U>) -> ()) -> Signal<U> {
 		let (mergedInput, result) = Signal<U>.createMergedInput()
-		var closeError: Error? = nil
-		let outerSignal = signal.transform(initialState: initialState, context: context) { (state: inout S, r: Result<OutputValue>, n: SignalNext<U>) in
+		var end: SignalEnd? = nil
+		let outerSignal = signal.transform(initialState: initialState, context: context) { (state: inout S, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			switch r {
 			case .success(let v): processor(&state, v, mergedInput)
 			case .failure(let e):
-				closeError = e
-				n.send(error: e)
+				end = e
+				n.send(end: e)
 			}
 		}
 		
 		// Keep the merge set alive at least as long as self
 		mergedInput.add(outerSignal, closePropagation: closePropagation)
 		
-		return result.transform(initialState: nil) { [weak mergedInput] (onDelete: inout OnDelete?, r: Result<U>, n: SignalNext<U>) in
+		return result.transform(initialState: nil) { [weak mergedInput] (onDelete: inout OnDelete?, r: Result<U, SignalEnd>, n: SignalNext<U>) in
 			if onDelete == nil {
 				onDelete = OnDelete {
-					closeError = nil
+					end = nil
 				}
 			}
 			switch r {
 			case .success(let v): n.send(value: v)
-			case .failure(SignalComplete.cancelled):
-				// If the `mergedInput` is `nil` at this point, that means that this `.cancelled` comes from the `mergedInput`, not one of its inputs. We'd prefer in that case to emit the `outerSignal`'s `closeError` rather than follow the `shouldPropagateError` logic.
-				n.send(error: mergedInput == nil ? (closeError ?? SignalComplete.cancelled) : SignalComplete.cancelled)
+			case .failure(.cancelled):
+				// If the `mergedInput` is `nil` at this point, that means that this `.cancelled` comes from the `mergedInput`, not one of its inputs. We'd prefer in that case to emit the `outerSignal`'s `closeError` rather than follow the `shouldPropagateEnd` logic.
+				n.send(end: mergedInput == nil ? (end ?? .cancelled) : .cancelled)
 			case .failure(let e):
-				n.send(error: closePropagation.shouldPropagateError(e) ? e : (closeError ?? SignalComplete.cancelled))
+				n.send(end: closePropagation.shouldPropagateEnd(e) ? e : (end ?? .cancelled))
 			}
 		}
 	}
@@ -547,7 +556,7 @@ extension SignalInterface {
 	///   - context: the context where `duration` will be invoked
 	///   - duration: for each value emitted by `self`, emit a signal
 	/// - Returns: a signal of two element tuples
-	public func valueDurations<Interface: SignalInterface>(closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ duration: @escaping (OutputValue) -> Interface) -> Signal<(Int, OutputValue?)> {
+	public func valueDurations<Interface: SignalInterface>(closePropagation: SignalEndPropagation = .none, context: Exec = .direct, _ duration: @escaping (OutputValue) -> Interface) -> Signal<(Int, OutputValue?)> {
 		return valueDurations(initialState: (), closePropagation: closePropagation, context: context, { (state: inout (), value: OutputValue) -> Interface in duration(value) })
 	}
 
@@ -559,13 +568,13 @@ extension SignalInterface {
 	///   - context: the context where `duration` will be invoked
 	///   - duration: for each value emitted by `self`, emit a signal
 	/// - Returns: a signal of two element tuples
-	public func valueDurations<Interface: SignalInterface, V>(initialState: V, closePropagation: SignalClosePropagation = .none, context: Exec = .direct, _ duration: @escaping (inout V, OutputValue) -> Interface) -> Signal<(Int, OutputValue?)> {
+	public func valueDurations<Interface: SignalInterface, V>(initialState: V, closePropagation: SignalEndPropagation = .none, context: Exec = .direct, _ duration: @escaping (inout V, OutputValue) -> Interface) -> Signal<(Int, OutputValue?)> {
 		return transformFlatten(initialState: (index: 0, userState: initialState), closePropagation: closePropagation, context: context) { (state: inout (index: Int, userState: V), v: OutputValue, mergedInput: SignalMergedInput<(Int, OutputValue?)>) in
 			let count = state.index
-			let innerSignal = duration(&state.userState, v).transform { (innerResult: Result<Interface.OutputValue>, innerInput: SignalNext<(Int, OutputValue?)>) in
+			let innerSignal = duration(&state.userState, v).transform { (innerResult: Result<Interface.OutputValue, SignalEnd>, innerInput: SignalNext<(Int, OutputValue?)>) in
 				if case .failure(let e) = innerResult {
 					innerInput.send(value: (count, nil))
-					innerInput.send(error: e)
+					innerInput.send(end: e)
 				}
 			}
 			let prefixedInnerSignal = Signal<(Int, OutputValue?)>.preclosed((count, Optional(v))).combine(innerSignal) { (r: EitherResult2<(Int, OutputValue?), (Int, OutputValue?)>, n: SignalNext<(Int, OutputValue?)>) in
@@ -573,7 +582,7 @@ extension SignalInterface {
 				case .result1(.success(let v)): n.send(value: v)
 				case .result1(.failure): break
 				case .result2(.success(let v)): n.send(value: v)
-				case .result2(.failure(let e)): n.send(error: e)
+				case .result2(.failure(let e)): n.send(end: e)
 				}
 			}
 
@@ -587,9 +596,9 @@ extension SignalInterface {
 	/// - Parameter initialState: before receiving the first value
 	/// - Returns: the alternating, continuous signal
 	public func toggle(initialState: Bool = false) -> Signal<Bool> {
-		return reduce(initialState: initialState) { (state: inout Bool, input: OutputValue) -> Bool in
+		return reduce(initialState: initialState) { (state: inout Bool, input: OutputValue) -> Result<Bool, SignalEnd> in
 			state = !state
-			return state
+			return .success(state)
 		}
 	}
 
@@ -597,11 +606,11 @@ extension SignalInterface {
 	///
 	/// - Returns: an array signal
 	public func optionalToArray<U>() -> Signal<[U]> where OutputValue == Optional<U> {
-		return signal.transform { (optional: Result<U?>, next: SignalNext<[U]>) in
+		return signal.transform { (optional: Result<U?, SignalEnd>, next: SignalNext<[U]>) in
 			switch optional {
 			case .success(.some(let v)): next.send(value: [v])
 			case .success: next.send(value: [])
-			case .failure(let e): next.send(error: e)
+			case .failure(let e): next.send(end: e)
 			}
 		}
 	}
@@ -625,7 +634,7 @@ extension SignalInterface {
 	///
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
-	public func bind(to input: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) {
+	public func bind(to input: SignalMergedInput<OutputValue>, closePropagation: SignalEndPropagation, removeOnDeactivate: Bool = true) {
 		input.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 	}
 	
@@ -655,7 +664,7 @@ extension SignalInterface {
 	/// - Parameters:
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	/// - Returns: a `Lifetime` that will undo the bind if cancelled or released
-	public func cancellableBind(to input: SignalMergedInput<OutputValue>, closePropagation: SignalClosePropagation, removeOnDeactivate: Bool = true) -> Lifetime {
+	public func cancellableBind(to input: SignalMergedInput<OutputValue>, closePropagation: SignalEndPropagation, removeOnDeactivate: Bool = true) -> Lifetime {
 		let sig = signal
 		input.add(sig, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return OnDelete { [weak input, weak sig] in
@@ -731,7 +740,7 @@ extension SignalInterface {
 ///
 public final class SignalLatest<OutputValue>: Lifetime {
 	var output: SignalOutput<OutputValue>? = nil
-	var latest: Result<OutputValue>? = nil
+	var latest: Result<OutputValue, SignalEnd>? = nil
 	let mutex = PThreadMutex()
 	
 	public init(signal: Signal<OutputValue>) {
@@ -742,7 +751,7 @@ public final class SignalLatest<OutputValue>: Lifetime {
 		}
 	}
 	
-	public var latestResult: Result<OutputValue>? {
+	public var latestResult: Result<OutputValue, SignalEnd>? {
 		return mutex.sync { latest }
 	}
 	
@@ -786,41 +795,27 @@ extension SignalCapture {
 	///
 	/// - Parameters:
 	///   - resend: if true, captured values are sent to the new output as the first values in the stream, otherwise, captured values are not sent (default is false)
-	///   - onError: if nil, errors from self will be passed through to `toInput`'s `Signal` normally. If non-nil, errors will not be sent, instead, the `Signal` will be disconnected and the `onError` function will be invoked with the disconnected `SignalCapture` and the input created by calling `disconnect` on it.
+	///   - onEnd: if nil, errors from self will be passed through to `toInput`'s `Signal` normally. If non-nil, errors will not be sent, instead, the `Signal` will be disconnected and the `onEnd` function will be invoked with the disconnected `SignalCapture` and the input created by calling `disconnect` on it.
 	///   - context: the execution context where the `processor` will be invoked
 	///   - processor: will be invoked with each value received
 	/// - Returns: the `SignalOutput` created by this function
-	public func subscribeValues(resend: Bool = false, onError: @escaping (SignalCapture<OutputValue>, Error, SignalInput<OutputValue>) -> (), context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalOutput<OutputValue> {
+	public func subscribeValues(resend: Bool = false, onEnd: @escaping SignalCapture<OutputValue>.Handler, context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalOutput<OutputValue> {
 		let (input, output) = Signal<OutputValue>.create()
 		// This can't be `loop` but `duplicate` is a precondition failure
-		try! bind(to: input, resend: resend, onError: onError)
+		try! bind(to: input, resend: resend, onEnd: onEnd)
 		return output.subscribeValues(context: context, handler)
 	}
 }
 
-extension Error {
-	/// A minor convenience so that parameters requesting an `Error` can be passed `.signalClosed`
-	public var signalClosed: Error { return SignalComplete.closed }
-	
-	/// A convenience extension on `Error` to test if it is a `SignalComplete`
-	public var isSignalComplete: Bool { return self is SignalComplete }
-
-	@available(*, unavailable, message: "Use isSignalComplete or test `(error as? SignalComplete) == .closed`")
-	public var isSignalClosed: Bool { return self is SignalComplete }
-}
-
-extension Result {
-	/// A minor convenience so that parameters requesting a `Result` can be passed `.signalClosed`
-	public static var signalClosed: Result<Value> { return Result.failure(SignalComplete.closed) }
+extension Result where Failure == SignalEnd {
+	/// A minor convenience so that parameters requesting a `Result` can be passed `.signalComplete`
+	public static var signalComplete: Result<Success, SignalEnd> { return Result<Success, SignalEnd>.failure(.complete) }
 	
 	/// A convenience extension on `Result` to test if it wraps a `SignalComplete`
-	public var isSignalComplete: Bool {
+	public var isComplete: Bool {
 		switch self {
-		case .failure(_ as SignalComplete): return true
+		case .failure(.complete): return true
 		default: return false
 		}
 	}
-
-	@available(*, unavailable, message: "Use isSignalComplete or test Result<T> for .failure(SignalComplete.closed)")
-	public var isSignalClosed: Bool { return false }
 }

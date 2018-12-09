@@ -25,6 +25,10 @@
 		C90BDC551F01FEC300112A54 /* CwlSignalChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C90BDC531F01FEC300112A54 /* CwlSignalChannel.swift */; };
 		C93FBC4D216101A400DFCF0E /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */; };
 		C93FBC4E216101AC00DFCF0E /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C93FBC4C2161019D00DFCF0E /* CwlPreconditionTesting.framework */; };
+		C949749321AE98C3005D66E2 /* CwlSignal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9DD3D991E41DFB600E23B15 /* CwlSignal.framework */; };
+		C949749421AE98D9005D66E2 /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44DD2160F2EA0028B2AC /* CwlUtils.framework */; };
+		C949749521AE98E5005D66E2 /* CwlSignal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9DD3D991E41DFB600E23B15 /* CwlSignal.framework */; };
+		C949749621AE98EA005D66E2 /* CwlSignal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9DD3D991E41DFB600E23B15 /* CwlSignal.framework */; };
 		C94D2BBE2191A41A00B6D53B /* CwlSignalCocoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_15 /* CwlSignalCocoaTests.swift */; };
 		C94D2BBF2191A41A00B6D53B /* CwlSignalReactiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* CwlSignalReactiveTests.swift */; };
 		C94D2BC02191A41A00B6D53B /* CwlSignalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlSignalTests.swift */; };
@@ -49,6 +53,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		C949748821AE9423005D66E2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = OBJ_1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C9DD3D7C1E41DFB600E23B15;
+			remoteInfo = CwlSignal;
+		};
 		C94D2BB82191A40F00B6D53B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C98C44CE2160F2EA0028B2AC /* CwlUtils.xcodeproj */;
@@ -155,6 +166,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
+				C949749521AE98E5005D66E2 /* CwlSignal.framework in Frameworks */,
 				C94D2BC22191A41A00B6D53B /* CwlUtils.framework in Frameworks */,
 				C94D2BC32191A41A00B6D53B /* CwlPreconditionTesting.framework in Frameworks */,
 				C94D2BC42191A41A00B6D53B /* CwlCatchException.framework in Frameworks */,
@@ -173,6 +185,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
+				C949749621AE98EA005D66E2 /* CwlSignal.framework in Frameworks */,
 				C98C44F12160F3AC0028B2AC /* CwlUtils.framework in Frameworks */,
 				C93FBC4E216101AC00DFCF0E /* CwlPreconditionTesting.framework in Frameworks */,
 				C98AE7A121624753004259B6 /* CwlCatchException.framework in Frameworks */,
@@ -183,6 +196,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 0;
 			files = (
+				C949749421AE98D9005D66E2 /* CwlUtils.framework in Frameworks */,
+				C949749321AE98C3005D66E2 /* CwlSignal.framework in Frameworks */,
 				C93FBC4D216101A400DFCF0E /* CwlPreconditionTesting.framework in Frameworks */,
 				C98AE7A02162474D004259B6 /* CwlCatchException.framework in Frameworks */,
 			);
@@ -199,6 +214,13 @@
 			);
 			name = Frameworks;
 			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C949749221AE98C3005D66E2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
 		};
 		C98C44CD2160F22E0028B2AC /* Dependencies */ = {
 			isa = PBXGroup;
@@ -252,6 +274,7 @@
 				OBJ_69 /* Products */,
 				OBJ_7 /* Sources */,
 				OBJ_13 /* Tests */,
+				C949749221AE98C3005D66E2 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -364,6 +387,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				C949748921AE9423005D66E2 /* PBXTargetDependency */,
 			);
 			name = CwlSignal_macOSTests;
 			productName = CwlSignalTests;
@@ -543,6 +567,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		C949748921AE9423005D66E2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C9DD3D7C1E41DFB600E23B15 /* CwlSignal */;
+			targetProxy = C949748821AE9423005D66E2 /* PBXContainerItemProxy */;
+		};
 		C94D2BBB2191A41A00B6D53B /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = C9DD3D7C1E41DFB600E23B15 /* CwlSignal */;
@@ -568,7 +597,6 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Tests/CwlSignalTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @loader_path/Frameworks";
 				OTHER_LDFLAGS = "$(inherited)";
-				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-iOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -582,7 +610,6 @@
 				INFOPLIST_FILE = "$(SRCROOT)/Tests/CwlSignalTests/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @loader_path/Frameworks";
 				OTHER_LDFLAGS = "$(inherited)";
-				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-iOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -658,10 +685,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				INFOPLIST_FILE = Tests/CwlSignalTests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @loader_path/Frameworks";
-				OTHER_LDFLAGS = "$(inherited)";
-				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-iOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -673,10 +697,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				INFOPLIST_FILE = Tests/CwlSignalTests/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks @loader_path/Frameworks";
-				OTHER_LDFLAGS = "$(inherited)";
-				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-iOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -687,14 +708,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies",
-				);
 				INFOPLIST_FILE = Tests/CwlSignalTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				OTHER_LDFLAGS = "$(inherited)";
-				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-macOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -705,14 +720,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Dependencies",
-				);
 				INFOPLIST_FILE = Tests/CwlSignalTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "@loader_path/../Frameworks";
-				OTHER_LDFLAGS = "$(inherited)";
-				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-macOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;

@@ -67,7 +67,7 @@ class SignalCocoaTests: XCTestCase {
 	func testSignalKeyValueObserving() {
 		var target: Target? = Target()
 		target?.intProperty = 123
-		var results = [Result<Int>]()
+		var results = [Result<Int, SignalEnd>]()
 		let output = Signal.keyValueObserving(target!, keyPath: \.intProperty).subscribe { result in
 			results.append(result)
 		}

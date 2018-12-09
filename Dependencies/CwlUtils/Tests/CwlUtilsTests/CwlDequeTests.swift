@@ -24,7 +24,7 @@ import CwlUtils
 
 class DequeTests: XCTestCase {
 	func testAppend() {
-		var deque = Deque<Result<Int>>()
+		var deque = Deque<Result<Int, Error>>()
 		for i in 1...100 {
 			deque.append(.success(i))
 		}
@@ -48,7 +48,7 @@ class DequeTests: XCTestCase {
 	}
 	
 	func testRemoveFirst() {
-		var deque = Deque<Result<Int>>()
+		var deque = Deque<Result<Int, Error>>()
 		deque.append(.success(1))
 		deque.append(.success(3))
 		deque.append(.success(5))
