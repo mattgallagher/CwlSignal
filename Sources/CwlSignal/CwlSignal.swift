@@ -2467,7 +2467,7 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 	
 	// Once an output is connected, `SignalCapture` becomes a no-special-behaviors passthrough handler.
 	fileprivate override var activeWithoutOutputsInternal: Bool {
-		assert(signal.mutex.unbalancedTryLock() == false)
+		assert(super.signal.mutex.unbalancedTryLock() == false)
 		return outputs.count > 0 ? false : true
 	}
 	
@@ -2513,7 +2513,7 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 	fileprivate override func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		guard outputs.isEmpty else { return { r in } }
 		
-		assert(signal.mutex.unbalancedTryLock() == false)
+		assert(super.signal.mutex.unbalancedTryLock() == false)
 		capturedEnd = nil
 		capturedValues = []
 		return { [weak self] r in
@@ -2529,26 +2529,26 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 	// - Parameter dw: required
 	fileprivate override func handleSynchronousToNormalInternal(dw: inout DeferredWork) {
 		if outputs.isEmpty {
-			let (vs, err) = signal.pullQueuedSynchronousInternal()
+			let (vs, err) = super.signal.pullQueuedSynchronousInternal()
 			capturedValues.append(contentsOf: vs)
 			if let e = err {
 				capturedEnd = e
 			}
-			signal.blockInternal()
-			blockActivationCount = signal.activationCount
+			super.signal.blockInternal()
+			blockActivationCount = super.signal.activationCount
 		}
 	}
 	
 	// If this handler disconnected, then it reactivates and reverts to being a "capture".
 	// - Parameter dw: required
 	fileprivate override func lastOutputRemovedInternal(dw: inout DeferredWork) {
-		guard signal.delivery.isDisabled else { return }
+		guard super.signal.delivery.isDisabled else { return }
 		
 		// While a capture has an output connected – even an inactive output – it doesn't self-activate. When the last output is removed, we need to re-activate.
 		dw.append { [handler] in withExtendedLifetime(handler) {} }
 		handler = initialHandlerInternal()
 		if activateInternal(dw: &dw) {
-			let count = self.signal.activationCount
+			let count = super.signal.activationCount
 			dw.append { self.endActivation(activationCount: count) }
 		}
 	}
@@ -2584,8 +2584,8 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 				outputSignal.pushInternal(values: capturedValues, end: capturedEnd, activated: true, dw: &dw)
 			}
 		}
-		signal.unblockInternal(activationCountAtBlock: blockActivationCount)
-		signal.resumeIfPossibleInternal(dw: &dw)
+		super.signal.unblockInternal(activationCountAtBlock: blockActivationCount)
+		super.signal.resumeIfPossibleInternal(dw: &dw)
 		let tuple = (self.capturedValues, self.capturedEnd)
 		self.capturedValues = []
 		self.capturedEnd = nil
@@ -2595,9 +2595,9 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 	// Like a `SignalJunction`, a capture can respond to an error by disconnecting instead of delivering.
 	// - Returns: a function to use as the handler after activation
 	fileprivate override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(signal.mutex.unbalancedTryLock() == false)
+		assert(super.signal.mutex.unbalancedTryLock() == false)
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
-		let activated = signal.delivery.isNormal
+		let activated = super.signal.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		let disconnectAction = disconnectOnEnd
 		return { [weak outputSignal, weak self] (r: Result<OutputValue, SignalEnd>) -> Void in
