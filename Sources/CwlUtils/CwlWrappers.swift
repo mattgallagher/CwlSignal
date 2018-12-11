@@ -68,6 +68,25 @@ public final class AtomicBox<T> {
 	}
 }
 
+/// A struct wrapper around an optional and a construction function that presents the optional through the `value()` function as though it's a lazy var. Unlike a true lazy var, you can query if the value has been initialized.
+public struct Lazy<T> {
+	var valueIfInitialized: T?
+	let valueConstructor: () -> T
+	
+	public init(valueConstructor: @escaping () -> T) {
+		self.valueConstructor = valueConstructor
+	}
+	public var isInitialized: Bool { return valueIfInitialized != nil }
+	public mutating func value() -> T {
+		if let v = valueIfInitialized {
+			return v
+		}
+		let v = valueConstructor()
+		valueIfInitialized = v
+		return v
+	}
+}
+
 /// A wrapper around a type (usually a class type) so it can be weakly referenced from an Array or other strong container.
 public struct Weak<T: AnyObject> {
 	public weak var value: T?
