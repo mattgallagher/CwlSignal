@@ -35,6 +35,13 @@ class WrapperTests: XCTestCase {
 		XCTAssert(a.value == 3 && b.value == 3)
 	}
 	
+	func testLazy() {
+		var x = Lazy<Int>(valueConstructor: { 3 })
+		XCTAssert(!x.isInitialized)
+		XCTAssert(x.value() == 3)
+		XCTAssert(x.isInitialized)
+	}
+	
 	func testWeak() {
 		let q = NSObject()
 		let w = { () -> Weak<NSObject> in
