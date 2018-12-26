@@ -35,6 +35,17 @@ class CollectionTests: XCTestCase {
 		let at_1 = a.at(-1)
 		XCTAssert(at_0! == 7 && at_1 == nil && at_2 == nil)
 	}
+	func testCollectionAppend() {
+		var a = [0, 1, 2]
+		a += 3
+		a += Optional.some(4)
+		a += nil
+		XCTAssertEqual(a, [0, 1, 2, 3, 4])
+		
+		let b = [0, 1]
+		let c = b.appending(2)
+		XCTAssertEqual(c, [0, 1, 2])
+	}
 	func testRangeAtCollection() {
 		let a = 7..<29
 		let at_1 = a.at(5..<6 as Range<Int>)
