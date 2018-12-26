@@ -52,11 +52,6 @@ public final class AtomicBox<T> {
 			defer { mutex.unbalancedUnlock() }
 			return internalValue
 		}
-		set {
-			mutex.unbalancedLock()
-			defer { mutex.unbalancedUnlock() }
-			internalValue = newValue
-		}
 	}
 
 	@discardableResult
