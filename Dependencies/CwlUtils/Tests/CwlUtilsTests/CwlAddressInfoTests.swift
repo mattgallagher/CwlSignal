@@ -26,7 +26,7 @@ class AddressInfoTests: XCTestCase {
 	func testCallingFunctionIdentifier() {
 		let name = callingFunctionIdentifier()
 		#if SWIFT_PACKAGE
-			XCTAssert(name.hasSuffix("11AddressInfoC0C29testCallingFunctionIdentifieryyF"))
+			XCTAssert(n.hasSuffix("11AddressInfoC0C29testCallingFunctionIdentifieryyF"))
 		#else
 			XCTAssert(name.hasSuffix("16AddressInfoTestsC29testCallingFunctionIdentifieryyF"))
 		#endif
