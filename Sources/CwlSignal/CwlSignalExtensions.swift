@@ -730,7 +730,7 @@ extension SignalInterface {
 
 /// This wrapper around `SignalOutput` saves the last received value from the signal so that it can be 'polled' (read synchronously from an arbitrary execution context). This class ensures thread-safety on the read operation.
 ///
-/// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value. Holding a `SignalCachedOutput` set to run in the same context as the delegate (e.g. .main) will allow the delegate to synchronously respond with the latest value.
+/// The typical use-case for this type of class is in the implementation of delegate methods and similar callback functions that must synchronously return a value.
 ///
 /// Note that there is a semantic difference between this class which is intended to be left active for some time and polled periodically and `SignalCapture` which captures the *activation* value (leaving it running for a duration is pointless). For that reason, the standalone `peek()` function actually uses `SignalCapture` rather than this class (`SignalCapture` is more consistent in the presence of multi-threaded updates since there is no possibility of asychronous updates between creation and reading).
 ///
@@ -776,35 +776,8 @@ extension SignalInterface {
 	}
 }
 
-extension SignalCapture {
-	/// A convenience version of `subscribe` that only invokes the `processor` on `Result.success`
-	///
-	/// - Parameters:
-	///   - resend: if true, captured values are sent to the new output as the first values in the stream, otherwise, captured values are not sent (default is false)
-	///   - context: the execution context where the `processor` will be invoked
-	///   - processor: will be invoked with each value received
-	/// - Returns: the `SignalOutput` created by this function
-	public func subscribeValues(resend: Bool = false, context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalOutput<OutputValue> {
-		let (input, output) = Signal<OutputValue>.create()
-		// This can't be `loop` but `duplicate` is a precondition failure
-		try! bind(to: input, resend: resend)
-		return output.subscribeValues(context: context, handler)
-	}
-	
-	/// A convenience version of `subscribe` that only invokes the `processor` on `Result.success`
-	///
-	/// - Parameters:
-	///   - resend: if true, captured values are sent to the new output as the first values in the stream, otherwise, captured values are not sent (default is false)
-	///   - onEnd: if nil, errors from self will be passed through to `toInput`'s `Signal` normally. If non-nil, errors will not be sent, instead, the `Signal` will be disconnected and the `onEnd` function will be invoked with the disconnected `SignalCapture` and the input created by calling `disconnect` on it.
-	///   - context: the execution context where the `processor` will be invoked
-	///   - processor: will be invoked with each value received
-	/// - Returns: the `SignalOutput` created by this function
-	public func subscribeValues(resend: Bool = false, onEnd: @escaping SignalCapture<OutputValue>.Handler, context: Exec = .direct, handler: @escaping (OutputValue) -> Void) -> SignalOutput<OutputValue> {
-		let (input, output) = Signal<OutputValue>.create()
-		// This can't be `loop` but `duplicate` is a precondition failure
-		try! bind(to: input, resend: resend, onEnd: onEnd)
-		return output.subscribeValues(context: context, handler)
-	}
+extension SignalCapture: SignalInterface {
+	public var signal: Signal<OutputValue> { return resume() }
 }
 
 extension Result where Failure == SignalEnd {

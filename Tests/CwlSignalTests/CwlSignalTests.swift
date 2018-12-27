@@ -697,9 +697,19 @@ class SignalTests: XCTestCase {
 			input.send(value: 4)
 			
 			var results = [Result<Int, SignalEnd>]()
-			_ = capture.resume(onEnd: { (j, e, i) in }).subscribe { r in results += r }
-			XCTAssert(results.count == 1)
+			let l = capture.resume(onEnd: { (j, e, i) in
+				i.send(5, 6, 7)
+			}).subscribe { r in results += r }
+			
+			input.close()
+			
+			XCTAssert(results.count == 5)
 			XCTAssert(results.at(0)?.value == 4)
+			XCTAssert(results.at(1)?.value == 5)
+			XCTAssert(results.at(2)?.value == 6)
+			XCTAssert(results.at(3)?.value == 7)
+			XCTAssert(results.at(4)?.error?.isCancelled == true)
+			withExtendedLifetime(l) {}
 		}
 		
 		withExtendedLifetime(input) {}
@@ -733,7 +743,7 @@ class SignalTests: XCTestCase {
 			input.send(value: 4)
 			
 			var results = [Int]()
-			_ = capture.subscribeValues(onEnd: { (j, e, i) in }) { r in results += r }
+			_ = capture.subscribeValues { r in results += r }
 			XCTAssert(results.count == 1)
 			XCTAssert(results.at(0) == 4)
 		}

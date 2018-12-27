@@ -31,8 +31,15 @@ class WrapperTests: XCTestCase {
 	func testAtomicBox() {
 		let a = AtomicBox(5)
 		let b = a
-		a.value = 3
+		a.mutate { $0 = 3 }
 		XCTAssert(a.value == 3 && b.value == 3)
+	}
+	
+	func testLazy() {
+		var x = Lazy<Int>(valueConstructor: { 3 })
+		XCTAssert(!x.isInitialized)
+		XCTAssert(x.value() == 3)
+		XCTAssert(x.isInitialized)
 	}
 	
 	func testWeak() {
