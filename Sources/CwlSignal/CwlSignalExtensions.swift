@@ -101,7 +101,7 @@ extension SignalInterface {
 	public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, _ updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout SignalEnd?, _ incoming: Result<OutputValue, SignalEnd>) -> Void) -> SignalMulti<OutputValue> {
 		return signal.customActivation(initialValues: initialValues, context: context, updater)
 	}
-	public func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: State, _ message: OutputValue) -> State) -> SignalMulti<State> {
+	public func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: State, _ message: OutputValue) throws -> State) -> SignalMulti<State> {
 		return signal.reduce(initialState: initialState, context: context, reducer)
 	}
 	public func capture() -> SignalCapture<OutputValue> {

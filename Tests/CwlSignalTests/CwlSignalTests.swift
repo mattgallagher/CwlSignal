@@ -544,16 +544,20 @@ class SignalTests: XCTestCase {
 		}
 	}
 	
-	func testReducer() {
+	func testReduce() {
 		enum StackOperation {
 			case push(Int)
 			case pop
 		}
 		
 		let (input, signal) = Signal<StackOperation>.create()
-		let reduced = signal.reduce(initialState: [0, 1, 2]) { (state: [Int], message: StackOperation) -> [Int] in
+		let reduced = signal.reduce(initialState: [0, 1, 2]) { (state: [Int], message: StackOperation) throws -> [Int] in
 			switch message {
-			case .push(let value): return state.appending(value)
+			case .push(let value):
+				if state.count == 5 {
+					throw TestError.zeroValue
+				}
+				return state.appending(value)
 			case .pop: return Array(state.dropLast())
 			}
 		}
@@ -575,7 +579,7 @@ class SignalTests: XCTestCase {
 		input.send(value: .push(1))
 		input.send(value: .push(2))
 		input.send(value: .push(3))
-		input.send(error: TestError.zeroValue)
+		input.send(value: .push(5))
 		
 		XCTAssert(results1.count == 8)
 		XCTAssert(results1.at(0)?.value == [0, 1, 2])
