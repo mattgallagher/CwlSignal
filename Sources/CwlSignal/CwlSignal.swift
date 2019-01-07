@@ -509,11 +509,11 @@ public class Signal<OutputValue>: SignalInterface {
 	///   - context: execution context where `reducer` will run
 	///   - reducer: the function that combines the state with incoming values and emits differential updates
 	/// - Returns: a `SignalMulti<State>`
-	public final func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: State, _ message: OutputValue) -> State) -> SignalMulti<State> {
+	public final func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: State, _ message: OutputValue) throws -> State) -> SignalMulti<State> {
 		return SignalMulti<State>(processor: attach { (s, dw) in
 			return SignalReducer<OutputValue, State>(signal: s, state: initialState, end: nil, dw: &dw, context: context) { (state: State, message: Signal<OutputValue>.Result) -> Signal<State>.Result in
 				switch message {
-				case .success(let m): return .success(reducer(state, m))
+				case .success(let m): return CwlUtils.Result { try reducer(state, m) }.mapFailure(SignalEnd.other)
 				case .failure(let e): return .failure(e)
 				}
 			}
