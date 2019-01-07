@@ -106,7 +106,7 @@ extension Signal {
 	///   - end: if non-nil, sent after value to close the stream 
 	/// - Returns: a signal that will emit `value` and (optionally) close
 	public static func error(_ error: Error) -> Signal<OutputValue> {
-		return Signal<OutputValue>.from([], end: .error(error))
+		return Signal<OutputValue>.from([], end: .other(error))
 	}
 
 	/// - Implementation of [Reactive X operator "Empty"](http://reactivex.io/documentation/operators/empty-never-throw.html)
@@ -349,7 +349,7 @@ extension SignalInterface {
 					do {
 						try intervalJunction.bind(to: i)
 					} catch {
-						n.send(end: .error(error))
+						n.send(end: .other(error))
 					}
 				}
 			case .result1(.failure(let e)):
@@ -528,7 +528,7 @@ extension SignalInterface {
 						n.send(value: u)
 					}
 				} catch {
-					n.send(end: .error(error))
+					n.send(end: .other(error))
 				}
 			case .failure(let e): n.send(end: e)
 			}
@@ -551,7 +551,7 @@ extension SignalInterface {
 						n.send(value: u)
 					}
 				} catch {
-					n.send(end: .error(error))
+					n.send(end: .other(error))
 				}
 			case .failure(let e): n.send(end: e)
 			}
@@ -2021,7 +2021,7 @@ fileprivate class CatchErrorRecovery<OutputValue> {
 				let f: SignalJunction<OutputValue>.Handler = self.catchErrorRejoin
 				try recover(e).junction().bind(to: i, onEnd: f)
 			} catch {
-				i.send(end: .error(error))
+				i.send(end: .other(error))
 			}
 		} else {
 			i.send(end: e)
@@ -2048,7 +2048,7 @@ fileprivate class RetryRecovery<U> {
 				do {
 					try j.bind(to: i, onEnd: self.retryRejoin)
 				} catch {
-					i.send(end: .error(error))
+					i.send(end: .other(error))
 				}
 			}
 		} else {
@@ -2172,16 +2172,16 @@ extension SignalInterface {
 	///   - handler: invoked when self is activated
 	/// - Returns: a signal that emits the same outputs as self
 	public func onActivate(context: Exec = .direct, _ handler: @escaping () -> ()) -> Signal<OutputValue> {
-        let j = junction()
-        let s = Signal<OutputValue>.generate { input in
-            if let i = input {
-                handler()
-                _ = try? j.bind(to: i)
-            } else {
-                _ = j.disconnect()
-            }
-        }
-        return s
+		let j = junction()
+		let s = Signal<OutputValue>.generate { input in
+			if let i = input {
+				handler()
+				_ = try? j.bind(to: i)
+			} else {
+				_ = j.disconnect()
+			}
+		}
+		return s
 	}
 	
 	/// Implementation of [Reactive X operator "do"](http://reactivex.io/documentation/operators/do.html) for "deactivation" (not a concept that directly exists in ReactiveX but similar to doOnUnsubscribe).
@@ -2191,16 +2191,16 @@ extension SignalInterface {
 	///   - handler: invoked when self is deactivated
 	/// - Returns: a signal that emits the same outputs as self
 	public func onDeactivate(context: Exec = .direct, _ handler: @escaping () -> ()) -> Signal<OutputValue> {
-        let j = junction()
-        let s = Signal<OutputValue>.generate { input in
-            if let i = input {
-                _ = try? j.bind(to: i)
-            } else {
-                handler()
-                _ = j.disconnect()
-            }
-        }
-        return s
+		let j = junction()
+		let s = Signal<OutputValue>.generate { input in
+			if let i = input {
+				_ = try? j.bind(to: i)
+			} else {
+				handler()
+				_ = j.disconnect()
+			}
+		}
+		return s
 	}
 	
 	/// Implementation of [Reactive X operator "do"](http://reactivex.io/documentation/operators/do.html) for "result" (equivalent to doOnEach).
@@ -2344,7 +2344,7 @@ extension SignalInterface {
 					junction.rebind()
 				}
 				n.send(result: r)
-			case .result2: n.send(end: .error(SignalReactiveError.timeout))
+			case .result2: n.send(end: .other(SignalReactiveError.timeout))
 			}
 		}
 	}

@@ -200,7 +200,7 @@ extension SignalChannel {
 		return next { $0.customActivation(initialValues: initialValues, context: context, updater) }
 	}
 	
-	public func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: inout State, _ message: Interface.OutputValue) -> Result<State, SignalEnd>) -> SignalChannel<InputInterface, SignalMulti<State>> {
+	public func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: State, _ message: Interface.OutputValue) -> State) -> SignalChannel<InputInterface, SignalMulti<State>> {
 		return next { $0.reduce(initialState: initialState, context: context, reducer) }
 	}
 	

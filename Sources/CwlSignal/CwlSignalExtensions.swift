@@ -101,7 +101,7 @@ extension SignalInterface {
 	public func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, _ updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout SignalEnd?, _ incoming: Result<OutputValue, SignalEnd>) -> Void) -> SignalMulti<OutputValue> {
 		return signal.customActivation(initialValues: initialValues, context: context, updater)
 	}
-	public func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: inout State, _ message: OutputValue) -> Result<State, SignalEnd>) -> SignalMulti<State> {
+	public func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: State, _ message: OutputValue) -> State) -> SignalMulti<State> {
 		return signal.reduce(initialState: initialState, context: context, reducer)
 	}
 	public func capture() -> SignalCapture<OutputValue> {
@@ -181,7 +181,7 @@ extension SignalSender {
 	/// - Returns: the return value from the underlying `send(result:)` function
 	@discardableResult
 	public func send(error: Error) -> SignalSendError? {
-		return send(result: .failure(.error(error)))
+		return send(result: .failure(.other(error)))
 	}
 	
 	/// A convenience version of `send` that wraps an error in `Result.failure` before sending
@@ -422,7 +422,7 @@ extension SignalInterface {
 	///   - context: the execution context where the `processor` will be invoked
 	///   - handler: will be invoked with each value received and if returns `false`, the output will be cancelled and released
 	public func subscribeUntilEnd(context: Exec = .direct, _ handler: @escaping (Result<OutputValue, SignalEnd>) -> Void) {
-        return signal.subscribeWhile(context: context, { (result: Result<OutputValue, SignalEnd>) -> Bool in
+		return signal.subscribeWhile(context: context, { (result: Result<OutputValue, SignalEnd>) -> Bool in
 			handler(result)
 			return true
 		})
@@ -596,9 +596,8 @@ extension SignalInterface {
 	/// - Parameter initialState: before receiving the first value
 	/// - Returns: the alternating, continuous signal
 	public func toggle(initialState: Bool = false) -> Signal<Bool> {
-		return reduce(initialState: initialState) { (state: inout Bool, input: OutputValue) -> Result<Bool, SignalEnd> in
-			state = !state
-			return .success(state)
+		return reduce(initialState: initialState) { (state: Bool, input: OutputValue) -> Bool in
+			return !state
 		}
 	}
 

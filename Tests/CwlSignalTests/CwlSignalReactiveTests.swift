@@ -54,7 +54,7 @@ class SignalReactiveTests: XCTestCase {
 		do {
 			try capture.bind(to: input)
 		} catch {
-			input.send(end: .error(error))
+			input.send(end: .other(error))
 		}
 		withExtendedLifetime(out) {}
 		XCTAssert(values.isEmpty)
@@ -312,7 +312,7 @@ class SignalReactiveTests: XCTestCase {
 		i1.send(value: 5)
 		i1.close()
 		i2.send(value: 6)
-		i3.send(end: .error(TestError.twoValue))
+		i3.send(end: .other(TestError.twoValue))
 		i2.send(value: 7)
 		i2.close()
 		
@@ -324,7 +324,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results1.at(4)?.value == 4)
 		XCTAssert(results1.at(5)?.value == 5)
 		XCTAssert(results1.at(6)?.value == 6)
-		XCTAssert(results1.at(7)?.error?.error as? TestError == .twoValue)
+		XCTAssert(results1.at(7)?.error?.otherError as? TestError == .twoValue)
 		
 		ep1.cancel()
 	}
@@ -387,7 +387,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results2.at(3)?.value == 3)
 		XCTAssert(results2.at(4)?.value == 4)
 		XCTAssert(results2.at(5)?.value == 5)
-		XCTAssert(results2.at(6)?.error?.error as? TestError == .zeroValue)
+		XCTAssert(results2.at(6)?.error?.otherError as? TestError == .zeroValue)
 		
 		ep2.cancel()
 	}
@@ -567,7 +567,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(10)?.value == "k")
 		XCTAssert(results.at(11)?.value == "l")
 		XCTAssert(results.at(12)?.value == "m")
-		XCTAssert(results.at(13)?.error?.error as? TestError == TestError.twoValue)
+		XCTAssert(results.at(13)?.error?.otherError as? TestError == TestError.twoValue)
 
 		withExtendedLifetime(out) { }
 	}
@@ -1843,7 +1843,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testCatch() {
 		var results1 = [Result<Int, SignalEnd>]()
-		let signal1 = Signal<Int>.from(0..<10, end: .error(TestError.zeroValue))
+		let signal1 = Signal<Int>.from(0..<10, end: .other(TestError.zeroValue))
 		let signal2 = Signal<Int>.from(10..<20)
 		_ = signal1.catchError { e -> Signal<Int> in
 			return signal2
@@ -1948,7 +1948,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(2)?.value == 2)
 		XCTAssert(results.at(3)?.value == 3)
 		XCTAssert(results.at(4)?.value == 4)
-		XCTAssert(results.at(5)?.error?.error as? SignalReactiveError == .timeout)
+		XCTAssert(results.at(5)?.error?.otherError as? SignalReactiveError == .timeout)
 		
 		// Explanation of the `4` at the end of these times:
 		// `intervalSignal` is invoked asynchronously on `coordinator.global`, adding 1
@@ -1998,7 +1998,7 @@ class SignalReactiveTests: XCTestCase {
 	
 	func testOn() {
 		var results = [String]()
-		let j = Signal<Int>.from(0..<5, end: .error(SignalReactiveError.timeout)).onActivate {
+		let j = Signal<Int>.from(0..<5, end: .other(SignalReactiveError.timeout)).onActivate {
 			results.append("activate")
 		}.onDeactivate {
 			results.append("deactivate")
@@ -2009,7 +2009,7 @@ class SignalReactiveTests: XCTestCase {
 		}.onError { e in
 			results.append("\(e)")
 		}.junction()
-        
+		
 		let (i1, o1) = Signal<Int>.create()
 		let ep1 = o1.subscribe { r in
 			results.append("Output: \(r)")
@@ -2036,9 +2036,9 @@ class SignalReactiveTests: XCTestCase {
 			"4",
 			"success(4)",
 			"Output: success(4)",
-			"failure(CwlSignal.SignalEnd.error(CwlSignal.SignalReactiveError.timeout))",
-			"error(CwlSignal.SignalReactiveError.timeout)",
-			"Output: failure(CwlSignal.SignalEnd.error(CwlSignal.SignalReactiveError.timeout))",
+			"failure(CwlSignal.SignalEnd.other(CwlSignal.SignalReactiveError.timeout))",
+			"other(CwlSignal.SignalReactiveError.timeout)",
+			"Output: failure(CwlSignal.SignalEnd.other(CwlSignal.SignalReactiveError.timeout))",
 			"deactivate",
 		])
 
@@ -2068,9 +2068,9 @@ class SignalReactiveTests: XCTestCase {
 			"4",
 			"success(4)",
 			"Output: success(4)",
-			"failure(CwlSignal.SignalEnd.error(CwlSignal.SignalReactiveError.timeout))",
-			"error(CwlSignal.SignalReactiveError.timeout)",
-			"Output: failure(CwlSignal.SignalEnd.error(CwlSignal.SignalReactiveError.timeout))",
+			"failure(CwlSignal.SignalEnd.other(CwlSignal.SignalReactiveError.timeout))",
+			"other(CwlSignal.SignalReactiveError.timeout)",
+			"Output: failure(CwlSignal.SignalEnd.other(CwlSignal.SignalReactiveError.timeout))",
 			"deactivate",
 		])
 	}
@@ -2164,7 +2164,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(1)?.value == 1)
 		XCTAssert(results.at(2)?.value == 2)
 
-		switch results.at(3)?.error?.error as? SignalReactiveError {
+		switch results.at(3)?.error?.otherError as? SignalReactiveError {
 		case .some(.timeout): break
 		default: XCTFail()
 		}
