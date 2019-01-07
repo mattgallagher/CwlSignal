@@ -502,28 +502,19 @@ public class Signal<OutputValue>: SignalInterface {
 	///
 	/// A value of the same `State` type is emitted on each iteration, although it is not required to be the same value. Having the return value be potentially different to the internal state isn't standard "reduction semantics" but it enables differential notifications, rather than whole state notifications.
 	///
-	/// This operator combines aspects of `transform` and `customActivation` into a single operation. The incoming values are transformed to the internal state type and it is possible to maintain a separate cached value and emitted value.
-	///
-	/// The interal `State` is used as the activation value. If new listeners attach to the `SignalMulti`, midstream, they will receive the internal `State` as an activation value. It should be kept in a form suitable for this purpose.
+	/// This operator combines aspects of `transform` and `customActivation` into a single operation, transforming the incoming message into state values by combining with a cached state value (that also serves as the activation value).
 	///
 	/// - Parameters:
 	///   - initialState: initial activation value for the stream and internal state for the reducer
 	///   - context: execution context where `reducer` will run
 	///   - reducer: the function that combines the state with incoming values and emits differential updates
 	/// - Returns: a `SignalMulti<State>`
-	public final func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: inout State, _ message: OutputValue) -> Signal<State>.Result) -> SignalMulti<State> {
+	public final func reduce<State>(initialState: State, context: Exec = .direct, _ reducer: @escaping (_ state: State, _ message: OutputValue) -> State) -> SignalMulti<State> {
 		return SignalMulti<State>(processor: attach { (s, dw) in
-			return SignalReducer<OutputValue, State>(signal: s, state: Signal<State>.Result.success(initialState), dw: &dw, context: context) { (state: inout Signal<State>.Result, message: Result) -> Signal<State>.Result in
-				switch (state, message) {
-				case (.success(var s), .success(let m)):
-					let output = reducer(&s, m)
-					state = .success(s)
-					return output
-				case (.failure, _):
-					return state
-				case (_, .failure(let e)):
-					state = .failure(e)
-					return state
+			return SignalReducer<OutputValue, State>(signal: s, state: initialState, end: nil, dw: &dw, context: context) { (state: State, message: Signal<OutputValue>.Result) -> Signal<State>.Result in
+				switch message {
+				case .success(let m): return .success(reducer(state, m))
+				case .failure(let e): return .failure(e)
 				}
 			}
 		})
@@ -1921,19 +1912,21 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 
 // Implementation of a processor that combines SignalTransformerWithState and SignalMultiProcessor functionality into a single processor (avoiding the need for a clumsy state sharing arrangement if the two are separate).
 fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<OutputValue, State>, SignalBlockable {
-    typealias Reducer = (_ state: inout Result<State, SignalEnd>, _ message: Result<OutputValue, SignalEnd>) -> Result<State, SignalEnd>
+	typealias Reducer = (_ state: State, _ message: Result<OutputValue, SignalEnd>) -> Result<State, SignalEnd>
 	let reducer: Reducer
-	var state: Result<State, SignalEnd>
+	var state: State
+	var end: SignalEnd?
 	
-	init(signal: Signal<OutputValue>, state: Result<State, SignalEnd>, dw: inout DeferredWork, context: Exec, reducer: @escaping Reducer) {
+	init(signal: Signal<OutputValue>, state: State, end: SignalEnd?, dw: inout DeferredWork, context: Exec, reducer: @escaping Reducer) {
 		self.reducer = reducer
 		self.state = state
+		self.end = end
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 	
 	fileprivate override var activeWithoutOutputsInternal: Bool {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		return state.isSuccess
+		return end == nil
 	}
 	
 	fileprivate override var multipleOutputsPermitted: Bool {
@@ -1946,7 +1939,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 
 	fileprivate final override func sendActivationToOutputInternal(index: Int, dw: inout DeferredWork) {
 		// Push as *not* activated (i.e. this is the activation)
-		outputs[index].destination.value?.pushInternal(values: state.value.map { [$0] } ?? [], end: state.error, activated: false, dw: &dw)
+		outputs[index].destination.value?.pushInternal(values: end == nil ? [state] : [], end: end, activated: false, dw: &dw)
 	}
 	
 	// Multiprocessors are (usually – not multicast) preactivated and may cache the values or errors
@@ -1955,20 +1948,19 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		assert(signal.mutex.unbalancedTryLock() == false)
 		return { [weak self] r in
 			if let s = self {
-				var state = Result<State, SignalEnd>.failure(.complete)
-
 				// Copy the state under the mutex
-				s.sync {
-					state = s.state
-				}
+				let state = s.sync { s.state }
 				
 				// Perform the update on the copy
 				let previous = state
-				_ = s.reducer(&state, r)
+				let next = s.reducer(state, r)
 
 				// Apply the change to the authoritative version under the mutex
 				s.sync {
-					s.state = state
+					switch next {
+					case .success(let v): s.state = v
+					case .failure(let e): s.end = e
+					}
 				}
 				
 				// Ensure any old references are released outside the mutex
@@ -1986,16 +1978,24 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		return { [weak self] r in
 			if let s = self {
 				// Copy the state under the mutex
-				var state = s.sync { s.state }
+				let state = s.sync { s.state }
 				
 				// Perform the update on the copy
 				let previous = state
-				let result = s.reducer(&state, r)
+				let next = s.reducer(state, r)
 
 				// Apply the change to the authoritative version under the mutex
 				var outputs: OutputsArray = []
+				var result = Signal<State>.Result.failure(.complete)
 				s.sync {
-					swap(&state, &s.state)
+					switch next {
+					case .success(let v):
+						s.state = v
+						result = .success(v)
+					case .failure(let e):
+						s.end = e
+						result = .failure(e)
+					}
 					outputs = s.outputs
 				}
 				
@@ -2420,7 +2420,7 @@ public class SignalJunction<OutputValue>: SignalProcessor<OutputValue, OutputVal
 			do {
 				try bind(to: input)
 			} catch {
-				input.send(result: .failure(.error(error)))
+				input.send(result: .failure(.other(error)))
 			}
 		}
 	}
@@ -2433,7 +2433,7 @@ public class SignalJunction<OutputValue>: SignalProcessor<OutputValue, OutputVal
 			do {
 				try bind(to: input, onEnd: onEnd)
 			} catch {
-				input.send(result: .failure(.error(error)))
+				input.send(result: .failure(.other(error)))
 			}
 		}
 	}
@@ -2731,7 +2731,7 @@ public enum SignalEndPropagation {
 	public func shouldPropagateEnd(_ end: SignalEnd) -> Bool {
 		switch self {
 		case .none: return false
-		case .errors: return end.isError
+		case .errors: return end.isOther
 		case .all: return true
 		}
 	}
@@ -3067,10 +3067,10 @@ public typealias SignalComplete = SignalEnd
 public enum SignalEnd: Error, Equatable {
 	case complete
 	case cancelled
-	case error(Error)
+	case other(Error)
 	
-	public var isError: Bool {
-		if case .error = self { return true } else { return false }
+	public var isOther: Bool {
+		if case .other = self { return true } else { return false }
 	}
 	public var isComplete: Bool {
 		if case .complete = self { return true } else { return false }
@@ -3078,15 +3078,15 @@ public enum SignalEnd: Error, Equatable {
 	public var isCancelled: Bool {
 		if case .cancelled = self { return true } else { return false }
 	}
-	public var error: Error? {
-		if case .error(let e) = self { return e } else { return nil }
+	public var otherError: Error? {
+		if case .other(let e) = self { return e } else { return nil }
 	}
 
 	public static func == (lhs: SignalEnd, rhs: SignalEnd) -> Bool {
 		switch (lhs, rhs) {
 		case (.complete, .complete): return true
 		case (.cancelled, .cancelled): return true
-		case (.error, .error): return true
+		case (.other, .other): return true
 		default: return false
 		}
 	}
