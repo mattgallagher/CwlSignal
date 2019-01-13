@@ -164,7 +164,7 @@ public class SignalSequence<OutputValue>: Sequence, IteratorProtocol {
 	
 	/// Stops listening to the signal and set the error value to SignalComplete.cancelled
 	public func cancel() {
-		context.invokeAndWait {
+		context.invokeSync {
 			self.end = .cancelled
 			self.output?.cancel()
 			self.semaphore.signal()
@@ -174,17 +174,16 @@ public class SignalSequence<OutputValue>: Sequence, IteratorProtocol {
 	/// Implementation of GeneratorType method.
 	public func next() -> OutputValue? {
 		_ = semaphore.wait(timeout: DispatchTime.distantFuture)
-		var result: OutputValue? = nil
-		context.invokeAndWait { [weak self] in
-			guard let s = self else { return }
+		return context.invokeSync { [weak self] () -> OutputValue? in
+			guard let s = self else { return nil }
 			if !s.queued.isEmpty {
-				result = s.queued.removeFirst()
+				return s.queued.removeFirst()
 			} else {
 				// Signal the sempahore so that `nil` can be fetched again.
 				s.semaphore.signal()
+				return nil
 			}
 		}
-		return result
 	}
 	
 	deinit {
@@ -717,21 +716,6 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html)
 	///
 	/// - Parameters:
-	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
-	///   - processor: used to transform the closing error 
-	/// - Returns: when an error is emitted from `self`, emits the result returned from passing that error into `processor`. All values emitted normally.
-	public func mapErrors(context: Exec = .direct, _ processor: @escaping (SignalEnd) -> SignalEnd) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
-			switch r {
-			case .success(let v): n.send(value: v)
-			case .failure(let e): n.send(end: processor(e))
-			}
-		}
-	}
-	
-	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html)
-	///
-	/// - Parameters:
 	///   - keyPath: selects a child value to emit
 	/// - Returns: a `Signal` where all the values have been transformed by the key path.
 	public func keyPath<U>(_ keyPath: KeyPath<OutputValue, U>) -> Signal<U> {
@@ -770,6 +754,45 @@ extension SignalInterface {
 			switch r {
 			case .success(let v): n.send(result: .success(processor(&s, v)))
 			case .failure(let e): n.send(end: e)
+			}
+		}
+	}
+
+	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html) that offers a separate transformation for "activation" values.
+	///
+	/// - Parameters:
+	///   - activation: processing closure for activation values
+	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
+	///   - remainder: processing closure for all normal (non-activation) values
+	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
+	public func mapActivation<U>(_ activation: (OutputValue) -> U, context: Exec = .direct, remainder: @escaping (OutputValue) -> U) -> Signal<U> {
+		let c = capture()
+		let initial = withoutActuallyEscaping(activation) { a in
+			context.invokeSync { c.values.map(activation) as [U]? }
+		}
+		return c.resume().transform(initialState: initial, context: context) { (state: inout [U]?, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
+			if let s = state {
+				n.send(sequence: s)
+				state = nil
+			}
+			switch r {
+			case .success(let v): n.send(result: .success(remainder(v)))
+			case .failure(let e): n.send(end: e)
+			}
+		}
+	}
+	
+	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html)
+	///
+	/// - Parameters:
+	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
+	///   - processor: used to transform the closing error 
+	/// - Returns: when an error is emitted from `self`, emits the result returned from passing that error into `processor`. All values emitted normally.
+	public func mapErrors(context: Exec = .direct, _ processor: @escaping (SignalEnd) -> SignalEnd) -> Signal<OutputValue> {
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+			switch r {
+			case .success(let v): n.send(value: v)
+			case .failure(let e): n.send(end: processor(e))
 			}
 		}
 	}

@@ -652,6 +652,31 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(5)?.error?.isComplete == true)
 	}
 	
+	func testMapActivation() {
+		var results = [Result<Int, SignalEnd>]()
+		let (input, signal) = Signal<Int>.create()
+		let lifetime = signal.continuous(initialValue: 1).mapActivation({ v in v * 10 }, remainder: { $0 * 2 }).subscribe { r in results.append(r) }
+		input.send(2, 3, 4)
+		input.close()
+		XCTAssert(results.count == 5)
+		XCTAssert(results.at(0)?.value == 10)
+		XCTAssert(results.at(1)?.value == 4)
+		XCTAssert(results.at(2)?.value == 6)
+		XCTAssert(results.at(3)?.value == 8)
+		XCTAssert(results.at(4)?.error?.isComplete == true)
+		withExtendedLifetime(lifetime) {}
+	}
+	
+	func testMapError() {
+		var results = [Result<Int, SignalEnd>]()
+		_ = Signal.preclosed(1, 2, 3, end: .cancelled).mapErrors { _ in .complete }.subscribe { r in results.append(r) }
+		XCTAssert(results.count == 4)
+		XCTAssert(results.at(0)?.value == 1)
+		XCTAssert(results.at(1)?.value == 2)
+		XCTAssert(results.at(2)?.value == 3)
+		XCTAssert(results.at(3)?.error?.isComplete == true)
+	}
+	
 	func testKeyPath() {
 		var results = [Result<String, SignalEnd>]()
 		_ = Signal.just("path.name").keyPath(\NSString.pathExtension).subscribe { r in results.append(r) }

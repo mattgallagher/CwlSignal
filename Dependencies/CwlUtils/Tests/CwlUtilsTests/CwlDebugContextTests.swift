@@ -52,7 +52,7 @@ class DebugContextTests: XCTestCase {
 	func testDirectInvokeAndWait() {
 		let coordinator = DebugContextCoordinator()
 		var checkpoint = false
-		coordinator.direct.invokeAndWait {
+		coordinator.direct.invokeSync {
 			checkpoint = true
 			
 			XCTAssert(coordinator.currentThread == .unspecified)
@@ -364,7 +364,7 @@ class DebugContextTests: XCTestCase {
 	func testMainInvokeAndWait() {
 		let coordinator1 = DebugContextCoordinator()
 		var checkpoint1 = false
-		coordinator1.main.invokeAndWait {
+		coordinator1.main.invokeSync {
 			checkpoint1 = true
 			
 			XCTAssert(coordinator1.currentThread == .main)
@@ -374,7 +374,7 @@ class DebugContextTests: XCTestCase {
 
 		let coordinator2 = DebugContextCoordinator()
 		var checkpoint2 = false
-		coordinator2.main.invokeAndWait {
+		coordinator2.main.invokeSync {
 			checkpoint2 = true
 			
 			XCTAssert(coordinator2.currentThread == .main)
@@ -386,7 +386,7 @@ class DebugContextTests: XCTestCase {
 	func testMainAsyncInvokeAndWait() {
 		let coordinator1 = DebugContextCoordinator()
 		var checkpoint1 = false
-		coordinator1.mainAsync.invokeAndWait {
+		coordinator1.mainAsync.invokeSync {
 			checkpoint1 = true
 			
 			XCTAssert(coordinator1.currentThread == .main)
@@ -398,7 +398,7 @@ class DebugContextTests: XCTestCase {
 	func testDefaultInvokeAndWait() {
 		let coordinator1 = DebugContextCoordinator()
 		var checkpoint1 = false
-		coordinator1.global.invokeAndWait {
+		coordinator1.global.invokeSync {
 			checkpoint1 = true
 			
 			XCTAssert(coordinator1.currentThread == .global)
@@ -412,7 +412,7 @@ class DebugContextTests: XCTestCase {
 		var checkpoint1 = false
 		let ec = coordinator1.syncQueue
 		if case .custom(_ as DebugContext) = ec {
-			ec.invokeAndWait {
+			ec.invokeSync {
 				checkpoint1 = true
 				
 				XCTAssert(coordinator1.currentThread.matches(ec))
@@ -429,7 +429,7 @@ class DebugContextTests: XCTestCase {
 		var checkpoint1 = false
 		let ec = coordinator1.asyncQueue
 		if case .custom(_ as DebugContext) = ec {
-			ec.invokeAndWait {
+			ec.invokeSync {
 				checkpoint1 = true
 				
 				XCTAssert(coordinator1.currentThread.matches(ec))
@@ -548,7 +548,7 @@ class TimeoutService {
 	// This `TimeoutService` invokes the `underlyingConnect` and starts a timer
 	func start(timeout seconds: Double, handler: @escaping ResultHandler) {
 		var previousAction: Lifetime? = nil
-		context.invokeAndWait {
+		context.invokeSync {
 			previousAction = self.currentAction
 
 			let current = AggregateLifetime()

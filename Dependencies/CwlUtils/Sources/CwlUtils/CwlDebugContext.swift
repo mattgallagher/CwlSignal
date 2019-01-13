@@ -342,19 +342,38 @@ public struct DebugContext: ExecutionContext {
 		_ = coordinator?.schedule(block: execute, thread: thread, timeInterval: 1, repeats: false)
 	}
 	
-	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
+	@available(*, deprecated, message: "Use invokeSync instead")
 	public func invokeAndWait(_ execute: @escaping () -> Void) {
-		guard let c = coordinator else { return }
+		_ = invokeSync(execute)
+	}
+	
+	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
+	///
+	/// If the debug coordinator is nil or has completed before this block is run, the block will be directly invoked instead of running in the debug context.
+	/// In general this shouldn't matter since the debug context is generally just a synchronous invocation.
+	///
+	/// - Parameter execute: the block to run
+	/// - Returns: the return value from running the block
+	public func invokeSync<Return>(_ execute: () -> Return) -> Return {
+		guard let c = coordinator else {
+			return execute()
+		}
 		switch type {
 		case .mutex:
 			let previousThread = c.currentThread
 			c.currentThread = thread
-			execute()
+			let r = execute()
 			c.currentThread = previousThread
+			return r
 		case .immediate, .conditionallyAsync(false):
-			execute()
+			return execute()
 		default:
-			c.runScheduledTasks(stoppingAfter: c.schedule(block: execute, thread: thread, timeInterval: 1, repeats: false))
+			var result: Return? = nil
+			withoutActuallyEscaping(execute) { ex in
+				c.runScheduledTasks(stoppingAfter: c.schedule(block: { result = ex() }, thread: thread, timeInterval: 1, repeats: false))
+			}
+			guard let r = result else { return execute() }
+			return r
 		}
 	}
 
