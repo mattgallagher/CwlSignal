@@ -34,7 +34,7 @@ public enum ExecutionType {
 	/// If the current scope is already inside the context, the wrapped value will be `false` and the invocation will be `immediate`.
 	/// If the current scope is not inside the context, the wrapped value will be `true` and the invocation will be like `serialAsync`.
 	case conditionallyAsync(Bool)
-
+	
 	/// Completion of the provided function is independent of the return from `invoke`. Subsequent functions provided to `invoke` will be run concurrently.
 	case concurrentAsync
 	
@@ -70,29 +70,29 @@ public protocol ExecutionContext {
 	func invokeAsync(_ execute: @escaping () -> Void)
 	
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
-	func invokeAndWait(_ execute: @escaping () -> Void)
-
+	func invokeSync<Return>(_ execute: @escaping () -> Return) -> Return
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
 	func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime
-
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Lifetime` is cancelled or released before running occurs.
 	func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime
 	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
 	func periodicTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime
-
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
 	func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime
 	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
 	func singleTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime
-
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Lifetime` is cancelled or released before running occurs.
 	func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime
 	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`), and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
 	func periodicTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime
-
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
 	func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime
 	
@@ -127,15 +127,15 @@ public typealias CustomDispatchQueue = DispatchQueueContext
 public struct DispatchQueueContext: ExecutionContext {
 	/// The underlying DispatchQueue
 	public let queue: DispatchQueue
-
+	
 	/// A description about how functions will be invoked on an execution context.
 	public let type: ExecutionType
-
+	
 	public init(sync: Bool = true, concurrent: Bool = false, qos: DispatchQoS = .default) {
 		self.type = sync ? .mutex : (concurrent ? .concurrentAsync : .serialAsync)
 		queue = DispatchQueue(label: "", qos: qos, attributes: concurrent ? DispatchQueue.Attributes.concurrent : DispatchQueue.Attributes(), autoreleaseFrequency: .inherit, target: nil)
 	}
-
+	
 	/// Run `execute` normally on the execution context
 	public func invoke(_ execute: @escaping () -> Void) {
 		if case .mutex = type {
@@ -150,11 +150,16 @@ public struct DispatchQueueContext: ExecutionContext {
 		queue.async(execute: execute)
 	}
 	
-	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
+	@available(*, deprecated, message: "Use invokeSync instead")
 	public func invokeAndWait(_ execute: @escaping () -> Void) {
-		queue.sync(execute: execute)
+		_ = invokeSync(execute)
 	}
-
+	
+	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
+	public func invokeSync<Return>(_ execute: @escaping () -> Return) -> Return {
+		return queue.sync(execute: execute)
+	}
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
 	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		return DispatchSource.singleTimer(interval: interval, leeway: leeway, queue: queue, handler: handler) as! DispatchSource
@@ -174,7 +179,7 @@ public struct DispatchQueueContext: ExecutionContext {
 	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
 		return DispatchSource.repeatingTimer(parameter: parameter, interval: interval, leeway: leeway, queue: queue, handler: handler) as! DispatchSource
 	}
-
+	
 	/// Gets a timestamp representing the host uptime the in the current context
 	public func timestamp() -> DispatchTime {
 		return DispatchTime.now()
@@ -211,7 +216,7 @@ public struct SerializingContext: ExecutionContext {
 	public init(concurrentContext: ExecutionContext) {
 		underlying = concurrentContext
 	}
-
+	
 	public var type: ExecutionType {
 		switch underlying.type {
 		case .immediate: return .mutex
@@ -234,15 +239,20 @@ public struct SerializingContext: ExecutionContext {
 		underlying.invokeAsync { [mutex] in mutex.sync(execute: execute) }
 	}
 	
-	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
+	@available(*, deprecated, message: "Use invokeSync instead")
 	public func invokeAndWait(_ execute: @escaping () -> Void) {
+		_ = invokeSync(execute)
+	}
+	
+	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
+	public func invokeSync<Return>(_ execute: @escaping () -> Return) -> Return {
 		if case .some(.direct) = underlying as? Exec {
-			mutex.sync(execute: execute)
+			return mutex.sync(execute: execute)
 		} else {
-			underlying.invokeAndWait { [mutex] in mutex.sync(execute: execute) }
+			return underlying.invokeSync { [mutex] in mutex.sync(execute: execute) }
 		}
 	}
-
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
 	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		return mutex.sync { () -> Lifetime in
@@ -315,7 +325,7 @@ public struct SerializingContext: ExecutionContext {
 			return wrapper
 		}
 	}
-
+	
 	/// Gets a timestamp representing the host uptime the in the current context
 	public func timestamp() -> DispatchTime {
 		return underlying.timestamp()
@@ -327,30 +337,30 @@ public enum Exec: ExecutionContext {
 	/// Invoked directly from the caller's context
 	case direct
 	
-	/// Invoked on the main thread, directly if the current thread is the main thread, otherwise asynchronously (unless invokeAndWait is used)
+	/// Invoked on the main thread, directly if the current thread is the main thread, otherwise asynchronously (unless invokeSync is used)
 	case main
 	
-	/// Invoked on the main thread, always asynchronously (unless invokeAndWait is used)
+	/// Invoked on the main thread, always asynchronously (unless invokeSync is used)
 	case mainAsync
 	
 	/// Invoked asynchronously in the global queue with QOS_CLASS_USER_INTERACTIVE priority
 	case interactive
-
+	
 	/// Invoked asynchronously in the global queue with QOS_CLASS_USER_INITIATED priority
 	case user
-
+	
 	/// Invoked asynchronously in the global queue with QOS_CLASS_DEFAULT priority
 	case global
-
+	
 	/// Invoked asynchronously in the global queue with QOS_CLASS_UTILITY priority
 	case utility
-
+	
 	/// Invoked asynchronously in the global queue with QOS_CLASS_BACKGROUND priority
 	case background
-
+	
 	/// Invoked using the wrapped existential.
 	case custom(ExecutionContext)
-
+	
 	var dispatchQueue: DispatchQueue {
 		switch self {
 		case .direct: return DispatchQueue.global()
@@ -398,15 +408,20 @@ public enum Exec: ExecutionContext {
 		default: dispatchQueue.async(execute: execute)
 		}
 	}
-
-	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
+	
+	@available(*, deprecated, message: "Use invokeSync instead")
 	public func invokeAndWait(_ execute: @escaping () -> Void) {
+		_ = invokeSync(execute)
+	}
+	
+	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
+	public func invokeSync<Result>(_ execute: @escaping () -> Result) -> Result {
 		switch self {
-		case .custom(let c): c.invokeAndWait(execute)
-		case .main where Thread.isMainThread: execute()
-		case .main: DispatchQueue.main.sync(execute: execute)
-		case .mainAsync where Thread.isMainThread: execute()
-		case .mainAsync: DispatchQueue.main.sync(execute: execute)
+		case .custom(let c): return c.invokeSync(execute)
+		case .main where Thread.isMainThread: return execute()
+		case .main: return DispatchQueue.main.sync(execute: execute)
+		case .mainAsync where Thread.isMainThread: return execute()
+		case .mainAsync: return DispatchQueue.main.sync(execute: execute)
 		case .direct: fallthrough
 		case .interactive: fallthrough
 		case .user: fallthrough
@@ -414,7 +429,7 @@ public enum Exec: ExecutionContext {
 		case .utility: fallthrough
 		case .background:
 			// For all other cases, assume the queue isn't actually required (and was only provided for asynchronous behavior). Just invoke the provided function directly.
-			execute()
+			return execute()
 		}
 	}
 	
@@ -483,7 +498,7 @@ public enum Exec: ExecutionContext {
 		}
 		return DispatchSource.repeatingTimer(parameter: parameter, interval: interval, leeway: leeway, queue: dispatchQueue, handler: handler) as! DispatchSource
 	}
-
+	
 	/// Gets a timestamp representing the host uptime the in the current context
 	public func timestamp() -> DispatchTime {
 		if case .custom(let c) = self {
