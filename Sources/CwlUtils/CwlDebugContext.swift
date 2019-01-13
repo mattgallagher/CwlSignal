@@ -348,10 +348,15 @@ public struct DebugContext: ExecutionContext {
 	}
 	
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
-	public func invokeSync<Return>(_ execute: @escaping () -> Return) -> Return {
+	///
+	/// If the debug coordinator is nil or has completed before this block is run, the block will be directly invoked instead of running in the debug context.
+	/// In general this shouldn't matter since the debug context is generally just a synchronous invocation.
+	///
+	/// - Parameter execute: the block to run
+	/// - Returns: the return value from running the block
+	public func invokeSync<Return>(_ execute: () -> Return) -> Return {
 		guard let c = coordinator else {
-			if let r = () as? Return { return r }
-			fatalError("Invoke sync must not be invoked to return a value when coordinator is nil")
+			return execute()
 		}
 		switch type {
 		case .mutex:
@@ -364,10 +369,11 @@ public struct DebugContext: ExecutionContext {
 			return execute()
 		default:
 			var result: Return? = nil
-			c.runScheduledTasks(stoppingAfter: c.schedule(block: { result = execute() }, thread: thread, timeInterval: 1, repeats: false))
-			if let r = result { return r }
-			if let r = () as? Return { return r }
-			fatalError("Scheduler terminated before non-Void returning block completed.")
+			withoutActuallyEscaping(execute) { ex in
+				c.runScheduledTasks(stoppingAfter: c.schedule(block: { result = ex() }, thread: thread, timeInterval: 1, repeats: false))
+			}
+			guard let r = result else { return execute() }
+			return r
 		}
 	}
 

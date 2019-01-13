@@ -70,7 +70,7 @@ public protocol ExecutionContext {
 	func invokeAsync(_ execute: @escaping () -> Void)
 	
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
-	func invokeSync<Return>(_ execute: @escaping () -> Return) -> Return
+	func invokeSync<Return>(_ execute: () -> Return) -> Return
 	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
 	func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime
@@ -156,7 +156,7 @@ public struct DispatchQueueContext: ExecutionContext {
 	}
 	
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
-	public func invokeSync<Return>(_ execute: @escaping () -> Return) -> Return {
+	public func invokeSync<Return>(_ execute: () -> Return) -> Return {
 		return queue.sync(execute: execute)
 	}
 	
@@ -245,7 +245,7 @@ public struct SerializingContext: ExecutionContext {
 	}
 	
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
-	public func invokeSync<Return>(_ execute: @escaping () -> Return) -> Return {
+	public func invokeSync<Return>(_ execute: () -> Return) -> Return {
 		if case .some(.direct) = underlying as? Exec {
 			return mutex.sync(execute: execute)
 		} else {
@@ -415,7 +415,7 @@ public enum Exec: ExecutionContext {
 	}
 	
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
-	public func invokeSync<Result>(_ execute: @escaping () -> Result) -> Result {
+	public func invokeSync<Result>(_ execute: () -> Result) -> Result {
 		switch self {
 		case .custom(let c): return c.invokeSync(execute)
 		case .main where Thread.isMainThread: return execute()
