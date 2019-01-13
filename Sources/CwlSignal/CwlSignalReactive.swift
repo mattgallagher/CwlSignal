@@ -761,15 +761,13 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html) that offers a separate transformation for "activation" values.
 	///
 	/// - Parameters:
-	///   - activation: processing closure for activation values
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
+	///   - activation: processing closure for activation values
 	///   - remainder: processing closure for all normal (non-activation) values
 	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
-	public func mapActivation<U>(_ activation: (OutputValue) -> U, context: Exec = .direct, remainder: @escaping (OutputValue) -> U) -> Signal<U> {
+	public func mapActivationRemainder<U>(context: Exec = .direct, activation: (OutputValue) -> U, remainder: @escaping (OutputValue) -> U) -> Signal<U> {
 		let c = capture()
-		let initial = withoutActuallyEscaping(activation) { a in
-			context.invokeSync { c.values.map(activation) as [U]? }
-		}
+		let initial = withoutActuallyEscaping(activation) { a in context.invokeSync { c.values.map(a) as [U]? } }
 		return c.resume().transform(initialState: initial, context: context) { (state: inout [U]?, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			if let s = state {
 				n.send(sequence: s)
