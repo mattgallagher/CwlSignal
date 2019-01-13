@@ -740,22 +740,22 @@ extension SignalInterface {
 public final class SignalLatest<OutputValue>: Lifetime {
 	var output: SignalOutput<OutputValue>? = nil
 	var latest: Result<OutputValue, SignalEnd>? = nil
-	let mutex = PThreadMutex()
+	let mutex = DispatchQueueContext()
 	
 	public init(signal: Signal<OutputValue>) {
-		output = signal.subscribe { [weak self] r in
+		output = signal.subscribe(context: .custom(mutex)) { [weak self] r in
 			if let s = self {
-				s.mutex.sync { s.latest = r }
+				s.mutex.queue.sync { s.latest = r }
 			}
 		}
 	}
 	
 	public var latestResult: Result<OutputValue, SignalEnd>? {
-		return mutex.sync { latest }
+		return mutex.queue.sync { latest }
 	}
 	
 	public var latestValue: OutputValue? {
-		return mutex.sync { latest?.value }
+		return mutex.queue.sync { latest?.value }
 	}
 	
 	public func cancel() {

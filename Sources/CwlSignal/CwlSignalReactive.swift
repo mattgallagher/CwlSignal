@@ -717,21 +717,6 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html)
 	///
 	/// - Parameters:
-	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
-	///   - processor: used to transform the closing error 
-	/// - Returns: when an error is emitted from `self`, emits the result returned from passing that error into `processor`. All values emitted normally.
-	public func mapErrors(context: Exec = .direct, _ processor: @escaping (SignalEnd) -> SignalEnd) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
-			switch r {
-			case .success(let v): n.send(value: v)
-			case .failure(let e): n.send(end: processor(e))
-			}
-		}
-	}
-	
-	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html)
-	///
-	/// - Parameters:
 	///   - keyPath: selects a child value to emit
 	/// - Returns: a `Signal` where all the values have been transformed by the key path.
 	public func keyPath<U>(_ keyPath: KeyPath<OutputValue, U>) -> Signal<U> {
@@ -770,6 +755,44 @@ extension SignalInterface {
 			switch r {
 			case .success(let v): n.send(result: .success(processor(&s, v)))
 			case .failure(let e): n.send(end: e)
+			}
+		}
+	}
+
+	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html) that offers a separate transformation for "activation" values.
+	///
+	/// - Parameters:
+	///   - activation: processing closure for activation values
+	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
+	///   - remainder: <#remainder description#>
+	/// - Returns: <#return value description#>
+	public func mapActivation<U>(_ activation: (OutputValue) -> U, context: Exec = .direct, remainder: @escaping (OutputValue) -> U) -> Signal<U> {
+		let c = capture()
+		let values = c.values
+		let initial = context.invokeSync { c.values.map(activation) as [U]? }
+		return c.resume().transform(initialState: initial, context: context) { (state: inout [U]?, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
+			if let s = state {
+				n.send(sequence: s)
+				state = nil
+			}
+			switch r {
+			case .success(let v): n.send(result: .success(remainder(v)))
+			case .failure(let e): n.send(end: e)
+			}
+		}
+	}
+	
+	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html)
+	///
+	/// - Parameters:
+	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
+	///   - processor: used to transform the closing error 
+	/// - Returns: when an error is emitted from `self`, emits the result returned from passing that error into `processor`. All values emitted normally.
+	public func mapErrors(context: Exec = .direct, _ processor: @escaping (SignalEnd) -> SignalEnd) -> Signal<OutputValue> {
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+			switch r {
+			case .success(let v): n.send(value: v)
+			case .failure(let e): n.send(end: processor(e))
 			}
 		}
 	}
