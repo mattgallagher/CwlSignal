@@ -652,10 +652,13 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(5)?.error?.isComplete == true)
 	}
 	
-	func testMapActivation() {
+	func testMapActivationRemainder() {
 		var results = [Result<Int, SignalEnd>]()
 		let (input, signal) = Signal<Int>.create()
-		let lifetime = signal.continuous(initialValue: 1).mapActivation({ v in v * 10 }, remainder: { $0 * 2 }).subscribe { r in results.append(r) }
+		let lifetime = signal.continuous(initialValue: 1).mapActivationRemainder(
+			activation: { v in v * 10 },
+			remainder: { $0 * 2 }
+		).subscribe { r in results.append(r) }
 		input.send(2, 3, 4)
 		input.close()
 		XCTAssert(results.count == 5)
