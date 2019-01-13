@@ -536,7 +536,7 @@ public class Signal<OutputValue>: SignalInterface {
 			if case .direct = context {
 				self.handler = handler
 			} else if context.type.isImmediate || synchronous {
-				self.handler = { r in context.invokeAndWait { handler(r) } }
+				self.handler = { r in context.invokeSync { handler(r) } }
 			} else {
 				self.handler = handler
 			}

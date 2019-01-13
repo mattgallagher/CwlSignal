@@ -164,7 +164,7 @@ public class SignalSequence<OutputValue>: Sequence, IteratorProtocol {
 	
 	/// Stops listening to the signal and set the error value to SignalComplete.cancelled
 	public func cancel() {
-		context.invokeAndWait {
+		context.invokeSync {
 			self.end = .cancelled
 			self.output?.cancel()
 			self.semaphore.signal()
@@ -174,17 +174,16 @@ public class SignalSequence<OutputValue>: Sequence, IteratorProtocol {
 	/// Implementation of GeneratorType method.
 	public func next() -> OutputValue? {
 		_ = semaphore.wait(timeout: DispatchTime.distantFuture)
-		var result: OutputValue? = nil
-		context.invokeAndWait { [weak self] in
-			guard let s = self else { return }
+		return context.invokeSync { [weak self] () -> OutputValue? in
+			guard let s = self else { return nil }
 			if !s.queued.isEmpty {
-				result = s.queued.removeFirst()
+				return s.queued.removeFirst()
 			} else {
 				// Signal the sempahore so that `nil` can be fetched again.
 				s.semaphore.signal()
+				return nil
 			}
 		}
-		return result
 	}
 	
 	deinit {
@@ -769,6 +768,7 @@ extension SignalInterface {
 	public func mapActivation<U>(_ activation: (OutputValue) -> U, context: Exec = .direct, remainder: @escaping (OutputValue) -> U) -> Signal<U> {
 		let c = capture()
 		let values = c.values
+		withoutActuallyEscaping(activation) { a in
 		let initial = context.invokeSync { c.values.map(activation) as [U]? }
 		return c.resume().transform(initialState: initial, context: context) { (state: inout [U]?, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			if let s = state {
