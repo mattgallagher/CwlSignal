@@ -32,7 +32,7 @@ class ExecTests: XCTestCase {
 		XCTAssert(x, "Block ran")
 		
 		var y = false
-		Exec.direct.invokeAndWait { y = true }
+		Exec.direct.invokeSync { y = true }
 		XCTAssert(y, "Block ran")
 		
 		let e2 = expectation(description: "Block 2 not invoked")
@@ -66,7 +66,7 @@ class ExecTests: XCTestCase {
 			}
 
 			var y = false
-			Exec.main.invokeAndWait { y = true }
+			Exec.main.invokeSync { y = true }
 			XCTAssert(y, "Block ran")
 
 			e3.fulfill()
@@ -77,7 +77,7 @@ class ExecTests: XCTestCase {
 		XCTAssert(x, "Block ran")
 		
 		var y = false
-		Exec.main.invokeAndWait { y = true }
+		Exec.main.invokeSync { y = true }
 		XCTAssert(y, "Block ran")
 		
 		let e2 = expectation(description: "Block not invoked")
@@ -105,7 +105,7 @@ class ExecTests: XCTestCase {
 		XCTAssert(run1 == false)
 		
 		var run2 = false
-		Exec.mainAsync.invokeAndWait { run2 = true }
+		Exec.mainAsync.invokeSync { run2 = true }
 		XCTAssert(run2 == true)
 		
 		let e5 = expectation(description: "Block not invoked")
@@ -120,10 +120,10 @@ class ExecTests: XCTestCase {
 			XCTAssert(!x, "Block should not yet run")
 
 			var y = false
-			Exec.mainAsync.invokeAndWait { y = true }
+			Exec.mainAsync.invokeSync { y = true }
 			XCTAssert(y, "Block ran")
 
-			Exec.mainAsync.invokeAndWait {
+			Exec.mainAsync.invokeSync {
 				e5.fulfill()
 			}
 		}
@@ -180,14 +180,14 @@ class ExecTests: XCTestCase {
 		}
 		
 		var y1 = false
-		ec1.invokeAndWait() {
+		ec1.invokeSync() {
 			XCTAssert(DispatchQueue.getSpecific(key: sk1) != nil)
 			y1 = true
 		}
 		XCTAssert(y1)
 		
 		var y2 = false
-		ec2.invokeAndWait() {
+		ec2.invokeSync() {
 			XCTAssert(DispatchQueue.getSpecific(key: sk2) != nil)
 			y2 = true
 		}
@@ -213,7 +213,7 @@ class ExecTests: XCTestCase {
 			XCTAssert(variant.type.isImmediate == false)
 			
 			var x = false
-			variant.invokeAndWait { x = true }
+			variant.invokeSync { x = true }
 			XCTAssert(x)
 
 			let serialized = variant.serialized()

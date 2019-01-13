@@ -342,19 +342,32 @@ public struct DebugContext: ExecutionContext {
 		_ = coordinator?.schedule(block: execute, thread: thread, timeInterval: 1, repeats: false)
 	}
 	
-	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
+	@available(*, deprecated, message: "Use invokeSync instead")
 	public func invokeAndWait(_ execute: @escaping () -> Void) {
-		guard let c = coordinator else { return }
+		_ = invokeSync(execute)
+	}
+	
+	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
+	public func invokeSync<Return>(_ execute: @escaping () -> Return) -> Return {
+		guard let c = coordinator else {
+			if let r = () as? Return { return r }
+			fatalError("Invoke sync must not be invoked to return a value when coordinator is nil")
+		}
 		switch type {
 		case .mutex:
 			let previousThread = c.currentThread
 			c.currentThread = thread
-			execute()
+			let r = execute()
 			c.currentThread = previousThread
+			return r
 		case .immediate, .conditionallyAsync(false):
-			execute()
+			return execute()
 		default:
-			c.runScheduledTasks(stoppingAfter: c.schedule(block: execute, thread: thread, timeInterval: 1, repeats: false))
+			var result: Return? = nil
+			c.runScheduledTasks(stoppingAfter: c.schedule(block: { result = execute() }, thread: thread, timeInterval: 1, repeats: false))
+			if let r = result { return r }
+			if let r = () as? Return { return r }
+			fatalError("Scheduler terminated before non-Void returning block completed.")
 		}
 	}
 
