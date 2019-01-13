@@ -36,6 +36,17 @@ public enum SignalReactiveError: Error {
 	case timeout
 }
 
+/// For `mapActivation`, in the event of multiple activation values, you must device which of the activation values to process using the activation closure.
+///
+/// - all: process all activation values using the `activation` closure and all remaining values using the `remainder` closure (default)
+/// - first: process the first activation value using the `activation` closure and process any remaining activation values using the `remainder` closure 
+/// - last: process the last activation value using the `activation` closure, *discarding* all preceeding activation values, then process all subsequent values using the `remainder` closure
+public enum SignalActivationSelection {
+	case all
+	case first
+	case last
+}
+
 extension SignalInterface {
 	/// - Note: the [Reactive X operator "Create"](http://reactivex.io/documentation/operators/create.html) is considered unnecessary, given the `CwlSignal.Signal.generate` and `CwlSignal.Signal.create` methods.
 	
@@ -761,15 +772,29 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html) that offers a separate transformation for "activation" values.
 	///
 	/// - Parameters:
-	///   - activation: processing closure for activation values
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
-	///   - remainder: <#remainder description#>
-	/// - Returns: <#return value description#>
-	public func mapActivation<U>(_ activation: (OutputValue) -> U, context: Exec = .direct, remainder: @escaping (OutputValue) -> U) -> Signal<U> {
+	///   - activation: processing closure for activation values
+	///   - remainder: processing closure for all normal (non-activation) values
+	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
+	public func mapActivation<U>(select: SignalActivationSelection, context: Exec = .direct, activation: (OutputValue) -> U, remainder: @escaping (OutputValue) -> U) -> Signal<U> {
 		let c = capture()
 		let values = c.values
-		withoutActuallyEscaping(activation) { a in
-		let initial = context.invokeSync { c.values.map(activation) as [U]? }
+		let initial = values.isEmpty ? nil : withoutActuallyEscaping(activation) { a -> [U]? in
+			switch select {
+			case .all: return context.invokeSync { values.map(a) }
+			case .first:
+				return context.invokeSync {
+					var initial = [U]()
+					initial += values.first.map(activation)
+					for subsequent in values.dropFirst() {
+						initial += remainder(subsequent)
+					}
+					return initial
+				}
+			case .last:
+				return values.last.map { [activation($0)] }
+			}
+		}
 		return c.resume().transform(initialState: initial, context: context) { (state: inout [U]?, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
 			if let s = state {
 				n.send(sequence: s)

@@ -655,15 +655,41 @@ class SignalReactiveTests: XCTestCase {
 	func testMapActivation() {
 		var results = [Result<Int, SignalEnd>]()
 		let (input, signal) = Signal<Int>.create()
-		let lifetime = signal.continuous(initialValue: 1).mapActivation({ v in v * 10 }, remainder: { $0 * 2 }).subscribe { r in results.append(r) }
-		input.send(2, 3, 4)
+		let lifetime = signal.customActivation(initialValues: [1, 2]) { _, _, _ in }.mapActivation(select: .all,
+			activation: { v in v * 10 },
+			remainder: { $0 * 2 }
+		).subscribe { r in results.append(r) }
+		input.send(7, 8, 9)
 		input.close()
-		XCTAssert(results.count == 5)
+		XCTAssert(results.count == 6)
+		XCTAssert(results.at(0)?.value == 10)
+		XCTAssert(results.at(1)?.value == 20)
+		XCTAssert(results.at(2)?.value == 14)
+		XCTAssert(results.at(3)?.value == 16)
+		XCTAssert(results.at(4)?.value == 18)
+		XCTAssert(results.at(5)?.error?.isComplete == true)
+		withExtendedLifetime(lifetime) {}
+	}
+	
+	func testMapActivationFirst() {
+		var results = [Result<Int, SignalEnd>]()
+		let (input, signal) = Signal<Int>.create()
+		let lifetime = signal
+			.customActivation(initialValues: [1, 2]) { _, _, _ in }
+			.mapActivation(
+				select: .first,
+				activation: { v in v * 10 },
+				remainder: { $0 * 2 }
+			).subscribe { r in results.append(r) }
+		input.send(7, 8, 9)
+		input.close()
+		XCTAssert(results.count == 6)
 		XCTAssert(results.at(0)?.value == 10)
 		XCTAssert(results.at(1)?.value == 4)
-		XCTAssert(results.at(2)?.value == 6)
-		XCTAssert(results.at(3)?.value == 8)
-		XCTAssert(results.at(4)?.error?.isComplete == true)
+		XCTAssert(results.at(2)?.value == 14)
+		XCTAssert(results.at(3)?.value == 16)
+		XCTAssert(results.at(4)?.value == 18)
+		XCTAssert(results.at(5)?.error?.isComplete == true)
 		withExtendedLifetime(lifetime) {}
 	}
 	
