@@ -570,12 +570,12 @@ class SignalTests: XCTestCase {
 		input.send(value: .push(3))
 		input.send(value: .pop)
 		input.send(value: .pop)
-
+		
 		var results2 = [Result<[Int], SignalEnd>]()
 		reduced.subscribeUntilEnd { r in
 			results2.append(r)
 		}
-
+		
 		input.send(value: .push(1))
 		input.send(value: .push(2))
 		input.send(value: .push(3))
@@ -590,13 +590,78 @@ class SignalTests: XCTestCase {
 		XCTAssert(results1.at(5)?.value == [0, 1, 1, 2])
 		XCTAssert(results1.at(6)?.value == [0, 1, 1, 2, 3])
 		XCTAssertEqual(results1.at(7)?.error?.otherError as? TestError, TestError.zeroValue)
-
+		
 		XCTAssert(results2.count == 5)
 		XCTAssert(results2.at(0)?.value == [0, 1])
 		XCTAssert(results2.at(1)?.value == [0, 1, 1])
 		XCTAssert(results2.at(2)?.value == [0, 1, 1, 2])
 		XCTAssert(results2.at(3)?.value == [0, 1, 1, 2, 3])
 		XCTAssert(results2.at(4)?.error?.otherError as? TestError == TestError.zeroValue)
+	}
+	
+	func testReduceWithInitializer() {
+		enum StackOperation {
+			case push(Int)
+			case pop
+		}
+		
+		let (input, signal) = Signal<StackOperation>.create()
+		let initializer = { (message: StackOperation) -> [Int]? in
+			switch message {
+			case .push(let p): return Array(repeating: 1, count: p)
+			case .pop: return nil
+			}
+		}
+		let reduced = signal.reduce(initializer: initializer) { (state: [Int], message: StackOperation) throws -> [Int] in
+			switch message {
+			case .push(let value):
+				if state.count == 5 {
+					throw TestError.zeroValue
+				}
+				return state.appending(value)
+			case .pop: return Array(state.dropLast())
+			}
+		}
+		
+		var results1 = [Result<[Int], SignalEnd>]()
+		reduced.subscribeUntilEnd { r in
+			results1.append(r)
+		}
+		
+		input.send(value: .pop)
+		input.send(value: .pop)
+		input.send(value: .push(3))
+		input.send(value: .pop)
+		input.send(value: .pop)
+		
+		var results2 = [Result<[Int], SignalEnd>]()
+		reduced.subscribeUntilEnd { r in
+			results2.append(r)
+		}
+		
+		input.send(value: .push(1))
+		input.send(value: .push(2))
+		input.send(value: .push(3))
+		input.send(value: .push(5))
+		input.send(value: .push(8))
+		
+		XCTAssert(results1.count == 8)
+		XCTAssert(results1.at(0)?.value == [1, 1, 1])
+		XCTAssert(results1.at(1)?.value == [1, 1])
+		XCTAssert(results1.at(2)?.value == [1])
+		XCTAssert(results1.at(3)?.value == [1, 1])
+		XCTAssert(results1.at(4)?.value == [1, 1, 2])
+		XCTAssert(results1.at(5)?.value == [1, 1, 2, 3])
+		XCTAssert(results1.at(6)?.value == [1, 1, 2, 3, 5])
+		XCTAssertEqual(results1.at(7)?.error?.otherError as? TestError, TestError.zeroValue)
+		
+		XCTAssert(results2.count == 6)
+		XCTAssert(results2.at(0)?.value == [1])
+		XCTAssert(results2.at(1)?.value == [1, 1])
+		XCTAssert(results2.at(2)?.value == [1, 1, 2])
+		XCTAssert(results2.at(3)?.value == [1, 1, 2, 3])
+		XCTAssert(results2.at(4)?.value == [1, 1, 2, 3, 5])
+		XCTAssert(results2.at(5)?.error?.otherError as? TestError == TestError.zeroValue)
 	}
 	
 	func testPreclosed() {
