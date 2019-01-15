@@ -520,6 +520,34 @@ public class Signal<OutputValue>: SignalInterface {
 		})
 	}
 	
+	/// This operator applies a reducing function to the stream of incoming values, reducing down to a single, internal `State` value.
+	///
+	/// A value of the same `State` type is emitted on each iteration, although it is not required to be the same value. Having the return value be potentially different to the internal state isn't standard "reduction semantics" but it enables differential notifications, rather than whole state notifications.
+	///
+	/// This operator combines aspects of `transform` and `customActivation` into a single operation, transforming the incoming message into state values by combining with a cached state value (that also serves as the activation value).
+	///
+	/// - Parameters:
+	///   - initialState: initial activation value for the stream and internal state for the reducer
+	///   - context: execution context where `reducer` will run
+	///   - reducer: the function that combines the state with incoming values and emits differential updates
+	/// - Returns: a `SignalMulti<State>`
+	public final func reduce<State>(context: Exec = .direct, initializer: @escaping (_ message: OutputValue) throws -> State?, _ reducer: @escaping (_ state: State, _ message: OutputValue) throws -> State) -> SignalMulti<State> {
+		return SignalMulti<State>(processor: attach { (s, dw) in
+			let ini: SignalReducer<OutputValue, State>.Initializer = { message in
+				switch message {
+				case .success(let m): return CwlUtils.Result { try initializer(m) }.mapFailure(SignalEnd.other)
+				case .failure(let e): return .failure(e)
+				}
+			}
+			return SignalReducer<OutputValue, State>(signal: s, initializer: ini, end: nil, dw: &dw, context: context) { (state: State, message: Signal<OutputValue>.Result) -> Signal<State>.Result in
+				switch message {
+				case .success(let m): return CwlUtils.Result { try reducer(state, m) }.mapFailure(SignalEnd.other)
+				case .failure(let e): return .failure(e)
+				}
+			}
+		})
+	}
+	
 	// MARK: - Signal private properties
 	
 	// A struct that stores data associated with the current handler. Under the `Signal` mutex, if the `itemProcessing` flag is acquired, the fields of this struct are filled in using `Signal` and `SignalHandler` data and the contents of the struct can be used by the current thread *outside* the mutex.
@@ -1912,15 +1940,27 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 
 // Implementation of a processor that combines SignalTransformerWithState and SignalMultiProcessor functionality into a single processor (avoiding the need for a clumsy state sharing arrangement if the two are separate).
 fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<OutputValue, State>, SignalBlockable {
+	typealias Initializer = (_ message: Result<OutputValue, SignalEnd>) -> Result<State?, SignalEnd>
 	typealias Reducer = (_ state: State, _ message: Result<OutputValue, SignalEnd>) -> Result<State, SignalEnd>
+	enum StateOrInitializer {
+		case state(State)
+		case initializer(Initializer)
+	}
 	let reducer: Reducer
-	var state: State
+	var stateOrInitializer: StateOrInitializer
 	var end: SignalEnd?
 	
 	init(signal: Signal<OutputValue>, state: State, end: SignalEnd?, dw: inout DeferredWork, context: Exec, reducer: @escaping Reducer) {
 		self.reducer = reducer
-		self.state = state
 		self.end = end
+		self.stateOrInitializer = .state(state)
+		super.init(signal: signal, dw: &dw, context: context)
+	}
+	
+	init(signal: Signal<OutputValue>, initializer: @escaping Initializer, end: SignalEnd?, dw: inout DeferredWork, context: Exec, reducer: @escaping Reducer) {
+		self.reducer = reducer
+		self.end = end
+		self.stateOrInitializer = .initializer(initializer)
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 	
@@ -1938,6 +1978,8 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 	}
 
 	fileprivate final override func sendActivationToOutputInternal(index: Int, dw: inout DeferredWork) {
+		guard case .state(let state) = stateOrInitializer else { return }
+		
 		// Push as *not* activated (i.e. this is the activation)
 		outputs[index].destination.value?.pushInternal(values: end == nil ? [state] : [], end: end, activated: false, dw: &dw)
 	}
@@ -1949,22 +1991,29 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		return { [weak self] r in
 			if let s = self {
 				// Copy the state under the mutex
-				let state = s.sync { s.state }
+				let stateOrInitializer = s.sync { s.stateOrInitializer }
 				
-				// Perform the update on the copy
-				let previous = state
-				let next = s.reducer(state, r)
+				let next: Result<State, SignalEnd>
+				switch stateOrInitializer {
+				case .state(let state): next = s.reducer(state, r)
+				case .initializer(let initializer):
+					switch initializer(r) {
+					case .success(nil): return
+					case .success(let s?): next = .success(s)
+					case .failure(let e): next = .failure(e)
+					}
+				}
 
 				// Apply the change to the authoritative version under the mutex
 				s.sync {
 					switch next {
-					case .success(let v): s.state = v
+					case .success(let v): s.stateOrInitializer = .state(v)
 					case .failure(let e): s.end = e
 					}
 				}
 				
 				// Ensure any old references are released outside the mutex
-				withExtendedLifetime(previous) {}
+				withExtendedLifetime(stateOrInitializer) {}
 			}
 		}
 	}
@@ -1978,11 +2027,18 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		return { [weak self] r in
 			if let s = self {
 				// Copy the state under the mutex
-				let state = s.sync { s.state }
+				let stateOrInitializer = s.sync { s.stateOrInitializer }
 				
-				// Perform the update on the copy
-				let previous = state
-				let next = s.reducer(state, r)
+				let next: Result<State, SignalEnd>
+				switch stateOrInitializer {
+				case .state(let state): next = s.reducer(state, r)
+				case .initializer(let initializer):
+					switch initializer(r) {
+					case .success(nil): return
+					case .success(let s?): next = .success(s)
+					case .failure(let e): next = .failure(e)
+					}
+				}
 
 				// Apply the change to the authoritative version under the mutex
 				var outputs: OutputsArray = []
@@ -1990,7 +2046,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 				s.sync {
 					switch next {
 					case .success(let v):
-						s.state = v
+						s.stateOrInitializer = .state(v)
 						result = .success(v)
 					case .failure(let e):
 						s.end = e
@@ -2000,7 +2056,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 				}
 				
 				// Ensure any old references are released outside the mutex
-				withExtendedLifetime(previous) {}
+				withExtendedLifetime(stateOrInitializer) {}
 
 				let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(s)
 				for o in outputs {
