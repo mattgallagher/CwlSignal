@@ -1806,7 +1806,7 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	}
 }
 
-// Implementation of a processor that can output to multiple `Signal`s. Used by `continuous`, `continuous`, `playback`, `multicast`, `customActivation` and `preclosed`.
+// Implementation of a processor that can output to multiple `Signal`s. Used by `continuous(initial:)`, `continuous`, `continuousWhileActive`, `playback`, `multicast`, `customActivation` and `preclosed`.
 fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<OutputValue, OutputValue> {
 	typealias Updater = (_ activationValues: inout Array<OutputValue>, _ preclosed: inout SignalEnd?, _ result: Result<OutputValue, SignalEnd>) -> (Array<OutputValue>, SignalEnd?)
 	let updater: Updater?
@@ -1852,8 +1852,13 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	//   - index: identifies the output
 	//   - dw: required
 	fileprivate final override func sendActivationToOutputInternal(index: Int, dw: inout DeferredWork) {
-		// Push as *not* activated (i.e. this is the activation)
-		outputs[index].destination.value?.pushInternal(values: activationValues, end: preclosed, activated: false, dw: &dw)
+		guard !activationValues.isEmpty || preclosed != nil else { return }
+		
+		if case .direct = context {
+			outputs[index].destination.value?.pushInternal(values: activationValues, end: preclosed, activated: false, dw: &dw)
+		} else {
+			context.invokeSync { outputs[index].destination.value?.pushInternal(values: activationValues, end: preclosed, activated: false, dw: &dw) }
+		}
 	}
 	
 	// Multiprocessors are (usually – not multicast) preactivated and may cache the values or errors
@@ -1981,7 +1986,11 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		guard case .state(let state) = stateOrInitializer else { return }
 		
 		// Push as *not* activated (i.e. this is the activation)
-		outputs[index].destination.value?.pushInternal(values: end == nil ? [state] : [], end: end, activated: false, dw: &dw)
+		if case .direct = context {
+			outputs[index].destination.value?.pushInternal(values: end == nil ? [state] : [], end: end, activated: false, dw: &dw)
+		} else {
+			context.invokeSync { outputs[index].destination.value?.pushInternal(values: end == nil ? [state] : [], end: end, activated: false, dw: &dw) }
+		}
 	}
 	
 	// Multiprocessors are (usually – not multicast) preactivated and may cache the values or errors
@@ -2095,8 +2104,14 @@ fileprivate final class SignalCacheUntilActive<OutputValue>: SignalProcessor<Out
 	//   - index: identifies the output
 	//   - dw: required
 	fileprivate final override func sendActivationToOutputInternal(index: Int, dw: inout DeferredWork) {
+		guard !cachedValues.isEmpty || cachedEnd != nil else { return }
+		
 		// Push as *not* activated (i.e. this is the activation)
-		outputs[index].destination.value?.pushInternal(values: cachedValues, end: cachedEnd, activated: false, dw: &dw)
+		if case .direct = context {
+			outputs[index].destination.value?.pushInternal(values: cachedValues, end: cachedEnd, activated: false, dw: &dw)
+		} else {
+			context.invokeSync { outputs[index].destination.value?.pushInternal(values: cachedValues, end: cachedEnd, activated: false, dw: &dw) }
+		}
 	}
 	
 	/// Caches values prior to an output connecting
