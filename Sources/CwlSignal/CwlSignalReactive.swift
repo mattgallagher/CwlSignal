@@ -568,6 +568,45 @@ extension SignalInterface {
 		}
 	}
 	
+	/// Equivalent to a compactMap over the activation values in the sequence but passthrough for the other values.
+	///
+	/// - Parameters:
+	///   - select: chooses which end (first or last) 
+	///   - context: the `Exec` where `activation` will be evaluated (default: .direct).
+	///   - activation: processing closure for activation values
+	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
+	public func compactMapActivation(select: SignalActivationSelection, context: Exec = .direct, activation: (OutputValue) -> OutputValue?) -> Signal<OutputValue> {
+		let c = capture()
+		let values = c.values
+		let initial: [OutputValue?]?
+		if values.isEmpty {
+			initial = nil
+		} else {
+			switch select {
+			case .all: initial = context.invokeSync { values.map(activation) }
+			case .first:
+				initial = context.invokeSync {
+					var mapped = [OutputValue?]()
+					mapped += values.first.map(activation)
+					mapped.append(contentsOf: values.dropFirst().map(Optional.some))
+					return mapped
+				}
+			case .last:
+				initial = values.last.map { v in context.invokeSync { [activation(v)] } }
+			}
+		}
+		return c.resume().transform(initialState: initial, context: context) { (state: inout [OutputValue?]?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+			if let s = state {
+				n.send(sequence: s.compactMap { $0 })
+				state = nil
+			}
+			switch r {
+			case .success(let v): n.send(value: v)
+			case .failure(let e): n.send(end: e)
+			}
+		}
+	}
+	
 	/// Implementation of [Reactive X operator "FlatMap"](http://reactivex.io/documentation/operators/flatmap.html)
 	///
 	/// - Parameters:
