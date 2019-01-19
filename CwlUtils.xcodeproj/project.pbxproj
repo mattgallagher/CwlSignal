@@ -25,6 +25,8 @@
 		C9075588219128DA00C34A11 /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44BF2160EE670028B2AC /* CwlPreconditionTesting.framework */; };
 		C9075589219128EF00C34A11 /* CwlUtils.framework in Resources */ = {isa = PBXBuildFile; fileRef = C95BDEB61E41688B00AAA64B /* CwlUtils.framework */; };
 		C907558A219128FC00C34A11 /* CwlUtils.framework in Resources */ = {isa = PBXBuildFile; fileRef = C95BDEB61E41688B00AAA64B /* CwlUtils.framework */; };
+		C910EFEB21F29DB30013639B /* CwlExecutionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C910EFEA21F29DB30013639B /* CwlExecutionContext.swift */; };
+		C910EFF121F29E540013639B /* CwlSerializingContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C910EFF021F29E540013639B /* CwlSerializingContext.swift */; };
 		C94D2B7F21919BEA00B6D53B /* CwlAddressInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_40 /* CwlAddressInfoTests.swift */; };
 		C94D2B8021919BEA00B6D53B /* CwlCollectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_41 /* CwlCollectionTests.swift */; };
 		C94D2B8121919BEA00B6D53B /* CwlDebugContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_42 /* CwlDebugContextTests.swift */; };
@@ -209,6 +211,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C910EFEA21F29DB30013639B /* CwlExecutionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlExecutionContext.swift; sourceTree = "<group>"; };
+		C910EFF021F29E540013639B /* CwlSerializingContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSerializingContext.swift; sourceTree = "<group>"; };
 		C94D2B9921919BEA00B6D53B /* CwlUtils_tvOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlUtils_tvOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C95A622A1EA5D90C0059D152 /* CwlLifetime.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CwlLifetime.swift; sourceTree = "<group>"; };
 		C95A77271E4187E600659DBD /* CwlUtils_macOSTestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CwlUtils_macOSTestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -482,6 +486,7 @@
 				OBJ_20 /* CwlDeque.swift */,
 				OBJ_21 /* CwlDispatch.swift */,
 				OBJ_22 /* CwlExec.swift */,
+				C910EFEA21F29DB30013639B /* CwlExecutionContext.swift */,
 				OBJ_23 /* CwlKeyValueObserver.swift */,
 				C95A622A1EA5D90C0059D152 /* CwlLifetime.swift */,
 				OBJ_24 /* CwlMutex.swift */,
@@ -489,6 +494,7 @@
 				OBJ_26 /* CwlRandom.swift */,
 				OBJ_27 /* CwlResult.swift */,
 				OBJ_28 /* CwlScalarScanner.swift */,
+				C910EFF021F29E540013639B /* CwlSerializingContext.swift */,
 				OBJ_29 /* CwlStackFrame.swift */,
 				OBJ_30 /* CwlSysctl.swift */,
 				C95ADE852144CF3900EA820D /* CwlTransformations.swift */,
@@ -966,10 +972,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 0;
 			files = (
+				C910EFF121F29E540013639B /* CwlSerializingContext.swift in Sources */,
 				C95BDE9D1E41688B00AAA64B /* CwlAddressInfo.swift in Sources */,
 				C95BDE9E1E41688B00AAA64B /* CwlCollection.swift in Sources */,
 				C95BDE9F1E41688B00AAA64B /* CwlDebugContext.swift in Sources */,
 				C95BDEA01E41688B00AAA64B /* CwlDeferredWork.swift in Sources */,
+				C910EFEB21F29DB30013639B /* CwlExecutionContext.swift in Sources */,
 				C95BDEA21E41688B00AAA64B /* CwlDispatch.swift in Sources */,
 				C95BDEA31E41688B00AAA64B /* CwlExec.swift in Sources */,
 				C95BDEA41E41688B00AAA64B /* CwlKeyValueObserver.swift in Sources */,
