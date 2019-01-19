@@ -20,19 +20,19 @@
 
 import Foundation
 
-/// A class wrapper around a type (usually a value type) so it can be moved without copying but also so that it can be passed through Objective-C parameters.
+/// A class wrapper around a type (usually a value type) so it can be moved without copying.
 public class Box<T> {
-	public let value: T
+	public fileprivate(set) var value: T
 	public init(_ t: T) {
 		value = t
 	}
 }
 
 //// A class wrapper around a type (usually a value type) so changes to it can be shared (usually as an ad hoc communication channel). NOTE: this version is *not* threadsafe, use AtomicBox for that.
-public final class MutableBox<T> {
-	public var value: T
-	public init(_ t: T) {
-		value = t
+public final class MutableBox<T>: Box<T> {
+	public override var value: T { get { return super.value } set { super.value = newValue } }
+	public override init(_ t: T) {
+		super.init(t)
 	}
 }
 

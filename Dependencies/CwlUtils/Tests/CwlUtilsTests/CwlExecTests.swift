@@ -123,14 +123,14 @@ class ExecTests: XCTestCase {
 			Exec.mainAsync.invokeSync { y = true }
 			XCTAssert(y, "Block ran")
 
-			Exec.mainAsync.invokeSync {
+			Exec.mainAsync.invokeAsync {
 				e5.fulfill()
 			}
 		}
 		
 		let e4 = expectation(description: "Block not invoked")
 		var run3 = false
-		Exec.mainAsync.invoke {
+		Exec.mainAsync.invokeAsync {
 			run3 = true
 			e4.fulfill()
 		}
@@ -139,7 +139,8 @@ class ExecTests: XCTestCase {
 		waitForExpectations(timeout: 1e1, handler: nil)
 		
 		let serialized = Exec.mainAsync.serialized()
-		if case .mainAsync = serialized {
+		if case .queue(let q, let t) = serialized, case .serialAsync = t {
+			XCTAssert(q == DispatchQueue.main)
 		} else {
 			XCTFail()
 		}
@@ -196,7 +197,7 @@ class ExecTests: XCTestCase {
 		waitForExpectations(timeout: 1e1, handler: nil)
 		
 		let serialized = ec1.serialized()
-		if case .custom = serialized {
+		if case .queue(_, let t) = serialized, case .mutex = t {
 		} else {
 			XCTFail()
 		}
