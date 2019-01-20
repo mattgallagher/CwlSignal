@@ -25,15 +25,9 @@
 	import MobileCoreServices
 #endif
 
-// A function that returns an `Error` of a non-public type, that already has `withUnanticipatedErrorRecoveryAttempter`
-public func undeclaredError(file: String = #file, line: Int = #line) -> Error {
-	struct UndeclaredError: Error {}
-	return UndeclaredError().withUnanticipatedErrorRecoveryAttempter(file: file, line: line )
-}
-
 public extension Error {
 	/// Return an NSError with the same properties as this error but with an `UnanticipatedErrorRecoveryAttempter` attached.
-	public func withUnanticipatedErrorRecoveryAttempter(file: String = #file, line: Int = #line) -> Error {
+	func withUnanticipatedErrorRecoveryAttempter(file: String = #file, line: Int = #line) -> NSError {
 		let e = self as NSError
 		var userInfo: [String: Any] = e.userInfo
 		

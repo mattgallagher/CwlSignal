@@ -41,16 +41,6 @@ public enum DebugContextThread: Hashable {
 			return false
 		}
 	}
-	
-	/// Implementation of Hashable property
-	public var hashValue: Int {
-		switch self {
-		case .unspecified: return Int(0).hashValue
-		case .main: return Int(1).hashValue
-		case .global: return Int(2).hashValue
-		case .custom(let s): return Int(3).hashValue ^ s.hashValue
-		}
-	}
 }
 
 /// Basic equality tests for `DebugContextThread`
@@ -100,7 +90,7 @@ public class DebugContextCoordinator {
 	
 	/// Implementation mimicking Exec.main but returning an Exec.custom(DebugContext)
 	public var main: Exec {
-		return .custom(DebugContext(type: .conditionallyAsync(true), thread: .main, coordinator: self))
+		return .custom(DebugContext(type: .conditionallyAsync({ DebugContextCoordinator.currentCoordinator?.currentThread != .main }), thread: .main, coordinator: self))
 	}
 	
 	/// Implementation mimicking Exec.mainAsync but returning an Exec.custom(DebugContext)
@@ -219,7 +209,15 @@ public class DebugContextCoordinator {
 		return (selectedIndex, lowestTime)
 	}
 	
+	static let key = "CwlUtils.DebugContextCoordinator"
+	public static var currentCoordinator: DebugContextCoordinator? {
+		return Thread.current.threadDictionary[DebugContextCoordinator.key] as? DebugContextCoordinator
+	}
+	
 	func runTask(threadIndex: DebugContextThread, time: UInt64) -> DebugContextTimer? {
+		Thread.current.threadDictionary[DebugContextCoordinator.key] = self
+		defer { Thread.current.threadDictionary.removeObject(forKey: DebugContextCoordinator.key) }
+		
 		(currentThread, internalTime) = (threadIndex, time)
 		return queues[threadIndex]?.popAndInvokeNext()
 	}
@@ -272,7 +270,7 @@ class DebugContextQueue {
 
 	// Remove a block
 	func cancelTimer(_ toCancel: DebugContextTimer) {
-		if let index = pendingBlocks.index(where: { tuple -> Bool in tuple.timer === toCancel }) {
+		if let index = pendingBlocks.firstIndex(where: { tuple -> Bool in tuple.timer === toCancel }) {
 			pendingBlocks.remove(at: index)
 		}
 	}
@@ -316,7 +314,7 @@ public struct DebugContext: ExecutionContext {
 		switch underlyingType {
 		case .conditionallyAsync:
 			if let ctn = coordinator?.currentThread, thread == ctn {
-				return .conditionallyAsync(false)
+				return .conditionallyAsync({ false })
 			}
 			fallthrough
 		default: return underlyingType
@@ -332,7 +330,8 @@ public struct DebugContext: ExecutionContext {
 			c.currentThread = thread
 			execute()
 			c.currentThread = previousThread
-		case .immediate, .conditionallyAsync(false): execute()
+		case .conditionallyAsync(let test) where test() == false: execute()
+		case .immediate: execute()
 		default: invokeAsync(execute)
 		}
 	}
@@ -365,7 +364,9 @@ public struct DebugContext: ExecutionContext {
 			let r = execute()
 			c.currentThread = previousThread
 			return r
-		case .immediate, .conditionallyAsync(false):
+		case .conditionallyAsync(let test) where test() == false:
+			return execute()
+		case .immediate:
 			return execute()
 		default:
 			var result: Return? = nil

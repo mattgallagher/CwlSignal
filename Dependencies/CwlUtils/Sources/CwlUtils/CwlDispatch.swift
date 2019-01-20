@@ -22,7 +22,7 @@ import Foundation
 
 public extension DispatchSource {
 	// An overload of timer that immediately sets the handler and schedules the timer
-	public class func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue, handler: @escaping () -> Void) -> DispatchSourceTimer {
+	class func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue, handler: @escaping () -> Void) -> DispatchSourceTimer {
 		let result = DispatchSource.makeTimerSource(queue: queue)
 		result.setEventHandler(handler: handler)
 		#if swift(>=4)
@@ -35,7 +35,7 @@ public extension DispatchSource {
 	}
 	
 	// An overload of timer that always uses the default global queue (because it is intended to enter the appropriate mutex as a separate step) and passes a user-supplied Int to the handler function to allow ignoring callbacks if cancelled or rescheduled before mutex acquisition.
-	public class func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping (T) -> Void) -> DispatchSourceTimer {
+	class func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping (T) -> Void) -> DispatchSourceTimer {
 		let result = DispatchSource.makeTimerSource(queue: queue)
 		result.scheduleOneshot(parameter: parameter, interval: interval, leeway: leeway, handler: handler)
 		result.resume()
@@ -43,7 +43,7 @@ public extension DispatchSource {
 	}
 	
 	// An overload of timer that immediately sets the handler and schedules the timer
-	public class func repeatingTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping () -> Void) -> DispatchSourceTimer {
+	class func repeatingTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping () -> Void) -> DispatchSourceTimer {
 		let result = DispatchSource.makeTimerSource(queue: queue)
 		result.setEventHandler(handler: handler)
 		#if swift(>=4)
@@ -56,7 +56,7 @@ public extension DispatchSource {
 	}
 	
 	// An overload of timer that always uses the default global queue (because it is intended to enter the appropriate mutex as a separate step) and passes a user-supplied Int to the handler function to allow ignoring callbacks if cancelled or rescheduled before mutex acquisition.
-	public class func repeatingTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping (T) -> Void) -> DispatchSourceTimer {
+	class func repeatingTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), queue: DispatchQueue = DispatchQueue.global(), handler: @escaping (T) -> Void) -> DispatchSourceTimer {
 		let result = DispatchSource.makeTimerSource(queue: queue)
 		result.scheduleRepeating(parameter: parameter, interval: interval, leeway: leeway, handler: handler)
 		result.resume()
@@ -66,7 +66,7 @@ public extension DispatchSource {
 
 public extension DispatchSourceTimer {
 	// An overload of scheduleOneshot that updates the handler function with a new user-supplied parameter when it changes the expiry deadline
-	public func scheduleOneshot<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping (T) -> Void) {
+	func scheduleOneshot<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping (T) -> Void) {
 		suspend()
 		setEventHandler { handler(parameter) }
 		#if swift(>=4)
@@ -78,7 +78,7 @@ public extension DispatchSourceTimer {
 	}
 	
 	// An overload of scheduleOneshot that updates the handler function with a new user-supplied parameter when it changes the expiry deadline
-	public func scheduleRepeating<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping (T) -> Void) {
+	func scheduleRepeating<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval = .nanoseconds(0), handler: @escaping (T) -> Void) {
 		suspend()
 		setEventHandler { handler(parameter) }
 		#if swift(>=4)
@@ -91,13 +91,13 @@ public extension DispatchSourceTimer {
 }
 
 public extension DispatchTime {
-	public func since(_ previous: DispatchTime) -> DispatchTimeInterval {
+	func since(_ previous: DispatchTime) -> DispatchTimeInterval {
 		return .nanoseconds(Int(uptimeNanoseconds - previous.uptimeNanoseconds))
 	}
 }
 
 public extension DispatchTimeInterval {
-	public static func interval(_ seconds: TimeInterval) -> DispatchTimeInterval {
+	static func interval(_ seconds: TimeInterval) -> DispatchTimeInterval {
 		if MemoryLayout<Int>.size < 8 {
 			return .milliseconds(Int(seconds * Double(NSEC_PER_SEC / NSEC_PER_MSEC)))
 		} else {
@@ -105,7 +105,7 @@ public extension DispatchTimeInterval {
 		}
 	}
 	
-	public var seconds: Double {
+	var seconds: Double {
 		#if swift (>=3.2)
 			switch self {
 			case .seconds(let t): return Double(t)
@@ -113,6 +113,9 @@ public extension DispatchTimeInterval {
 			case .microseconds(let t): return (Double(NSEC_PER_USEC) / Double(NSEC_PER_SEC)) * Double(t)
 			case .nanoseconds(let t): return (1.0 / Double(NSEC_PER_SEC)) * Double(t)
 			case .never: return Double.infinity
+			#if swift (>=5)
+				default: fatalError("Unknown case")
+			#endif
 			}
 		#else
 			switch self {
@@ -124,7 +127,7 @@ public extension DispatchTimeInterval {
 		#endif
 	}
 	
-	public var nanoseconds: Int64 {
+	var nanoseconds: Int64 {
 		#if swift (>=3.2)
 			switch self {
 			case .seconds(let t): return Int64(NSEC_PER_SEC) * Int64(t)
@@ -132,6 +135,9 @@ public extension DispatchTimeInterval {
 			case .microseconds(let t): return Int64(NSEC_PER_USEC) * Int64(t)
 			case .nanoseconds(let t): return Int64(t)
 			case .never: return Int64.max
+			#if swift (>=5)
+				default: fatalError("Unknown case")
+			#endif
 			}
 		#else
 			switch self {
