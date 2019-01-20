@@ -49,16 +49,28 @@ public extension Error {
 
 		return NSError(domain: e.domain, code: e.code, userInfo: userInfo)
 	}
-}
+	
+	// A function that returns an `Error` of a non-public type, that already has `withUnanticipatedErrorRecoveryAttempter`
+	public static func undeclared(file: String = #file, line: Int = #line) -> Error {
+		return UndeclaredError().withUnanticipatedErrorRecoveryAttempter(file: file, line: line )
+	}
 
-/// A convenience wrapper that applies `withUnanticipatedErrorRecoveryAttempter` to any error thrown by the wrapped function
-public func rethrowUnanticipated<T>(file: String = #file, line: Int = #line, execute: () throws -> T) throws -> T {
-	do {
-		return try execute()
-	} catch {
-		throw error.withUnanticipatedErrorRecoveryAttempter(file: file, line: line)
+	/// A convenience wrapper that applies `withUnanticipatedErrorRecoveryAttempter` to any error thrown by the wrapped function
+	public static func rethrowUnanticipated<T>(file: String = #file, line: Int = #line, execute: () throws -> T) throws -> T {
+		do {
+			return try execute()
+		} catch {
+			throw error.withUnanticipatedErrorRecoveryAttempter(file: file, line: line)
+		}
 	}
 }
+
+@available(*, deprecated, message: "Use Error.rethrowUnanticipated instead")
+public func rethrowUnanticipated<T>(file: String = #file, line: Int = #line, execute: () throws -> T) throws -> T {
+	return try rethrowUnanticipated(file: file, line: line, execute: execute)
+}
+
+private struct UndeclaredError: Error {}
 
 /// Class usable as the NSRecoveryAttempterErrorKey object in an NSError that presents the 'Unexpected' error and gives the option of copying the full error to the pasteboard.
 public class UnanticipatedErrorRecoveryAttempter: NSObject {
