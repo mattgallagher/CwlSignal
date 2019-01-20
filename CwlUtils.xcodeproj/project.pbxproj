@@ -1333,6 +1333,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.cocoawithlove.CwlUtils-macOSTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = singlefile;
 				SWIFT_OBJC_BRIDGING_HEADER = "Tests/CwlUtilsTests/CwlUtilsTests-BridgingHeader.h";
 			};
 			name = Release;
