@@ -27,7 +27,7 @@
 
 public extension Error {
 	/// Return an NSError with the same properties as this error but with an `UnanticipatedErrorRecoveryAttempter` attached.
-	public func withUnanticipatedErrorRecoveryAttempter(file: String = #file, line: Int = #line) -> NSError {
+	func withUnanticipatedErrorRecoveryAttempter(file: String = #file, line: Int = #line) -> NSError {
 		let e = self as NSError
 		var userInfo: [String: Any] = e.userInfo
 		

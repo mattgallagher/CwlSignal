@@ -41,16 +41,6 @@ public enum DebugContextThread: Hashable {
 			return false
 		}
 	}
-	
-	/// Implementation of Hashable property
-	public var hashValue: Int {
-		switch self {
-		case .unspecified: return Int(0).hashValue
-		case .main: return Int(1).hashValue
-		case .global: return Int(2).hashValue
-		case .custom(let s): return Int(3).hashValue ^ s.hashValue
-		}
-	}
 }
 
 /// Basic equality tests for `DebugContextThread`
@@ -280,7 +270,7 @@ class DebugContextQueue {
 
 	// Remove a block
 	func cancelTimer(_ toCancel: DebugContextTimer) {
-		if let index = pendingBlocks.index(where: { tuple -> Bool in tuple.timer === toCancel }) {
+		if let index = pendingBlocks.firstIndex(where: { tuple -> Bool in tuple.timer === toCancel }) {
 			pendingBlocks.remove(at: index)
 		}
 	}

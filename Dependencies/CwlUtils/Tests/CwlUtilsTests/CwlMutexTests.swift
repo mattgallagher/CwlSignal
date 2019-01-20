@@ -63,20 +63,10 @@ class PthreadTests: XCTestCase {
 }
 
 extension PThreadMutex {
-	public func sync_2<T>(_ param: inout T, f: (inout T) throws -> Void) rethrows -> Void {
-		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		try f(&param)
-	}
-	public func sync_3<T, R>(_ param: inout T, f: (inout T) throws -> R) rethrows -> R {
-		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
+	public func sync_generic_param<T, R>(_ param: inout T, f: (inout T) throws -> R) rethrows -> R {
+		pthread_mutex_lock(&underlyingMutex)
+		defer { pthread_mutex_unlock(&underlyingMutex) }
 		return try f(&param)
-	}
-	public func sync_4<T, U>(_ param1: inout T, _ param2: inout U, f: (inout T, inout U) throws -> Void) rethrows -> Void {
-		pthread_mutex_lock(&unsafeMutex)
-		defer { pthread_mutex_unlock(&unsafeMutex) }
-		return try f(&param1, &param2)
 	}
 }
 
