@@ -575,36 +575,50 @@ extension SignalInterface {
 	///   - context: the `Exec` where `activation` will be evaluated (default: .direct).
 	///   - activation: processing closure for activation values
 	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
-	public func compactMapActivation<U>(select: SignalActivationSelection, context: Exec = .direct, activation: (OutputValue) -> U?, remainder: @escaping (OutputValue) -> U?) -> Signal<U> {
-		let c = capture()
-		let values = c.values
-		let initial: [U?]?
-		if values.isEmpty {
-			initial = nil
-		} else {
-			switch select {
-			case .all: initial = context.invokeSync { values.map(activation) }
-			case .first:
-				initial = context.invokeSync {
-					var mapped = [U?]()
-					mapped += values.first.map(activation)
-					mapped.append(contentsOf: values.dropFirst().map(remainder))
-					return mapped
+	public func compactMapActivation<U>(select: SignalActivationSelection, context: Exec = .direct, activation: @escaping (OutputValue) -> U?, remainder: @escaping (OutputValue) -> U?) -> Signal<U> {
+		var capture: SignalCapture<OutputValue>? = nil
+		return Signal<U>.generate { input in
+			guard let input = input else { return }
+			
+			let c: SignalCapture<OutputValue>
+			if let cap = capture {
+				// Subsequent runs, disconnect the old capture to restart it
+				_ = cap.disconnect()
+				c = cap
+			} else {
+				// First run, start the capture.
+				c = self.capture()
+				capture = c
+			}
+			
+			// Subsequent values will be compactMapped normally
+			var subsequent = c.resume().compactMap(context: context, remainder)
+			
+			let values = c.values
+			if !values.isEmpty {
+				// Process the captured values
+				let initial: [U]?
+				switch select {
+				case .all: initial = context.invokeSync { values.compactMap(activation) }
+				case .first:
+					initial = context.invokeSync {
+						var mapped = [U]()
+						mapped += values.first.flatMap(activation)
+						mapped.append(contentsOf: values.dropFirst().compactMap(remainder))
+						return mapped
+					}
+				case .last:
+					initial = values.last.flatMap { v in context.invokeSync { activation(v).map { [$0] } } }
 				}
-			case .last:
-				initial = values.last.map { v in context.invokeSync { [activation(v)] } }
+				
+				// If we have any initial values, precache them for immediate sending
+				if let i = initial, !i.isEmpty {
+					subsequent = subsequent.cacheUntilActive(precached: i)
+				}
 			}
-		}
-		return c.resume().transform(initialState: initial, context: context) { (state: inout [U?]?, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
-			if let s = state {
-				n.send(sequence: s.compactMap { $0 })
-				state = nil
-			}
-			switch r {
-			case .success(let v): remainder(v).map { _ = n.send(value: $0) }
-			case .failure(let e): n.send(end: e)
-			}
-		}
+			
+			subsequent.bind(to: input)
+		}		
 	}
 	
 	/// Implementation of [Reactive X operator "FlatMap"](http://reactivex.io/documentation/operators/flatmap.html)
@@ -815,35 +829,8 @@ extension SignalInterface {
 	///   - activation: processing closure for activation values
 	///   - remainder: processing closure for all normal (non-activation) values
 	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
-	public func mapActivation<U>(select: SignalActivationSelection, context: Exec = .direct, activation: (OutputValue) -> U, remainder: @escaping (OutputValue) -> U) -> Signal<U> {
-		let c = capture()
-		let values = c.values
-		let initial = values.isEmpty ? nil : withoutActuallyEscaping(activation) { a -> [U]? in
-			switch select {
-			case .all: return context.invokeSync { values.map(a) }
-			case .first:
-				return context.invokeSync {
-					var initial = [U]()
-					initial += values.first.map(activation)
-					for subsequent in values.dropFirst() {
-						initial += remainder(subsequent)
-					}
-					return initial
-				}
-			case .last:
-				return values.last.map { [activation($0)] }
-			}
-		}
-		return c.resume().transform(initialState: initial, context: context) { (state: inout [U]?, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
-			if let s = state {
-				n.send(sequence: s)
-				state = nil
-			}
-			switch r {
-			case .success(let v): n.send(result: .success(remainder(v)))
-			case .failure(let e): n.send(end: e)
-			}
-		}
+	public func mapActivation<U>(select: SignalActivationSelection, context: Exec = .direct, activation: @escaping (OutputValue) -> U, remainder: @escaping (OutputValue) -> U) -> Signal<U> {
+		return compactMapActivation(select: select, context: context, activation: activation, remainder: remainder)
 	}
 	
 	/// Implementation of [Reactive X operator "Map"](http://reactivex.io/documentation/operators/map.html)

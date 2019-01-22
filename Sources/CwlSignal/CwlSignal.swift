@@ -463,10 +463,12 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	/// Appends a new `Signal` to this `Signal`. The new `Signal` immediately activates its antecedents and caches any values it receives until this the new `Signal` itself is activated – at which point it sends all prior values upon "activation" and subsequently reverts to passthough.
 	///
+	/// - Parameters:
+	///   - precached: start the cache with some initial values to which subsequent values will be added (default: nil)
 	/// - returns: a "cache until active" `Signal`.
-	public final func cacheUntilActive() -> Signal<OutputValue> {
+	public final func cacheUntilActive(precached: [OutputValue]? = nil) -> Signal<OutputValue> {
 		return Signal<OutputValue>(processor: attach { (s, dw) in
-			SignalCacheUntilActive(signal: s, dw: &dw)
+			SignalCacheUntilActive(signal: s, precached: precached, dw: &dw)
 		})
 	}
 	
@@ -2080,7 +2082,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 
 // A handler which starts receiving `Signal`s immediately and caches them until an output connects
 fileprivate final class SignalCacheUntilActive<OutputValue>: SignalProcessor<OutputValue, OutputValue> {
-	var cachedValues: Array<OutputValue> = []
+	var cachedValues: Array<OutputValue>
 	var cachedEnd: SignalEnd? = nil
 	
 	// Construct a SignalCacheUntilActive handler
@@ -2088,7 +2090,8 @@ fileprivate final class SignalCacheUntilActive<OutputValue>: SignalProcessor<Out
 	// - Parameters:
 	//   - signal: the predecessor signal
 	//   - dw: required
-	init(signal: Signal<OutputValue>, dw: inout DeferredWork) {
+	init(signal: Signal<OutputValue>, precached: [OutputValue]?, dw: inout DeferredWork) {
+		cachedValues = precached ?? []
 		super.init(signal: signal, dw: &dw, context: .direct)
 	}
 	
