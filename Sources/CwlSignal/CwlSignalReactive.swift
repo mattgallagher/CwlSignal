@@ -2341,6 +2341,21 @@ extension SignalInterface {
 		}
 	}
 	
+	/// Appends an onActivate, onValue, onError and onDeactivate operator to monitor behavior and inspect lifecycle events.
+	///
+	/// - Parameters:
+	///   - logPrefix: Prepended to the front of log statements. If non-empty, ": " is *also* prepended.
+	///   - file: suffixed to the log statement (defaults to #file)
+	///   - line: suffixed to the log statement (defaults to #line)
+	/// - Returns: the otherwise untransformed signal
+	public func debug(logPrefix: String = "", file: String = #file, line: Int = #line) -> Signal<OutputValue> {
+		let prefix = logPrefix + (logPrefix.isEmpty ? "" : ": ")
+		return onActivate { print("\(prefix)Activated at   \(file):\(line)") }
+			.onValue { print("\(prefix)Value at       \(file):\(line) - \($0)") }
+			.onError { print("\(prefix)Error at       \(file):\(line) - \($0)") }
+			.onDeactivate { print("\(prefix)Deactivated at \(file):\(line)") }
+	}
+	
 	/// Implementation of [Reactive X operator "materialize"](http://reactivex.io/documentation/operators/materialize-dematerialize.html)
 	///
 	/// WARNING: in CwlSignal, this operator will emit a `SignalEnd.complete` into the output signal immediately after emitting the first wrapped error. Within the "first error closes signal" behavior of CwlSignal, this is the only behavior that makes sense (since no further upstream values will be received), however, it does limit the usefulness of `materialize` to constructions where the `materialize` signal immediately outputs into a `SignalMultiInput` (including abstractions built on top, like `switchLatest` or child signals of a `flatMap`) that ignore non-error close conditions from the source signal.
