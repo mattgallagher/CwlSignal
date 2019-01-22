@@ -696,7 +696,7 @@ class SignalReactiveTests: XCTestCase {
 	func testCompactMapActivation() {
 		var results = [Result<Int, SignalEnd>]()
 		let (input, signal) = Signal<Int>.create()
-		let lifetime = signal.customActivation(initialValues: [1, 2]) { _, _, _ in }.compactMapActivation(
+		let lifetime = signal.cacheUntilActive(precached: [1, 2]).compactMapActivation(
 			select: .last,
 			activation: { v in v * 10 },
 			remainder: { v in v * 2 }
@@ -710,6 +710,19 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(3)?.value == 18)
 		XCTAssert(results.at(4)?.error?.isComplete == true)
 		withExtendedLifetime(lifetime) {}
+	}
+	
+	func testCompactMapActivationReducer() {
+		let (i, s) = Signal<Int>.create()
+		let r = s
+			.reduce(initialState: 8) { state, value in state + value }
+			.compactMapActivation(select: .first, activation: { $0 * 2 }, remainder: { $0 * 3 })
+		var values = [Int]()
+		r.subscribeValuesUntilEnd { values += $0 }
+		i.send(value: 5)
+		XCTAssert(values.count == 2)
+		XCTAssert(values.at(0) == 16)
+		XCTAssert(values.at(1) == 39)
 	}
 
 	func testMapError() {
