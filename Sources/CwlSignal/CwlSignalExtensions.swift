@@ -33,7 +33,7 @@ public protocol SignalSender {
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
 	/// - Returns: `nil` on success. Non-`nil` values include `SignalSendError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalSendError.inactive` if the current `delivery` state is `.disabled`.
-	@discardableResult func send(result: Result<InputValue, SignalEnd>) -> SignalSendError?
+	func send(result: Result<InputValue, SignalEnd>)
 }
 
 extension SignalInput: SignalSender {}
@@ -142,63 +142,51 @@ extension SignalSender {
 	///
 	/// - Parameter value: will be wrapped and sent
 	/// - Returns: the return value from the underlying `send(result:)` function
-	@discardableResult
-	public func send(value: InputValue) -> SignalSendError? {
-		return send(result: .success(value))
+	public func send(value: InputValue) {
+		send(result: .success(value))
 	}
 	
 	/// A convenience version of `send` that wraps a value in `Result.success` before sending
 	///
 	/// - Parameter value: will be wrapped and sent
 	/// - Returns: the return value from the underlying `send(result:)` function
-	@discardableResult
-	public func send(_ values: InputValue...) -> SignalSendError? {
+	public func send(_ values: InputValue...) {
 		for v in values {
-			if let e = send(result: .success(v)) {
-				return e
-			}
+			send(result: .success(v))
 		}
-		return nil
 	}
 	
 	/// A convenience version of `send` that wraps a value in `Result.success` before sending
 	///
 	/// - Parameter value: will be wrapped and sent
 	/// - Returns: the return value from the underlying `send(result:)` function
-	@discardableResult
-	public func send<S: Sequence>(sequence: S) -> SignalSendError? where S.Iterator.Element == InputValue {
+	public func send<S: Sequence>(sequence: S) where S.Iterator.Element == InputValue {
 		for v in sequence {
-			if let e = send(result: .success(v)) {
-				return e
-			}
+			send(result: .success(v))
 		}
-		return nil
 	}
 	
 	/// A convenience version of `send` that wraps an error in `Result.failure` before sending
 	///
 	/// - Parameter error: will be wrapped and sent
 	/// - Returns: the return value from the underlying `send(result:)` function
-	@discardableResult
-	public func send(error: Error) -> SignalSendError? {
-		return send(result: .failure(.other(error)))
+	public func send(error: Error) {
+		send(result: .failure(.other(error)))
 	}
 	
 	/// A convenience version of `send` that wraps an error in `Result.failure` before sending
 	///
 	/// - Parameter error: will be wrapped and sent
 	/// - Returns: the return value from the underlying `send(result:)` function
-	@discardableResult
-	public func send(end: SignalEnd) -> SignalSendError? {
-		return send(result: .failure(end))
+	public func send(end: SignalEnd) {
+		send(result: .failure(end))
 	}
 	
 	/// Sends a `Result.failure(SignalEnd.complete)`
 	///
 	/// - Returns: the return value from the underlying `send(result:)` function
-	@discardableResult
-	public func close() -> SignalSendError? {
-		return send(result: .failure(.complete))
+	public func close() {
+		send(result: .failure(.complete))
 	}
 }
 

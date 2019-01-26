@@ -69,7 +69,7 @@ public class Signal<OutputValue>: SignalInterface {
 	//
 	// While all actions on `Signal` are threadsafe, there are some points to keep in mind:
 	//   1. Threadsafe means that the internal members of the `Signal` class will remain threadsafe and your own closures will always be serially and non-reentrantly invoked on the provided `Exec` context. However, this doesn't mean that work you perform in processing closures is always threadsafe; shared references or mutable captures in your closures will still require mutual exclusion.
-	//   2. Synchronous pipelines are processed in nested fashion. More specifically, when `send` is invoked on a `SignalNext`, the next stage in the signal graph is invoked while the previous stage is still on the call-stack. If you use a user-created mutex on a synchronous stage, do not attempt to re-enter the mutex on subsequent stages or you risk deadlock. If you want to apply a mutex to your processing stages, you should either ensure the stages are invoked *asynchronously* (choose an async `Exec` context) or you should apply the mutex to the first stage and use `.direct` for subsquent stages (knowing that they'll be protected by the mutex from the *first* stage).
+	//   2. Synchronous pipelines are processed in nested fashion and delivery of "activation" values on subscription is *always* synchronous. This means that if you apply a user-created mutex during a processing function (including passing a `DispatchQueue` or another mutex `Exec` to the `context` parameter), do not apply the same mutex to subsequent synchronously invoked stages and do not subscribe to the signal from the mutex protected processing stage or you risk deadlock. If you want to apply a mutex to your processing stages, you should either ensure the stages are invoked *asynchronously* (choose an async `Exec` context) or you should apply the mutex to the first stage and use `.direct` for subsquent stages (knowing that they'll be protected by the mutex from the *first* stage).
 	//   3. Delivery of signal values is guaranteed to be in-order and within appropriate mutexes but is not guaranteed to be executed on the sending thread. If subsequent results are sent to a `Signal` from a second thread while the `Signal` is processing a previous result from a first thread the subsequent result will be *queued* and handled on the *first* thread once it completes processing the earlier values.
 	//   4. Handlers, captured values and state values will be released *outside* all contexts or mutexes. If you capture an object with `deinit` behavior in a processing closure, you must apply any synchronization context yourself.
 	
@@ -992,7 +992,7 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	// Need to close the `newInputSignal` and detach from all predecessors on deinit.
 	deinit {
-		_ = newInputSignal?.0.send(result: .failure(.cancelled), predecessor: nil, activationCount: 0, activated: true)
+		newInputSignal?.0.send(result: .failure(.cancelled), predecessor: nil, activationCount: 0, activated: true)
 		
 		var dw = DeferredWork()
 		mutex.sync {
@@ -1297,13 +1297,19 @@ public class SignalInput<InputValue>: Lifetime, SignalInputInterface {
 		self.activationCount = activationCount
 	}
 	
+	@discardableResult
+	public func sendAndQuery(result: Result<InputValue, SignalEnd>) -> SignalSendError? {
+		guard let s = signal else { return SignalSendError.disconnected }
+		return s.send(result: result, predecessor: nil, activationCount: activationCount, activated: true)
+	}
+	
 	/// The primary signal sending function
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
 	/// - Returns: `nil` on success. Non-`nil` values include `SignalSendError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalSendError.inactive` if the current `delivery` state is `.disabled`.
-	@discardableResult public func send(result: Result<InputValue, SignalEnd>) -> SignalSendError? {
-		guard let s = signal else { return SignalSendError.disconnected }
-		return s.send(result: result, predecessor: nil, activationCount: activationCount, activated: true)
+	public func send(result: Result<InputValue, SignalEnd>) {
+		guard let s = signal else { return }
+		s.send(result: result, predecessor: nil, activationCount: activationCount, activated: true)
 	}
 	
 	/// The purpose for this method is to obtain a true `SignalInput` (instead of a `SignalMultiInput` or `SignalMergedInput`. A true `SignalInput` is faster for multiple send operations and is needed internally by the `bind` methods.
@@ -1314,7 +1320,7 @@ public class SignalInput<InputValue>: Lifetime, SignalInputInterface {
 	
 	/// Implementation of `Lifetime` that sends a `SignalComplete.cancelled`. You wouldn't generally invoke this yourself; it's intended to be invoked if the `SignalInput` owner is released and the `SignalInput` is no longer retained.
 	public func cancel() {
-		_ = send(result: .failure(.cancelled))
+		send(result: .failure(.cancelled))
 	}
 	
 	fileprivate func cancelOnDeinit() {
@@ -1529,7 +1535,7 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 		guard let output = processor.outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return processor.initialHandlerInternal() }
 		let activated = processor.signal.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(processor)
-		return { [weak outputSignal] (r: Result<OutputValue, SignalEnd>) -> Void in _ = outputSignal?.send(result: transform(r), predecessor: predecessor, activationCount: ac, activated: activated) }
+		return { [weak outputSignal] (r: Result<OutputValue, SignalEnd>) -> Void in outputSignal?.send(result: transform(r), predecessor: predecessor, activationCount: ac, activated: activated) }
 	}
 	
 	// Determines if a `Signal` is one of the current outputs.
@@ -2170,10 +2176,17 @@ public final class SignalNext<OutputValue> {
 	fileprivate let activationCount: Int
 	fileprivate let predecessor: Unmanaged<AnyObject>?
 	
+	enum Output {
+		case none
+		case single(Result<OutputValue, SignalEnd>)
+		case multiple(Array<Result<OutputValue, SignalEnd>>)
+	}
+	
 	fileprivate let activated: Bool
 	
 	// NOTE: this property must be accessed under the `blockable`'s mutex
 	fileprivate var needUnblock = false
+	fileprivate var output = Output.none
 	
 	// Constructs with the details of the next `Signal` and the `blockable` (the `SignalTransformer` or `SignalTransformerWithState` to which this belongs). NOTE: predecessor and blockable are typically the same instance, just stored differently, for efficiency.
 	//
@@ -2195,9 +2208,29 @@ public final class SignalNext<OutputValue> {
 	//
 	// - Parameter result: signal to send
 	// - Returns: `nil` on success. Non-`nil` values include `SignalSendError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalSendError.inactive` if the current `delivery` state is `.disabled`.
-	@discardableResult public func send(result: Result<OutputValue, SignalEnd>) -> SignalSendError? {
-		guard let s = signal else { return SignalSendError.disconnected }
-		return s.send(result: result, predecessor: predecessor, activationCount: activationCount, activated: activated)
+	public func send(result: Result<OutputValue, SignalEnd>) {
+		if let nb = blockable?.sync(execute: { return self.needUnblock }), nb == true {
+			guard let s = signal else { return }
+			s.send(result: result, predecessor: predecessor, activationCount: activationCount, activated: activated)
+		} else {
+			switch output {
+			case .none: output = .single(result)
+			case .single(let v): output = .multiple([v, result])
+			case .multiple(var a):
+				a.append(result)
+				output = .multiple(a)
+			}
+		}
+	}
+
+	fileprivate func emit() {
+		guard let s = signal else { return }
+		switch output {
+		case .none: return
+		case .single(let v): s.send(result: v, predecessor: predecessor, activationCount: activationCount, activated: activated)
+		case .multiple(let a): a.forEach { s.send(result: $0, predecessor: predecessor, activationCount: activationCount, activated: activated) }
+		}
+		output = .none
 	}
 	
 	// When released, if we `needUnblock` (because we've been retained outside the scope of the transformer handler) then unblock the transformer.
@@ -2241,6 +2274,8 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 		var next = SignalNext<U>(signal: outputSignal, predecessor: self, activationCount: ac, activated: activated, blockable: self)
 		return { [userProcessor] r in
 			userProcessor(r, next)
+			
+			next.emit()
 			
 			// This is the runtime overhead of the capturable `SignalNext`.
 			if !isKnownUniquelyReferenced(&next), let s = next.blockable as? SignalTransformer<OutputValue, U> {
@@ -2298,6 +2333,8 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 		
 		return { [userProcessor, weak outputSignal] r in
 			userProcessor(&state, r, next)
+
+			next.emit()
 			
 			// This is the runtime overhead of the capturable `SignalNext`.
 			if !isKnownUniquelyReferenced(&next), let s = next.blockable as? SignalTransformerWithState<OutputValue, U, S> {
@@ -2968,8 +3005,8 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
 	/// - Returns: `nil` on success. Non-`nil` values include `SignalSendError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalSendError.inactive` if the current `delivery` state is `.disabled`.
-	@discardableResult public final override func send(result: Result<InputValue, SignalEnd>) -> SignalSendError? {
-		return singleInput().send(result: result)
+	public final override func send(result: Result<InputValue, SignalEnd>) {
+		singleInput().send(result: result)
 	}
 	
 	/// Implementation of `Lifetime` removes all inputs and sends a `SignalComplete.cancelled` to the destination.
@@ -3166,7 +3203,7 @@ public enum SignalEnd: Error, Equatable {
 	}
 }
 
-/// Possible send-failure return results when sending to a `SignalInput` or `SignalNext`. This type is used as a discardable return type so it does not need to conform to Swift.Error.
+/// Possible send-failure return results when sending to a `SignalInput`. This type is used as a discardable return type so it does not need to conform to Swift.Error.
 ///
 /// - disconnected:  the signal input has been disconnected from its target signal
 /// - inactive:  the signal graph is not activated (no outputs in the graph) and the Result was not sent

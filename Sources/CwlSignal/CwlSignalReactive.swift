@@ -69,7 +69,7 @@ extension Signal {
 			return generate(context: context) { input in
 				guard let i = input else { return }
 				for v in sequence {
-					if let _ = i.send(value: v) {
+					if let _ = i.sendAndQuery(result: .success(v)) {
 						break
 					}
 				}
@@ -79,7 +79,7 @@ extension Signal {
 			return retainedGenerate(context: context) { input in
 				guard let i = input else { return }
 				for v in sequence {
-					if let _ = i.send(value: v) {
+					if let _ = i.sendAndQuery(result: .success(v)) {
 						break
 					}
 				}
@@ -269,7 +269,7 @@ extension Signal {
 			guard let i = input else { return }
 			for _ in 0..<count {
 				for v in values {
-					if i.send(value: v) != nil {
+					if i.sendAndQuery(result: .success(v)) != nil {
 						break
 					}
 				}
@@ -880,13 +880,12 @@ extension SignalInterface {
 		return combine(boundaries, initialState: nil) { (current: inout SignalInput<OutputValue>?, cr: EitherResult2<OutputValue, Interface.OutputValue>, next: SignalNext<Signal<OutputValue>>) in
 			switch cr {
 			case .result1(.success(let v)):
-				if current == nil {
-					let (i, s) = Signal<OutputValue>.create()
-					current = i
-					next.send(value: s)
-				}
 				if let c = current {
 					c.send(value: v)
+				} else {
+					let (i, s) = Signal<OutputValue>.create()
+					current = i
+					next.send(value: s.cacheUntilActive(precached: [v]))
 				}
 			case .result1(.failure(let e)):
 				next.send(end: e)
@@ -1535,8 +1534,6 @@ extension SignalInterface {
 	
 	/// Implementation of [Reactive X operator "join"](http://reactivex.io/documentation/operators/join.html)
 	///
-	/// - Note: support for multiple listeners and reactivation is determined by the specified `behavior`.
-	///
 	/// - Parameters:
 	///   - withRight: an observed signal
 	///   - leftEnd: function invoked when a value is received from `self`. The resulting signal is observed and the time until signal close is treated as a duration "window" that started with the received `self` value.
@@ -1580,8 +1577,7 @@ extension SignalInterface {
 			case .result1(.success(let leftIndex, .some(let leftValue))):
 				let (li, ls) = Signal<U.OutputValue>.create()
 				state.activeLeft[leftIndex] = li
-				next.send(value: (leftValue, ls))
-				state.activeRight.sorted { $0.0 < $1.0 }.forEach { tuple in li.send(value: tuple.value) }
+				next.send(value: (leftValue, ls.cacheUntilActive(precached: state.activeRight.sorted { $0.0 < $1.0 }.map { $0.value })))
 			case .result2(.success(let rightIndex, .some(let rightValue))):
 				state.activeRight[rightIndex] = rightValue
 				state.activeLeft.sorted { $0.0 < $1.0 }.forEach { tuple in tuple.value.send(value: rightValue) }

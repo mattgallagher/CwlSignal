@@ -254,7 +254,7 @@ class SignalReactiveTests: XCTestCase {
 			return Signal<Int>.generate(context: .direct) { input in
 				guard let i = input else { return }
 				for w in 0...v {
-					if let _ = i.send(value: w) {
+					if let _ = i.sendAndQuery(result: .success(w)) {
 						break
 					}
 				}
@@ -399,7 +399,7 @@ class SignalReactiveTests: XCTestCase {
 			return Signal<Int>.generate(context: .direct) { [state] input in
 				guard let i = input else { return }
 				for w in 0...v {
-					if let _ = i.send(value: w + state - 1) {
+					if let _ = i.sendAndQuery(result: .success(w + state - 1)) {
 						break
 					}
 				}
@@ -450,7 +450,7 @@ class SignalReactiveTests: XCTestCase {
 			return Signal<Int>.generate(context: .direct) { input in
 				guard let i = input else { return }
 				for w in v..<(v * 2) {
-					if let _ = i.send(value: w) {
+					if let _ = i.sendAndQuery(result: .success(w)) {
 						break
 					}
 				}
