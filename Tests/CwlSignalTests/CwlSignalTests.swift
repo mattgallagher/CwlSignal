@@ -1828,7 +1828,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.count == 1)
 		XCTAssert(results.at(0)?.value == 6)
 		
-		XCTAssert(coordinator.currentTime == 1)
+		XCTAssert(coordinator.currentTime == 2)
 		
 		withExtendedLifetime(input) { }
 		withExtendedLifetime(out) { }
@@ -1921,11 +1921,71 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(0)?.error?.isComplete == true)
 	}
 	
-	func testMutexAssurances() {
-		let context = Exec.syncQueue()
+	func testSyncMutexAssurances() {
+		let (context, specificKey) = Exec.syncQueueWithSpecificKey()
 		var result = [Int]()
-		Signal.just(1).transform(context: context) { .single($0) }.subscribeValuesUntilEnd(context: context) { result.append($0) }
+		
+		// The previous stage's context must *not* be active on a subsequent stage
+		Signal.just(1).transform(context: context) { .single($0) }.subscribeValuesUntilEnd {
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
+			result.append($0)
+		}
 		XCTAssert(result.count == 1)
+		
+		// The previous stage's context must *not* be active on a subsequent stage
+		Signal.just(1).transform(initialState: 0, context: context) { s, r in .single(r) }.subscribeValuesUntilEnd {
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
+			result.append($0)
+		}
+		XCTAssert(result.count == 2)
+		
+		// The previous stage's context must *not* be active on a subsequent stage
+		Signal.just(1).reduce(initialState: 0, context: context) { s, r in return r }.subscribeValuesUntilEnd {
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
+			result.append($0)
+		}
+		XCTAssert(result.count == 3)
+		
+		// The previous stage's context must *not* be active on a subsequent stage
+		Signal.just(1).customActivation(initialValues: [], context: context) { _, _, _ in }.subscribeValuesUntilEnd {
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
+			result.append($0)
+		}
+		XCTAssert(result.count == 4)
+	}
+	
+	func testAsyncMutexAssurances() {
+		let coordinator = DebugContextCoordinator()
+		let context = coordinator.asyncQueue
+		var result = [Int]()
+		
+		// The previous stage's context must *not* be active on a subsequent stage
+		Signal.just(1, 2, 3).transform(context: context) { .single($0) }.subscribeValuesUntilEnd {
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
+			result.append($0)
+		}
+		XCTAssert(result.count == 3)
+		
+		// The previous stage's context must *not* be active on a subsequent stage
+		Signal.just(1, 2, 3).transform(initialState: 0, context: context) { s, r in .single(r) }.subscribeValuesUntilEnd {
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
+			result.append($0)
+		}
+		XCTAssert(result.count == 6)
+		
+		// The previous stage's context must *not* be active on a subsequent stage
+		Signal.just(1, 2, 3).reduce(initialState: 0, context: context) { s, r in return r }.subscribeValuesUntilEnd {
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
+			result.append($0)
+		}
+		XCTAssert(result.count == 9)
+		
+		// The previous stage's context must *not* be active on a subsequent stage
+		Signal.just(1, 2, 3).customActivation(initialValues: [], context: context) { _, _, _ in }.subscribeValuesUntilEnd {
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
+			result.append($0)
+		}
+		XCTAssert(result.count == 12)
 	}
 }
 
