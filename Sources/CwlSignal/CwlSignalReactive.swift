@@ -69,7 +69,7 @@ extension Signal {
 			return generate(context: context) { input in
 				guard let i = input else { return }
 				for v in sequence {
-					if let _ = i.send(value: v) {
+					if let _ = i.sendAndQuery(result: .success(v)) {
 						break
 					}
 				}
@@ -79,7 +79,7 @@ extension Signal {
 			return retainedGenerate(context: context) { input in
 				guard let i = input else { return }
 				for v in sequence {
-					if let _ = i.send(value: v) {
+					if let _ = i.sendAndQuery(result: .success(v)) {
 						break
 					}
 				}
@@ -269,12 +269,12 @@ extension Signal {
 			guard let i = input else { return }
 			for _ in 0..<count {
 				for v in values {
-					if i.send(value: v) != nil {
+					if i.sendAndQuery(result: .success(v)) != nil {
 						break
 					}
 				}
 			}
-			i.close()
+			i.complete()
 		}
 	}
 	
@@ -288,7 +288,7 @@ extension Signal {
 		return Signal.generate(context: context) { input in
 			guard let i = input else { return }
 			i.send(value: f())
-			i.close()
+			i.complete()
 		}
 	}
 	
@@ -307,7 +307,7 @@ extension Signal {
 					if let v = value {
 						i.send(value: v)
 					}
-					i.close()
+					i.complete()
 				}
 			} else {
 				timer?.cancel()
@@ -344,7 +344,7 @@ extension SignalInterface {
 			try! intervalJunction.bind(to: initialInput)
 		}
 		
-		return combine(sig, initialState: (0, nil)) { (state: inout (count: Int, timerInput: SignalInput<Int>?), cr: EitherResult2<OutputValue, Int>, n: SignalNext<Void>) in
+		return combine(sig, initialState: (0, nil)) { (state: inout (count: Int, timerInput: SignalInput<Int>?), cr: EitherResult2<OutputValue, Int>) -> Signal<Void>.TransformedResult in
 			var send = false
 			switch cr {
 			case .result1(.success):
@@ -359,29 +359,31 @@ extension SignalInterface {
 					do {
 						try intervalJunction.bind(to: i)
 					} catch {
-						n.send(end: .other(error))
+						return .end(.other(error))
 					}
 				}
 			case .result1(.failure(let e)):
 				// If there's an error on the `self` signal, forward it on.
-				n.send(end: e)
+				return .end(e)
 			case .result2(.success):
 				// When the timer fires, trigger the boundary signal
 				send = true
 			case .result2(.failure(let e)):
 				// If there's a timer error, close
-				n.send(end: e)
+				return .end(e)
 			}
 			
 			if send {
-				// Send the boundary signal
-				n.send(value: ())
-				
 				// Reset the count and – if not continuous – disconnect the timer until we receive a signal from `self`
 				state.count = 0
 				if !continuous {
 					state.timerInput = intervalJunction.disconnect()
 				}
+				
+				// Send the boundary signal
+				return .value(())
+			} else {
+				return .none
 			}
 		}
 	}
@@ -391,21 +393,23 @@ extension SignalInterface {
 	/// - Parameter boundaries: when this `Signal` sends a value, the buffer is emitted and cleared
 	/// - Returns: a signal where the values are arrays of values from `self`, accumulated according to `boundaries`
 	public func buffer<Interface: SignalInterface>(boundaries: Interface) -> Signal<[OutputValue]> {
-		return combine(boundaries, initialState: [OutputValue]()) { (buffer: inout [OutputValue], cr: EitherResult2<OutputValue, Interface.OutputValue>, next: SignalNext<[OutputValue]>) in
+		return combine(boundaries, initialState: [OutputValue]()) { (buffer: inout [OutputValue], cr: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<[OutputValue]>.TransformedResult in
 			switch cr {
 			case .result1(.success(let v)):
 				buffer.append(v)
+				return .none
 			case .result1(.failure(let e)):
-				next.send(value: buffer)
+				let b = buffer
 				buffer.removeAll()
-				next.send(end: e)
+				return .value(b, end: e)
 			case .result2(.success):
-				next.send(value: buffer)
+				let b = buffer
 				buffer.removeAll()
+				return .value(b)
 			case .result2(.failure(let e)):
-				next.send(value: buffer)
+				let b = buffer
 				buffer.removeAll()
-				next.send(end: e)
+				return .value(b, end: e)
 			}
 		}
 	}
@@ -415,31 +419,30 @@ extension SignalInterface {
 	/// - Parameter windows: a "windows" signal (one that describes a series of times and durations). Each value `Signal` in the stream starts a new buffer and when the value `Signal` closes, the buffer is emitted.
 	/// - Returns: a signal where the values are arrays of values from `self`, accumulated according to `windows`
 	public func buffer<Interface: SignalInterface>(windows: Interface) -> Signal<[OutputValue]> where Interface.OutputValue: SignalInterface {
-		return combine(windows.valueDurations { s in s }, initialState: [Int: [OutputValue]]()) { (buffers: inout [Int: [OutputValue]], cr: EitherResult2<OutputValue, (Int, Interface.OutputValue?)>, next: SignalNext<[OutputValue]>) in
+		return combine(windows.valueDurations { s in s }, initialState: [Int: [OutputValue]]()) { (buffers: inout [Int: [OutputValue]], cr: EitherResult2<OutputValue, (Int, Interface.OutputValue?)>) -> Signal<[OutputValue]>.TransformedResult in
 			switch cr {
 			case .result1(.success(let v)):
 				for index in buffers.keys {
 					buffers[index]?.append(v)
 				}
+				return .none
 			case .result1(.failure(let e)):
-				for (_, b) in buffers {
-					next.send(value: b)
-				}
+				let values = buffers.map { $0.1 }
 				buffers.removeAll()
-				next.send(end: e)
+				return .values(sequence: values, end: e)
 			case .result2(.success(let index, .some)):
 				buffers[index] = []
+				return .none
 			case .result2(.success(let index, .none)):
 				if let b = buffers[index] {
-					next.send(value: b)
 					buffers.removeValue(forKey: index)
+					return .value(b)
 				}
+				return .none
 			case .result2(.failure(let e)):
-				for (_, b) in buffers {
-					next.send(value: b)
-				}
+				let values = buffers.map { $0.1 }
 				buffers.removeAll()
-				next.send(end: e)
+				return .values(sequence: values, end: e)
 			}
 		}
 	}
@@ -514,11 +517,11 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func compact<U>() -> Signal<U> where OutputValue == Optional<U> {
-		return transform() { (r: Result<Optional<U>, SignalEnd>, n: SignalNext<U>) in
+		return transform() { (r: Result<Optional<U>, SignalEnd>) -> Signal<U>.TransformedResult in
 			switch r {
-			case .success(.some(let v)): n.send(value: v)
-			case .success: break
-			case .failure(let e): n.send(end: e)
+			case .success(.some(let v)): return .value(v)
+			case .success: return .none
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -530,17 +533,18 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func compactMap<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U?) -> Signal<U> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<U>.TransformedResult in
 			switch r {
 			case .success(let v):
 				do {
 					if let u = try processor(v) {
-						n.send(value: u)
+						return .value(u)
 					}
+					return .none
 				} catch {
-					n.send(end: .other(error))
+					return .end(.other(error))
 				}
-			case .failure(let e): n.send(end: e)
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -553,17 +557,18 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
 	public func compactMap<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) throws -> U?) -> Signal<U> {
-		return transform(initialState: initialState, context: context) { (s: inout S, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
+		return transform(initialState: initialState, context: context) { (s: inout S, r: Result<OutputValue, SignalEnd>) -> Signal<U>.TransformedResult in
 			switch r {
 			case .success(let v):
 				do {
 					if let u = try processor(&s, v) {
-						n.send(value: u)
+						return .value(u)
 					}
+					return .none
 				} catch {
-					n.send(end: .other(error))
+					return .end(.other(error))
 				}
-			case .failure(let e): n.send(end: e)
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -700,22 +705,21 @@ extension SignalInterface {
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is serially concatenated into a single stream
 	public func concatMap<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> Interface) -> Signal<Interface.OutputValue> {
 		return transformFlatten(initialState: 0, closePropagation: .errors, context: context) { (index: inout Int, v: OutputValue, mergedInput: SignalMergedInput<(Int, Result<Interface.OutputValue, SignalEnd>)>) in
-			mergedInput.add(processor(v).transform { (r: Result<Interface.OutputValue, SignalEnd>, n: SignalNext<Result<Interface.OutputValue, SignalEnd>>) in
+			mergedInput.add(processor(v).transform { (r: Result<Interface.OutputValue, SignalEnd>) -> Signal<Result<Interface.OutputValue, SignalEnd>>.TransformedResult in
 				switch r {
 				case .success:
-					n.send(value: r)
+					return .value(r)
 				case .failure(let e):
-					n.send(value: r)
-					n.send(end: e)
+					return .value(r, end: e)
 				}
 			}.map { [index] (r: Result<Interface.OutputValue, SignalEnd>) -> (Int, Result<Interface.OutputValue, SignalEnd>) in (index, r) }, closePropagation: .errors, removeOnDeactivate: true)
 			index += 1
-		}.transform(initialState: (0, Array<Array<Result<Interface.OutputValue, SignalEnd>>>())) { (state: inout (completed: Int, buffers: Array<Array<Result<Interface.OutputValue, SignalEnd>>>), result: Result<(Int, Result<Interface.OutputValue, SignalEnd>), SignalEnd>, next: SignalNext<Interface.OutputValue>) in
+		}.transform(initialState: (0, Array<Array<Result<Interface.OutputValue, SignalEnd>>>())) { (state: inout (completed: Int, buffers: Array<Array<Result<Interface.OutputValue, SignalEnd>>>), result: Result<(Int, Result<Interface.OutputValue, SignalEnd>), SignalEnd>) -> Signal<Interface.OutputValue>.TransformedResult in
 			switch result {
 			case .success(let index, .success(let v)):
 				// We can send results for the first incomplete signal without buffering
 				if index == state.completed {
-					next.send(value: v)
+					return .value(v)
 				} else {
 					// Make sure we have enough buffers
 					while index >= state.buffers.count {
@@ -724,14 +728,16 @@ extension SignalInterface {
 					
 					// Buffer the result
 					state.buffers[index].append(Result<Interface.OutputValue, SignalEnd>.success(v))
+					return .none
 				}
 			case .success(let index, .failure(let e)):
 				// If its an error, try to send some more buffers
 				if index == state.completed {
 					state.completed += 1
+					var results = [Signal<Interface.OutputValue>.Result]()
 					for i in state.completed..<state.buffers.count {
 						for j in state.buffers[i] where !j.isFailure {
-							next.send(result: j)
+							results.append(j)
 						}
 						
 						let incomplete = state.buffers[i].last?.isFailure != true
@@ -741,11 +747,13 @@ extension SignalInterface {
 						}
 						state.completed += 1
 					}
+					return .array(results)
 				} else {
 					// If we're not up to that buffer, just record the error
 					state.buffers[index].append(Result<Interface.OutputValue, SignalEnd>.failure(e))
+					return .none
 				}
-			case .failure(let error): next.send(end: error)
+			case .failure(let error): return .end(error)
 			}
 		}
 	}
@@ -757,22 +765,23 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs the "key" for the output `Signal`
 	/// - Returns: a parent `Signal` where values are tuples of a "key" and a child `Signal` that will contain all values from `self` associated with that "key".
 	public func groupBy<U: Hashable>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U) -> Signal<(U, Signal<OutputValue>)> {
-		return self.transform(initialState: Dictionary<U, SignalInput<OutputValue>>(), context: context) { (outputs: inout Dictionary<U, SignalInput<OutputValue>>, r: Result<OutputValue, SignalEnd>, n: SignalNext<(U, Signal<OutputValue>)>) in
+		return self.transform(initialState: Dictionary<U, SignalInput<OutputValue>>(), context: context) { (outputs: inout Dictionary<U, SignalInput<OutputValue>>, r: Result<OutputValue, SignalEnd>) -> Signal<(U, Signal<OutputValue>)>.TransformedResult in
 			switch r {
 			case .success(let v):
 				let u = processor(v)
 				if let o = outputs[u] {
 					o.send(value: v)
+					return .none
 				} else {
 					let (input, preCachedSignal) = Signal<OutputValue>.create()
 					let s = preCachedSignal.cacheUntilActive()
 					input.send(value: v)
-					n.send(value: (u, s))
 					outputs[u] = input
+					return .value((u, s))
 				}
 			case .failure(let e):
-				n.send(end: e)
 				outputs.forEach { tuple in tuple.value.send(end: e) }
+				return .end(e)
 			}
 		}
 	}
@@ -783,10 +792,10 @@ extension SignalInterface {
 	///   - keyPath: selects a child value to emit
 	/// - Returns: a `Signal` where all the values have been transformed by the key path.
 	public func keyPath<U>(_ keyPath: KeyPath<OutputValue, U>) -> Signal<U> {
-		return transform { (r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
+		return transform { (r: Result<OutputValue, SignalEnd>) -> Signal<U>.TransformedResult in
 			switch r {
-			case .success(let v): n.send(value: v[keyPath: keyPath])
-			case .failure(let e): n.send(end: e)
+			case .success(let v): return .value(v[keyPath: keyPath])
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -798,10 +807,10 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs a value for the output `Signal`
 	/// - Returns: a `Signal` where all the values have been transformed by the `processor`. Any error is emitted in the output without change.
 	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U) -> Signal<U> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<U>.TransformedResult in
 			switch r {
-			case .success(let v): n.send(result: .success(processor(v)))
-			case .failure(let e): n.send(end: e)
+			case .success(let v): return .value(processor(v))
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -814,10 +823,10 @@ extension SignalInterface {
 	///   - processor: for each value emitted by `self`, outputs a value for the output `Signal`
 	/// - Returns: a `Signal` where all the values have been transformed by the `processor`. Any error is emitted in the output without change.
 	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) -> U) -> Signal<U> {
-		return transform(initialState: initialState, context: context) { (s: inout V, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
+		return transform(initialState: initialState, context: context) { (s: inout V, r: Result<OutputValue, SignalEnd>) -> Signal<U>.TransformedResult in
 			switch r {
-			case .success(let v): n.send(result: .success(processor(&s, v)))
-			case .failure(let e): n.send(end: e)
+			case .success(let v): return .value(processor(&s, v))
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -840,10 +849,10 @@ extension SignalInterface {
 	///   - processor: used to transform the closing error 
 	/// - Returns: when an error is emitted from `self`, emits the result returned from passing that error into `processor`. All values emitted normally.
 	public func mapErrors(context: Exec = .direct, _ processor: @escaping (SignalEnd) -> SignalEnd) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
-			case .success(let v): n.send(value: v)
-			case .failure(let e): n.send(end: processor(e))
+			case .success(let v): return .value(v)
+			case .failure(let e): return .end(processor(e))
 			}
 		}
 	}
@@ -859,13 +868,13 @@ extension SignalInterface {
 	///   - processor: takes the most recently emitted value and the most recent value from `self` and returns the next emitted value
 	/// - Returns: a `Signal` where the result from each invocation of `processor` are emitted
 	public func scan<U>(initialState: U, context: Exec = .direct, _ processor: @escaping (U, OutputValue) -> U) -> Signal<U> {
-		return transform(initialState: initialState, context: context) { (accumulated: inout U, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
+		return transform(initialState: initialState, context: context) { (accumulated: inout U, r: Result<OutputValue, SignalEnd>) -> Signal<U>.TransformedResult in
 			switch r {
 			case .success(let v):
 				accumulated = processor(accumulated, v)
-				n.send(value: accumulated)
+				return .value(accumulated)
 			case .failure(let e):
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -877,24 +886,25 @@ extension SignalInterface {
 	/// - Parameter boundaries: when this `Signal` sends a value, the buffer is emitted and cleared
 	/// - Returns: a signal where the values are arrays of values from `self`, accumulated according to `boundaries`
 	public func window<Interface: SignalInterface>(boundaries: Interface) -> Signal<Signal<OutputValue>> {
-		return combine(boundaries, initialState: nil) { (current: inout SignalInput<OutputValue>?, cr: EitherResult2<OutputValue, Interface.OutputValue>, next: SignalNext<Signal<OutputValue>>) in
+		return combine(boundaries, initialState: nil) { (current: inout SignalInput<OutputValue>?, cr: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<Signal<OutputValue>>.TransformedResult in
 			switch cr {
 			case .result1(.success(let v)):
-				if current == nil {
-					let (i, s) = Signal<OutputValue>.create()
-					current = i
-					next.send(value: s)
-				}
 				if let c = current {
 					c.send(value: v)
+					return .none
+				} else {
+					let (i, s) = Signal<OutputValue>.create()
+					current = i
+					return .value(s.cacheUntilActive(precached: [v]))
 				}
 			case .result1(.failure(let e)):
-				next.send(end: e)
+				return .end(e)
 			case .result2(.success):
-				_ = current?.close()
+				_ = current?.complete()
 				current = nil
+				return .none
 			case .result2(.failure(let e)):
-				next.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -906,7 +916,7 @@ extension SignalInterface {
 	/// - Parameter windows: a "windows" signal (one that describes a series of times and durations). Each value `Signal` in the stream starts a new buffer and when the value `Signal` closes, the buffer is emitted.
 	/// - Returns: a signal where the values are arrays of values from `self`, accumulated according to `windows`
 	public func window<Interface: SignalInterface>(windows: Interface) -> Signal<Signal<OutputValue>> where Interface.OutputValue: SignalInterface {
-		return combine(windows.valueDurations { s in s }, initialState: [Int: SignalInput<OutputValue>]()) { (children: inout [Int: SignalInput<OutputValue>], cr: EitherResult2<OutputValue, (Int, Interface.OutputValue?)>, next: SignalNext<Signal<OutputValue>>) in
+		return combine(windows.valueDurations { s in s }, initialState: [Int: SignalInput<OutputValue>]()) { (children: inout [Int: SignalInput<OutputValue>], cr: EitherResult2<OutputValue, (Int, Interface.OutputValue?)>) -> Signal<Signal<OutputValue>>.TransformedResult in
 			switch cr {
 			case .result1(.success(let v)):
 				for index in children.keys {
@@ -914,19 +924,21 @@ extension SignalInterface {
 						c.send(value: v)
 					}
 				}
+				return .none
 			case .result1(.failure(let e)):
-				next.send(end: e)
+				return .end(e)
 			case .result2(.success(let index, .some)):
 				let (i, s) = Signal<OutputValue>.create()
 				children[index] = i
-				next.send(value: s)
+				return .value(s)
 			case .result2(.success(let index, .none)):
 				if let c = children[index] {
-					c.close()
+					c.complete()
 					children.removeValue(forKey: index)
 				}
+				return .none
 			case .result2(.failure(let e)):
-				next.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -1006,7 +1018,7 @@ extension SignalInterface {
 	public func debounce(interval: DispatchTimeInterval, flushOnClose: Bool = false, context: Exec = .direct) -> Signal<OutputValue> {
 		let serialContext = context.serialized()
 		let (mergedInput, signal) = Signal<OutputValue>.createMergedInput()
-		let intermediate = transform(initialState: nil, context: serialContext) { (timer: inout Signal<OutputValue>?, result: Result<OutputValue, SignalEnd>, next: SignalNext<OutputValue>) in
+		let intermediate = transform(initialState: nil, context: serialContext) { (timer: inout Signal<OutputValue>?, result: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch result {
 			case .success(let v):
 				if let oldTimer = timer {
@@ -1015,8 +1027,9 @@ extension SignalInterface {
 				let newTimer = Signal<OutputValue>.timer(interval: interval, value: v, context: serialContext)
 				mergedInput.add(newTimer, closePropagation: .none, removeOnDeactivate: true)
 				timer = newTimer
+				return .none
 			case .failure(let e):
-				next.send(end: e)
+				return .end(e)
 			}
 		}
 		mergedInput.add(intermediate, closePropagation: .all, removeOnDeactivate: false)
@@ -1034,21 +1047,20 @@ extension SignalInterface {
 	public func throttleFirst(interval: DispatchTimeInterval, context: Exec = .direct) -> Signal<OutputValue> {
 		let timerQueue = context.serialized()
 		var timer: Lifetime? = nil
-		return transform(initialState: nil, context: timerQueue) { (cleanup: inout OnDelete?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: nil, context: timerQueue) { (cleanup: inout OnDelete?, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			cleanup = cleanup ?? OnDelete {
 				timer = nil
 			}
 			
 			switch r {
 			case .failure(let e):
-				n.send(end: e)
+				return .end(e)
 			case .success(let v) where timer == nil:
-				n.send(value: v)
 				timer = timerQueue.singleTimer(interval: interval) {
 					timer = nil
 				}
-			default:
-				break
+				return .value(v)
+			case .success: return .none
 			}
 		}
 	}
@@ -1059,15 +1071,16 @@ extension SignalInterface where OutputValue: Hashable {
 	///
 	/// - Returns: a signal where all values received are remembered and only values not previously received are emitted.
 	public func distinct() -> Signal<OutputValue> {
-		return transform(initialState: Set<OutputValue>()) { (previous: inout Set<OutputValue>, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: Set<OutputValue>()) { (previous: inout Set<OutputValue>, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v):
 				if !previous.contains(v) {
 					previous.insert(v)
-					n.send(value: v)
+					return .value(v)
 				}
+				return .none
 			case .failure(let e):
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -1078,15 +1091,16 @@ extension SignalInterface where OutputValue: Equatable {
 	///
 	/// - Returns: a signal that emits the first value but then emits subsequent values only when they are different to the previous value.
 	public func distinctUntilChanged() -> Signal<OutputValue> {
-		return transform(initialState: nil) { (previous: inout OutputValue?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: nil) { (previous: inout OutputValue?, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v):
 				if previous != v {
 					previous = v
-					n.send(value: v)
+					return .value(v)
 				}
+				return .none
 			case .failure(let e):
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -1100,17 +1114,18 @@ extension SignalInterface {
 	///   - comparator: a function taking two parameters (the previous and current value in the signal) which should return `false` to indicate the current value should be emitted.
 	/// - Returns: a signal that emits the first value but then emits subsequent values only if the function `comparator` returns `false` when passed the previous and current values.
 	public func distinctUntilChanged(context: Exec = .direct, compare: @escaping (OutputValue, OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(initialState: nil) { (previous: inout OutputValue?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: nil) { (previous: inout OutputValue?, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v):
 				if let p = previous, compare(p, v) {
-					// no action required
+					previous = v
+					return .none
 				} else {
-					n.send(value: v)
+					previous = v
+					return .value(v)
 				}
-				previous = v
 			case .failure(let e):
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -1120,17 +1135,16 @@ extension SignalInterface {
 	/// - Parameter index: identifies the element to be emitted.
 	/// - Returns: a signal that emits the zero-indexed element identified by `index` and then closes.
 	public func elementAt(_ index: UInt) -> Signal<OutputValue> {
-		return transform(initialState: 0, context: .direct) { (curr: inout UInt, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: 0, context: .direct) { (curr: inout UInt, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v) where curr == index:
-				n.send(value: v)
-				n.close()
+				return .value(v, end: .complete)
 			case .success:
-				break
+				curr += 1
+				return .none
 			case .failure(let e):
-				n.send(end: e)
+				return .end(e)
 			}
-			curr += 1
 		}
 	}
 	
@@ -1141,14 +1155,11 @@ extension SignalInterface {
 	///   - matching: a function which is passed the current value and should return `true` to indicate the value should be emitted.
 	/// - Returns: a signal that emits received values only if the function `matching` returns `true` when passed the value.
 	public func filter(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
-			case .success(let v) where matching(v):
-				n.send(value: v)
-			case .success:
-				break
-			case .failure(let e):
-				n.send(end: e)
+			case .success(let v) where matching(v): return .value(v)
+			case .success: return .none
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -1159,14 +1170,11 @@ extension SignalInterface {
 	///   - type: values will be filtered to this type (NOTE: only the *static* type of this parameter is considered – if the runtime type is more specific, that will be ignored).
 	/// - Returns: a signal that emits received values only if the value can be dynamically cast to the type `U`, specified statically by `type`.
 	public func ofType<U>(_ type: U.Type) -> Signal<U> {
-		return self.transform(initialState: 0) { (curr: inout Int, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) -> Void in
+		return self.transform(initialState: 0) { (curr: inout Int, r: Result<OutputValue, SignalEnd>) -> Signal<U>.TransformedResult in
 			switch r {
-			case .success(let v as U):
-				n.send(value: v)
-			case .success:
-				break
-			case .failure(let e):
-				n.send(end: e)
+			case .success(let v as U): return .value(v)
+			case .success: return .none
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -1178,15 +1186,11 @@ extension SignalInterface {
 	///   - matching: run for each value until it returns `true`
 	/// - Returns: a signal that, when an error is received, emits the first value (if any) in the signal where `matching` returns `true` when invoked with the value, followed by the error.
 	public func first(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
-			case .success(let v) where matching(v):
-				n.send(value: v)
-				n.close()
-			case .success:
-				break
-			case .failure(let e):
-				n.send(end: e)
+			case .success(let v) where matching(v): return .value(v, end: .complete)
+			case .success: return .none
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -1198,7 +1202,7 @@ extension SignalInterface {
 	///   - matching: run for each value
 	/// - Returns: a signal that, if a single value in the sequence, when passed to `matching` returns `true`, then that value will be returned, followed by a SignalEnd.complete when the input signal closes (otherwise a SignalEnd.complete will be emitted without emitting any prior values).
 	public func single(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> Signal<OutputValue> {
-		return transform(initialState: nil, context: context) { (state: inout (firstMatch: OutputValue, unique: Bool)?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: nil, context: context) { (state: inout (firstMatch: OutputValue, unique: Bool)?, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v) where matching(v):
 				if let s = state {
@@ -1206,13 +1210,15 @@ extension SignalInterface {
 				} else {
 					state = (firstMatch: v, unique: true)
 				}
+				return .none
 			case .success:
-				break
-			case .failure:
+				return .none
+			case .failure(let e):
 				if let s = state, s.unique == true {
-					n.send(value: s.firstMatch)
+					return .value(s.firstMatch, end: e)
+				} else {
+					return .end(e)
 				}
-				n.send(result: r)
 			}
 		}
 	}
@@ -1221,9 +1227,11 @@ extension SignalInterface {
 	///
 	/// - Returns: a signal that emits the input error, when received, otherwise ignores all values.
 	public func ignoreElements<U>(outputType: U.Type = U.self) -> Signal<U> {
-		return transform { (r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) -> Void in
+		return transform { (r: Result<OutputValue, SignalEnd>) -> Signal<U>.TransformedResult in
 			if case .failure(let e) = r {
-				n.send(end: e)
+				return .end(e)
+			} else {
+				return .none
 			}
 		}
 	}
@@ -1235,15 +1243,19 @@ extension SignalInterface {
 	///   - matching: run for each value
 	/// - Returns: a signal that, when an error is received, emits the last value (if any) in the signal where `matching` returns `true` when invoked with the value, followed by the error.
 	public func last(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> Signal<OutputValue> {
-		return transform(initialState: nil, context: context) { (last: inout OutputValue?, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: nil, context: context) { (last: inout OutputValue?, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
-			case .success(let v) where matching(v): last = v
-			case .success: break
-			case .failure:
+			case .success(let v) where matching(v):
+				last = v
+				return .none
+			case .success:
+				return .none
+			case .failure(let e):
 				if let l = last {
-					n.send(value: l)
+					return .value(l, end: e)
+				} else {
+					return .end(e)
 				}
-				n.send(result: r)
 			}
 		}
 	}
@@ -1256,19 +1268,20 @@ extension SignalInterface {
 	/// - Parameter trigger: instructs the result to emit the last value from `self`
 	/// - Returns: a signal that, when a value is received from `trigger`, emits the last value (if any) received from `self`.
 	public func sample<Interface: SignalInterface>(_ trigger: Interface) -> Signal<OutputValue> {
-		return combine(trigger, initialState: nil, context: .direct) { (last: inout OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return combine(trigger, initialState: nil, context: .direct) { (last: inout OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<OutputValue>.TransformedResult in
 			switch (c, last) {
 			case (.result1(.success(let v)), _):
 				last = v
+				return .none
 			case (.result1(.failure(let e)), _):
-				n.send(end: e)
+				return .end(e)
 			case (.result2(.success), .some(let l)):
-				n.send(value: l)
 				last = nil
+				return .value(l)
 			case (.result2(.success), _):
-				break
+				return .none
 			case (.result2(.failure(let e)), _):
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -1278,21 +1291,22 @@ extension SignalInterface {
 	/// - Parameter trigger: instructs the result to emit the last value from `self`
 	/// - Returns: a signal that, when a value is received from `trigger`, emits the last value (if any) received from `self`.
 	public func throttleFirst<Interface: SignalInterface>(_ trigger: Interface) -> Signal<OutputValue> {
-		return combine(trigger, initialState: nil, context: .direct) { (last: inout OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>, n: SignalNext<OutputValue>) -> Void in
+		return combine(trigger, initialState: nil, context: .direct) { (last: inout OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<OutputValue>.TransformedResult in
 			switch (c, last) {
 			case (.result1(.success(let v)), nil):
 				last = v
+				return .none
 			case (.result1(.success), _):
-				break
+				return .none
 			case (.result1(.failure(let e)), _):
-				n.send(end: e)
+				return .end(e)
 			case (.result2(.success), .some(let l)):
-				n.send(value: l)
 				last = nil
+				return .value(l)
 			case (.result2(.success), _):
-				break
+				return .none
 			case (.result2(.failure(let e)), _):
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -1304,13 +1318,15 @@ extension SignalInterface {
 	/// - Parameter sample: the latest value from this signal will be emitted whenever `self` emits
 	/// - Returns: a signal that emits the latest value from `sample` each time `self` emits
 	public func withLatestFrom<Interface: SignalInterface>(_ sample: Interface) -> Signal<Interface.OutputValue> {
-		return combine(sample, initialState: nil, context: .direct) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>, n: SignalNext<Interface.OutputValue>) -> Void in
+		return combine(sample, initialState: nil, context: .direct) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<Interface.OutputValue>.TransformedResult in
 			switch (c, last) {
-			case (.result1(.success), .some(let l)): n.send(value: l)
-			case (.result1(.success), _): break
-			case (.result1(.failure(let e)), _): n.send(end: e)
-			case (.result2(.success(let v)), _): last = v
-			case (.result2(.failure(let e)), _): n.send(end: e)
+			case (.result1(.success), .some(let l)): return .value(l)
+			case (.result1(.success), _): return .none
+			case (.result1(.failure(let e)), _): return .end(e)
+			case (.result2(.success(let v)), _):
+				last = v
+				return .none
+			case (.result2(.failure(let e)), _): return .end(e)
 			}
 		}
 	}
@@ -1323,13 +1339,15 @@ extension SignalInterface {
 	/// - Parameter processor: produces the outputs values
 	/// - Returns: a signal that, when a value is received from `trigger`, emits the result or performing `processor`.
 	public func withLatestFrom<Interface: SignalInterface, R>(_ sample: Interface, context: Exec = .direct, _ processor: @escaping (OutputValue, Interface.OutputValue) -> R) -> Signal<R> {
-		return combine(sample, initialState: nil, context: context) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>, n: SignalNext<R>) -> Void in
+		return combine(sample, initialState: nil, context: context) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<R>.TransformedResult in
 			switch (c, last) {
-			case (.result1(.success(let left)), .some(let right)): n.send(value: processor(left, right))
-			case (.result1(.success), _): break
-			case (.result1(.failure(let e)), _): n.send(end: e)
-			case (.result2(.success(let v)), _): last = v
-			case (.result2(.failure(let e)), _): n.send(end: e)
+			case (.result1(.success(let left)), .some(let right)): return .value(processor(left, right))
+			case (.result1(.success), _): return .none
+			case (.result1(.failure(let e)), _): return .end(e)
+			case (.result2(.success(let v)), _):
+				last = v
+				return .none
+			case (.result2(.failure(let e)), _): return .end(e)
 			}
 		}
 	}
@@ -1339,13 +1357,14 @@ extension SignalInterface {
 	/// - Parameter count: the number of values from the start of `self` to drop
 	/// - Returns: a signal that drops `count` values from `self` then mirrors `self`.
 	public func skip(_ count: Int) -> Signal<OutputValue> {
-		return transform(initialState: 0) { (progressCount: inout Int, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: 0) { (progressCount: inout Int, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
-			case .success(let v) where progressCount >= count: n.send(value: v)
-			case .success: break
-			case .failure(let e): n.send(end: e)
+			case .success(let v) where progressCount >= count: return .value(v)
+			case .success:
+				progressCount = progressCount + 1
+				return .none
+			case .failure(let e): return .end(e)
 			}
-			progressCount = progressCount + 1
 		}
 	}
 	
@@ -1354,14 +1373,17 @@ extension SignalInterface {
 	/// - Parameter count: the number of values from the end of `self` to drop
 	/// - Returns: a signal that buffers `count` values from `self` then for each new value received from `self`, emits the oldest value in the buffer. When `self` closes, all remaining values in the buffer are discarded.
 	public func skipLast(_ count: Int) -> Signal<OutputValue> {
-		return transform(initialState: Array<OutputValue>()) { (buffer: inout Array<OutputValue>, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: Array<OutputValue>()) { (buffer: inout Array<OutputValue>, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v):
 				buffer.append(v)
 				if buffer.count > count {
-					n.send(value: buffer.removeFirst())
+					return .value(buffer.removeFirst())
+				} else {
+					return .none
 				}
-			case .failure(let e): n.send(end: e)
+			case .failure(let e):
+				return .end(e)
 			}
 		}
 	}
@@ -1371,14 +1393,12 @@ extension SignalInterface {
 	/// - Parameter count: the number of values from the start of `self` to emit
 	/// - Returns: a signal that emits `count` values from `self` then closes.
 	public func take(_ count: Int) -> Signal<OutputValue> {
-		return transform(initialState: 0) { (progressCount: inout Int, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: 0) { (progressCount: inout Int, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			progressCount = progressCount + 1
 			switch r {
-			case .success(let v) where progressCount >= count:
-				n.send(value: v)
-				n.close()
-			case .success(let v): n.send(value: v)
-			case .failure(let e): n.send(end: e)
+			case .success(let v) where progressCount >= count: return .value(v, end: .complete)
+			case .success(let v): return .value(v)
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -1388,18 +1408,16 @@ extension SignalInterface {
 	/// - Parameter count: the number of values from the end of `self` to emit
 	/// - Returns: a signal that buffers `count` values from `self` then for each new value received from `self`, drops the oldest value in the buffer. When `self` closes, all values in the buffer are emitted, followed by the close.
 	public func takeLast(_ count: Int) -> Signal<OutputValue> {
-		return transform(initialState: Array<OutputValue>()) { (buffer: inout Array<OutputValue>, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) -> Void in
+		return transform(initialState: Array<OutputValue>()) { (buffer: inout Array<OutputValue>, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v):
 				buffer.append(v)
 				if buffer.count > count {
 					buffer.removeFirst()
 				}
+				return .none
 			case .failure(let e):
-				for v in buffer {
-					n.send(value: v)
-				}
-				n.send(end: e)
+				return .values(sequence: buffer, end: e)
 			}
 		}
 	}
@@ -1418,15 +1436,17 @@ extension SignalInterface {
 	///   - processor: invoked with the most recent values of the observed signals (or nil if a signal has not yet emitted a value) when any of the observed signals emits a value
 	/// - Returns: a signal that emits the values from the processor and closes when any of the observed signals closes
 	public func combineLatest<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue) -> V) -> Signal<V> {
-		return combine(second, initialState: (nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?), r: EitherResult2<OutputValue, U.OutputValue>, n: SignalNext<V>) -> Void in
+		return combine(second, initialState: (nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?), r: EitherResult2<OutputValue, U.OutputValue>) -> Signal<V>.TransformedResult in
 			switch r {
 			case .result1(.success(let v)): state = (v, state.1)
 			case .result2(.success(let v)): state = (state.0, v)
-			case .result1(.failure(let e)): n.send(end: e); return
-			case .result2(.failure(let e)): n.send(end: e); return
+			case .result1(.failure(let e)): return .end(e)
+			case .result2(.failure(let e)): return .end(e)
 			}
 			if let v0 = state.0, let v1 = state.1 {
-				n.send(value: processor(v0, v1))
+				return .value(processor(v0, v1))
+			} else {
+				return .none
 			}
 		}
 	}
@@ -1444,17 +1464,19 @@ extension SignalInterface {
 	///   - processor: invoked with the most recent values of the observed signals (or nil if a signal has not yet emitted a value) when any of the observed signals emits a value
 	/// - Returns: a signal that emits the values from the processor and closes when any of the observed signals closes
 	public func combineLatest<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue) -> W) -> Signal<W> {
-		return combine(second, third, initialState: (nil, nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?, V.OutputValue?), r: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, n: SignalNext<W>) -> Void in
+		return combine(second, third, initialState: (nil, nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?, V.OutputValue?), r: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>) -> Signal<W>.TransformedResult in
 			switch r {
 			case .result1(.success(let v)): state = (v, state.1, state.2)
 			case .result2(.success(let v)): state = (state.0, v, state.2)
 			case .result3(.success(let v)): state = (state.0, state.1, v)
-			case .result1(.failure(let e)): n.send(end: e); return
-			case .result2(.failure(let e)): n.send(end: e); return
-			case .result3(.failure(let e)): n.send(end: e); return
+			case .result1(.failure(let e)): return .end(e)
+			case .result2(.failure(let e)): return .end(e)
+			case .result3(.failure(let e)): return .end(e)
 			}
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2 {
-				n.send(value: processor(v0, v1, v2))
+				return .value(processor(v0, v1, v2))
+			} else {
+				return .none
 			}
 		}
 	}
@@ -1476,19 +1498,21 @@ extension SignalInterface {
 	///   - processor: invoked with the most recent values of the observed signals (or nil if a signal has not yet emitted a value) when any of the observed signals emits a value
 	/// - Returns: a signal that emits the values from the processor and closes when any of the observed signals closes
 	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue) -> X) -> Signal<X> {
-		return combine(second, third, fourth, initialState: (nil, nil, nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?, V.OutputValue?, W.OutputValue?), r: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, n: SignalNext<X>) -> Void in
+		return combine(second, third, fourth, initialState: (nil, nil, nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?, V.OutputValue?, W.OutputValue?), r: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>) -> Signal<X>.TransformedResult in
 			switch r {
 			case .result1(.success(let v)): state = (v, state.1, state.2, state.3)
 			case .result2(.success(let v)): state = (state.0, v, state.2, state.3)
 			case .result3(.success(let v)): state = (state.0, state.1, v, state.3)
 			case .result4(.success(let v)): state = (state.0, state.1, state.2, v)
-			case .result1(.failure(let e)): n.send(end: e); return
-			case .result2(.failure(let e)): n.send(end: e); return
-			case .result3(.failure(let e)): n.send(end: e); return
-			case .result4(.failure(let e)): n.send(end: e); return
+			case .result1(.failure(let e)): return .end(e)
+			case .result2(.failure(let e)): return .end(e)
+			case .result3(.failure(let e)): return .end(e)
+			case .result4(.failure(let e)): return .end(e)
 			}
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2, let v3 = state.3 {
-				n.send(value: processor(v0, v1, v2, v3))
+				return .value(processor(v0, v1, v2, v3))
+			} else {
+				return .none
 			}
 		}
 	}
@@ -1510,21 +1534,23 @@ extension SignalInterface {
 	///   - processor: invoked with the most recent values of the observed signals (or nil if a signal has not yet emitted a value) when any of the observed signals emits a value
 	/// - Returns: a signal that emits the values from the processor and closes when any of the observed signals closes
 	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue) -> Y) -> Signal<Y> {
-		return combine(second, third, fourth, fifth, initialState: (nil, nil, nil, nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?, V.OutputValue?, W.OutputValue?, X.OutputValue?), r: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, n: SignalNext<Y>) -> Void in
+		return combine(second, third, fourth, fifth, initialState: (nil, nil, nil, nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?, V.OutputValue?, W.OutputValue?, X.OutputValue?), r: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>) -> Signal<Y>.TransformedResult in
 			switch r {
 			case .result1(.success(let v)): state = (v, state.1, state.2, state.3, state.4)
 			case .result2(.success(let v)): state = (state.0, v, state.2, state.3, state.4)
 			case .result3(.success(let v)): state = (state.0, state.1, v, state.3, state.4)
 			case .result4(.success(let v)): state = (state.0, state.1, state.2, v, state.4)
 			case .result5(.success(let v)): state = (state.0, state.1, state.2, state.3, v)
-			case .result1(.failure(let e)): n.send(end: e); return
-			case .result2(.failure(let e)): n.send(end: e); return
-			case .result3(.failure(let e)): n.send(end: e); return
-			case .result4(.failure(let e)): n.send(end: e); return
-			case .result5(.failure(let e)): n.send(end: e); return
+			case .result1(.failure(let e)): return .end(e)
+			case .result2(.failure(let e)): return .end(e)
+			case .result3(.failure(let e)): return .end(e)
+			case .result4(.failure(let e)): return .end(e)
+			case .result5(.failure(let e)): return .end(e)
 			}
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2, let v3 = state.3, let v4 = state.4 {
-				n.send(value: processor(v0, v1, v2, v3, v4))
+				return .value(processor(v0, v1, v2, v3, v4))
+			} else {
+				return .none
 			}
 		}
 	}
@@ -1534,8 +1560,6 @@ extension SignalInterface {
 	}
 	
 	/// Implementation of [Reactive X operator "join"](http://reactivex.io/documentation/operators/join.html)
-	///
-	/// - Note: support for multiple listeners and reactivation is determined by the specified `behavior`.
 	///
 	/// - Parameters:
 	///   - withRight: an observed signal
@@ -1547,17 +1571,22 @@ extension SignalInterface {
 	public func intersect<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(withRight: U, leftEnd: @escaping (OutputValue) -> V, rightEnd: @escaping (U.OutputValue) -> W, context: Exec = .direct, _ processor: @escaping ((OutputValue, U.OutputValue)) -> X) -> Signal<X> {
 		let leftDurations = valueDurations({ t in leftEnd(t).takeWhile { _ in false } })
 		let rightDurations = withRight.valueDurations({ u in rightEnd(u).takeWhile { _ in false } })
-		let a = leftDurations.combine(rightDurations, initialState: ([Int: OutputValue](), [Int: U.OutputValue]())) { (state: inout (activeLeft: [Int: OutputValue], activeRight: [Int: U.OutputValue]), cr: EitherResult2<(Int, OutputValue?), (Int, U.OutputValue?)>, next: SignalNext<(OutputValue, U.OutputValue)>) in
+		let a = leftDurations.combine(rightDurations, initialState: ([Int: OutputValue](), [Int: U.OutputValue]())) { (state: inout (activeLeft: [Int: OutputValue], activeRight: [Int: U.OutputValue]), cr: EitherResult2<(Int, OutputValue?), (Int, U.OutputValue?)>) -> Signal<(OutputValue, U.OutputValue)>.TransformedResult in
 			switch cr {
 			case .result1(.success(let leftIndex, .some(let leftValue))):
 				state.activeLeft[leftIndex] = leftValue
-				state.activeRight.sorted { $0.0 < $1.0 }.forEach { tuple in next.send(value: (leftValue, tuple.value)) }
+				return .array(state.activeRight.sorted { $0.0 < $1.0 }.map { tuple in .success((leftValue, tuple.value)) })
 			case .result2(.success(let rightIndex, .some(let rightValue))):
 				state.activeRight[rightIndex] = rightValue
-				state.activeLeft.sorted { $0.0 < $1.0 }.forEach { tuple in next.send(value: (tuple.value, rightValue)) }
-			case .result1(.success(let leftIndex, .none)): state.activeLeft.removeValue(forKey: leftIndex)
-			case .result2(.success(let rightIndex, .none)): state.activeRight.removeValue(forKey: rightIndex)
-			default: next.close()
+				return .array(state.activeLeft.sorted { $0.0 < $1.0 }.map { tuple in .success((tuple.value, rightValue)) })
+			case .result1(.success(let leftIndex, .none)):
+				state.activeLeft.removeValue(forKey: leftIndex)
+				return .none
+			case .result2(.success(let rightIndex, .none)):
+				state.activeRight.removeValue(forKey: rightIndex)
+				return .none
+			default:
+				return .complete
 			}
 		}
 		return a.map(context: context, processor)
@@ -1575,22 +1604,25 @@ extension SignalInterface {
 	public func groupIntersect<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(withRight: U, leftEnd: @escaping (OutputValue) -> V, rightEnd: @escaping (U.OutputValue) -> W, context: Exec = .direct, _ processor: @escaping ((OutputValue, Signal<U.OutputValue>)) -> X) -> Signal<X> {
 		let leftDurations = valueDurations({ u in leftEnd(u).takeWhile { _ in false } })
 		let rightDurations = withRight.valueDurations({ u in rightEnd(u).takeWhile { _ in false } })
-		return leftDurations.combine(rightDurations, initialState: ([Int: SignalInput<U.OutputValue>](), [Int: U.OutputValue]())) { (state: inout (activeLeft: [Int: SignalInput<U.OutputValue>], activeRight: [Int: U.OutputValue]), cr: EitherResult2<(Int, OutputValue?), (Int, U.OutputValue?)>, next: SignalNext<(OutputValue, Signal<U.OutputValue>)>) in
+		return leftDurations.combine(rightDurations, initialState: ([Int: SignalInput<U.OutputValue>](), [Int: U.OutputValue]())) { (state: inout (activeLeft: [Int: SignalInput<U.OutputValue>], activeRight: [Int: U.OutputValue]), cr: EitherResult2<(Int, OutputValue?), (Int, U.OutputValue?)>) -> Signal<(OutputValue, Signal<U.OutputValue>)>.TransformedResult in
 			switch cr {
 			case .result1(.success(let leftIndex, .some(let leftValue))):
 				let (li, ls) = Signal<U.OutputValue>.create()
 				state.activeLeft[leftIndex] = li
-				next.send(value: (leftValue, ls))
-				state.activeRight.sorted { $0.0 < $1.0 }.forEach { tuple in li.send(value: tuple.value) }
+				return .value((leftValue, ls.cacheUntilActive(precached: state.activeRight.sorted { $0.0 < $1.0 }.map { $0.value })))
 			case .result2(.success(let rightIndex, .some(let rightValue))):
 				state.activeRight[rightIndex] = rightValue
 				state.activeLeft.sorted { $0.0 < $1.0 }.forEach { tuple in tuple.value.send(value: rightValue) }
+				return .none
 			case .result1(.success(let leftIndex, .none)):
-				_ = state.activeLeft[leftIndex]?.close()
+				_ = state.activeLeft[leftIndex]?.complete()
 				state.activeLeft.removeValue(forKey: leftIndex)
+				return .none
 			case .result2(.success(let rightIndex, .none)):
 				state.activeRight.removeValue(forKey: rightIndex)
-			default: next.close()
+				return .none
+			default:
+				return .complete
 			}
 		}.map(context: context, processor)
 	}
@@ -1657,26 +1689,31 @@ extension SignalInterface {
 	/// - Parameter sequence: a sequence of values.
 	/// - Returns: a signal that emits every value from `sequence` immediately before it starts mirroring `self`.
 	public func startWith<S: Sequence>(sequence: S) -> Signal<OutputValue> where S.Iterator.Element == OutputValue {
-		return Signal.from(sequence).combine(signal, initialState: false) { (alreadySent: inout Bool, r: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
+		return Signal.from(sequence).combine(signal, initialState: false) { (alreadySent: inout Bool, r: EitherResult2<OutputValue, OutputValue>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .result1(.success(let v)):
 				if !alreadySent {
-					n.send(value: v)
+					return .value(v)
+				} else {
+					return .none
 				}
 			case .result1(.failure):
 				alreadySent = true
+				return .none
 			case .result2(.success(let v)):
 				if !alreadySent {
-					n.send(sequence: sequence)
 					alreadySent = true
+					return .values(sequence: Array(sequence).appending(v))
+				} else {
+					return .value(v)
 				}
-				n.send(value: v)
 			case .result2(.failure(let e)):
 				if !alreadySent {
-					n.send(sequence: sequence)
 					alreadySent = true
+					return .values(sequence: sequence, end: e)
+				} else {
+					return .end(e)
 				}
-				n.send(end: e)
 			}
 		}
 	}
@@ -1693,15 +1730,14 @@ extension SignalInterface {
 	///
 	/// - Returns: a signal that emits every value from `sequence` on activation and then mirrors `self`.
 	public func endWith<U: Sequence>(sequence: U, conditional: @escaping (SignalEnd) -> SignalEnd? = { e in e }) -> Signal<OutputValue> where U.Iterator.Element == OutputValue {
-		return transform() { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+		return transform() { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
-			case .success(let v): n.send(value: v)
+			case .success(let v): return .value(v)
 			case .failure(let e):
 				if let newEnd = conditional(e) {
-					sequence.forEach { n.send(value: $0) }
-					n.send(end: newEnd)
+					return .values(sequence: sequence, end: newEnd)
 				} else {
-					n.send(end: e)
+					return .end(e)
 				}
 			}
 		}
@@ -1751,36 +1787,41 @@ extension SignalInterface {
 	/// - Parameter second: another `Signal`
 	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `with`.
 	public func zipWith<U: SignalInterface>(_ second: U) -> Signal<(OutputValue, U.OutputValue)> {
-		return combine(second, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, firstClosed: Bool, secondClosed: Bool), r: EitherResult2<OutputValue, U.OutputValue>, n: SignalNext<(OutputValue, U.OutputValue)>) in
+		return combine(second, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, firstClosed: Bool, secondClosed: Bool), r: EitherResult2<OutputValue, U.OutputValue>) -> Signal<(OutputValue, U.OutputValue)>.TransformedResult in
 			switch (r, queues.first.first, queues.second.first) {
 			case (.result1(.success(let first)), _, .some(let second)):
-				n.send(value: (first, second))
 				queues.second.removeFirst()
 				if (queues.second.isEmpty && queues.secondClosed) {
-					n.close()
+					return .value((first, second), end: .complete)
+				} else {
+					return .value((first, second))
 				}
 			case (.result1(.success(let first)), _, _):
 				queues.first.append(first)
+				return .none
 			case (.result1(.failure(let e)), _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.firstClosed = true
 				}
-				
+				return .none
 			case (.result2(.success(let second)), .some(let first), _):
-				n.send(value: (first, second))
 				queues.first.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) {
-					n.close()
+					return .value((first, second), end: .complete)
+				} else {
+					return .value((first, second))
 				}
 			case (.result2(.success(let second)), _, _):
 				queues.second.append(second)
+				return .none
 			case (.result2(.failure(let e)), _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.secondClosed = true
+					return .none
 				}
 			}
 		}
@@ -1809,54 +1850,61 @@ extension SignalInterface {
 	///   - third: another `Signal`
 	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `second` and `third`.
 	public func zipWith<U: SignalInterface, V: SignalInterface>(_ second: U, _ third: V) -> Signal<(OutputValue, U.OutputValue, V.OutputValue)> {
-		return combine(second, third, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), Array<V.OutputValue>(), false, false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, third: Array<V.OutputValue>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool), r: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>, n: SignalNext<(OutputValue, U.OutputValue, V.OutputValue)>) in
+		return combine(second, third, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), Array<V.OutputValue>(), false, false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, third: Array<V.OutputValue>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool), r: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>) -> Signal<(OutputValue, U.OutputValue, V.OutputValue)>.TransformedResult in
 			switch (r, queues.first.first, queues.second.first, queues.third.first) {
 			case (.result1(.success(let first)), _, .some(let second), .some(let third)):
-				n.send(value: (first, second, third))
 				queues.second.removeFirst()
 				queues.third.removeFirst()
 				if (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
-					n.close()
+					return .value((first, second, third), end: .complete)
+				} else {
+					return .value((first, second, third))
 				}
 			case (.result1(.success(let first)), _, _, _):
 				queues.first.append(first)
+				return .none
 			case (.result1(.failure(let e)), _, _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.firstClosed = true
+					return .none
 				}
-				
 			case (.result2(.success(let second)), .some(let first), _, .some(let third)):
-				n.send(value: (first, second, third))
 				queues.first.removeFirst()
 				queues.third.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) {
-					n.close()
+					return .value((first, second, third), end: .complete)
+				} else {
+					return .value((first, second, third))
 				}
 			case (.result2(.success(let second)), _, _, _):
 				queues.second.append(second)
+				return .none
 			case (.result2(.failure(let e)), _, _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.secondClosed = true
+					return .none
 				}
-				
 			case (.result3(.success(let third)), .some(let first), .some(let second), _):
-				n.send(value: (first, second, third))
 				queues.first.removeFirst()
 				queues.second.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) {
-					n.close()
+					return .value((first, second, third), end: .complete)
+				} else {
+					return .value((first, second, third))
 				}
 			case (.result3(.success(let third)), _, _, _):
 				queues.third.append(third)
+				return .none
 			case (.result3(.failure(let e)), _, _, _):
 				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.thirdClosed = true
+					return .none
 				}
 			}
 		}
@@ -1886,74 +1934,84 @@ extension SignalInterface {
 	///   - fourth: another `Signal`
 	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `second`,`third` and `fourth`.
 	public func zipWith<U: SignalInterface, V: SignalInterface, W: SignalInterface>(_ second: U, _ third: V, _ fourth: W) -> Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)> {
-		return combine(second, third, fourth, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), Array<V.OutputValue>(), Array<W.OutputValue>(), false, false, false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, third: Array<V.OutputValue>, fourth: Array<W.OutputValue>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool, fourthClosed: Bool), r: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>, n: SignalNext<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)>) in
+		return combine(second, third, fourth, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), Array<V.OutputValue>(), Array<W.OutputValue>(), false, false, false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, third: Array<V.OutputValue>, fourth: Array<W.OutputValue>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool, fourthClosed: Bool), r: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>) -> Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue)>.TransformedResult in
 			switch (r, queues.first.first, queues.second.first, queues.third.first, queues.fourth.first) {
 			case (.result1(.success(let first)), _, .some(let second), .some(let third), .some(let fourth)):
-				n.send(value: (first, second, third, fourth))
 				queues.second.removeFirst()
 				queues.third.removeFirst()
 				queues.fourth.removeFirst()
 				if (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.close()
+					return .value((first, second, third, fourth), end: .complete)
+				} else {
+					return .value((first, second, third, fourth))
 				}
 			case (.result1(.success(let first)), _, _, _, _):
 				queues.first.append(first)
+				return .none
 			case (.result1(.failure(let e)), _, _, _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.firstClosed = true
+					return .none
 				}
-				
 			case (.result2(.success(let second)), .some(let first), _, .some(let third), .some(let fourth)):
-				n.send(value: (first, second, third, fourth))
 				queues.first.removeFirst()
 				queues.third.removeFirst()
 				queues.fourth.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.close()
+					return .value((first, second, third, fourth), end: .complete)
+				} else {
+					return .value((first, second, third, fourth))
 				}
 			case (.result2(.success(let second)), _, _, _, _):
 				queues.second.append(second)
+				return .none
 			case (.result2(.failure(let e)), _, _, _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.secondClosed = true
+					return .none
 				}
 				
 			case (.result3(.success(let third)), .some(let first), .some(let second), _, .some(let fourth)):
-				n.send(value: (first, second, third, fourth))
 				queues.first.removeFirst()
 				queues.second.removeFirst()
 				queues.fourth.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.close()
+					return .value((first, second, third, fourth), end: .complete)
+				} else {
+					return .value((first, second, third, fourth))
 				}
 			case (.result3(.success(let third)), _, _, _, _):
 				queues.third.append(third)
+				return .none
 			case (.result3(.failure(let e)), _, _, _, _):
 				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.thirdClosed = true
+					return .none
 				}
-				
 			case (.result4(.success(let fourth)), .some(let first), .some(let second), .some(let third), _):
-				n.send(value: (first, second, third, fourth))
 				queues.first.removeFirst()
 				queues.second.removeFirst()
 				queues.third.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
-					n.close()
+					return .value((first, second, third, fourth), end: .complete)
+				} else {
+					return .value((first, second, third, fourth))
 				}
 			case (.result4(.success(let fourth)), _, _, _, _):
 				queues.fourth.append(fourth)
+				return .none
 			case (.result4(.failure(let e)), _, _, _, _):
 				if queues.fourth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.fourthClosed = true
+					return .none
 				}
 			}
 		}
@@ -1985,96 +2043,107 @@ extension SignalInterface {
 	///   - fifth: another `Signal`
 	/// - Returns: a signal that emits the values from `self`, paired with corresponding value from `second`,`third`, `fourth` and `fifth`.
 	public func zipWith<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface>(_ second: U, _ third: V, _ fourth: W, _ fifth: X) -> Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)> {
-		return combine(second, third, fourth, fifth, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), Array<V.OutputValue>(), Array<W.OutputValue>(), Array<X.OutputValue>(), false, false, false, false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, third: Array<V.OutputValue>, fourth: Array<W.OutputValue>, fifth: Array<X.OutputValue>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool, fourthClosed: Bool, fifthClosed: Bool), r: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>, n: SignalNext<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)>) in
+		return combine(second, third, fourth, fifth, initialState: (Array<OutputValue>(), Array<U.OutputValue>(), Array<V.OutputValue>(), Array<W.OutputValue>(), Array<X.OutputValue>(), false, false, false, false, false)) { (queues: inout (first: Array<OutputValue>, second: Array<U.OutputValue>, third: Array<V.OutputValue>, fourth: Array<W.OutputValue>, fifth: Array<X.OutputValue>, firstClosed: Bool, secondClosed: Bool, thirdClosed: Bool, fourthClosed: Bool, fifthClosed: Bool), r: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>) -> Signal<(OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue)>.TransformedResult in
 			switch (r, queues.first.first, queues.second.first, queues.third.first, queues.fourth.first, queues.fifth.first) {
 			case (.result1(.success(let first)), _, .some(let second), .some(let third), .some(let fourth), .some(let fifth)):
-				n.send(value: (first, second, third, fourth, fifth))
 				queues.second.removeFirst()
 				queues.third.removeFirst()
 				queues.fourth.removeFirst()
 				queues.fifth.removeFirst()
 				if (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.close()
+					return .value((first, second, third, fourth, fifth), end: .complete)
+				} else {
+					return .value((first, second, third, fourth, fifth))
 				}
 			case (.result1(.success(let first)), _, _, _, _, _):
 				queues.first.append(first)
+				return .none
 			case (.result1(.failure(let e)), _, _, _, _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.firstClosed = true
+					return .none
 				}
-				
 			case (.result2(.success(let second)), .some(let first), _, .some(let third), .some(let fourth), .some(let fifth)):
-				n.send(value: (first, second, third, fourth, fifth))
 				queues.first.removeFirst()
 				queues.third.removeFirst()
 				queues.fourth.removeFirst()
 				queues.fifth.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.close()
+					return .value((first, second, third, fourth, fifth), end: .complete)
+				} else {
+					return .value((first, second, third, fourth, fifth))
 				}
 			case (.result2(.success(let second)), _, _, _, _, _):
 				queues.second.append(second)
+				return .none
 			case (.result2(.failure(let e)), _, _, _, _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.secondClosed = true
+					return .none
 				}
-				
 			case (.result3(.success(let third)), .some(let first), .some(let second), _, .some(let fourth), .some(let fifth)):
-				n.send(value: (first, second, third, fourth, fifth))
 				queues.first.removeFirst()
 				queues.second.removeFirst()
 				queues.fourth.removeFirst()
 				queues.fifth.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.close()
+					return .value((first, second, third, fourth, fifth), end: .complete)
+				} else {
+					return .value((first, second, third, fourth, fifth))
 				}
 			case (.result3(.success(let third)), _, _, _, _, _):
 				queues.third.append(third)
+				return .none
 			case (.result3(.failure(let e)), _, _, _, _, _):
 				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.thirdClosed = true
+					return .none
 				}
-				
 			case (.result4(.success(let fourth)), .some(let first), .some(let second), .some(let third), _, .some(let fifth)):
-				n.send(value: (first, second, third, fourth, fifth))
 				queues.first.removeFirst()
 				queues.second.removeFirst()
 				queues.third.removeFirst()
 				queues.fifth.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.close()
+					return .value((first, second, third, fourth, fifth), end: .complete)
+				} else {
+					return .value((first, second, third, fourth, fifth))
 				}
 			case (.result4(.success(let fourth)), _, _, _, _, _):
 				queues.fourth.append(fourth)
+				return .none
 			case (.result4(.failure(let e)), _, _, _, _, _):
 				if queues.fourth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.fourthClosed = true
+					return .none
 				}
-				
 			case (.result5(.success(let fifth)), .some(let first), .some(let second), .some(let third), .some(let fourth), _):
-				n.send(value: (first, second, third, fourth, fifth))
 				queues.first.removeFirst()
 				queues.second.removeFirst()
 				queues.third.removeFirst()
 				queues.fourth.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.close()
+					return .value((first, second, third, fourth, fifth), end: .complete)
+				} else {
+					return .value((first, second, third, fourth, fifth))
 				}
 			case (.result5(.success(let fifth)), _, _, _, _, _):
 				queues.fifth.append(fifth)
+				return .none
 			case (.result5(.failure(let e)), _, _, _, _, _):
 				if queues.fifth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
-					n.send(end: e)
+					return .end(e)
 				} else {
 					queues.fifthClosed = true
+					return .none
 				}
 			}
 		}
@@ -2230,11 +2299,15 @@ extension SignalInterface {
 	///   - offset: a function that, when passed the current state value emits a signal, the first value of which will trigger the end of the delay
 	/// - Returns: a mirror of `self` where values are offset according to `offset` – closing occurs when `self` closes or when the last delayed value is sent (whichever occurs last).
 	public func delay<U, V>(initialState: V, closePropagation: SignalEndPropagation = .none, context: Exec = .direct, offset: @escaping (inout V, OutputValue) -> Signal<U>) -> Signal<OutputValue> {
-		return valueDurations(initialState: initialState, closePropagation: closePropagation, context: context, offset).transform(initialState: [Int: OutputValue]()) { (values: inout [Int: OutputValue], r: Result<(Int, OutputValue?), SignalEnd>, n: SignalNext<OutputValue>) in
+		return valueDurations(initialState: initialState, closePropagation: closePropagation, context: context, offset).transform(initialState: [Int: OutputValue]()) { (values: inout [Int: OutputValue], r: Result<(Int, OutputValue?), SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
-			case .success(let index, .some(let t)): values[index] = t
-			case .success(let index, .none): _ = values[index].map { n.send(value: $0) }
-			case .failure(let e): n.send(end: e)
+			case .success(let index, .some(let t)):
+				values[index] = t
+				return .none
+			case .success(let index, .none):
+				return values[index].map { .value($0) } ?? .none
+			case .failure(let e):
+				return .end(e)
 			}
 		}
 	}
@@ -2284,9 +2357,9 @@ extension SignalInterface {
 	///   - handler: invoked for each `Result` in the signal
 	/// - Returns: a signal that emits the same outputs as self
 	public func onResult(context: Exec = .direct, _ handler: @escaping (Result<OutputValue, SignalEnd>) -> ()) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			handler(r)
-			n.send(result: r)
+			return .single(r)
 		}
 	}
 	
@@ -2297,13 +2370,13 @@ extension SignalInterface {
 	///   - handler: invoked for each value (Result.success) in the signal
 	/// - Returns: a signal that emits the same outputs as self
 	public func onValue(context: Exec = .direct, _ handler: @escaping (OutputValue) -> ()) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v):
 				handler(v)
-				n.send(value: v)
+				return .value(v)
 			case .failure(let e):
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -2315,15 +2388,15 @@ extension SignalInterface {
 	///   - handler: invoked for each error (Result.failure) in the signal
 	/// - Returns: a signal that emits the same outputs as self
 	public func onError(context: Exec = .direct, catchSignalComplete: Bool = false, _ handler: @escaping (SignalEnd) -> ()) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v):
-				n.send(value: v)
+				return .value(v)
 			case .failure(let e):
 				if catchSignalComplete || !e.isComplete {
 					handler(e)
 				}
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -2349,10 +2422,11 @@ extension SignalInterface {
 	///
 	/// - Returns: a signal where each `Result` emitted from self is further wrapped in a Result.success.
 	public func materialize() -> Signal<Result<OutputValue, SignalEnd>> {
-		return transform { r, n in
-			n.send(value: r)
+		return transform { r in
 			if r.isFailure {
-				n.send(end: .complete)
+				return .value(r, end: .complete)
+			} else {
+				return .value(r)
 			}
 		}
 	}
@@ -2364,11 +2438,11 @@ extension SignalInterface {
 	/// - Parameter signal: a signal whose OutputValue is a `Result` wrapped version of an underlying type
 	/// - Returns: a signal whose OutputValue is the unwrapped value from the input, with unwrapped errors sent as errors.
 	public static func dematerialize<OutputValue>(_ signal: Signal<Result<OutputValue, SignalEnd>>) -> Signal<OutputValue> {
-		return signal.transform { (r: Result<Result<OutputValue, SignalEnd>, SignalEnd>, n: SignalNext<OutputValue>) in
+		return signal.transform { (r: Result<Result<OutputValue, SignalEnd>, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
-			case .success(.success(let v)): n.send(value: v)
-			case .success(.failure(let e)): n.send(end: e)
-			case .failure(let e): n.send(end: e)
+			case .success(.success(let v)): return .value(v)
+			case .success(.failure(let e)): return .end(e)
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -2400,15 +2474,19 @@ extension SignalInterface {
 			} else {
 				_ = junction.disconnect()
 			}
-		}.transform(initialState: nil, context: context) { (lastTime: inout DispatchTime?, r: Result<Void, SignalEnd>, n: SignalNext<Double>) in
+		}.transform(initialState: nil, context: context) { (lastTime: inout DispatchTime?, r: Result<Void, SignalEnd>) -> Signal<Double>.TransformedResult in
 			switch r {
 			case .success:
 				let currentTime = context.timestamp()
 				if let l = lastTime {
-					n.send(value: currentTime.since(l).seconds)
+					lastTime = currentTime
+					return .value(currentTime.since(l).seconds)
+				} else {
+					lastTime = currentTime
+					return .none
 				}
-				lastTime = currentTime
-			case .failure(let e): n.send(end: e)
+			case .failure(let e):
+				return .end(e)
 			}
 		}
 		return s
@@ -2426,14 +2504,15 @@ extension SignalInterface {
 		let junction = Signal<Void>.timer(interval: interval, context: context).junction()
 		// Both `junction` and `input` are newly created so this can't be an error
 		try! junction.bind(to: input)
-		return combine(s, context: context) { (cr: EitherResult2<OutputValue, ()>, n: SignalNext<OutputValue>) in
+		return combine(s, context: context) { (cr: EitherResult2<OutputValue, ()>) -> Signal<OutputValue>.TransformedResult in
 			switch cr {
 			case .result1(let r):
 				if resetOnValue {
 					junction.rebind()
 				}
-				n.send(result: r)
-			case .result2: n.send(end: .other(SignalReactiveError.timeout))
+				return .single(r)
+			case .result2:
+				return .end(.other(SignalReactiveError.timeout))
 			}
 		}
 	}
@@ -2443,10 +2522,10 @@ extension SignalInterface {
 	/// - Parameter context: used as the source of time
 	/// - Returns: a signal where the values are a two element tuple, first element is self.OutputValue, second element is the `DispatchTime` timestamp that this element was emitted from self.
 	public func timestamp(context: Exec = .direct) -> Signal<(OutputValue, DispatchTime)> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<(OutputValue, DispatchTime)>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<(OutputValue, DispatchTime)>.TransformedResult in
 			switch r {
-			case .success(let v): n.send(value: (v, context.timestamp()))
-			case .failure(let e): n.send(end: e)
+			case .success(let v): return .value((v, context.timestamp()))
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -2464,16 +2543,12 @@ extension SignalInterface {
 	///   - test: will be invoked for every value
 	/// - Returns: a signal that emits true and then closes if every value emitted by self returned true from the `test` function and self closed normally, otherwise emits false and then closes
 	public func all(context: Exec = .direct, test: @escaping (OutputValue) -> Bool) -> Signal<Bool> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<Bool>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<Bool>.TransformedResult in
 			switch r {
-			case .success(let v) where !test(v):
-				n.send(value: false)
-				n.close()
-			case .failure(.complete):
-				n.send(value: true)
-				n.close()
-			case .failure(let e): n.send(end: e)
-			default: break;
+			case .success(let v) where !test(v): return .value(false, end: .complete)
+			case .failure(.complete): return .value(true, end: .complete)
+			case .failure(let e): return .end(e)
+			case .success: return .none
 			}
 		}
 	}
@@ -2487,18 +2562,21 @@ extension Signal {
 	public static func race<S: Sequence>(sequence: S) -> Signal<OutputValue> where S.Iterator.Element == Signal<OutputValue> {
 		let (mergedInput, sig) = Signal<(Int, Result)>.createMergedInput()
 		sequence.enumerated().forEach { s in
-			mergedInput.add(s.element.transform { r, n in
-				n.send(value: (s.offset, r))
+			mergedInput.add(s.element.transform { r in
+				return .value((s.offset, r))
 			}, closePropagation: .errors)
 		}
-		return sig.transform(initialState: -1) { (first: inout Int, r: Signal<(Int, Result)>.Result, n: SignalNext<OutputValue>) in
+		return sig.transform(initialState: -1) { (first: inout Int, r: Signal<(Int, Result)>.Result) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let index, let underlying) where first < 0:
 				first = index
-				n.send(result: underlying)
-			case .success(let index, let underlying) where first < 0 || first == index: n.send(result: underlying)
-			case .failure(let e): n.send(end: e)
-			default: break
+				return .single(underlying)
+			case .success(let index, let underlying) where first < 0 || first == index:
+				return .single(underlying)
+			case .failure(let e):
+				return .end(e)
+			case .success:
+				return .none
 			}
 		}
 	}
@@ -2516,16 +2594,14 @@ extension SignalInterface {
 	///   - test: will be invoked for every value
 	/// - Returns: a signal that emits true and then closes when a value emitted by self returns true from the `test` function, otherwise if no values from self return true, emits false and then closes
 	public func find(context: Exec = .direct, test: @escaping (OutputValue) -> Bool) -> Signal<Bool> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<Bool>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<Bool>.TransformedResult in
 			switch r {
 			case .success(let v) where test(v):
-				n.send(value: true)
-				n.close()
+				return .value(true, end: .complete)
 			case .success:
-				break
+				return .none
 			case .failure(let e):
-				n.send(value: false)
-				n.send(end: e)
+				return .value(false, end: e)
 			}
 		}
 	}
@@ -2537,17 +2613,15 @@ extension SignalInterface {
 	///   - test: will be invoked for every value
 	/// - Returns: a signal that emits true and then closes when a value emitted by self returns true from the `test` function, otherwise if no values from self return true, emits false and then closes
 	public func findIndex(context: Exec = .direct, test: @escaping (OutputValue) -> Bool) -> Signal<Int?> {
-		return transform(initialState: 0, context: context) { (index: inout Int, r: Result<OutputValue, SignalEnd>, n: SignalNext<Int?>) in
+		return transform(initialState: 0, context: context) { (index: inout Int, r: Result<OutputValue, SignalEnd>) -> Signal<Int?>.TransformedResult in
 			switch r {
 			case .success(let v) where test(v):
-				n.send(value: index)
-				n.close()
+				return .value(index, end: .complete)
 			case .success:
 				index += 1
-				break
+				return .none
 			case .failure(let e):
-				n.send(value: nil)
-				n.send(end: e)
+				return .value(nil, end: e)
 			}
 		}
 	}
@@ -2569,16 +2643,15 @@ extension SignalInterface {
 	/// - Parameter value: value to emit if self closes without a value
 	/// - Returns: a signal that emits the same values as self or `value` if self closes without emitting a value
 	public func defaultIfEmpty(value: OutputValue) -> Signal<OutputValue> {
-		return transform(initialState: false) { (started: inout Bool, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+		return transform(initialState: false) { (started: inout Bool, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v):
 				started = true
-				n.send(value: v)
+				return .value(v)
 			case .failure(let e) where !started:
-				n.send(value: value)
-				n.send(end: e)
+				return .value(value, end: e)
 			case .failure(let e):
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -2613,45 +2686,47 @@ extension SignalInterface where OutputValue: Equatable {
 	/// - Parameter to: another signal whose contents will be compared to this signal
 	/// - Returns: a signal that emits `true` if `self` and `to` are equal, `false` otherwise
 	public func sequenceEqual(to: Signal<OutputValue>) -> Signal<Bool> {
-		return combine(to, initialState: (Array<OutputValue>(), Array<OutputValue>(), false, false)) { (state: inout (lq: Array<OutputValue>, rq: Array<OutputValue>, lc: Bool, rc: Bool), r: EitherResult2<OutputValue, OutputValue>, n: SignalNext<Bool>) in
+		return combine(to, initialState: (Array<OutputValue>(), Array<OutputValue>(), false, false)) { (state: inout (lq: Array<OutputValue>, rq: Array<OutputValue>, lc: Bool, rc: Bool), r: EitherResult2<OutputValue, OutputValue>) -> Signal<Bool>.TransformedResult in
 			// state consists of lq (left queue), rq (right queue), lc (left closed), rc (right closed)
 			switch (r, state.lq.first, state.rq.first) {
 			case (.result1(.success(let left)), _, .some(let right)):
 				if left != right {
-					n.send(value: false)
-					n.close()
+					return .value(false, end: .complete)
 				}
 				state.rq.removeFirst()
+				return .none
 			case (.result1(.success(let left)), _, _):
 				state.lq.append(left)
+				return .none
 			case (.result2(.success(let right)), .some(let left), _):
 				if left != right {
-					n.send(value: false)
-					n.close()
+					return .value(false, end: .complete)
 				}
 				state.lq.removeFirst()
+				return .none
 			case (.result2(.success(let right)), _, _):
 				state.rq.append(right)
+				return .none
 			case (.result1(.failure(let e)), _, _):
 				state.lc = true
 				if state.rc {
 					if state.lq.count == state.rq.count {
-						n.send(value: true)
+						return .value(true, end: e)
 					} else {
-						n.send(value: false)
+						return .value(false, end: e)
 					}
-					n.send(end: e)
 				}
+				return .none
 			case (.result2(.failure(let e)), _, _):
 				state.rc = true
 				if state.lc {
 					if state.lq.count == state.rq.count {
-						n.send(value: true)
+						return .value(true, end: e)
 					} else {
-						n.send(value: false)
+						return .value(false, end: e)
 					}
-					n.send(end: e)
 				}
+				return .none
 			}
 		}
 	}
@@ -2663,13 +2738,19 @@ extension SignalInterface {
 	/// - Parameter other: until this signal emits a value, all values from self will be dropped
 	/// - Returns: a signal that mirrors `self` after `other` emits a value (but won't emit anything prior)
 	public func skipUntil<U: SignalInterface>(_ other: U) -> Signal<OutputValue> {
-		return combine(other, initialState: false) { (started: inout Bool, cr: EitherResult2<OutputValue, U.OutputValue>, n: SignalNext<OutputValue>) in
+		return combine(other, initialState: false) { (started: inout Bool, cr: EitherResult2<OutputValue, U.OutputValue>) -> Signal<OutputValue>.TransformedResult in
 			switch cr {
-			case .result1(.success(let v)) where started: n.send(value: v)
-			case .result1(.success): break
-			case .result1(.failure(let e)): n.send(end: e)
-			case .result2(.success): started = true
-			case .result2(.failure): break
+			case .result1(.success(let v)) where started:
+				return .value(v)
+			case .result1(.success):
+				return .none
+			case .result1(.failure(let e)):
+				return .end(e)
+			case .result2(.success):
+				started = true
+				return .none
+			case .result2(.failure):
+				return .none
 			}
 		}
 	}
@@ -2681,15 +2762,15 @@ extension SignalInterface {
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values until `condition` returns `true` for one of the values
 	public func skipWhile(context: Exec = .direct, condition: @escaping (OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(initialState: false, context: context) { (started: inout Bool, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+		return transform(initialState: false, context: context) { (started: inout Bool, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v) where !started && condition(v):
-				break
+				return .none
 			case .success(let v):
 				started = true
-				n.send(value: v)
+				return .value(v)
 			case .failure(let e):
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -2702,15 +2783,15 @@ extension SignalInterface {
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values until `condition` returns `true` for one of the values
 	public func skipWhile<U>(initialState initial: U, context: Exec = .direct, condition: @escaping (inout U, OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(initialState: (initial, false), context: context) { (started: inout (U, Bool), r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+		return transform(initialState: (initial, false), context: context) { (started: inout (U, Bool), r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
 			case .success(let v) where !started.1 && condition(&started.0, v):
-				break
+				return .none
 			case .success(let v):
 				started.1 = true
-				n.send(value: v)
+				return .value(v)
 			case .failure(let e):
-				n.send(end: e)
+				return .end(e)
 			}
 		}
 	}
@@ -2720,13 +2801,15 @@ extension SignalInterface {
 	/// - Parameter other: after this signal emits a value, all values from self will be dropped
 	/// - Returns: a signal that mirrors `self` until `other` emits a value (but won't emit anything after)
 	public func takeUntil<U: SignalInterface>(_ other: U) -> Signal<OutputValue> {
-		return combine(other, initialState: false) { (started: inout Bool, cr: EitherResult2<OutputValue, U.OutputValue>, n: SignalNext<OutputValue>) in
+		return combine(other, initialState: false) { (started: inout Bool, cr: EitherResult2<OutputValue, U.OutputValue>) -> Signal<OutputValue>.TransformedResult in
 			switch cr {
-			case .result1(.success(let v)) where !started: n.send(value: v)
-			case .result1(.success): break
-			case .result1(.failure(let e)): n.send(end: e)
-			case .result2(.success): started = true
-			case .result2(.failure): break
+			case .result1(.success(let v)) where !started: return .value(v)
+			case .result1(.success): return .none
+			case .result1(.failure(let e)): return .end(e)
+			case .result2(.success):
+				started = true
+				return .none
+			case .result2(.failure): return .none
 			}
 		}
 	}
@@ -2738,11 +2821,11 @@ extension SignalInterface {
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values after `condition` returns `true` for one of the values
 	public func takeWhile(context: Exec = .direct, condition: @escaping (OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(context: context) { (r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
-			case .success(let v) where condition(v): n.send(value: v)
-			case .success: n.close()
-			case .failure(let e): n.send(end: e)
+			case .success(let v) where condition(v): return .value(v)
+			case .success: return .complete
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -2755,11 +2838,11 @@ extension SignalInterface {
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values after `condition` returns `true` for one of the values
 	public func takeWhile<U>(initialState initial: U, context: Exec = .direct, condition: @escaping (inout U, OutputValue) -> Bool) -> Signal<OutputValue> {
-		return transform(initialState: initial, context: context) { (i: inout U, r: Result<OutputValue, SignalEnd>, n: SignalNext<OutputValue>) in
+		return transform(initialState: initial, context: context) { (i: inout U, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.TransformedResult in
 			switch r {
-			case .success(let v) where condition(&i, v): n.send(value: v)
-			case .success: n.close()
-			case .failure(let e): n.send(end: e)
+			case .success(let v) where condition(&i, v): return .value(v)
+			case .success: return .complete
+			case .failure(let e): return .end(e)
 			}
 		}
 	}
@@ -2773,15 +2856,17 @@ extension SignalInterface {
 	///   - fold: invoked for each value emitted by `self` along with the current fold state value
 	/// - Returns: a signal which emits the `finalize` result
 	public func foldAndFinalize<U, V>(_ initial: V, context: Exec = .direct, finalize: @escaping (V) -> U?, fold: @escaping (V, OutputValue) -> V) -> Signal<U> {
-		return transform(initialState: initial, context: context) { (state: inout V, r: Result<OutputValue, SignalEnd>, n: SignalNext<U>) in
+		return transform(initialState: initial, context: context) { (state: inout V, r: Result<OutputValue, SignalEnd>) -> Signal<U>.TransformedResult in
 			switch r {
 			case .success(let v):
 				state = fold(state, v)
+				return .none
 			case .failure(let e):
 				if let v = finalize(state) {
-					n.send(value: v)
+					return .value(v, end: e)
+				} else {
+					return .end(e)
 				}
-				n.send(end: e)
 			}
 		}
 	}
@@ -2804,30 +2889,30 @@ extension SignalInterface {
 	/// - Parameter other: a second signal
 	/// - Returns: a signal that emits all the values from `self` followed by all the values from `other` (including those emitted while `self` was still active)
 	public func concat(_ other: Signal<OutputValue>) -> Signal<OutputValue> {
-		return combine(other, initialState: ([OutputValue](), nil, nil)) { (state: inout (secondValues: [OutputValue], firstError: SignalEnd?, secondError: SignalEnd?), cr: EitherResult2<OutputValue, OutputValue>, n: SignalNext<OutputValue>) in
+		return combine(other, initialState: ([OutputValue](), nil, nil)) { (state: inout (secondValues: [OutputValue], firstError: SignalEnd?, secondError: SignalEnd?), cr: EitherResult2<OutputValue, OutputValue>) -> Signal<OutputValue>.TransformedResult in
 			switch (cr, state.firstError) {
 			case (.result1(.success(let v)), _):
-				n.send(value: v)
+				return .value(v)
 			case (.result1(.failure(.complete)), _):
-				for v in state.secondValues {
-					n.send(value: v)
-				}
 				if let e2 = state.secondError {
-					n.send(end: e2)
+					return .values(sequence: state.secondValues, end: e2)
 				} else {
 					state.firstError = .complete
+					return .values(sequence: state.secondValues)
 				}
 			case (.result1(.failure(let e1)), _):
-					// In the event of an "unexpected" error, don't emit the second signal.
-					n.send(end: e1)
+				// In the event of an "unexpected" error, don't emit the second signal.
+				return .end(e1)
 			case (.result2(.success(let v)), .none):
 				state.secondValues.append(v)
+				return .none
 			case (.result2(.success(let v)), .some):
-				n.send(value: v)
+				return .value(v)
 			case (.result2(.failure(let e2)), .none):
 				state.secondError = e2
+				return .none
 			case (.result2(.failure(let e2)), .some):
-				n.send(end: e2)
+				return .end(e2)
 			}
 		}
 	}

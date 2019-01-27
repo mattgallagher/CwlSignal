@@ -229,7 +229,7 @@ class SignalReactiveTests: XCTestCase {
 			delays += coordinator.direct.singleTimer(interval: .interval(0.45 * Double(i))) {
 				input.send(value: i)
 				if i == 20 {
-					input.close()
+					input.complete()
 				}
 			}
 		}
@@ -254,11 +254,11 @@ class SignalReactiveTests: XCTestCase {
 			return Signal<Int>.generate(context: .direct) { input in
 				guard let i = input else { return }
 				for w in 0...v {
-					if let _ = i.send(value: w) {
+					if let _ = i.sendAndQuery(result: .success(w)) {
 						break
 					}
 				}
-				i.close()
+				i.complete()
 			}
 		}.subscribe { r in results.append(r) }
 		XCTAssert(results.count == 33)
@@ -310,11 +310,11 @@ class SignalReactiveTests: XCTestCase {
 		i2.send(value: 3)
 		i1.send(value: 4)
 		i1.send(value: 5)
-		i1.close()
+		i1.complete()
 		i2.send(value: 6)
 		i3.send(end: .other(TestError.twoValue))
 		i2.send(value: 7)
-		i2.close()
+		i2.complete()
 		
 		XCTAssert(results1.count == 8)
 		XCTAssert(results1.at(0)?.value == 0)
@@ -342,11 +342,11 @@ class SignalReactiveTests: XCTestCase {
 		i2.send(value: 3)
 		i1.send(value: 4)
 		i1.send(value: 5)
-		i1.close()
+		i1.complete()
 		i2.send(value: 6)
-		i3.close()
+		i3.complete()
 		i2.send(value: 7)
-		i2.close()
+		i2.complete()
 		
 		XCTAssert(results1.count == 9)
 		XCTAssert(results1.at(0)?.value == 0)
@@ -399,11 +399,11 @@ class SignalReactiveTests: XCTestCase {
 			return Signal<Int>.generate(context: .direct) { [state] input in
 				guard let i = input else { return }
 				for w in 0...v {
-					if let _ = i.send(value: w + state - 1) {
+					if let _ = i.sendAndQuery(result: .success(w + state - 1)) {
 						break
 					}
 				}
-				i.close()
+				i.complete()
 			}
 		}.subscribe { r -> () in
 			results.append(r)
@@ -450,11 +450,11 @@ class SignalReactiveTests: XCTestCase {
 			return Signal<Int>.generate(context: .direct) { input in
 				guard let i = input else { return }
 				for w in v..<(v * 2) {
-					if let _ = i.send(value: w) {
+					if let _ = i.sendAndQuery(result: .success(w)) {
 						break
 					}
 				}
-				i.close()
+				i.complete()
 			}
 		}.subscribe { r in
 			results.append(r)
@@ -483,8 +483,8 @@ class SignalReactiveTests: XCTestCase {
 		signals[0].input.send(9, 10, 11)
 		signals[1].input.send(12, 13, 14)
 		signals[2].input.send(15, 16, 17)
-		wrapper.input.close()
-		signals.forEach { $0.input.close() }
+		wrapper.input.complete()
+		signals.forEach { $0.input.complete() }
 		
 		XCTAssert(results.count == 10)
 		XCTAssert(results.at(0)?.value == 0)
@@ -532,12 +532,12 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(3)?.value == "f")
 		XCTAssert(results.count == 4)
 
-		inputOutputPairs[1].0.close()
+		inputOutputPairs[1].0.complete()
 
 		XCTAssert(results.count == 4)
 
 		input.send(value: 3)
-		input.close()
+		input.complete()
 
 		XCTAssert(results.count == 4)
 		
@@ -548,7 +548,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(4)?.value == "i")
 		XCTAssert(results.count == 5)
 
-		inputOutputPairs[0].0.close()
+		inputOutputPairs[0].0.complete()
 
 		XCTAssert(results.at(5)?.value == "d")
 		XCTAssert(results.at(6)?.value == "g")
@@ -556,7 +556,7 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(8)?.value == "h")
 		XCTAssert(results.count == 9)
 		
-		inputOutputPairs[2].0.close()
+		inputOutputPairs[2].0.complete()
 
 		inputOutputPairs[3].0.send(value: "k")
 		inputOutputPairs[3].0.send(value: "l")
@@ -660,7 +660,7 @@ class SignalReactiveTests: XCTestCase {
 			remainder: { $0 * 2 }
 		).subscribe { r in results.append(r) }
 		input.send(7, 8, 9)
-		input.close()
+		input.complete()
 		XCTAssert(results.count == 6)
 		XCTAssert(results.at(0)?.value == 10)
 		XCTAssert(results.at(1)?.value == 20)
@@ -682,7 +682,7 @@ class SignalReactiveTests: XCTestCase {
 				remainder: { $0 * 2 }
 			).subscribe { r in results.append(r) }
 		input.send(7, 8, 9)
-		input.close()
+		input.complete()
 		XCTAssert(results.count == 6)
 		XCTAssert(results.at(0)?.value == 10)
 		XCTAssert(results.at(1)?.value == 4)
@@ -702,7 +702,7 @@ class SignalReactiveTests: XCTestCase {
 			remainder: { v in v * 2 }
 		).subscribe { r in results.append(r) }
 		input.send(7, 8, 9)
-		input.close()
+		input.complete()
 		XCTAssert(results.count == 5)
 		XCTAssert(results.at(0)?.value == 20)
 		XCTAssert(results.at(1)?.value == 14)
@@ -793,7 +793,7 @@ class SignalReactiveTests: XCTestCase {
 		}
 		let delay = coordinator.direct.singleTimer(interval: .interval(0.5)) {
 			input.send(value: 13)
-			input.close()
+			input.complete()
 		}
 		XCTAssert(results.count == 3)
 		let r1 = results.at(0)
@@ -1273,7 +1273,7 @@ class SignalReactiveTests: XCTestCase {
 		input.send(value: 13)
 		triggerInput.send(value: ())
 		
-		input.close()
+		input.complete()
 		
 		XCTAssert(results.count == 4)
 		XCTAssert(results.at(0)?.value == 1)
@@ -1355,7 +1355,7 @@ class SignalReactiveTests: XCTestCase {
 		signal1Input.send(value: 1)
 		signal1Input.send(value: 2)
 		
-		signal2Input.close()
+		signal2Input.complete()
 		
 		XCTAssert(results.count == 6)
 		XCTAssert(results.at(0)?.value == "0 1.1")
@@ -1390,7 +1390,7 @@ class SignalReactiveTests: XCTestCase {
 		signal1Input.send(value: 1)
 		signal3Input.send(value: "!")
 		
-		signal1Input.close()
+		signal1Input.complete()
 		
 		XCTAssert(results.count == 6)
 		XCTAssert(results.at(0)?.value == "0 2.2 Hello")
@@ -1428,7 +1428,7 @@ class SignalReactiveTests: XCTestCase {
 		signal3Input.send(value: "World")
 		signal1Input.send(value: 1)
 		
-		signal1Input.close()
+		signal1Input.complete()
 		
 		XCTAssert(results.count == 6)
 		XCTAssert(results.at(0)?.value == "0 2.2 Hello 11")
@@ -1469,7 +1469,7 @@ class SignalReactiveTests: XCTestCase {
 		signal1Input.send(value: 1)
 		signal5Input.send(value: false)
 		
-		signal1Input.close()
+		signal1Input.complete()
 		
 		XCTAssert(results.count == 7)
 		XCTAssert(results.at(0)?.value == "0 2.2 Hello 11 true")
@@ -1498,7 +1498,7 @@ class SignalReactiveTests: XCTestCase {
 		rightInput1.send(value: 3.3)
 		leftInput1.send(value: 10)
 		rightInput1.send(value: 4.4)
-		leftInput1.close()
+		leftInput1.complete()
 		XCTAssert(results1.count == 1)
 		XCTAssert(results1.first?.error?.isComplete == true)
 		
@@ -1580,7 +1580,7 @@ class SignalReactiveTests: XCTestCase {
 		rightInput1.send(value: 3.3)
 		leftInput1.send(value: 10)
 		rightInput1.send(value: 4.4)
-		leftInput1.close()
+		leftInput1.complete()
 		XCTAssert(results1.count == 1)
 		XCTAssert(results1.first?.error?.isComplete == true)
 		
@@ -1745,21 +1745,21 @@ class SignalReactiveTests: XCTestCase {
 		input2.send(value: 10)
 		input2.send(value: 11)
 		input2.send(value: 12)
-		input2.close()
+		input2.complete()
 		input1.send(value: 4)
 		input1.send(value: 5)
 		input.send(value: child3)
-		input3.close()
+		input3.complete()
 		input1.send(value: 6)
 		input1.send(value: 7)
 		input.send(value: child4)
 		input4.send(value: 30)
 		input4.send(value: 31)
 		input4.send(value: 32)
-		input4.close()
+		input4.complete()
 		input1.send(value: 8)
 		input1.send(value: 9)
-		input.close()
+		input.complete()
 		
 		XCTAssert(results.count == 9)
 		XCTAssert(results.at(0)?.value == 0)
@@ -1789,7 +1789,7 @@ class SignalReactiveTests: XCTestCase {
 		input2.send(value: 11)
 		input2.send(value: 12)
 		input1.send(value: 3)
-		input1.close()
+		input1.complete()
 		input2.send(value: 13)
 		input2.send(value: 14)
 		input2.send(value: 15)
@@ -1826,8 +1826,8 @@ class SignalReactiveTests: XCTestCase {
 		input1.send(value: 3)
 		input3.send(value: 23)
 		input3.send(value: 24)
-		input3.close()
-		input1.close()
+		input3.complete()
+		input1.complete()
 		XCTAssert(results.count == 5)
 		XCTAssert(results.at(0)?.value?.0 == 0 && results.at(0)?.value?.1 == 10 && results.at(0)?.value?.2 == 20)
 		XCTAssert(results.at(1)?.value?.0 == 1 && results.at(1)?.value?.1 == 11 && results.at(1)?.value?.2 == 21)
@@ -1865,9 +1865,9 @@ class SignalReactiveTests: XCTestCase {
 		input1.send(value: 3)
 		input3.send(value: 23)
 		input3.send(value: 24)
-		input3.close()
+		input3.complete()
 		input4.send(value: 33)
-		input1.close()
+		input1.complete()
 		XCTAssert(results.count == 5)
 		XCTAssert(results.at(0)?.value?.0 == 0 && results.at(0)?.value?.1 == 10 && results.at(0)?.value?.2 == 20 && results.at(0)?.value?.3 == 30)
 		XCTAssert(results.at(1)?.value?.0 == 1 && results.at(1)?.value?.1 == 11 && results.at(1)?.value?.2 == 21 && results.at(1)?.value?.3 == 31)
@@ -1912,8 +1912,8 @@ class SignalReactiveTests: XCTestCase {
 		input5.send(value: 42)
 		input5.send(value: 43)
 		input5.send(value: 44)
-		input3.close()
-		input1.close()
+		input3.complete()
+		input1.complete()
 		XCTAssert(results.count == 5)
 		XCTAssert(results.at(0)?.value?.0 == 0 && results.at(0)?.value?.1 == 10 && results.at(0)?.value?.2 == 20 && results.at(0)?.value?.3 == 30 && results.at(0)?.value?.4 == 40)
 		XCTAssert(results.at(1)?.value?.0 == 1 && results.at(1)?.value?.1 == 11 && results.at(1)?.value?.2 == 21 && results.at(1)?.value?.3 == 31 && results.at(1)?.value?.4 == 41)
@@ -2201,7 +2201,7 @@ class SignalReactiveTests: XCTestCase {
 			})
 		}
 		delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(350)) {
-			input.close()
+			input.complete()
 		})
 
 		coordinator.runScheduledTasks()
@@ -2236,7 +2236,7 @@ class SignalReactiveTests: XCTestCase {
 			})
 		}
 		delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(350)) {
-			input.close()
+			input.complete()
 		})
 
 		coordinator.runScheduledTasks()
@@ -2269,7 +2269,7 @@ class SignalReactiveTests: XCTestCase {
 			})
 		}
 		delayedInputs.append(coordinator.global.singleTimer(interval: .milliseconds(350)) {
-			input.close()
+			input.complete()
 		})
 
 		coordinator.runScheduledTasks()
@@ -2315,12 +2315,12 @@ class SignalReactiveTests: XCTestCase {
 		input2.send(value: 3)
 		input1.send(value: 4)
 		input1.send(value: 5)
-		input1.close()
+		input1.complete()
 		input2.send(value: 6)
-		input2.close()
+		input2.complete()
 		input3.send(value: 7)
 		input3.send(value: 8)
-		input3.close()
+		input3.complete()
 
 		withExtendedLifetime(out) {}
 
@@ -2425,7 +2425,7 @@ class SignalReactiveTests: XCTestCase {
 		input.send(value: 3)
 		input.send(value: 4)
 		input.send(value: 5)
-		input.close()
+		input.complete()
 		
 		withExtendedLifetime(out) {}
 		
@@ -2446,7 +2446,7 @@ class SignalReactiveTests: XCTestCase {
 		input.send(value: 3)
 		input.send(value: 4)
 		input.send(value: 5)
-		input.close()
+		input.complete()
 		
 		withExtendedLifetime(out) {}
 		
@@ -2470,7 +2470,7 @@ class SignalReactiveTests: XCTestCase {
 		input.send(value: 3)
 		input.send(value: 4)
 		input.send(value: 5)
-		input.close()
+		input.complete()
 		
 		withExtendedLifetime(out) {}
 		
@@ -2493,7 +2493,7 @@ class SignalReactiveTests: XCTestCase {
 		input.send(value: 3)
 		input.send(value: 4)
 		input.send(value: 5)
-		input.close()
+		input.complete()
 		
 		withExtendedLifetime(out) {}
 		
@@ -2514,7 +2514,7 @@ class SignalReactiveTests: XCTestCase {
 		input.send(value: 3)
 		input.send(value: 4)
 		input.send(value: 5)
-		input.close()
+		input.complete()
 		
 		withExtendedLifetime(out) {}
 		
@@ -2538,7 +2538,7 @@ class SignalReactiveTests: XCTestCase {
 		input.send(value: 3)
 		input.send(value: 4)
 		input.send(value: 5)
-		input.close()
+		input.complete()
 		
 		withExtendedLifetime(out) {}
 		

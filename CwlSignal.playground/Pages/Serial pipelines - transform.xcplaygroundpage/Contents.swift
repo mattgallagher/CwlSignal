@@ -19,10 +19,10 @@ import CwlSignal
 let (input, signal) = Signal<Int>.create()
 
 // Transform into signal that emits the string "Beep", a number of times equal to the integer received
-let output = signal.transform { (result: Result<Int>, next: SignalNext<String>) in
+let output = signal.transform { result in
 	switch result {
-	case .success(let v): next.send(sequence: (0..<v).map { i in "Beep \(v): \(i + 1)" })
-	case .failure(let e): next.send(error: e)
+	case .success(let v): return .values(sequence: (0..<v).map { i in "Beep \(v): \(i + 1)" })
+	case .failure(let e): return .end(e)
 	}
 }.subscribeValues { value in
 	// In this example, we use `subscribeValues` which works like `subcribe` but unwraps the `Result<T>` automatically, ignoring errors (good if you don't need to know about end-of-stream conditions).
@@ -32,7 +32,7 @@ let output = signal.transform { (result: Result<Int>, next: SignalNext<String>) 
 input.send(1)
 input.send(2)
 input.send(3)
-input.close()
+input.complete()
 
 /*:
 ---

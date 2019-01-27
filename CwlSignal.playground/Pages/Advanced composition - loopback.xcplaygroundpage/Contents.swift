@@ -22,39 +22,42 @@ let (input, signal) = Signal<String>.create()
 let (loopbackInput, loopbackSignal) = Signal<Void>.create()
 let semaphore = DispatchSemaphore(value: 0)
 
-signal.combine(loopbackSignal, initialState: [Result<String>](), context: .global) { (queue: inout [Result<String>], either: EitherResult2<String, ()>, next: SignalNext<String>) in
+signal.combine(loopbackSignal, initialState: [Result<String, SignalEnd>](), context: .global) { (queue: inout [Result<String, SignalEnd>], either: EitherResult2<String, ()>) in
 	switch either {
 	case .result1(let r) where queue.isEmpty:
 		print("Received input \(r). Sending immediately.")
 		queue.append(r)
-		next.send(result: r)
+		return .single(r)
 	case .result1(.success(let v)):
 		print("Received input \(v). This will be inserted at the start of the queue.")
 		queue.insert(.success(v), at: 1)
+		return .none
 	case .result1(.failure(let e)):
 		print("Received \(e). This will be added to the end of the queue.")
 		queue.append(.failure(e))
+		return .none
 	case .result2(.success):
 		print("Received completion notification for \(queue[0])")
 		queue.remove(at: 0)
 		if !queue.isEmpty {
 			print("Dequeuing \(queue[0])")
-			next.send(result: queue[0])
+			return .single(queue[0])
 		}
+		return .none
 	case .result2(.failure(let e)):
-		next.send(error: e)
+		return .end(e)
 	}
-}.transform(context: .global) { r, n in
+}.transform(context: .global) { (r: Result<String, SignalEnd>) in
 	// A 0.1 second sleep is used to simulate heavy processing
 	Thread.sleep(forTimeInterval: 0.1)
 	
-	// Emit the output
-	n.send(result: r)
-	print("Finished processing \(r)")
-	
 	// Notify that we're ready for the next item
+	print("Finished processing \(r)")
 	loopbackInput.send(())
-}.subscribeUntilEnd { (r: Result<String>) in
+
+	// Emit the output
+	return .single(r)
+}.subscribeUntilEnd { (r: Result<String, SignalEnd>) in
 	// Wait until the signal is complete
 	switch r {
 	case .failure: semaphore.signal()
@@ -63,7 +66,7 @@ signal.combine(loopbackSignal, initialState: [Result<String>](), context: .globa
 }
 
 input.send("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
-input.close()
+input.complete()
 
 semaphore.wait()
 

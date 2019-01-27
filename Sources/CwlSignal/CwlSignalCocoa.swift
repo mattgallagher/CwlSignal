@@ -168,6 +168,6 @@ public extension Signal where OutputValue == Date {
 	///   - initialInterval: time until first emitted Date value (default is zero)
 	/// - Returns: a `Signal<Date>` that emits according to the described intervals
 	static func date(_ interval: DispatchTimeInterval = .seconds(1), initial initialInterval: DispatchTimeInterval? = .seconds(0), context: Exec = .direct) -> Signal<OutputValue> {
-		return Signal<Int>.interval(interval, initial: initialInterval, context: context).transformValues { _, n in n.send(value: Date()) }
+		return Signal<Int>.interval(interval, initial: initialInterval, context: context).transformValues { _ in return .value(Date()) }
 	}
 }
