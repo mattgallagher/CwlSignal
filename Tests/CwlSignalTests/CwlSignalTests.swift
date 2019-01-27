@@ -1956,36 +1956,36 @@ class SignalTests: XCTestCase {
 	
 	func testAsyncMutexAssurances() {
 		let coordinator = DebugContextCoordinator()
-		let context = coordinator.asyncQueue
+		let context = coordinator.asyncQueue()
 		var result = [Int]()
 		
 		// The previous stage's context must *not* be active on a subsequent stage
 		Signal.just(1, 2, 3).transform(context: context) { .single($0) }.subscribeValuesUntilEnd {
-			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
 		}
+		coordinator.runScheduledTasks()
 		XCTAssert(result.count == 3)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
 		Signal.just(1, 2, 3).transform(initialState: 0, context: context) { s, r in .single(r) }.subscribeValuesUntilEnd {
-			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
 		}
+		coordinator.runScheduledTasks()
 		XCTAssert(result.count == 6)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1, 2, 3).reduce(initialState: 0, context: context) { s, r in return r }.subscribeValuesUntilEnd {
-			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
+		Signal.just(1, 2, 3).reduce(initialState: 0, context: context) { s, r in r }.subscribeValuesUntilEnd {
 			result.append($0)
 		}
-		XCTAssert(result.count == 9)
+		coordinator.runScheduledTasks()
+		XCTAssert(result.count == 10)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
 		Signal.just(1, 2, 3).customActivation(initialValues: [], context: context) { _, _, _ in }.subscribeValuesUntilEnd {
-			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
 		}
-		XCTAssert(result.count == 12)
+		coordinator.runScheduledTasks()
+		XCTAssert(result.count == 13)
 	}
 }
 
