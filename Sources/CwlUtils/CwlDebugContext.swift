@@ -104,13 +104,13 @@ public class DebugContextCoordinator {
 	}
 	
 	/// Implementation mimicking Exec.syncQueue but returning an Exec.custom(DebugContext)
-	public var syncQueue: Exec {
+	public func syncQueue() -> Exec {
 		let uuidString = CFUUIDCreateString(nil, CFUUIDCreate(nil)) as String? ?? ""
 		return .custom(DebugContext(type: .mutex, thread: .custom(uuidString), coordinator: self))
 	}
 	
 	/// Implementation mimicking Exec.asyncQueue but returning an Exec.custom(DebugContext)
-	public var asyncQueue: Exec {
+	public func asyncQueue() -> Exec {
 		let uuidString = CFUUIDCreateString(nil, CFUUIDCreate(nil)) as String? ?? ""
 		return .custom(DebugContext(type: .serialAsync, thread: .custom(uuidString), coordinator: self))
 	}
