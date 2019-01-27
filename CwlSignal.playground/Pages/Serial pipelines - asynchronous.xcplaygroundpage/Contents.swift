@@ -35,7 +35,7 @@ let (input, output) = Signal<Int>.channel()
 
 // Send values to the input end
 input.send(1, 2, 3, 4, 5, 6, 7, 8, 9)
-input.close()
+input.complete()
 
 // In reactive programming, blocking is normally discouraged (you should subscribe to all
 // dependencies and process when they're all done) but we need to block or the playground

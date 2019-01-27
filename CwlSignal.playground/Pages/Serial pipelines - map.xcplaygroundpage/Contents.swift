@@ -21,7 +21,7 @@ signal.map { $0 * 2 }.subscribeValuesUntilEnd { print("Value received: \($0)") }
 
 // Send values to the input end
 input.send(1, 2, 3)
-input.close()
+input.complete()
 
 /*:
 ---

@@ -20,7 +20,7 @@ let input = Signal.channel().map { $0 * 2 }.subscribeValuesUntilEnd { print("Val
 
 // Send values to the input end
 input.send(1, 2, 3)
-input.close()
+input.complete()
 
 /*:
 ---
