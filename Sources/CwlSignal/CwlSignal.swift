@@ -908,11 +908,8 @@ public class Signal<OutputValue>: SignalInterface {
 	// Increment the `holdCount`.
 	///
 	/// - Parameter activationCount: must match the internal value or the block request will be ignored
-	fileprivate final func block(activationCount: Int) {
-		mutex.sync {
-			guard self.activationCount == activationCount else { return }
-			blockInternal()
-		}
+	fileprivate final func block() {
+		mutex.sync { blockInternal() }
 	}
 	
 	// Decrement the `holdCount`, if the `activationCountAtBlock` provided matches `self.activationCount`
@@ -948,10 +945,10 @@ public class Signal<OutputValue>: SignalInterface {
 	// Decrement the `holdCount`, if the `activationCount` provided matches `self.activationCount` and resume processing if the `holdCount` reaches zero and there are items in the queue.
 	///
 	/// - Parameter activationCount: must match the internal value or the block request will be ignored
-	fileprivate final func unblock(activationCountAtBlock: Int) {
+	fileprivate final func unblock() {
 		var dw = DeferredWork()
 		mutex.sync {
-			unblockInternal(activationCountAtBlock: activationCountAtBlock)
+			unblockInternal(activationCountAtBlock: activationCount)
 			resumeIfPossibleInternal(dw: &dw)
 		}
 		dw.runWork()
@@ -1906,6 +1903,9 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 		var outs: OutputsArray? = updater != nil ? nil : outputs
 		
 		let activated = signal.delivery.isNormal
+		let activationCount = signal.activationCount
+		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
+		let isSychronousAndNonImmediate = signal.delivery.isSynchronous && !context.type.isImmediate
 		
 		// NOTE: the output signals in the `outs` array are already weakly retained
 		return { [weak self] r in
@@ -1922,7 +1922,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 						}
 						
 						// Perform the update on the copies
-						let expired = u(&values, &error, r)
+						let expired = !isSychronousAndNonImmediate ? u(&values, &error, r) : s.context.invokeSync { u(&values, &error, r) }
 						
 						// Change the authoritative activation values and error
 						s.sync {
@@ -1952,13 +1952,25 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 						withExtendedLifetime(expired) {}
 					}
 				}
-				
+
 				// Send the result *before* changing the authoritative activation values and error
 				if let os = outs {
 					let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(s)
-					for o in os {
-						if let d = o.destination.value, let ac = o.activationCount {
-							d.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
+					if isAsyncNonConcurrent {
+						s.signal.block()
+						s.context.globalAsync {
+							for o in os {
+								if let d = o.destination.value, let ac = o.activationCount {
+									d.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
+								}
+							}
+							s.signal.unblock()
+						}
+					} else {
+						for o in os {
+							if let d = o.destination.value, let ac = o.activationCount {
+								d.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
+							}
 						}
 					}
 				}
@@ -1968,7 +1980,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 }
 
 // Implementation of a processor that combines SignalTransformerWithState and SignalMultiProcessor functionality into a single processor (avoiding the need for a clumsy state sharing arrangement if the two are separate).
-fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<OutputValue, State>, SignalBlockable {
+fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<OutputValue, State> {
 	typealias Initializer = (_ message: Result<OutputValue, SignalEnd>) -> Result<State?, SignalEnd>
 	typealias Reducer = (_ state: State, _ message: Result<OutputValue, SignalEnd>) -> Result<State, SignalEnd>
 	enum StateOrInitializer {
@@ -2003,10 +2015,6 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		return true
 	}
 	
-	fileprivate func unblock(activationCount: Int) {
-		signal.unblock(activationCountAtBlock: activationCount)
-	}
-
 	fileprivate final override func sendActivationToOutputInternal(index: Int, dw: inout DeferredWork) {
 		guard case .state(let state) = stateOrInitializer else { return }
 		
@@ -2060,6 +2068,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		let activated = signal.delivery.isNormal
 		let activationCount = signal.activationCount
 		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
+		let isSychronousAndNonImmediate = signal.delivery.isSynchronous && !context.type.isImmediate
 		return { [weak self] r in
 			if let s = self {
 				// Copy the state under the mutex
@@ -2067,7 +2076,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 				
 				let next: Result<State, SignalEnd>
 				switch stateOrInitializer {
-				case .state(let state): next = s.reducer(state, r)
+				case .state(let state): next = !isSychronousAndNonImmediate ? s.reducer(state, r) : s.context.invokeSync { s.reducer(state, r) }
 				case .initializer(let initializer):
 					switch initializer(r) {
 					case .success(nil): return
@@ -2096,14 +2105,14 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 
 				let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(s)
 				if isAsyncNonConcurrent {
-					s.signal.block(activationCount: activationCount)
-					DispatchQueue.global().async {
+					s.signal.block()
+					s.context.globalAsync {
 						for o in outputs {
 							if let d = o.destination.value, let ac = o.activationCount {
 								d.send(result: result, predecessor: predecessor, activationCount: ac, activated: activated)
 							}
 						}
-						s.signal.unblock(activationCountAtBlock: activationCount)
+						s.signal.unblock()
 					}
 				} else {
 					for o in outputs {
@@ -2183,23 +2192,8 @@ fileprivate final class SignalCacheUntilActive<OutputValue>: SignalProcessor<Out
 	}
 }
 
-// An SignalNext will block the preceeding SignalTransformer if it is held beyond the scope of the handler function. This allows out-of-context work to be performed.
-fileprivate protocol SignalBlockable: class {
-	// When the `needUnblock` property is set to `true` on `SignalNext`, it must invoke this on its `blockable`.
-	//
-	// - Parameter activationCount: must match the internal value or the unblock will be ignored
-	func unblock(activationCount: Int)
-	
-	// The `needUnblock` property is set by the handler under the handlers mutex, so this function is provided by the `blockable` to safely access `needUnblock`.
-	//
-	// - Parameter execute: the work to perform inside the mutex
-	// - Returns: the result from the `execute closure
-	// - Throws: basic rethrow from the `execute` closure
-	func sync<OutputValue>(execute: () throws -> OutputValue) rethrows -> OutputValue
-}
-
 // A transformer applies a user transformation to any signal. It's the typical "between two `Signal`s" handler.
-fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<OutputValue, U>, SignalBlockable {
+fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<OutputValue, U> {
 	typealias UserProcessorType = (Result<OutputValue, SignalEnd>) -> Signal<U>.Next
 	let userProcessor: UserProcessorType
 	
@@ -2214,14 +2208,7 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 		self.userProcessor = context.isImmediateNonDirect ? { a in context.invokeSync { processor(a) } } : processor
 		super.init(signal: signal, dw: &dw, context: context)
 	}
-	
-	// Implementation of `SignalBlockable`.
-	//
-	// - Parameter activationCount: must match the internal value or the unblock will be ignored
-	fileprivate func unblock(activationCount: Int) {
-		signal.unblock(activationCountAtBlock: activationCount)
-	}
-	
+
 	/// Invoke the user handler and block if the `next` gains an additional reference count in the process.
 	// - Returns: a function to use as the handler after activation
 	override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
@@ -2229,31 +2216,31 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		let activated = signal.delivery.isNormal
-		let activationCount = signal.activationCount
 		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
+		let isSychronousAndNonImmediate = signal.delivery.isSynchronous && !context.type.isImmediate
 		return { [userProcessor, weak self, weak outputSignal] r in
-			let transformedResult = userProcessor(r)
+			let transformedResult = !isSychronousAndNonImmediate ? userProcessor(r) : self?.context.invokeSync { userProcessor(r) } ?? userProcessor(r)
 			
 			if let os = outputSignal {
 				switch transformedResult {
 				case .none: break
 				case .single(let r):
 					if isAsyncNonConcurrent {
-						self?.signal.block(activationCount: activationCount)
-						DispatchQueue.global().async {
+						self?.signal.block()
+						self?.context.globalAsync {
 							os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-							self?.signal.unblock(activationCountAtBlock: activationCount)
+							self?.signal.unblock()
 						}
 					} else {
 						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 					}
 				case .array(let a):
 					if isAsyncNonConcurrent {
-						self?.signal.block(activationCount: activationCount)
-						DispatchQueue.global().async {
+						self?.signal.block()
+						self?.context.globalAsync {
 							for r in a {
 								os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-								self?.signal.unblock(activationCountAtBlock: activationCount)
+								self?.signal.unblock()
 							}
 						}
 					} else {
@@ -2268,7 +2255,7 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 }
 
 /// Same as `SignalTransformer` plus a `state` value that is passed `inout` to the handler each time so state can be safely retained between invocations. This `state` value is reset to its `initialState` if the signal graph is deactivated.
-fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalProcessor<OutputValue, U>, SignalBlockable {
+fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalProcessor<OutputValue, U> {
 	typealias UserProcessorType = (inout S, Result<OutputValue, SignalEnd>) -> Signal<U>.Next
 	let userProcessor: UserProcessorType
 	let initialState: S
@@ -2287,13 +2274,6 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 	
-	// Implementation of `SignalBlockable`
-	//
-	// - Parameter activationCount: must match the internal value or the unblock will be ignored
-	fileprivate func unblock(activationCount: Int) {
-		signal.unblock(activationCountAtBlock: activationCount)
-	}
-	
 	// Invoke the user handler and block if the `next` gains an additional reference count in the process.
 	// - Returns: a function to use as the handler after activation
 	override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
@@ -2303,33 +2283,34 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 		let activated = signal.delivery.isNormal
 		let activationCount = signal.activationCount
 		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
+		let isSychronousAndNonImmediate = signal.delivery.isSynchronous && !context.type.isImmediate
 		
 		/// Every time the handler is recreated, the `state` value is initialized from the `initialState`.
 		var state = initialState
 		
 		return { [userProcessor, weak self, weak outputSignal] r in
-			let transformedResult = userProcessor(&state, r)
+			let transformedResult = !isSychronousAndNonImmediate ? userProcessor(&state, r) : self?.context.invokeSync { userProcessor(&state, r) } ?? userProcessor(&state, r)
 			
 			if let os = outputSignal {
 				switch transformedResult {
 				case .none: break
 				case .single(let r):
 					if isAsyncNonConcurrent {
-						self?.signal.block(activationCount: activationCount)
-						DispatchQueue.global().async {
+						self?.signal.block()
+						self?.context.globalAsync {
 							os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-							self?.signal.unblock(activationCountAtBlock: activationCount)
+							self?.signal.unblock()
 						}
 					} else {
 						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 					}
 				case .array(let a):
 					if isAsyncNonConcurrent {
-						self?.signal.block(activationCount: activationCount)
-						DispatchQueue.global().async {
+						self?.signal.block()
+						self?.context.globalAsync {
 							for r in a {
 								os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-								self?.signal.unblock(activationCountAtBlock: activationCount)
+								self?.signal.unblock()
 							}
 						}
 					} else {

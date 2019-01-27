@@ -1816,8 +1816,12 @@ class SignalTests: XCTestCase {
 		var results = [Result<Int, SignalEnd>]()
 		let coordinator = DebugContextCoordinator()
 		let (input, signal) = Signal<Int>.create()
-		let out = signal.continuous(initialValue: 3).deferActivation().map(context: coordinator.mainAsync) { $0 * 2 }.subscribe { r in
+		let out = signal.continuous(initialValue: 3).deferActivation().map(context: coordinator.mainAsync) {
+			print("Yo")
+			return $0 * 2
+		}.subscribe { (r: Signal<Int>.Result) in
 			results.append(r)
+			print(results)
 		}
 		XCTAssert(results.isEmpty)
 		coordinator.runScheduledTasks()
