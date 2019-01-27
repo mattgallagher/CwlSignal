@@ -75,6 +75,10 @@ public protocol ExecutionContext {
 	/// NOTE: a default implementation of this is provided that, if `type.isImmediate` is true, simply calls `invoke`, otherwise it calls `invoke` and blocks waiting on a semaphore in the calling context until `invoke` completes. Creating a semphore for every call is inefficient so you should implement this a different way, if possible.
 	func invokeSync<Return>(_ execute: () -> Return) -> Return
 	
+	/// Run `execute` asynchronously *outside* the execution context.
+	/// NOTE: a default implementation of this function is provided that calls `DispatchQueue.global().async`. With the exception of debug, test and other host-isolated contexts, this is usually sufficient. 
+	func globalAsync(_ execute: @escaping () -> Void)
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
 	/// NOTE: a default implementation of this function is provided that runs the timer on the global dispatch queue and calls `invoke` when it fires. This implementation is likely sufficient for most cases but may not be appropriate if your context has strict timing or serialization requirements.
 	func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime
@@ -148,7 +152,11 @@ public extension ExecutionContext {
 			return r!
 		}
 	}
-
+	
+	func globalAsync(_ execute: @escaping () -> Void) {
+		DispatchQueue.global().async(execute: execute)
+	}
+	
 	func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		return DispatchSource.singleTimer(interval: interval, leeway: leeway, queue: DispatchQueue.global(), handler: { self.invoke(handler) }) as! DispatchSource
 	}

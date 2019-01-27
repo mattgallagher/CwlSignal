@@ -31,7 +31,7 @@ public enum DebugContextThread: Hashable {
 	case main
 	case global
 	case custom(String)
-
+	
 	/// Convenience test to determine if an `Exec` instance wraps a `DebugContext` identifying `self` as its `thread`.
 	public func matches(_ exec: Exec) -> Bool {
 		if case .custom(let debugContext as DebugContext) = exec, debugContext.thread ==
@@ -168,11 +168,11 @@ public class DebugContextCoordinator {
 			return t
 		}
 		let t = DebugContextQueue()
-
+		
 		// Since releasing `queues` will likely cause the release of closures and items held by the queue, which might lead to nested calls to remove items from `queues` violating ownership rules...
 		// We copy queues to a non-shared stack location, clear `queues` and *then* release the contents.
 		withExtendedLifetime(queues[forName]) { queues[forName] = t }
-
+		
 		return t
 	}
 	
@@ -267,7 +267,7 @@ class DebugContextQueue {
 		
 		pendingBlocks.insert(pending, at: insertionIndex)
 	}
-
+	
 	// Remove a block
 	func cancelTimer(_ toCancel: DebugContextTimer) {
 		if let index = pendingBlocks.firstIndex(where: { tuple -> Bool in tuple.timer === toCancel }) {
@@ -302,7 +302,7 @@ public struct DebugContext: ExecutionContext {
 	let underlyingType: ExecutionType
 	let thread: DebugContextThread
 	weak var coordinator: DebugContextCoordinator?
-
+	
 	init(type: ExecutionType, thread: DebugContextThread, coordinator: DebugContextCoordinator) {
 		self.underlyingType = type
 		self.thread = thread
@@ -377,13 +377,20 @@ public struct DebugContext: ExecutionContext {
 			return r
 		}
 	}
-
+	
+	public func globalAsync(_ execute: @escaping () -> Void) {
+		guard let c = coordinator else {
+			return execute()
+		}
+		c.global.invokeAsync(execute)
+	}
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
 	public func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		guard let c = coordinator else { return DebugContextTimer() }
 		return c.schedule(block: handler, thread: thread, timeInterval: interval.nanoseconds, repeats: false)
 	}
-
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, unless the returned `Lifetime` is cancelled or released before running occurs.
 	public func singleTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
 		guard let c = coordinator else { return DebugContextTimer() }
@@ -395,7 +402,7 @@ public struct DebugContext: ExecutionContext {
 		guard let c = coordinator else { return DebugContextTimer() }
 		return c.schedule(block: handler, thread: thread, timeInterval: interval.nanoseconds, repeats: true)
 	}
-
+	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`), passing the `parameter` value as an argument, and again every `interval` (within a `leeway` margin of error) unless the returned `Lifetime` is cancelled or released before running occurs.
 	public func periodicTimer<T>(parameter: T, interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping (T) -> Void) -> Lifetime {
 		guard let c = coordinator else { return DebugContextTimer() }
