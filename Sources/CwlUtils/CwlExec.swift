@@ -152,6 +152,13 @@ extension Exec: ExecutionContext {
 		}
 	}
 	
+	public func globalAsync(_ execute: @escaping () -> Void) {
+		switch self {
+		case .custom(let c): c.globalAsync(execute)
+		default: DispatchQueue.global().async(execute: execute)
+		}
+	}
+	
 	private var timerQueue: DispatchQueue {
 		switch self {
 		case .direct: return DispatchQueue.global()
