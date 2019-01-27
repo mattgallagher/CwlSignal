@@ -19,13 +19,13 @@ let smileys = Signal<String>.just("😀", "🙃", "😉", "🤣").playback()
 let spookeys = Signal<String>
 	.from(
 		["👻", "🎃", "👹", "😈"],
-		error: SignalComplete.closed
+		end: .complete
 	)
 	.playback()
 let animals = Signal<String>
 	.from(
 		["🐶", "🐱", "🐭", "🐨"],
-		error: SignalReactiveError.timeout
+		end: .other(SignalReactiveError.timeout)
 	)
 	.playback()
 //: We can combine them into a single signal with `merge`
@@ -56,8 +56,8 @@ smileys2.input.send("😉")
 animals2.input.send("🐭")
 smileys2.input.send("🤣")
 animals2.input.send("🐨")
-smileys2.input.close()
-animals2.input.close()
+smileys2.input.complete()
+animals2.input.complete()
 
 // Should print: 😀🙃😉🤣🐶🐱🐭🐨
 /*:
@@ -98,7 +98,6 @@ animals.bind(to: mergeSet, closePropagation: .all)
 mergeSet.send("End")
 
 // Should print: Start 😀🙃😉🤣👻🎃👹😈 End
-
 
 print("\n\nDone")
 

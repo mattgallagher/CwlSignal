@@ -29,7 +29,7 @@ import Foundation
 // latest start will be used.
 struct TimeoutService {
    let startWithTimeout: SignalMultiInput<DispatchTimeInterval>
-   let signal: SignalMulti<Result<String>>
+   let signal: SignalMulti<Result<String, SignalEnd>>
 	
    init(asynchronousWork: @escaping () -> Signal<String>) {
 		(startWithTimeout, signal) = Signal<DispatchTimeInterval>.multiChannel()
@@ -56,8 +56,8 @@ let service = TimeoutService(asynchronousWork: basicAsynchronousWork)
 let output = service.signal.subscribe { result in
 	switch result {
 	case .success(.success(let message)): print("Connected with message: \(message)")
-	case .success(.failure(SignalComplete.closed)): print("Connection closed successfully")
-	case .success(.failure(SignalReactiveError.timeout)): print("Connection failed with timeout")
+	case .success(.failure(.complete)): print("Connection closed successfully")
+	case .success(.failure(.other(SignalReactiveError.timeout))): print("Connection failed with timeout")
 	default: print(result)
 	}
 }
