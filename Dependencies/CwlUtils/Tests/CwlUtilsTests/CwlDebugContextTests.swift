@@ -235,7 +235,7 @@ class DebugContextTests: XCTestCase {
 	func testSyncQueueInvoke() {
 		let coordinator1 = DebugContextCoordinator()
 		var checkpoint1 = false
-		let ec = coordinator1.syncQueue
+		let ec = coordinator1.syncQueue()
 		
 		if case .custom(_ as DebugContext) = ec {
 			ec.invoke {
@@ -253,7 +253,7 @@ class DebugContextTests: XCTestCase {
 	func testAsyncQueueInvoke() {
 		let coordinator1 = DebugContextCoordinator()
 		var checkpoint1 = false
-		let ec = coordinator1.asyncQueue
+		let ec = coordinator1.asyncQueue()
 		if case .custom(_ as DebugContext) = ec {
 			ec.invoke {
 				checkpoint1 = true
@@ -326,7 +326,7 @@ class DebugContextTests: XCTestCase {
 	func testSyncQueueInvokeAsync() {
 		let coordinator1 = DebugContextCoordinator()
 		var checkpoint1 = false
-		let ec = coordinator1.syncQueue
+		let ec = coordinator1.syncQueue()
 		if case .custom(_ as DebugContext) = ec {
 			ec.invokeAsync {
 				checkpoint1 = true
@@ -345,7 +345,7 @@ class DebugContextTests: XCTestCase {
 	func testAsyncQueueInvokeAsync() {
 		let coordinator1 = DebugContextCoordinator()
 		var checkpoint1 = false
-		let ec = coordinator1.asyncQueue
+		let ec = coordinator1.asyncQueue()
 		if case .custom(_ as DebugContext) = ec {
 			ec.invokeAsync {
 				checkpoint1 = true
@@ -407,10 +407,10 @@ class DebugContextTests: XCTestCase {
 		XCTAssert(checkpoint1)
 	}
 	
-	func testSyncQueueInvokeAndWait() {
+	func testSyncQueueInvokeSync() {
 		let coordinator1 = DebugContextCoordinator()
 		var checkpoint1 = false
-		let ec = coordinator1.syncQueue
+		let ec = coordinator1.syncQueue()
 		if case .custom(_ as DebugContext) = ec {
 			ec.invokeSync {
 				checkpoint1 = true
@@ -424,10 +424,10 @@ class DebugContextTests: XCTestCase {
 		}
 	}
 	
-	func testAsyncQueueInvokeAndWait() {
+	func testAsyncQueueInvokeSync() {
 		let coordinator1 = DebugContextCoordinator()
 		var checkpoint1 = false
-		let ec = coordinator1.asyncQueue
+		let ec = coordinator1.asyncQueue()
 		if case .custom(_ as DebugContext) = ec {
 			ec.invokeSync {
 				checkpoint1 = true
@@ -497,7 +497,7 @@ class DebugContextTests: XCTestCase {
 
 	func testTimeoutServiceTimeout() {
 		let coordinator = DebugContextCoordinator()
-		let context = coordinator.syncQueue
+		let context = coordinator.syncQueue()
 
 		// Construct the `TimeoutService` using our debug context
 		let service = TimeoutService(context: context, work: dummyAsyncWork(duration: 2.0))

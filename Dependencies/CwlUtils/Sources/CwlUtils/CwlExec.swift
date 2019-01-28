@@ -74,17 +74,9 @@ public extension Exec {
 		return .queue(.global(qos: .background), .concurrentAsync)
 	}
 	
-	/// Constructs an `Exec.custom` wrapping a synchronous `DispatchQueue`
+	/// Constructs an `Exec.queue` with `mutex` execution type
 	static func syncQueue() -> Exec {
 		return Exec.queue(DispatchQueue(label: ""), ExecutionType.mutex)
-	}
-	
-	/// Constructs an `Exec.custom` wrapping a synchronous `DispatchQueue` with a `DispatchSpecificKey` set for the queue (so that it can be identified when active).
-	static func syncQueueWithSpecificKey() -> (Exec, DispatchSpecificKey<()>) {
-		let q = DispatchQueue(label: "")
-		let specificKey = DispatchSpecificKey<()>()
-		q.setSpecific(key: specificKey, value: ())
-		return (Exec.queue(q, ExecutionType.mutex), specificKey)
 	}
 	
 	/// Constructs an `Exec.custom` wrapping an asynchronous `DispatchQueue`
@@ -92,12 +84,14 @@ public extension Exec {
 		return Exec.queue(DispatchQueue(label: "", qos: qos), ExecutionType.serialAsync)
 	}
 	
-	/// Constructs an `Exec.custom` wrapping an asynchronous `DispatchQueue` with a `DispatchSpecificKey` set for the queue (so that it can be identified when active).
-	static func asyncQueueWithSpecificKey(qos: DispatchQoS = .default) -> (Exec, DispatchSpecificKey<()>) {
-		let q = DispatchQueue(label: "", qos: qos)
-		let specificKey = DispatchSpecificKey<()>()
-		q.setSpecific(key: specificKey, value: ())
-		return (Exec.queue(q, ExecutionType.serialAsync), specificKey)
+	static func recursiveQueue(qos: DispatchQoS = .default) -> Exec {
+		return Exec.custom(RecursiveContext(qos: qos))
+	}
+	
+	/// Constructs an `Exec.custom` wrapping an asynchronous `DispatchQueue`
+	static func conditionallyAsyncQueue(qos: DispatchQoS = .default) -> Exec {
+		let (queue, key) = DispatchQueue.queueWithKey(qos: qos)
+		return Exec.queue(queue, ExecutionType.conditionallyAsync { DispatchQueue.getSpecific(key: key) != nil })
 	}
 }
 
