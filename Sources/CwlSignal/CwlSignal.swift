@@ -1133,11 +1133,17 @@ public class Signal<OutputValue>: SignalInterface {
 	// This function may be called only from `specializedSyncPop` or `pop`.
 	///
 	/// - Returns: an empty/idle `ItemContext`
-	private final func clearItemContextInternal() -> ItemContext<OutputValue> {
+	private final func clearItemContextInternalToExternal() {
 		assert(mutex.unbalancedTryLock() == false)
 		let oldContext = handlerContext
+		self.itemProcessing = false
 		handlerContext = ItemContext<OutputValue>(context: .direct, synchronous: false, handler: { _ in }, activationCount: 0)
-		return oldContext
+
+		var dw = DeferredWork()
+		resumeIfPossibleInternal(dw: &dw)
+		mutex.unbalancedUnlock()
+		withExtendedLifetime(oldContext) {}
+		dw.runWork()
 	}
 	
 	// Invoke the user handler and deactivates the `Signal` if `result` is a `failure`.
@@ -1186,7 +1192,8 @@ public class Signal<OutputValue>: SignalInterface {
 			handlerContext.context.invoke {
 				// Ensure that the signal hasn't been cancelled while we were transitioning to this context
 				self.mutex.unbalancedLock()
-				guard self.handlerContext.activationCount == self.activationCount, !self.handlerContextNeedsRefresh else {
+				guard !self.handlerContextNeedsRefresh else {
+					// We're not going to process this item now, so push it back onto the front of the queue
 					self.queue.insert(result, at: 0)
 					self.abortQueueProcessingInternalToExternal()
 					return
@@ -1201,32 +1208,26 @@ public class Signal<OutputValue>: SignalInterface {
 		}
 	}
 	
-	/// When a change in activation count or handler context is detected, end processing the queue in the current context and see if there is any further work to be performed on another context
+	/// This function has three responsibilities:
+	///  1. Discard the old ItemContext outside any locks
+	///  2. Discard the itemProcessing flag
+	///  3. If on an async non concurrent queue, escape to another context (blocking the queue in the meantime)
+	///  4. Call `resumeIfPossibleInternal`
 	private func abortQueueProcessingInternalToExternal() {
 		if signalHandler?.context.isAsyncNonConcurrent == true {
+			// First, we need to escape the current context since it is a non-rentrant queue
 			let ac = activationCount
 			blockInternal()
 			signalHandler?.context.globalAsync {
-				self.unblock(activationCountAtBlock: ac)
-				
+				// Unblock and resume now that we're outside the queue
 				self.mutex.unbalancedLock()
-				let oldContext = self.clearItemContextInternal()
-				self.itemProcessing = false
-				var dw = DeferredWork()
-				self.resumeIfPossibleInternal(dw: &dw)
-				self.mutex.unbalancedUnlock()
-				withExtendedLifetime(oldContext) {}
-				dw.runWork()
+				self.unblockInternal(activationCountAtBlock: ac)
+				self.clearItemContextInternalToExternal()
 			}
+
 			self.mutex.unbalancedUnlock()
 		} else {
-			let oldContext = self.clearItemContextInternal()
-			itemProcessing = false
-			var dw = DeferredWork()
-			resumeIfPossibleInternal(dw: &dw)
-			mutex.unbalancedUnlock()
-			withExtendedLifetime(oldContext) {}
-			dw.runWork()
+			self.clearItemContextInternalToExternal()
 		}
 	}
 	
@@ -1237,7 +1238,7 @@ public class Signal<OutputValue>: SignalInterface {
 		mutex.unbalancedLock()
 		assert(itemProcessing == true)
 		
-		guard handlerContext.activationCount == activationCount, !handlerContextNeedsRefresh else {
+		guard !handlerContextNeedsRefresh else {
 			abortQueueProcessingInternalToExternal()
 			return nil
 		}
@@ -1265,20 +1266,16 @@ public class Signal<OutputValue>: SignalInterface {
 		mutex.unbalancedLock()
 		assert(itemProcessing == true)
 		
-		if handlerContext.activationCount != activationCount || !queue.isEmpty {
+		if handlerContextNeedsRefresh {
+			abortQueueProcessingInternalToExternal()
+		} else if !queue.isEmpty {
 			mutex.unbalancedUnlock()
 			while let r = pop() {
 				invokeHandler(r)
 			}
 		} else {
 			itemProcessing = false
-			if handlerContextNeedsRefresh {
-				let oldContext = clearItemContextInternal()
-				mutex.unbalancedUnlock()
-				withExtendedLifetime(oldContext) {}
-			} else {
-				mutex.unbalancedUnlock()
-			}
+			mutex.unbalancedUnlock()
 		}
 	}
 }
@@ -1828,6 +1825,27 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	}
 }
 
+/// Helper function for getting outside a mutex, if needed, otherwise running .
+///
+/// - Parameters:
+///   - needed: <#needed description#>
+///   - signalHandler: <#signalHandler description#>
+///   - activationCount: <#activationCount description#>
+///   - perform: <#perform description#>
+private func performAsyncIf<T>(needed: Bool, signalHandler: SignalHandler<T>?, activationCount: Int, perform: @escaping () -> Void) {
+	if needed {
+		if let sh = signalHandler {
+			sh.signal.block(activationCount: activationCount)
+			sh.context.globalAsync {
+				perform()
+				sh.signal.unblock(activationCountAtBlock: activationCount)
+			}
+		}
+	} else {
+		perform()
+	}
+}
+
 fileprivate extension Exec {
 	var isImmediateNonDirect: Bool {
 		if case .direct = self { return false }
@@ -1902,16 +1920,9 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 		let activationCount = signal.activationCount
 		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
 		return { [weak self] r in
-			if let s = self {
-				_ = s.updater?(&s.activationValues, &s.preclosed, r)
-
-				if isAsyncNonConcurrent {
-					s.signal.block(activationCount: activationCount)
-					s.context.globalAsync {
-						s.signal.unblock(activationCountAtBlock: activationCount)
-					}
-				}
-			}
+			guard let self = self else { return }
+			_ = self.updater?(&self.activationValues, &self.preclosed, r)
+			performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {}
 		}
 	}
 	
@@ -1932,69 +1943,57 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 		
 		// NOTE: the output signals in the `outs` array are already weakly retained
 		return { [weak self] r in
-			if let s = self {
-				if let u = s.updater {
-					if s.userUpdated {
-						var values = [OutputValue]()
-						var error: SignalEnd?
-						
-						// Mutably copy the activation values and error
-						s.sync {
-							values = s.activationValues
-							error = s.preclosed
-						}
-						
-						// Perform the update on the copies
-						let expired = u(&values, &error, r)
-						
-						// Change the authoritative activation values and error
-						s.sync {
-							s.activationValues = values
-							s.preclosed = error
-							
-							if outs == nil {
-								outs = s.outputs
-							}
-						}
-						
-						// Make sure any reference to the originals is released *outside* the mutex
-						withExtendedLifetime(expired) {}
-					} else {
-						var expired: (Array<OutputValue>, SignalEnd?)? = nil
-						
-						// Perform the update on the copies
-						s.sync {
-							expired = u(&s.activationValues, &s.preclosed, r)
-							
-							if outs == nil {
-								outs = s.outputs
-							}
-						}
-						
-						// Make sure any expired content is released *outside* the mutex
-						withExtendedLifetime(expired) {}
+			guard let self = self else { return }
+			
+			if let u = self.updater {
+				if self.userUpdated {
+					var values = [OutputValue]()
+					var error: SignalEnd?
+					
+					// Mutably copy the activation values and error
+					self.sync {
+						values = self.activationValues
+						error = self.preclosed
 					}
+					
+					// Perform the update on the copies
+					let expired = u(&values, &error, r)
+					
+					// Change the authoritative activation values and error
+					self.sync {
+						self.activationValues = values
+						self.preclosed = error
+						
+						if outs == nil {
+							outs = self.outputs
+						}
+					}
+					
+					// Make sure any reference to the originals is released *outside* the mutex
+					withExtendedLifetime(expired) {}
+				} else {
+					var expired: (Array<OutputValue>, SignalEnd?)? = nil
+					
+					// Perform the update on the copies
+					self.sync {
+						expired = u(&self.activationValues, &self.preclosed, r)
+						
+						if outs == nil {
+							outs = self.outputs
+						}
+					}
+					
+					// Make sure any expired content is released *outside* the mutex
+					withExtendedLifetime(expired) {}
 				}
+			}
 
-				// Send the result *before* changing the authoritative activation values and error
-				if let os = outs {
-					let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(s)
-					if isAsyncNonConcurrent {
-						s.signal.block(activationCount: activationCount)
-						s.context.globalAsync {
-							for o in os {
-								if let d = o.destination.value, let ac = o.activationCount {
-									d.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-								}
-							}
-							s.signal.unblock(activationCountAtBlock: activationCount)
-						}
-					} else {
-						for o in os {
-							if let d = o.destination.value, let ac = o.activationCount {
-								d.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-							}
-						}
+			// Send the result *before* changing the authoritative activation values and error
+			let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
+			performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
+				for o in outs ?? [] {
+					if let d = o.destination.value, let ac = o.activationCount {
+						d.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 					}
 				}
 			}
@@ -2052,39 +2051,34 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
 		let activationCount = signal.activationCount
 		return { [weak self] r in
-			if let s = self {
-				// Copy the state under the mutex
-				let stateOrInitializer = s.sync { s.stateOrInitializer }
-				
-				let next: Result<State, SignalEnd>
-				switch stateOrInitializer {
-				case .state(let state): next = s.reducer(state, r)
-				case .initializer(let initializer):
-					switch initializer(r) {
-					case .success(nil): return
-					case .success(let s?): next = .success(s)
-					case .failure(let e): next = .failure(e)
-					}
-				}
-
-				// Apply the change to the authoritative version under the mutex
-				s.sync {
-					switch next {
-					case .success(let v): s.stateOrInitializer = .state(v)
-					case .failure(let e): s.end = e
-					}
-				}
-				
-				// Ensure any old references are released outside the mutex
-				withExtendedLifetime(stateOrInitializer) {}
-
-				if isAsyncNonConcurrent {
-					s.signal.block(activationCount: activationCount)
-					s.context.globalAsync {
-						s.signal.unblock(activationCountAtBlock: activationCount)
-					}
+			guard let self = self else { return }
+			
+			// Copy the state under the mutex
+			let stateOrInitializer = self.sync { self.stateOrInitializer }
+			
+			let next: Result<State, SignalEnd>
+			switch stateOrInitializer {
+			case .state(let state): next = self.reducer(state, r)
+			case .initializer(let initializer):
+				switch initializer(r) {
+				case .success(nil): return
+				case .success(let s?): next = .success(s)
+				case .failure(let e): next = .failure(e)
 				}
 			}
+
+			// Apply the change to the authoritative version under the mutex
+			self.sync {
+				switch next {
+				case .success(let v): self.stateOrInitializer = .state(v)
+				case .failure(let e): self.end = e
+				}
+			}
+			
+			// Ensure any old references are released outside the mutex
+			withExtendedLifetime(stateOrInitializer) {}
+
+			performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) { }
 		}
 	}
 	
@@ -2097,55 +2091,45 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		let activationCount = signal.activationCount
 		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
 		return { [weak self] r in
-			if let s = self {
-				// Copy the state under the mutex
-				let stateOrInitializer = s.sync { s.stateOrInitializer }
-				
-				let next: Result<State, SignalEnd>
-				switch stateOrInitializer {
-				case .state(let state): next = s.reducer(state, r)
-				case .initializer(let initializer):
-					switch initializer(r) {
-					case .success(nil): return
-					case .success(let s?): next = .success(s)
-					case .failure(let e): next = .failure(e)
-					}
+			guard let self = self else { return }
+			
+			// Copy the state under the mutex
+			let stateOrInitializer = self.sync { self.stateOrInitializer }
+			
+			let next: Result<State, SignalEnd>
+			switch stateOrInitializer {
+			case .state(let state): next = self.reducer(state, r)
+			case .initializer(let initializer):
+				switch initializer(r) {
+				case .success(nil): return
+				case .success(let s?): next = .success(s)
+				case .failure(let e): next = .failure(e)
 				}
+			}
 
-				// Apply the change to the authoritative version under the mutex
-				var outputs: OutputsArray = []
-				var result = Signal<State>.Result.failure(.complete)
-				s.sync {
-					switch next {
-					case .success(let v):
-						s.stateOrInitializer = .state(v)
-						result = .success(v)
-					case .failure(let e):
-						s.end = e
-						result = .failure(e)
-					}
-					outputs = s.outputs
+			// Apply the change to the authoritative version under the mutex
+			var outputs: OutputsArray = []
+			var result = Signal<State>.Result.failure(.complete)
+			self.sync {
+				switch next {
+				case .success(let v):
+					self.stateOrInitializer = .state(v)
+					result = .success(v)
+				case .failure(let e):
+					self.end = e
+					result = .failure(e)
 				}
-				
-				// Ensure any old references are released outside the mutex
-				withExtendedLifetime(stateOrInitializer) {}
+				outputs = self.outputs
+			}
+			
+			// Ensure any old references are released outside the mutex
+			withExtendedLifetime(stateOrInitializer) {}
 
-				let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(s)
-				if isAsyncNonConcurrent {
-					s.signal.block(activationCount: activationCount)
-					s.context.globalAsync {
-						for o in outputs {
-							if let d = o.destination.value, let ac = o.activationCount {
-								d.send(result: result, predecessor: predecessor, activationCount: ac, activated: activated)
-							}
-						}
-						s.signal.unblock(activationCountAtBlock: activationCount)
-					}
-				} else {
-					for o in outputs {
-						if let d = o.destination.value, let ac = o.activationCount {
-							d.send(result: result, predecessor: predecessor, activationCount: ac, activated: activated)
-						}
+			let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
+			performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
+				for o in outputs {
+					if let d = o.destination.value, let ac = o.activationCount {
+						d.send(result: result, predecessor: predecessor, activationCount: ac, activated: activated)
 					}
 				}
 			}
@@ -2244,29 +2228,17 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 		return { [userProcessor, weak self, weak outputSignal] r in
 			let transformedResult = userProcessor(r)
 			
-			if let os = outputSignal {
-				switch transformedResult {
-				case .none: break
-				case .single(let r):
-					if isAsyncNonConcurrent {
-						self?.signal.block(activationCount: activationCount)
-						self?.context.globalAsync {
-							os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-							self?.signal.unblock(activationCountAtBlock: activationCount)
-						}
-					} else {
+			switch transformedResult {
+			case .none: break
+			case .single(let r):
+				performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
+					if let os = outputSignal {
 						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 					}
-				case .array(let a):
-					if isAsyncNonConcurrent {
-						self?.signal.block(activationCount: activationCount)
-						self?.context.globalAsync {
-							for r in a {
-								os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-								self?.signal.unblock(activationCountAtBlock: activationCount)
-							}
-						}
-					} else {
+				}
+			case .array(let a):
+				performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
+					if let os = outputSignal {
 						for r in a {
 							os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 						}
@@ -2313,29 +2285,17 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 		return { [userProcessor, weak self, weak outputSignal] r in
 			let transformedResult = userProcessor(&state, r)
 			
-			if let os = outputSignal {
-				switch transformedResult {
-				case .none: break
-				case .single(let r):
-					if isAsyncNonConcurrent {
-						self?.signal.block(activationCount: activationCount)
-						self?.context.globalAsync {
-							os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-							self?.signal.unblock(activationCountAtBlock: activationCount)
-						}
-					} else {
+			switch transformedResult {
+			case .none: break
+			case .single(let r):
+				performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
+					if let os = outputSignal {
 						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 					}
-				case .array(let a):
-					if isAsyncNonConcurrent {
-						self?.signal.block(activationCount: activationCount)
-						self?.context.globalAsync {
-							for r in a {
-								os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-								self?.signal.unblock(activationCountAtBlock: activationCount)
-							}
-						}
-					} else {
+				}
+			case .array(let a):
+				performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
+					if let os = outputSignal {
 						for r in a {
 							os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 						}
