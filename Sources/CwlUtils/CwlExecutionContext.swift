@@ -20,41 +20,76 @@
 
 import Foundation
 
-/// A description about how the default `invoke` function will behave for an execution context.
-/// Note that it is possible to call `invokeAsync` to force an asychronous invocation or `invokeSync` to block and wait for completion for any context.
+/// A description about the key traits of the execution context (immediate versus asynchronous, re-entrant versus mutex, concurrent versus serial).
+/// The nature of immediate versus asynchronous can be partially overridden by calling `invokeSync` or `invokeAsync` instead of the default `invoke` but the nature of re-entrant versus mutex or concurrent versus serial remain in all cases.
 public enum ExecutionType {
-	/// Any function provided to `invoke` will be completed before the call to `invoke` returns. There is no inherent mutex – simultaneous invocations from multiple threads may run concurrently so therefore this case returns `true` from `isConcurrent`.
+	/// This execution type:
+	///	* completes before `invoke` returns (immediate)
+	///   * applies no mutex so nested calls to `invoke` will succeed (reentrant)
+	///   * will let parallel calls run at the same time (concurrent)
+	/// e.g. directly calling
 	case immediate
 	
-	/// Any function provided to `invoke` will be completed before the call to `invoke` returns. Mutual exclusion is applied preventing invocations from multiple threads running concurrently.
+	/// This execution type:
+	///	* completes before `invoke` returns (immediate)
+	///   * applies a mutex so nested calls to `invoke` will deadlock (non-reentrant)
+	///   * will serialize parallel calls to run one at a time (serial)
+	/// e.g. dispatchQueue.sync
 	case mutex
 	
-	/// Completion of the provided function is independent of the return from `invoke`. Subsequent functions provided to `invoke`, before completion if preceeding provided functions will be serialized and run after the preceeding calls have completed.
+	/// This execution type:
+	///	* completes before `invoke` returns (immediate)
+	///   * applies a mutex but permits re-entering the mutex (reentrant)
+	///   * will serialize parallel calls to run one at a time (serial)
+	/// e.g. NSRecursiveLock.lock(before:)
+	case recursiveMutex
+	
+	/// This execution type:
+	///	* runs outside the current context and might not complete before `invoke` returns (asynchronous)
+	///   * applies a mutex so nested calls to `invokeSync` will deadlock (non-reentrant)
+	///   * will serialize parallel calls to run one at a time (serial)
+	/// e.g. dispatchQueue.async
 	case serialAsync
 	
-	/// In this case, the execution context may be synchronous or asynchronous, depending on a test function that needs to be run in the current context.
-	/// This case is primarily intended to handle `Exec.main` which performs asynchronously on the main thread if the current context is a different thread but will invoke immediately if the current thread is already the main thread.
+	/// This execution type:
+	///	* runs on a specific thread; if that thread is the current thread, this is immediate, otherwise it is asychronous (immediate/asynchronous)
+	///   * nested calls to `invokeSync` are permitted since they will simply be run immediately (reentrant)
+	///   * will serialize parallel calls to run one at a time (serial)
+	/// e.g. `if Thread.isMainThread { invoke() } else { DispatchQueue.main.async { invoke() }`
 	case conditionallyAsync(() -> Bool)
 	
-	/// Completion of the provided function is independent of the return from `invoke`. Subsequent functions provided to `invoke` will be run concurrently.
+	/// This execution type:
+	///	* runs outside the current context and might not complete before `invoke` returns (asynchronous)
+	///   * involves no mutex so nested calls to `invokeSync` are permitted (reentrant)
+	///   * will let parallel calls run at the same time (concurrent)
+	/// e.g. DispatchQueue.global().async
 	case concurrentAsync
 	
 	/// Returns true if an invoked function is guaranteed to complete before the `invoke` returns.
+	/// The inverse of this value is "async"
 	public var isImmediate: Bool {
 		switch self {
-		case .immediate: return true
-		case .mutex: return true
+		case .immediate, .mutex, .recursiveMutex: return true
 		case .conditionallyAsync(let async): return !async()
-		default: return false
+		case .serialAsync, .concurrentAsync: return false
+		}
+	}
+	
+	/// Returns true if an invoked function is guaranteed to complete before the `invoke` returns.
+	/// The inverse of this value is "non-reentrant"
+	public var isReentrant: Bool {
+		switch self {
+		case .immediate, .recursiveMutex, .conditionallyAsync, .concurrentAsync: return true
+		case .mutex, .serialAsync: return false
 		}
 	}
 	
 	/// Returns true if simultaneous uses of the context from separate threads will run concurrently.
+	/// The inverse of this value is "serial"
 	public var isConcurrent: Bool {
 		switch self {
-		case .immediate: return true
-		case .concurrentAsync: return true
-		default: return false
+		case .immediate, .concurrentAsync: return true
+		case .mutex, .recursiveMutex, .serialAsync, .conditionallyAsync: return false
 		}
 	}
 }

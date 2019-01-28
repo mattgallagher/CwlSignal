@@ -147,11 +147,22 @@ class ExecTests: XCTestCase {
 	}
 	
 	func testQueue() {
-		let (ec1, sk1) = Exec.syncQueueWithSpecificKey()
+		let ec1 = Exec.syncQueue()
+		guard case .queue(let q1, _) = ec1 else {
+			fatalError()
+		}
+		let sk1 = DispatchSpecificKey<()>()
+		q1.setSpecific(key: sk1, value: ())
+		
 		XCTAssert(ec1.type.isConcurrent == false)
 		XCTAssert(ec1.type.isImmediate == true)
 		
-		let (ec2, sk2) = Exec.asyncQueueWithSpecificKey()
+		let ec2 = Exec.asyncQueue()
+		guard case .queue(let q2, _) = ec2 else {
+			fatalError()
+		}
+		let sk2 = DispatchSpecificKey<()>()
+		q2.setSpecific(key: sk2, value: ())
 		XCTAssert(ec2.type.isConcurrent == false)
 		XCTAssert(ec2.type.isImmediate == false)
 		
