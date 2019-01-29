@@ -21,11 +21,10 @@ public struct SerializingContext: ExecutionContext {
 		switch underlying.type {
 		case .immediate: return .mutex
 		case .concurrentAsync: return .serialAsync
-		default: return underlying.type
+		case .mutex, .mutexAsync, .recursiveAsync, .recursiveMutex, .thread, .threadAsync, .serialAsync: return underlying.type
 		}
 	}
 	
-	/// Run `execute` normally on the execution context
 	public func invoke(_ execute: @escaping () -> Void) {
 		if case .some(.direct) = underlying as? Exec {
 			mutex.sync(execute: execute)
@@ -34,7 +33,6 @@ public struct SerializingContext: ExecutionContext {
 		}
 	}
 	
-	/// Run `execute` asynchronously on the execution context
 	public func invokeAsync(_ execute: @escaping () -> Void) {
 		underlying.invokeAsync { [mutex] in mutex.sync(execute: execute) }
 	}
@@ -44,7 +42,6 @@ public struct SerializingContext: ExecutionContext {
 		_ = invokeSync(execute)
 	}
 	
-	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
 	public func invokeSync<Return>(_ execute: () -> Return) -> Return {
 		if case .some(.direct) = underlying as? Exec {
 			return mutex.sync(execute: execute)
@@ -60,7 +57,7 @@ public struct SerializingContext: ExecutionContext {
 			let lifetime = underlying.singleTimer(interval: interval, leeway: leeway) { [weak wrapper] in
 				if let w = wrapper {
 					w.mutex.sync {
-						// Need to perform this double check since the timer may have been cancelled/changed before we
+						// Need to perform this double check since the timer may have been cancelled/changed before we managed to enter the mutex
 						if w.lifetime != nil {
 							handler()
 						}
@@ -79,6 +76,7 @@ public struct SerializingContext: ExecutionContext {
 			let lifetime = underlying.singleTimer(parameter: parameter, interval: interval, leeway: leeway) { [weak wrapper] p in
 				if let w = wrapper {
 					w.mutex.sync {
+						// Need to perform this double check since the timer may have been cancelled/changed before we managed to enter the mutex
 						if w.lifetime != nil {
 							handler(p)
 						}
@@ -97,6 +95,7 @@ public struct SerializingContext: ExecutionContext {
 			let lifetime = underlying.periodicTimer(interval: interval, leeway: leeway) { [weak wrapper] in
 				if let w = wrapper {
 					w.mutex.sync {
+						// Need to perform this double check since the timer may have been cancelled/changed before we managed to enter the mutex
 						if w.lifetime != nil {
 							handler()
 						}

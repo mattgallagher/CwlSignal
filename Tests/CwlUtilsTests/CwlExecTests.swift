@@ -139,7 +139,7 @@ class ExecTests: XCTestCase {
 		waitForExpectations(timeout: 1e1, handler: nil)
 		
 		let serialized = Exec.mainAsync.serialized()
-		if case .queue(let q, let t) = serialized, case .serialAsync = t {
+		if case .queue(let q, let t) = serialized, case .threadAsync = t {
 			XCTAssert(q == DispatchQueue.main)
 		} else {
 			XCTFail()

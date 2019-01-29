@@ -38,15 +38,12 @@ public enum Exec {
 public extension Exec {
 	/// If this context is concurrent, returns a serialization around this context, otherwise returns this context.
 	func serialized() -> Exec {
-		if self.type.isConcurrent {
-			return Exec.custom(SerializingContext(concurrentContext: self))
-		}
-		return self
+		return self.type.isConcurrent ? Exec.custom(SerializingContext(concurrentContext: self)) : self
 	}
 	
 	/// Invoked on the main thread, always asynchronously (unless invokeSync is used)
 	static var mainAsync: Exec {
-		return .queue(.main, .serialAsync)
+		return .queue(.main, .threadAsync { Thread.isMainThread })
 	}
 	
 	/// Invoked asynchronously in the global queue with QOS_CLASS_DEFAULT priority
@@ -74,24 +71,14 @@ public extension Exec {
 		return .queue(.global(qos: .background), .concurrentAsync)
 	}
 	
-	/// Constructs an `Exec.queue` with `mutex` execution type
-	static func syncQueue() -> Exec {
+	/// Constructs an Exec.queue configured as an ExecutionType.recursiveMutex
+	static func syncQueue(qos: DispatchQoS = .default) -> Exec {
 		return Exec.queue(DispatchQueue(label: ""), ExecutionType.mutex)
 	}
 	
-	/// Constructs an `Exec.custom` wrapping an asynchronous `DispatchQueue`
+	/// Constructs an Exec.queue configured as an ExecutionType.recursiveAsync
 	static func asyncQueue(qos: DispatchQoS = .default) -> Exec {
-		return Exec.queue(DispatchQueue(label: "", qos: qos), ExecutionType.serialAsync)
-	}
-	
-	static func recursiveQueue(qos: DispatchQoS = .default) -> Exec {
-		return Exec.custom(RecursiveContext(qos: qos))
-	}
-	
-	/// Constructs an `Exec.custom` wrapping an asynchronous `DispatchQueue`
-	static func conditionallyAsyncQueue(qos: DispatchQoS = .default) -> Exec {
-		let (queue, key) = DispatchQueue.queueWithKey(qos: qos)
-		return Exec.queue(queue, ExecutionType.conditionallyAsync { DispatchQueue.getSpecific(key: key) != nil })
+		return Exec.queue(DispatchQueue(label: ""), ExecutionType.mutexAsync)
 	}
 }
 
@@ -100,7 +87,7 @@ extension Exec: ExecutionContext {
 	public var type: ExecutionType {
 		switch self {
 		case .direct: return .immediate
-		case .main: return .conditionallyAsync { !Thread.isMainThread }
+		case .main: return .thread { Thread.isMainThread }
 		case .custom(let c): return c.type
 		case .queue(_, let t): return t
 		}
@@ -110,11 +97,13 @@ extension Exec: ExecutionContext {
 	public func invoke(_ execute: @escaping () -> Void) {
 		switch self {
 		case .direct: execute()
-		case .custom(let c): c.invoke(execute)
 		case .main where Thread.isMainThread: execute()
 		case .main: DispatchQueue.main.async(execute: execute)
+		case .queue(_, .thread(let test)) where test(): execute()
+		case .queue(_, .recursiveMutex(let test)) where test(): execute()
 		case .queue(let q, let t) where t.isImmediate: q.sync(execute: execute)
 		case .queue(let q, _): q.async(execute: execute)
+		case .custom(let c): c.invoke(execute)
 		}
 	}
 	
@@ -128,24 +117,22 @@ extension Exec: ExecutionContext {
 		}
 	}
 	
-	@available(*, deprecated, message: "Use invokeSync instead")
-	public func invokeAndWait(_ execute: @escaping () -> Void) {
-		_ = invokeSync(execute)
-	}
-	
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
 	public func invokeSync<Result>(_ execute: () -> Result) -> Result {
 		switch self {
 		case .direct: return execute()
-		case .custom(let c): return c.invokeSync(execute)
 		case .main where Thread.isMainThread: return execute()
 		case .main: return DispatchQueue.main.sync(execute: execute)
-		case .queue(_, let t) where t.isConcurrent: return execute()
-		case .queue(DispatchQueue.main, _) where Thread.current.isMainThread: return execute()
-		case .queue(let q, _): return q.sync(execute: execute) 
+		case .queue(_, .thread(let test)) where test(): return execute()
+		case .queue(_, .threadAsync(let test)) where test(): return execute()
+		case .queue(_, .recursiveMutex(let test)) where test(): return execute()
+		case .queue(_, .recursiveAsync(let test)) where test(): return execute()
+		case .queue(let q, _): return withoutActuallyEscaping(execute) { e in q.sync(execute: e) }
+		case .custom(let c): return c.invokeSync(execute)
 		}
 	}
 	
+	/// Invokes in a global concurrent context
 	public func globalAsync(_ execute: @escaping () -> Void) {
 		switch self {
 		case .custom(let c): c.globalAsync(execute)
@@ -204,6 +191,11 @@ extension Exec: ExecutionContext {
 }
 
 public extension Exec {
+	@available(*, deprecated, message: "Use invokeSync instead")
+	public func invokeAndWait(_ execute: @escaping () -> Void) {
+		_ = invokeSync(execute)
+	}
+	
 	@available(*, deprecated, message:"Values returned from this may be misleading. Perform your own switch to precisely get the information you need.")
 	var dispatchQueue: DispatchQueue {
 		switch self {
