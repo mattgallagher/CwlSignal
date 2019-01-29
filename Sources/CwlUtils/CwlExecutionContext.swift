@@ -109,11 +109,20 @@ public enum ExecutionType {
 public extension ExecutionType {
 	/// Returns true if an invoked function is guaranteed to complete before the `invoke` returns.
 	/// The inverse of this value is "async"
-	var isImmediate: Bool {
+	var isImmediateCurrentContext: Bool {
 		switch self {
 		case .immediate, .mutex, .recursiveMutex: return true
 		case .thread(let isCurrent): return isCurrent()
 		case .serialAsync, .recursiveAsync, .concurrentAsync, .mutexAsync, .threadAsync: return false
+		}
+	}
+	
+	/// Returns true if an invoked function is guaranteed to complete before the `invoke` returns.
+	/// The inverse of this value is "async"
+	var isAlwaysImmediate: Bool {
+		switch self {
+		case .immediate, .mutex, .recursiveMutex: return true
+		case .thread, .serialAsync, .recursiveAsync, .concurrentAsync, .mutexAsync, .threadAsync: return false
 		}
 	}
 	
@@ -126,6 +135,15 @@ public extension ExecutionType {
 		}
 	}
 	
+	/// Returns true if an invoked function is guaranteed to complete before the `invoke` returns.
+	/// The inverse of this value is "non-reentrant"
+	var isAsyncNonReentrant: Bool {
+		switch self {
+		case .immediate, .mutex, .recursiveAsync, .recursiveMutex, .thread, .threadAsync, .concurrentAsync: return true
+		case .serialAsync, .mutexAsync: return false
+		}
+	}
+	
 	/// Returns true if simultaneous uses of the context from separate threads will run concurrently.
 	/// The inverse of this value is "serial"
 	var isConcurrent: Bool {
@@ -134,29 +152,6 @@ public extension ExecutionType {
 		case .mutex, .recursiveMutex, .recursiveAsync, .serialAsync, .thread, .threadAsync, .mutexAsync: return false
 		}
 	}
-	
-	/// Returns true if simultaneous uses of the context from separate threads will run concurrently.
-	/// The inverse of this value is "serial"
-	var willNest: ExecutionNesting {
-		switch self {
-		case .immediate, .mutex, .recursiveMutex: return .yes
-		case .recursiveAsync, .concurrentAsync, .mutexAsync: return .sync
-		case .thread(let test): return test() ? .yes : .sync
-		case .threadAsync(let test): return test() ? .sync : .no
-		case .serialAsync: return .no
-		}
-	}
-}
-
-public enum ExecutionNesting {
-	/// Invocation always inherits the caller's context
-	case yes
-
-	/// Invocation only inherits the caller's context when calling `invokeSync`
-	case sync
-	
-	/// Invocation only inherits the caller's context if you call from the appropriate thread
-	case no
 }
 
 /// An abstraction of common execution context concepts
@@ -227,7 +222,7 @@ public extension ExecutionContext {
 	}
 	
 	func invokeAsync(_ execute: @escaping () -> Void) {
-		if type.isImmediate == false {
+		if type.isImmediateCurrentContext == false {
 			invoke(execute)
 		} else {
 			DispatchQueue.global().async { self.invoke(execute) }
@@ -237,7 +232,7 @@ public extension ExecutionContext {
 	func invokeSync<Return>(_ execute: () -> Return) -> Return {
 		return withoutActuallyEscaping(execute) { ex in
 			var r: Return? = nil
-			if type.isImmediate == true {
+			if type.isImmediateCurrentContext == true {
 				invoke {
 					r = ex()
 				}

@@ -303,7 +303,7 @@ public struct DebugContext: ExecutionContext {
 	/// Run `execute` normally on the execution context
 	public func invoke(_ execute: @escaping () -> Void) {
 		guard let c = coordinator else { return }
-		if type.isImmediate {
+		if type.isImmediateCurrentContext {
 			let previousThread = c.currentThread
 			if !type.isConcurrent {
 				c.currentThread = thread
@@ -338,7 +338,7 @@ public struct DebugContext: ExecutionContext {
 		guard let c = coordinator else {
 			return execute()
 		}
-		if type.isImmediate {
+		if type.isImmediateCurrentContext {
 			let previousThread = c.currentThread
 			if !type.isConcurrent {
 				c.currentThread = thread
