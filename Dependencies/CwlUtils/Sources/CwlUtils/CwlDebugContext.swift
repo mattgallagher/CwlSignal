@@ -34,8 +34,7 @@ public enum DebugContextThread: Hashable {
 	
 	/// Convenience test to determine if an `Exec` instance wraps a `DebugContext` identifying `self` as its `thread`.
 	public func matches(_ exec: Exec) -> Bool {
-		if case .custom(let debugContext as DebugContext) = exec, debugContext.thread ==
-			self {
+		if case .custom(let debugContext as DebugContext) = exec, debugContext.thread == self {
 			return true
 		} else {
 			return false
@@ -90,12 +89,12 @@ public class DebugContextCoordinator {
 	
 	/// Implementation mimicking Exec.main but returning an Exec.custom(DebugContext)
 	public var main: Exec {
-		return .custom(DebugContext(type: .conditionallyAsync({ DebugContextCoordinator.currentCoordinator?.currentThread != .main }), thread: .main, coordinator: self))
+		return .custom(DebugContext(type: .thread { [weak self] in self?.currentThread == .main }, thread: .main, coordinator: self))
 	}
 	
 	/// Implementation mimicking Exec.mainAsync but returning an Exec.custom(DebugContext)
 	public var mainAsync: Exec {
-		return .custom(DebugContext(type: .serialAsync, thread: .main, coordinator: self))
+		return .custom(DebugContext(type: .threadAsync { [weak self] in self?.currentThread == .main }, thread: .main, coordinator: self))
 	}
 	
 	/// Implementation mimicking Exec.default but returning an Exec.custom(DebugContext)
@@ -112,7 +111,7 @@ public class DebugContextCoordinator {
 	/// Implementation mimicking Exec.asyncQueue but returning an Exec.custom(DebugContext)
 	public func asyncQueue() -> Exec {
 		let uuidString = CFUUIDCreateString(nil, CFUUIDCreate(nil)) as String? ?? ""
-		return .custom(DebugContext(type: .serialAsync, thread: .custom(uuidString), coordinator: self))
+		return .custom(DebugContext(type: .mutexAsync, thread: .custom(uuidString), coordinator: self))
 	}
 	
 	/// Performs all scheduled actions in a serial loop.
@@ -209,15 +208,7 @@ public class DebugContextCoordinator {
 		return (selectedIndex, lowestTime)
 	}
 	
-	static let key = "CwlUtils.DebugContextCoordinator"
-	public static var currentCoordinator: DebugContextCoordinator? {
-		return Thread.current.threadDictionary[DebugContextCoordinator.key] as? DebugContextCoordinator
-	}
-	
 	func runTask(threadIndex: DebugContextThread, time: UInt64) -> DebugContextTimer? {
-		Thread.current.threadDictionary[DebugContextCoordinator.key] = self
-		defer { Thread.current.threadDictionary.removeObject(forKey: DebugContextCoordinator.key) }
-		
 		(currentThread, internalTime) = (threadIndex, time)
 		return queues[threadIndex]?.popAndInvokeNext()
 	}
@@ -299,40 +290,30 @@ class DebugContextQueue {
 
 /// An implementation of `ExecutionContext` that schedules its non-immediate actions on a `DebugContextCoordinator`. This type is constructed using the `Exec` mimicking properties and functions on `DebugContextCoordinator`.
 public struct DebugContext: ExecutionContext {
-	let underlyingType: ExecutionType
+	public let type: ExecutionType
 	let thread: DebugContextThread
 	weak var coordinator: DebugContextCoordinator?
 	
 	init(type: ExecutionType, thread: DebugContextThread, coordinator: DebugContextCoordinator) {
-		self.underlyingType = type
+		self.type = type
 		self.thread = thread
 		self.coordinator = coordinator
-	}
-	
-	/// A description about how functions will be invoked on an execution context.
-	public var type: ExecutionType {
-		switch underlyingType {
-		case .conditionallyAsync:
-			if let ctn = coordinator?.currentThread, thread == ctn {
-				return .conditionallyAsync({ false })
-			}
-			fallthrough
-		default: return underlyingType
-		}
 	}
 	
 	/// Run `execute` normally on the execution context
 	public func invoke(_ execute: @escaping () -> Void) {
 		guard let c = coordinator else { return }
-		switch type {
-		case .mutex:
+		if type.isImmediate {
 			let previousThread = c.currentThread
-			c.currentThread = thread
+			if !type.isConcurrent {
+				c.currentThread = thread
+			}
 			execute()
-			c.currentThread = previousThread
-		case .conditionallyAsync(let test) where test() == false: execute()
-		case .immediate: execute()
-		default: invokeAsync(execute)
+			if !type.isConcurrent {
+				c.currentThread = previousThread
+			}
+		} else {
+			invokeAsync(execute)
 		}
 	}
 	
@@ -357,18 +338,17 @@ public struct DebugContext: ExecutionContext {
 		guard let c = coordinator else {
 			return execute()
 		}
-		switch type {
-		case .mutex:
+		if type.isImmediate {
 			let previousThread = c.currentThread
-			c.currentThread = thread
+			if !type.isConcurrent {
+				c.currentThread = thread
+			}
 			let r = execute()
-			c.currentThread = previousThread
+			if !type.isConcurrent {
+				c.currentThread = previousThread
+			}
 			return r
-		case .conditionallyAsync(let test) where test() == false:
-			return execute()
-		case .immediate:
-			return execute()
-		default:
+		} else {
 			var result: Return? = nil
 			withoutActuallyEscaping(execute) { ex in
 				c.runScheduledTasks(stoppingAfter: c.schedule(block: { result = ex() }, thread: thread, timeInterval: 1, repeats: false))
