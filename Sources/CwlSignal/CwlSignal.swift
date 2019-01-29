@@ -1133,17 +1133,22 @@ public class Signal<OutputValue>: SignalInterface {
 	// This function may be called only from `specializedSyncPop` or `pop`.
 	///
 	/// - Returns: an empty/idle `ItemContext`
-	private final func clearItemContextInternalToExternal() {
+	private final func clearItemContextInternalToExternal(itemOnly: Bool) {
 		assert(mutex.unbalancedTryLock() == false)
-		let oldContext = handlerContext
-		self.itemProcessing = false
-		handlerContext = ItemContext<OutputValue>(context: .direct, synchronous: false, handler: { _ in }, activationCount: 0)
-
-		var dw = DeferredWork()
-		resumeIfPossibleInternal(dw: &dw)
-		mutex.unbalancedUnlock()
-		withExtendedLifetime(oldContext) {}
-		dw.runWork()
+		
+		itemProcessing = false
+		
+		if itemOnly {
+			mutex.unbalancedUnlock()
+		} else {
+			var dw = DeferredWork()
+			let oldContext = handlerContext
+			handlerContext = ItemContext<OutputValue>(context: .direct, synchronous: false, handler: { _ in }, activationCount: 0)
+			resumeIfPossibleInternal(dw: &dw)
+			mutex.unbalancedUnlock()
+			withExtendedLifetime(oldContext) {}
+			dw.runWork()
+		}
 	}
 	
 	// Invoke the user handler and deactivates the `Signal` if `result` is a `failure`.
@@ -1171,38 +1176,16 @@ public class Signal<OutputValue>: SignalInterface {
 	// - Parameter result: for sending to the handler
 	private final func dispatch(_ result: Result) {
 		if case .direct = handlerContext.context {
-			// No execution context required
 			invokeHandler(result)
-			
 			specializedSyncPop()
 		} else if handlerContext.context.type.isImmediate || handlerContext.synchronous {
-			// In this case, the stored handler is already wrapped in the target execution context
-			self.invokeHandler(result)
-			
-			while let r = pop() {
-				if handlerContext.context.type.isImmediate {
-					self.invokeHandler(r)
-				} else {
-					dispatch(r)
-					break
-				}
+			for r in sequence(first: result, next: { _ in self.pop() }) {
+				handlerContext.context.invokeSync { self.invokeHandler(r) }
 			}
 		} else {
-			// Manual transition to the execution context required
 			handlerContext.context.invoke {
-				// Ensure that the signal hasn't been cancelled while we were transitioning to this context
-				self.mutex.unbalancedLock()
-				guard !self.handlerContextNeedsRefresh else {
-					// We're not going to process this item now, so push it back onto the front of the queue
-					self.queue.insert(result, at: 0)
-					self.abortQueueProcessingInternalToExternal()
-					return
-				}
-				self.mutex.unbalancedUnlock()
-				
-				self.invokeHandler(result)
-				if let r = self.pop() {
-					self.dispatch(r)
+				for r in sequence(first: result, next: { _ in self.pop() }) {
+					self.invokeHandler(r)
 				}
 			}
 		}
@@ -1213,8 +1196,8 @@ public class Signal<OutputValue>: SignalInterface {
 	///  2. Discard the itemProcessing flag
 	///  3. If on an async non concurrent queue, escape to another context (blocking the queue in the meantime)
 	///  4. Call `resumeIfPossibleInternal`
-	private func abortQueueProcessingInternalToExternal() {
-		if signalHandler?.context.isAsyncNonConcurrent == true {
+	private func abortQueueProcessingInternalToExternal(itemOnly: Bool) {
+		if signalHandler?.context.isAsyncNonReentrant == true {
 			// First, we need to escape the current context since it is a non-rentrant queue
 			let ac = activationCount
 			blockInternal()
@@ -1222,12 +1205,12 @@ public class Signal<OutputValue>: SignalInterface {
 				// Unblock and resume now that we're outside the queue
 				self.mutex.unbalancedLock()
 				self.unblockInternal(activationCountAtBlock: ac)
-				self.clearItemContextInternalToExternal()
+				self.clearItemContextInternalToExternal(itemOnly: itemOnly)
 			}
 
 			self.mutex.unbalancedUnlock()
 		} else {
-			self.clearItemContextInternalToExternal()
+			self.clearItemContextInternalToExternal(itemOnly: itemOnly)
 		}
 	}
 	
@@ -1239,7 +1222,7 @@ public class Signal<OutputValue>: SignalInterface {
 		assert(itemProcessing == true)
 		
 		guard !handlerContextNeedsRefresh else {
-			abortQueueProcessingInternalToExternal()
+			abortQueueProcessingInternalToExternal(itemOnly: false)
 			return nil
 		}
 		
@@ -1256,8 +1239,7 @@ public class Signal<OutputValue>: SignalInterface {
 			}
 		}
 		
-		itemProcessing = false
-		mutex.unbalancedUnlock()
+		abortQueueProcessingInternalToExternal(itemOnly: true)
 		return nil
 	}
 	
@@ -1267,7 +1249,7 @@ public class Signal<OutputValue>: SignalInterface {
 		assert(itemProcessing == true)
 		
 		if handlerContextNeedsRefresh {
-			abortQueueProcessingInternalToExternal()
+			abortQueueProcessingInternalToExternal(itemOnly: false)
 		} else if !queue.isEmpty {
 			mutex.unbalancedUnlock()
 			while let r = pop() {
@@ -1384,6 +1366,9 @@ public class SignalHandler<OutputValue> {
 	fileprivate func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		assert(signal.mutex.unbalancedTryLock() == false)
 		return { r in }
+	}
+	
+	fileprivate func emit() {
 	}
 	
 	// Convenience wrapper around the mutex from the `Signal` which is used to protect the handler
@@ -1823,41 +1808,31 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	fileprivate func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		preconditionFailure()
 	}
-}
-
-/// Helper function for getting outside a mutex, if needed, otherwise running .
-///
-/// - Parameters:
-///   - needed: <#needed description#>
-///   - signalHandler: <#signalHandler description#>
-///   - activationCount: <#activationCount description#>
-///   - perform: <#perform description#>
-private func performAsyncIf<T>(needed: Bool, signalHandler: SignalHandler<T>?, activationCount: Int, perform: @escaping () -> Void) {
-	if needed {
-		if let sh = signalHandler {
-			sh.signal.block(activationCount: activationCount)
-			sh.context.globalAsync {
-				perform()
-				sh.signal.unblock(activationCountAtBlock: activationCount)
+	
+	var next: Signal<U>.Next = .none
+	fileprivate override func emit() {
+		switch next {
+		case .none: break
+		case .single(let r):
+			if let os = outputSignal {
+				os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
+			}
+		case .array(let a):
+			if let os = outputSignal {
+				for r in a {
+					os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
+				}
 			}
 		}
-	} else {
-		perform()
 	}
 }
 
 fileprivate extension Exec {
-	var isImmediateNonDirect: Bool {
-		if case .direct = self { return false }
-		if !type.isImmediate { return false }
-		return true
-	}
-	
-	var isAsyncNonConcurrent: Bool {
+	var isAsyncNonReentrant: Bool {
 		if case .direct = self { return false }
 		let t = type
 		if t.isImmediate { return false }
-		return !t.isConcurrent
+		return !t.isReentrant
 	}
 }
 
@@ -1882,7 +1857,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	//   - updater: when a new signal is received, updates the cached activation values and error
 	init(signal: Signal<OutputValue>, values: (Array<OutputValue>, SignalEnd?), userUpdated: Bool, activeWithoutOutputs: Bool, dw: inout DeferredWork, context: Exec, updater: Updater?) {
 		precondition((values.1 == nil && values.0.isEmpty) || updater != nil, "Non empty activation values requires always active.")
-		self.updater = (userUpdated && context.isImmediateNonDirect) ? updater.map { u in { a, b, c in context.invokeSync { u(&a, &b, c) } } } : updater
+		self.updater = updater
 		self.activationValues = values.0
 		self.preclosed = values.1
 		self.userUpdated = userUpdated
@@ -1917,12 +1892,9 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	// - Returns: a function to use as the handler prior to activation
 	fileprivate override func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		let activationCount = signal.activationCount
-		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
 		return { [weak self] r in
 			guard let self = self else { return }
 			_ = self.updater?(&self.activationValues, &self.preclosed, r)
-			performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {}
 		}
 	}
 	
@@ -1938,8 +1910,6 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 		var outs: OutputsArray? = updater != nil ? nil : outputs
 		
 		let activated = signal.delivery.isNormal
-		let activationCount = signal.activationCount
-		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
 		
 		// NOTE: the output signals in the `outs` array are already weakly retained
 		return { [weak self] r in
@@ -1990,11 +1960,9 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 
 			// Send the result *before* changing the authoritative activation values and error
 			let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
-			performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
-				for o in outs ?? [] {
-					if let d = o.destination.value, let ac = o.activationCount {
-						d.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-					}
+			for o in outs ?? [] {
+				if let d = o.destination.value, let ac = o.activationCount {
+					d.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 				}
 			}
 		}
@@ -2014,17 +1982,16 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 	var end: SignalEnd?
 	
 	init(signal: Signal<OutputValue>, state: State, end: SignalEnd?, dw: inout DeferredWork, context: Exec, reducer: @escaping Reducer) {
-		self.reducer = context.isImmediateNonDirect ? { a, b in context.invokeSync { reducer(a, b) } } : reducer
+		self.reducer = reducer
 		self.end = end
 		self.stateOrInitializer = .state(state)
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 	
 	init(signal: Signal<OutputValue>, initializer: @escaping Initializer, end: SignalEnd?, dw: inout DeferredWork, context: Exec, reducer: @escaping Reducer) {
-		self.reducer = context.isImmediateNonDirect ? { a, b in context.invokeSync { reducer(a, b) } } : reducer
+		self.reducer = reducer
 		self.end = end
-		let i = context.isImmediateNonDirect ? { a in context.invokeSync { initializer(a) } } : initializer
-		self.stateOrInitializer = .initializer(i)
+		self.stateOrInitializer = .initializer(initializer)
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 	
@@ -2048,8 +2015,6 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 	// - Returns: a function to use as the handler prior to activation
 	override func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
-		let activationCount = signal.activationCount
 		return { [weak self] r in
 			guard let self = self else { return }
 			
@@ -2077,8 +2042,6 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 			
 			// Ensure any old references are released outside the mutex
 			withExtendedLifetime(stateOrInitializer) {}
-
-			performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) { }
 		}
 	}
 	
@@ -2088,8 +2051,6 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 		assert(signal.mutex.unbalancedTryLock() == false)
 		
 		let activated = signal.delivery.isNormal
-		let activationCount = signal.activationCount
-		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
 		return { [weak self] r in
 			guard let self = self else { return }
 			
@@ -2126,11 +2087,9 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 			withExtendedLifetime(stateOrInitializer) {}
 
 			let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
-			performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
-				for o in outputs {
-					if let d = o.destination.value, let ac = o.activationCount {
-						d.send(result: result, predecessor: predecessor, activationCount: ac, activated: activated)
-					}
+			for o in outputs {
+				if let d = o.destination.value, let ac = o.activationCount {
+					d.send(result: result, predecessor: predecessor, activationCount: ac, activated: activated)
 				}
 			}
 		}
@@ -2212,7 +2171,7 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 	//   - context: where the `handler` will be invoked
 	//   - processor: the user supplied processing function
 	init(signal: Signal<OutputValue>, dw: inout DeferredWork, context: Exec, _ processor: @escaping UserProcessorType) {
-		self.userProcessor = context.isImmediateNonDirect ? { a in context.invokeSync { processor(a) } } : processor
+		self.userProcessor = processor
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 
@@ -2223,25 +2182,19 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		let activated = signal.delivery.isNormal
-		let activationCount = signal.activationCount
-		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
-		return { [userProcessor, weak self, weak outputSignal] r in
+		return { [userProcessor, weak outputSignal] r in
 			let transformedResult = userProcessor(r)
 			
 			switch transformedResult {
 			case .none: break
 			case .single(let r):
-				performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
-					if let os = outputSignal {
-						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-					}
+				if let os = outputSignal {
+					os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 				}
 			case .array(let a):
-				performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
-					if let os = outputSignal {
-						for r in a {
-							os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-						}
+				if let os = outputSignal {
+					for r in a {
+						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 					}
 				}
 			}
@@ -2264,7 +2217,7 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 	//   - context: where the `handler` will be invoked
 	//   - processor: the user supplied processing function
 	init(signal: Signal<OutputValue>, initialState: S, dw: inout DeferredWork, context: Exec, _ processor: @escaping (inout S, Result<OutputValue, SignalEnd>) -> Signal<U>.Next) {
-		self.userProcessor = context.isImmediateNonDirect ? { a, b in context.invokeSync { processor(&a, b) } } : processor
+		self.userProcessor = processor
 		self.initialState = initialState
 		super.init(signal: signal, dw: &dw, context: context)
 	}
@@ -2276,29 +2229,23 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		let activated = signal.delivery.isNormal
-		let activationCount = signal.activationCount
-		let isAsyncNonConcurrent = context.isAsyncNonConcurrent
 		
 		/// Every time the handler is recreated, the `state` value is initialized from the `initialState`.
 		var state = initialState
 		
-		return { [userProcessor, weak self, weak outputSignal] r in
+		return { [userProcessor, weak outputSignal] r in
 			let transformedResult = userProcessor(&state, r)
 			
 			switch transformedResult {
 			case .none: break
 			case .single(let r):
-				performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
-					if let os = outputSignal {
-						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-					}
+				if let os = outputSignal {
+					os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 				}
 			case .array(let a):
-				performAsyncIf(needed: isAsyncNonConcurrent, signalHandler: self, activationCount: activationCount) {
-					if let os = outputSignal {
-						for r in a {
-							os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-						}
+				if let os = outputSignal {
+					for r in a {
+						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 					}
 				}
 			}
@@ -3058,7 +3005,7 @@ public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Lifeti
 	///   - context: where `handler` will be run
 	///   - handler: invoked when a new signal is received
 	fileprivate init(signal: Signal<OutputValue>, dw: inout DeferredWork, context: Exec, handler: @escaping (Result<OutputValue, SignalEnd>) -> Void) {
-		self.userHandler = context.isImmediateNonDirect ? { a in context.invokeSync { handler(a) } } : handler
+		self.userHandler = handler
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 	

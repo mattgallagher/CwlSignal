@@ -33,6 +33,15 @@ private enum TestError: Error {
 	case twoValue
 }
 
+extension Exec {
+	static func syncQueueWithSpecificKey() -> (Exec, DispatchSpecificKey<()>) {
+		let q = DispatchQueue(label: "")
+		let k = DispatchSpecificKey<()>()
+		q.setSpecific(key: k, value: ())
+		return (Exec.queue(q, .mutex), k)
+	}
+}
+
 class SignalTests: XCTestCase {
 	func testBasics() {
 		var results = [Result<Int, SignalEnd>]()
