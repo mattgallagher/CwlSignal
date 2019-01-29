@@ -2016,10 +2016,14 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<Int, SignalEnd>]()
 		let coordinator = DebugContextCoordinator()
 		var times = [UInt64]()
-		let out = Signal.interval(.seconds(1), initial: .seconds(0), context: coordinator.global).timeout(interval: .seconds(5), resetOnValue: false, context: coordinator.global).delay(interval: .seconds(5), context: coordinator.global).subscribe { (r: Result<Int, SignalEnd>) in
-			results.append(r)
-			times.append(coordinator.currentTime)
-		}
+		let out = Signal
+			.interval(.seconds(1), initial: .seconds(0), context: coordinator.global)
+			.timeout(interval: .seconds(5), resetOnValue: false, context: coordinator.global)
+			.delay(interval: .seconds(5), context: coordinator.global)
+			.subscribe { (r: Result<Int, SignalEnd>) in
+				results.append(r)
+				times.append(coordinator.currentTime)
+			}
 		
 		coordinator.runScheduledTasks()
 		

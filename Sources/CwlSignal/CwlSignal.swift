@@ -47,16 +47,10 @@ public protocol SignalInputInterface {
 ///	- signal: the sequence of `Result` instances, from activation to close, that pass through a signal graph
 public class Signal<OutputValue>: SignalInterface {
 	public typealias Result = CwlUtils.Result<OutputValue, SignalEnd>
-
-	/// Used as the return type from `transform` and `combine` processing closures
-	///
-	/// - none: no result emitted
-	/// - single: a single result emitted
-	/// - array: zero or more results emitted
 	public enum Next {
-		case none
-		case single(Result)
-		case array(Array<Result>)
+		case zero
+		case one(Result)
+		case many(Array<Result>)
 	}
 	
 	// # GOALS
@@ -230,7 +224,7 @@ public class Signal<OutputValue>: SignalInterface {
 	public final func transform<U>(context: Exec = .direct, _ processor: @escaping (Result) -> Signal<U>.Next) -> Signal<U> {
 		return Signal<U>(processor: attach { (s, dw) in
 			SignalTransformer<OutputValue, U>(signal: s, dw: &dw, context: context, processor)
-		})
+		}).returnToGlobalIfNeeded(context: context)
 	}
 	
 	/// Appends a handler function that transforms the value emitted from this `Signal` into a new `Signal`.
@@ -243,7 +237,7 @@ public class Signal<OutputValue>: SignalInterface {
 	public final func transform<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, Result) -> Signal<U>.Next) -> Signal<U> {
 		return Signal<U>(processor: attach { (s, dw) in
 			SignalTransformerWithState<OutputValue, U, S>(signal: s, initialState: initialState, dw: &dw, context: context, processor)
-		})
+		}).returnToGlobalIfNeeded(context: context)
 	}
 	
 	/// Appends a handler function that receives inputs from this and another `Signal<U>`. The `handler` function applies any transformation it wishes an emits a (potentially) third `Signal` type.
@@ -258,7 +252,7 @@ public class Signal<OutputValue>: SignalInterface {
 			SignalCombiner(signal: s1, dw: &dw, context: .direct, processor: EitherResult2<OutputValue, U.OutputValue>.result1)
 		}).addPreceeding(processor: second.signal.attach { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult2<OutputValue, U.OutputValue>> in
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult2<OutputValue, U.OutputValue>.result2)
-		}).transform(context: context, Signal.successProcessor(processor))
+		}).transform(context: context, Signal.successProcessor(processor)).returnToGlobalIfNeeded(context: context)
 	}
 	
 	/// Appends a handler function that receives inputs from this and two other `Signal`s. The `handler` function applies any transformation it wishes an emits a (potentially) fourth `Signal` type.
@@ -276,7 +270,7 @@ public class Signal<OutputValue>: SignalInterface {
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>.result2)
 		}).addPreceeding(processor: third.signal.attach { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
 			SignalCombiner(signal: s3, dw: &dw, context: .direct, processor: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>.result3)
-		}).transform(context: context, Signal.successProcessor(processor))
+		}).transform(context: context, Signal.successProcessor(processor)).returnToGlobalIfNeeded(context: context)
 	}
 	
 	/// Appends a handler function that receives inputs from this and three other `Signal`s. The `handler` function applies any transformation it wishes an emits a (potentially) fifth `Signal` type.
@@ -297,7 +291,7 @@ public class Signal<OutputValue>: SignalInterface {
 			SignalCombiner(signal: s3, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result3)
 		}).addPreceeding(processor: fourth.signal.attach { (s4, dw) -> SignalCombiner<W.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
 			SignalCombiner(signal: s4, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result4)
-		}).transform(context: context, Signal.successProcessor(processor))
+		}).transform(context: context, Signal.successProcessor(processor)).returnToGlobalIfNeeded(context: context)
 	}
 	
 	/// Appends a handler function that receives inputs from this and four other `Signal`s. The `handler` function applies any transformation it wishes an emits a (potentially) sixth `Signal` type.
@@ -321,7 +315,7 @@ public class Signal<OutputValue>: SignalInterface {
 			SignalCombiner(signal: s4, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result4)
 		}).addPreceeding(processor: fifth.signal.attach { (s5, dw) -> SignalCombiner<X.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s5, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result5)
-		}).transform(context: context, Signal.successProcessor(processor))
+		}).transform(context: context, Signal.successProcessor(processor)).returnToGlobalIfNeeded(context: context)
 	}
 	
 	/// Similar to `combine(second:context:handler:)` with an additional "state" value.
@@ -337,7 +331,7 @@ public class Signal<OutputValue>: SignalInterface {
 			SignalCombiner(signal: s1, dw: &dw, context: .direct, processor: EitherResult2<OutputValue, U.OutputValue>.result1)
 		}).addPreceeding(processor: second.signal.attach { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult2<OutputValue, U.OutputValue>> in
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult2<OutputValue, U.OutputValue>.result2)
-		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor))
+		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor)).returnToGlobalIfNeeded(context: context)
 	}
 	
 	/// Similar to `combine(second:third:context:handler:)` with an additional "state" value.
@@ -356,7 +350,7 @@ public class Signal<OutputValue>: SignalInterface {
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>.result2)
 		}).addPreceeding(processor: third.signal.attach { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
 			SignalCombiner(signal: s3, dw: &dw, context: .direct, processor: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>.result3)
-		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor))
+		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor)).returnToGlobalIfNeeded(context: context)
 	}
 	
 	/// Similar to `combine(second:third:fourth:context:handler:)` with an additional "state" value.
@@ -378,7 +372,7 @@ public class Signal<OutputValue>: SignalInterface {
 			SignalCombiner(signal: s3, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result3)
 		}).addPreceeding(processor: fourth.signal.attach { (s4, dw) -> SignalCombiner<W.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
 			SignalCombiner(signal: s4, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result4)
-		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor))
+		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor)).returnToGlobalIfNeeded(context: context)
 	}
 	
 	/// Similar to `combine(second:third:fourth:fifthcontext:handler:)` with an additional "state" value.
@@ -403,7 +397,7 @@ public class Signal<OutputValue>: SignalInterface {
 			SignalCombiner(signal: s4, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result4)
 		}).addPreceeding(processor: fifth.signal.attach { (s5, dw) -> SignalCombiner<X.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s5, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result5)
-		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor))
+		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor)).returnToGlobalIfNeeded(context: context)
 	}
 	
 	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` immediately activates its antecedents and is "continuous" (multiple listeners can be attached to the `SignalMulti` and each new listener immediately receives the most recently sent value on "activation").
@@ -652,7 +646,7 @@ public class Signal<OutputValue>: SignalInterface {
 	///
 	/// - Parameter constructor: the handler constructor function
 	/// - Returns: the result from the constructor (typically an SignalHandler)
-	fileprivate func attach<R>(constructor: (Signal<OutputValue>, inout DeferredWork) -> R) -> R where R: SignalHandler<OutputValue> {
+	fileprivate func attach<R>(context: Exec, constructor: (Signal<OutputValue>, inout DeferredWork) -> R) -> R where R: SignalHandler<OutputValue> {
 		var dw = DeferredWork()
 		let result: R? = mutex.sync {
 			self.signalHandler == nil ? constructor(self, &dw) : nil
@@ -662,6 +656,18 @@ public class Signal<OutputValue>: SignalInterface {
 			return r
 		} else {
 			preconditionFailure("Multiple outputs added to single listener Signal.")
+		}
+	}
+	
+	/// Avoids complications with non-reentrant 
+	///
+	/// - Parameter context: <#context description#>
+	/// - Returns: <#return value description#>
+	fileprivate func returnToGlobalIfNeeded(context: Exec) -> Signal<OutputValue> {
+		if context.type.isReentrant {
+			return self
+		} else {
+			return self.transform(context: .global, { .one($0) })
 		}
 	}
 	
@@ -828,7 +834,7 @@ public class Signal<OutputValue>: SignalInterface {
 			specializedSyncPop()
 			return nil
 		} else {
-			dispatch(result)
+			invokeHandler(result)
 			return nil
 		}
 	}
@@ -939,7 +945,7 @@ public class Signal<OutputValue>: SignalInterface {
 			itemProcessing = true
 			dw.append {
 				if let r = self.pop() {
-					self.dispatch(r)
+					self.invokeHandler(r)
 				}
 			}
 		}
@@ -1012,7 +1018,7 @@ public class Signal<OutputValue>: SignalInterface {
 		return { (r: Signal<U>.Result) in
 			switch r {
 			case .success(let v): return processor(v)
-			case .failure(let e): return .single(.failure(e))
+			case .failure(let e): return .one(.failure(e))
 			}
 		}
 	}
@@ -1024,7 +1030,7 @@ public class Signal<OutputValue>: SignalInterface {
 		return { (s: inout S, r: Signal<U>.Result) in
 			switch r {
 			case .success(let v): return processor(&s, v)
-			case .failure(let e): return .single(.failure(e))
+			case .failure(let e): return .one(.failure(e))
 			}
 		}
 	}
@@ -1135,7 +1141,6 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Returns: an empty/idle `ItemContext`
 	private final func clearItemContextInternalToExternal(itemOnly: Bool) {
 		assert(mutex.unbalancedTryLock() == false)
-		
 		itemProcessing = false
 		
 		if itemOnly {
@@ -1191,29 +1196,6 @@ public class Signal<OutputValue>: SignalInterface {
 		}
 	}
 	
-	/// This function has three responsibilities:
-	///  1. Discard the old ItemContext outside any locks
-	///  2. Discard the itemProcessing flag
-	///  3. If on an async non concurrent queue, escape to another context (blocking the queue in the meantime)
-	///  4. Call `resumeIfPossibleInternal`
-	private func abortQueueProcessingInternalToExternal(itemOnly: Bool) {
-		if signalHandler?.context.isAsyncNonReentrant == true {
-			// First, we need to escape the current context since it is a non-rentrant queue
-			let ac = activationCount
-			blockInternal()
-			signalHandler?.context.globalAsync {
-				// Unblock and resume now that we're outside the queue
-				self.mutex.unbalancedLock()
-				self.unblockInternal(activationCountAtBlock: ac)
-				self.clearItemContextInternalToExternal(itemOnly: itemOnly)
-			}
-
-			self.mutex.unbalancedUnlock()
-		} else {
-			self.clearItemContextInternalToExternal(itemOnly: itemOnly)
-		}
-	}
-	
 	/// Gets the next item from the queue for processing and updates the `ItemContext`.
 	///
 	/// - Returns: the next result for processing, if any
@@ -1222,7 +1204,7 @@ public class Signal<OutputValue>: SignalInterface {
 		assert(itemProcessing == true)
 		
 		guard !handlerContextNeedsRefresh else {
-			abortQueueProcessingInternalToExternal(itemOnly: false)
+			clearItemContextInternalToExternal(itemOnly: false)
 			return nil
 		}
 		
@@ -1239,7 +1221,7 @@ public class Signal<OutputValue>: SignalInterface {
 			}
 		}
 		
-		abortQueueProcessingInternalToExternal(itemOnly: true)
+		clearItemContextInternalToExternal(itemOnly: true)
 		return nil
 	}
 	
@@ -1249,7 +1231,7 @@ public class Signal<OutputValue>: SignalInterface {
 		assert(itemProcessing == true)
 		
 		if handlerContextNeedsRefresh {
-			abortQueueProcessingInternalToExternal(itemOnly: false)
+			clearItemContextInternalToExternal(itemOnly: false)
 		} else if !queue.isEmpty {
 			mutex.unbalancedUnlock()
 			while let r = pop() {
@@ -1265,16 +1247,16 @@ public class Signal<OutputValue>: SignalInterface {
 /// `SignalMulti<OutputValue>` is the only subclass of `Signal<OutputValue>`. It represents a `Signal<OutputValue>` that allows attaching multiple listeners (a normal `Signal<OutputValue>` is "single owner" and will immediately close any subsequent listeners after the first with a `SignalBindError.duplicate` error).
 /// This class is not constructed directly but is instead created from one of the `SignalMulti<OutputValue>` returning functions on `Signal<OutputValue>`, including `playback()`, `multicast()` and `continuous()`.
 public final class SignalMulti<OutputValue>: Signal<OutputValue> {
-	private let spawnSingle: (SignalPredecessor) -> Signal<OutputValue>
+	private let spawnSingle: (SignalPredecessor, Exec) -> Signal<OutputValue>
 	
 	fileprivate override init<U>(processor: SignalProcessor<U, OutputValue>) {
 		assert(processor.multipleOutputsPermitted, "Construction of SignalMulti from a single output processor is illegal.")
-		spawnSingle = { proc in Signal<OutputValue>(processor: proc as! SignalProcessor<U, OutputValue>) }
+		spawnSingle = { proc, context in Signal<OutputValue>(processor: proc as! SignalProcessor<U, OutputValue>).returnToGlobalIfNeeded(context: context) }
 		super.init(processor: processor)
 	}
 	
-	fileprivate override func attach<R>(constructor: (Signal<OutputValue>, inout DeferredWork) -> R) -> R where R: SignalHandler<OutputValue> {
-		return spawnSingle(preceeding.first!.base).attach(constructor: constructor)
+	fileprivate override func attach<R>(context: Exec, constructor: (Signal<OutputValue>, inout DeferredWork) -> R) -> R where R: SignalHandler<OutputValue> {
+		return spawnSingle(preceeding.first!.base, context).attach(context: context, constructor: constructor)
 	}
 }
 
@@ -1345,7 +1327,7 @@ public class SignalHandler<OutputValue> {
 		
 		self.signal = signal
 		self.context = context
-		self.handler = { r in }
+		self.handler = { _ in }
 		
 		// Connect to the `Signal`
 		signal.signalHandler = self
@@ -1365,10 +1347,7 @@ public class SignalHandler<OutputValue> {
 	// Default behavior does nothing prior to activation
 	fileprivate func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		return { r in }
-	}
-	
-	fileprivate func emit() {
+		return { _ in }
 	}
 	
 	// Convenience wrapper around the mutex from the `Signal` which is used to protect the handler
@@ -1470,7 +1449,7 @@ public class SignalHandler<OutputValue> {
 			if !activeWithoutOutputsInternal {
 				handler = initialHandlerInternal()
 			} else {
-				handler = { r in }
+				handler = { _ in }
 			}
 		}
 	}
@@ -1531,7 +1510,9 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 		guard let output = processor.outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return processor.initialHandlerInternal() }
 		let activated = processor.signal.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(processor)
-		return { [weak outputSignal] (r: Result<OutputValue, SignalEnd>) -> Void in outputSignal?.send(result: transform(r), predecessor: predecessor, activationCount: ac, activated: activated) }
+		return { [weak outputSignal] r in
+			outputSignal?.send(result: transform(r), predecessor: predecessor, activationCount: ac, activated: activated)
+		}
 	}
 	
 	// Determines if a `Signal` is one of the current outputs.
@@ -1808,32 +1789,6 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	fileprivate func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		preconditionFailure()
 	}
-	
-	var next: Signal<U>.Next = .none
-	fileprivate override func emit() {
-		switch next {
-		case .none: break
-		case .single(let r):
-			if let os = outputSignal {
-				os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-			}
-		case .array(let a):
-			if let os = outputSignal {
-				for r in a {
-					os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
-				}
-			}
-		}
-	}
-}
-
-fileprivate extension Exec {
-	var isAsyncNonReentrant: Bool {
-		if case .direct = self { return false }
-		let t = type
-		if t.isImmediate { return false }
-		return !t.isReentrant
-	}
 }
 
 // Implementation of a processor that can output to multiple `Signal`s. Used by `continuous(initial:)`, `continuous`, `continuousWhileActive`, `playback`, `multicast`, `customActivation` and `preclosed`.
@@ -1957,7 +1912,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 					withExtendedLifetime(expired) {}
 				}
 			}
-
+			
 			// Send the result *before* changing the authoritative activation values and error
 			let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 			for o in outs ?? [] {
@@ -2085,7 +2040,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 			
 			// Ensure any old references are released outside the mutex
 			withExtendedLifetime(stateOrInitializer) {}
-
+			
 			let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 			for o in outputs {
 				if let d = o.destination.value, let ac = o.activationCount {
@@ -2184,14 +2139,14 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 		let activated = signal.delivery.isNormal
 		return { [userProcessor, weak outputSignal] r in
 			let transformedResult = userProcessor(r)
-			
+
 			switch transformedResult {
-			case .none: break
-			case .single(let r):
+			case .zero: break
+			case .one(let r):
 				if let os = outputSignal {
 					os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 				}
-			case .array(let a):
+			case .many(let a):
 				if let os = outputSignal {
 					for r in a {
 						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
@@ -2227,22 +2182,22 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 	override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		assert(signal.mutex.unbalancedTryLock() == false)
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
-		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		let activated = signal.delivery.isNormal
+		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		
 		/// Every time the handler is recreated, the `state` value is initialized from the `initialState`.
 		var state = initialState
 		
 		return { [userProcessor, weak outputSignal] r in
 			let transformedResult = userProcessor(&state, r)
-			
+
 			switch transformedResult {
-			case .none: break
-			case .single(let r):
+			case .zero: break
+			case .one(let r):
 				if let os = outputSignal {
 					os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 				}
-			case .array(let a):
+			case .many(let a):
 				if let os = outputSignal {
 					for r in a {
 						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
@@ -2346,7 +2301,7 @@ public class SignalJunction<OutputValue>: SignalProcessor<OutputValue, OutputVal
 		let activated = signal.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		let disconnectAction = disconnectOnEnd
-		return { [weak outputSignal, weak self] (r: Result<OutputValue, SignalEnd>) -> Void in
+		return { [weak outputSignal, weak self] r in
 			if let d = disconnectAction, case .failure(let e) = r, let s = self, let input = s.disconnect() {
 				d(s, e, input)
 			} else {
@@ -2609,7 +2564,7 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 		let activated = super.signal.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		let disconnectAction = disconnectOnEnd
-		return { [weak outputSignal, weak self] (r: Result<OutputValue, SignalEnd>) -> Void in
+		return { [weak outputSignal, weak self] r in
 			if let d = disconnectAction, case .failure(let e) = r, let s = self, let input = s.disconnect() {
 				d(s, e, input)
 			} else {
@@ -2795,7 +2750,7 @@ fileprivate class SignalMultiInputProcessor<InputValue>: SignalProcessor<InputVa
 		let activated = signal.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		let propagation = closePropagation
-		return { [weak outputSignal, weak self] (r: Result<InputValue, SignalEnd>) -> Void in
+		return { [weak outputSignal, weak self] r in
 			if case .failure(let e) = r, !propagation.shouldPropagateEnd(e), let os = outputSignal, let s = self {
 				var dw = DeferredWork()
 				os.mutex.sync {
@@ -3013,7 +2968,9 @@ public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Lifeti
 	// - Returns: a function to use as the handler prior to activation
 	fileprivate override func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		return userHandler
+		return { [userHandler] r in
+			userHandler(r)
+		}
 	}
 	
 	// A `SignalOutput` is active until closed (receives a `failure` signal)

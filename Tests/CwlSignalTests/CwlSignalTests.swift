@@ -56,7 +56,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(1)?.value == 3)
 		withExtendedLifetime(out) {}
 		
-		let (i2, ep2) = Signal<Int>.create { $0.transform { r in .single(r) }.subscribe { r in results.append(r) } }
+		let (i2, ep2) = Signal<Int>.create { $0.transform { r in .one(r) }.subscribe { r in results.append(r) } }
 		i2.send(result: .success(5))
 		i2.send(end: .other(TestError.zeroValue))
 		XCTAssert(i2.send(result: .success(0)) == SignalSendError.disconnected)
@@ -1100,10 +1100,10 @@ class SignalTests: XCTestCase {
 			
 			let combined = signal1.combine(signal3) { (cr: EitherResult2<Int, Int>) -> Signal<Int>.Next in
 				switch cr {
-				case .result1(let r): return .single(r)
-				case .result2(let r): return .single(r)
+				case .result1(let r): return .one(r)
+				case .result2(let r): return .one(r)
 				}
-			}.transform { r in .single(r) }.continuous()
+			}.transform { r in .one(r) }.continuous()
 			
 			let ex = catchBadInstruction {
 				combined.bind(to: input2)
@@ -1826,7 +1826,6 @@ class SignalTests: XCTestCase {
 		let coordinator = DebugContextCoordinator()
 		let (input, signal) = Signal<Int>.create()
 		let out = signal.continuous(initialValue: 3).deferActivation().map(context: coordinator.mainAsync) {
-			print("Yo")
 			return $0 * 2
 		}.subscribe { (r: Signal<Int>.Result) in
 			results.append(r)
@@ -1935,14 +1934,14 @@ class SignalTests: XCTestCase {
 		var result = [Int]()
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1).transform(context: context) { .single($0) }.subscribeValuesUntilEnd {
+		Signal.just(1).transform(context: context) { .one($0) }.subscribeValuesUntilEnd {
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
 		}
 		XCTAssert(result.count == 1)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1).transform(initialState: 0, context: context) { s, r in .single(r) }.subscribeValuesUntilEnd {
+		Signal.just(1).transform(initialState: 0, context: context) { s, r in .one(r) }.subscribeValuesUntilEnd {
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
 		}
@@ -1969,32 +1968,32 @@ class SignalTests: XCTestCase {
 		var result = [Int]()
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1, 2, 3).transform(context: context) { .single($0) }.subscribeValuesUntilEnd {
+		Signal.just(1, 2, 3).transform(context: context) { .one($0) }.subscribeValuesUntilEnd {
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
 		XCTAssert(result.count == 3)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1, 2, 3).transform(initialState: 0, context: context) { s, r in .single(r) }.subscribeValuesUntilEnd {
+		Signal.just(1, 2, 3).transform(initialState: 0, context: context) { s, r in .one(r) }.subscribeValuesUntilEnd {
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
 		XCTAssert(result.count == 6)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1, 2, 3).reduce(initialState: 0, context: context) { s, r in r }.subscribeValuesUntilEnd {
+		Signal.just(0, 2, 3).reduce(initialState: 1, context: context) { s, r in r }.subscribeValuesUntilEnd {
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
-		XCTAssert(result.count == 10)
+		XCTAssert(result.count == 9)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1, 2, 3).customActivation(initialValues: [], context: context) { _, _, _ in }.subscribeValuesUntilEnd {
+		Signal.just(0, 1, 2, 3).customActivation(initialValues: [], context: context) { _, _, _ in }.subscribeValuesUntilEnd {
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
-		XCTAssert(result.count == 13)
+		XCTAssert(result.count == 12)
 	}
 }
 
@@ -2177,7 +2176,7 @@ class SignalTimingTests: XCTestCase {
 			}
 			
 			for _ in 0..<depth {
-				signal = signal.transform { r in .single(r) }
+				signal = signal.transform { r in .one(r) }
 			}
 			_ = signal.subscribe { r in
 				switch r {

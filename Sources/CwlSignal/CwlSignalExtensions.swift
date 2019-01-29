@@ -182,39 +182,39 @@ extension SignalInput {
 
 extension Signal.Next {
 	public static func value(_ value: OutputValue) -> Signal<OutputValue>.Next {
-		return .single(.success(value))
+		return .one(.success(value))
 	}
 	
 	public static func value(_ value: OutputValue, end: SignalEnd) -> Signal<OutputValue>.Next {
-		return .array([.success(value), .failure(end)])
+		return .many([.success(value), .failure(end)])
 	}
 	
 	public static func values(_ value: OutputValue...) -> Signal<OutputValue>.Next {
-		return .array(value.map { Signal<OutputValue>.Result.success($0) })
+		return .many(value.map { Signal<OutputValue>.Result.success($0) })
 	}
 	
 	public static func values(_ value: OutputValue..., end: SignalEnd) -> Signal<OutputValue>.Next {
-		return .array(value.map { Signal<OutputValue>.Result.success($0) }.appending(.failure(end)))
+		return .many(value.map { Signal<OutputValue>.Result.success($0) }.appending(.failure(end)))
 	}
 	
-	public static func values<S: Sequence>(sequence: S) -> Signal<OutputValue>.Next where S.Element == OutputValue {
-		return .array(sequence.map { Signal<OutputValue>.Result.success($0) })
+	public static func values<OutputValue, S: Sequence>(sequence: S) -> Signal<OutputValue>.Next where S.Element == OutputValue {
+		return .many(sequence.map { Signal<OutputValue>.Result.success($0) })
 	}
 	
-	public static func values<S: Sequence>(sequence: S, end: SignalEnd) -> Signal<OutputValue>.Next where S.Element == OutputValue {
-		return .array(sequence.map { Signal<OutputValue>.Result.success($0) }.appending(.failure(end)))
+	public static func values<OutputValue, S: Sequence>(sequence: S, end: SignalEnd) -> Signal<OutputValue>.Next where S.Element == OutputValue {
+		return .many(sequence.map { Signal<OutputValue>.Result.success($0) }.appending(.failure(end)))
 	}
 	
 	public static func error(_ error: Error) -> Signal<OutputValue>.Next {
-		return .single(.failure(.other(error)))
+		return .one(.failure(.other(error)))
 	}
 	
 	public static func end(_ end: SignalEnd) -> Signal<OutputValue>.Next {
-		return .single(.failure(end))
+		return .one(.failure(end))
 	}
 	
-	public static var complete: Signal<OutputValue>.Next {
-		return .single(.failure(.complete))
+	public static func complete() -> Signal<OutputValue>.Next {
+		return .one(.failure(.complete))
 	}
 }
 
@@ -314,13 +314,13 @@ extension SignalInterface {
 					return .end(e)
 				}
 				closed.0 = true
-				return .none
+				return .zero
 			case .result2(.failure(let e)):
 				if closed.0 || closePropagation.shouldPropagateEnd(e) {
 					return .end(e)
 				}
 				closed.1 = true
-				return .none
+				return .zero
 			case .result1(.success(let v)): return .value(.value1(v))
 			case .result2(.success(let v)): return .value(.value2(v))
 			}
@@ -506,7 +506,7 @@ extension SignalInterface {
 				return .value(v)
 			case .success:
 				state += 1
-				return .none
+				return .zero
 			case .failure(let e):
 				return .end(e)
 			}
@@ -543,7 +543,7 @@ extension SignalInterface {
 			switch r {
 			case .success(let v):
 				processor(&state, v, mergedInput)
-				return .none
+				return .zero
 			case .failure(let e):
 				end = e
 				return .end(e)
@@ -594,14 +594,14 @@ extension SignalInterface {
 			let count = state.index
 			let innerSignal = duration(&state.userState, v).transform { (innerResult: Result<Interface.OutputValue, SignalEnd>) -> Signal<(Int, OutputValue?)>.Next in
 				switch innerResult {
-				case .success: return .none
+				case .success: return .zero
 				case .failure(let e): return .value((count, nil), end: e)
 				}
 			}
 			let prefixedInnerSignal = Signal<(Int, OutputValue?)>.preclosed((count, Optional(v))).combine(innerSignal) { (r: EitherResult2<(Int, OutputValue?), (Int, OutputValue?)>) -> Signal<(Int, OutputValue?)>.Next in
 				switch r {
 				case .result1(.success(let v)): return .value(v)
-				case .result1(.failure): return .none
+				case .result1(.failure): return .zero
 				case .result2(.success(let v)): return .value(v)
 				case .result2(.failure(let e)): return .end(e)
 				}
