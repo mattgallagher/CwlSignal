@@ -25,7 +25,7 @@ import CwlUtils
 class ExecTests: XCTestCase {
 	func testDirect() {
 		XCTAssert(Exec.direct.type.isConcurrent == true)
-		XCTAssert(Exec.direct.type.isImmediateCurrentContext == true)
+		XCTAssert(Exec.direct.type.isImmediateInCurrentContext == true)
 		
 		var x = false
 		Exec.direct.invoke { x = true }
@@ -50,11 +50,11 @@ class ExecTests: XCTestCase {
 	func testMain() {
 		XCTAssert(Thread.current == Thread.main)
 		XCTAssert(Exec.main.type.isConcurrent == false)
-		XCTAssert(Exec.main.type.isImmediateCurrentContext == true)
+		XCTAssert(Exec.main.type.isImmediateInCurrentContext == true)
 		
 		let e3 = expectation(description: "Block not invoked")
 		Exec.global.invoke {
-			XCTAssert(Exec.main.type.isImmediateCurrentContext == false)
+			XCTAssert(Exec.main.type.isImmediateInCurrentContext == false)
 
 			let lock = DispatchQueue(label: "")
 			var x = false
@@ -94,7 +94,7 @@ class ExecTests: XCTestCase {
 	
 	func testMainAsync() {
 		XCTAssert(Exec.mainAsync.type.isConcurrent == false)
-		XCTAssert(Exec.mainAsync.type.isImmediateCurrentContext == false)
+		XCTAssert(Exec.mainAsync.type.isImmediateInCurrentContext == false)
 		
 		let e1 = expectation(description: "Block not invoked")
 		var run1 = false
@@ -155,7 +155,7 @@ class ExecTests: XCTestCase {
 		q1.setSpecific(key: sk1, value: ())
 		
 		XCTAssert(ec1.type.isConcurrent == false)
-		XCTAssert(ec1.type.isImmediateCurrentContext == true)
+		XCTAssert(ec1.type.isImmediateInCurrentContext == true)
 		
 		let ec2 = Exec.asyncQueue()
 		guard case .queue(let q2, _) = ec2 else {
@@ -164,7 +164,7 @@ class ExecTests: XCTestCase {
 		let sk2 = DispatchSpecificKey<()>()
 		q2.setSpecific(key: sk2, value: ())
 		XCTAssert(ec2.type.isConcurrent == false)
-		XCTAssert(ec2.type.isImmediateCurrentContext == false)
+		XCTAssert(ec2.type.isImmediateInCurrentContext == false)
 		
 		var a = false
 		ec1.invoke() {
@@ -222,7 +222,7 @@ class ExecTests: XCTestCase {
 			variant.invoke { expectations1[i].fulfill() }
 			variant.invokeAsync { expectations2[i].fulfill() }
 			XCTAssert(variant.type.isConcurrent == true)
-			XCTAssert(variant.type.isImmediateCurrentContext == false)
+			XCTAssert(variant.type.isImmediateInCurrentContext == false)
 			
 			var x = false
 			variant.invokeSync { x = true }
