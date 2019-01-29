@@ -101,7 +101,7 @@ extension Exec: ExecutionContext {
 		case .main: DispatchQueue.main.async(execute: execute)
 		case .queue(_, .thread(let test)) where test(): execute()
 		case .queue(_, .recursiveMutex(let test)) where test(): execute()
-		case .queue(let q, let t) where t.isImmediateCurrentContext: q.sync(execute: execute)
+		case .queue(let q, let t) where t.isImmediateInCurrentContext: q.sync(execute: execute)
 		case .queue(let q, _): q.async(execute: execute)
 		case .custom(let c): c.invoke(execute)
 		}

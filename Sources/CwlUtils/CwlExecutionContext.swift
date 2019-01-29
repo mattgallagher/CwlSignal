@@ -109,7 +109,7 @@ public enum ExecutionType {
 public extension ExecutionType {
 	/// Returns true if an invoked function is guaranteed to complete before the `invoke` returns.
 	/// The inverse of this value is "async"
-	var isImmediateCurrentContext: Bool {
+	var isImmediateInCurrentContext: Bool {
 		switch self {
 		case .immediate, .mutex, .recursiveMutex: return true
 		case .thread(let isCurrent): return isCurrent()
@@ -119,7 +119,7 @@ public extension ExecutionType {
 	
 	/// Returns true if an invoked function is guaranteed to complete before the `invoke` returns.
 	/// The inverse of this value is "async"
-	var isAlwaysImmediate: Bool {
+	var isImmediateAlways: Bool {
 		switch self {
 		case .immediate, .mutex, .recursiveMutex: return true
 		case .thread, .serialAsync, .recursiveAsync, .concurrentAsync, .mutexAsync, .threadAsync: return false
@@ -222,7 +222,7 @@ public extension ExecutionContext {
 	}
 	
 	func invokeAsync(_ execute: @escaping () -> Void) {
-		if type.isImmediateCurrentContext == false {
+		if type.isImmediateInCurrentContext == false {
 			invoke(execute)
 		} else {
 			DispatchQueue.global().async { self.invoke(execute) }
@@ -232,7 +232,7 @@ public extension ExecutionContext {
 	func invokeSync<Return>(_ execute: () -> Return) -> Return {
 		return withoutActuallyEscaping(execute) { ex in
 			var r: Return? = nil
-			if type.isImmediateCurrentContext == true {
+			if type.isImmediateInCurrentContext == true {
 				invoke {
 					r = ex()
 				}
