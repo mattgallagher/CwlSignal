@@ -250,7 +250,7 @@ public class Signal<OutputValue>: SignalInterface {
 	public final func combine<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (EitherResult2<OutputValue, U.OutputValue>) -> Signal<V>.Next) -> Signal<V> {
 		return Signal<EitherResult2<OutputValue, U.OutputValue>>(processor: self.attach(context: context) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult2<OutputValue, U.OutputValue>> in
 			SignalCombiner(signal: s1, dw: &dw, context: .direct, processor: EitherResult2<OutputValue, U.OutputValue>.result1)
-		}).addPreceeding(processor: second.signal.attach(context: context) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult2<OutputValue, U.OutputValue>> in
+		}).addPreceeding(processor: second.signal.attach(context: .direct) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult2<OutputValue, U.OutputValue>> in
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult2<OutputValue, U.OutputValue>.result2)
 		}).transform(context: context, Signal.successProcessor(processor)).returnToGlobalIfNeeded(context: context)
 	}
@@ -266,9 +266,9 @@ public class Signal<OutputValue>: SignalInterface {
 	public final func combine<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, _ processor: @escaping (EitherResult3<OutputValue, U.OutputValue, V.OutputValue>) -> Signal<W>.Next) -> Signal<W> {
 		return Signal<EitherResult3<OutputValue, U.OutputValue, V.OutputValue>>(processor: self.attach(context: context) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
 			SignalCombiner(signal: s1, dw: &dw, context: .direct, processor: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>.result1)
-		}).addPreceeding(processor: second.signal.attach(context: context) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
+		}).addPreceeding(processor: second.signal.attach(context: .direct) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>.result2)
-		}).addPreceeding(processor: third.signal.attach(context: context) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
+		}).addPreceeding(processor: third.signal.attach(context: .direct) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
 			SignalCombiner(signal: s3, dw: &dw, context: .direct, processor: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>.result3)
 		}).transform(context: context, Signal.successProcessor(processor)).returnToGlobalIfNeeded(context: context)
 	}
@@ -285,11 +285,11 @@ public class Signal<OutputValue>: SignalInterface {
 	public final func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, _ processor: @escaping (EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>) -> Signal<X>.Next) -> Signal<X> {
 		return Signal<EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>>(processor: self.attach(context: context) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
 			SignalCombiner(signal: s1, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result1)
-		}).addPreceeding(processor: second.signal.attach(context: context) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
+		}).addPreceeding(processor: second.signal.attach(context: .direct) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result2)
-		}).addPreceeding(processor: third.signal.attach(context: context) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
+		}).addPreceeding(processor: third.signal.attach(context: .direct) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
 			SignalCombiner(signal: s3, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result3)
-		}).addPreceeding(processor: fourth.signal.attach(context: context) { (s4, dw) -> SignalCombiner<W.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
+		}).addPreceeding(processor: fourth.signal.attach(context: .direct) { (s4, dw) -> SignalCombiner<W.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
 			SignalCombiner(signal: s4, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result4)
 		}).transform(context: context, Signal.successProcessor(processor)).returnToGlobalIfNeeded(context: context)
 	}
@@ -307,13 +307,13 @@ public class Signal<OutputValue>: SignalInterface {
 	public final func combine<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, _ processor: @escaping (EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>) -> Signal<Y>.Next) -> Signal<Y> {
 		return Signal<EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>>(processor: self.attach(context: context) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s1, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result1)
-		}).addPreceeding(processor: second.signal.attach(context: context) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
+		}).addPreceeding(processor: second.signal.attach(context: .direct) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result2)
-		}).addPreceeding(processor: third.signal.attach(context: context) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
+		}).addPreceeding(processor: third.signal.attach(context: .direct) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s3, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result3)
-		}).addPreceeding(processor: fourth.signal.attach(context: context) { (s4, dw) -> SignalCombiner<W.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
+		}).addPreceeding(processor: fourth.signal.attach(context: .direct) { (s4, dw) -> SignalCombiner<W.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s4, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result4)
-		}).addPreceeding(processor: fifth.signal.attach(context: context) { (s5, dw) -> SignalCombiner<X.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
+		}).addPreceeding(processor: fifth.signal.attach(context: .direct) { (s5, dw) -> SignalCombiner<X.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s5, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result5)
 		}).transform(context: context, Signal.successProcessor(processor)).returnToGlobalIfNeeded(context: context)
 	}
@@ -327,9 +327,9 @@ public class Signal<OutputValue>: SignalInterface {
 	///   - processor: processes inputs from either `self` or `second` as `EitherResult2<OutputValue, U>` (an enum which may contain either `.result1` or `.result2` corresponding to `self` or `second`) and sends results to an `SignalNext<V>`.
 	/// - Returns: an `Signal<V>` which is the result stream from the `SignalNext<V>` passed to the `handler`.
 	public final func combine<S, U: SignalInterface, V>(_ second: U, initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, EitherResult2<OutputValue, U.OutputValue>) -> Signal<V>.Next) -> Signal<V> {
-		return Signal<EitherResult2<OutputValue, U.OutputValue>>(processor: self.attach(context: context) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult2<OutputValue, U.OutputValue>> in
+		return Signal<EitherResult2<OutputValue, U.OutputValue>>(processor: self.attach(context: .direct) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult2<OutputValue, U.OutputValue>> in
 			SignalCombiner(signal: s1, dw: &dw, context: .direct, processor: EitherResult2<OutputValue, U.OutputValue>.result1)
-		}).addPreceeding(processor: second.signal.attach(context: context) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult2<OutputValue, U.OutputValue>> in
+		}).addPreceeding(processor: second.signal.attach(context: .direct) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult2<OutputValue, U.OutputValue>> in
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult2<OutputValue, U.OutputValue>.result2)
 		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor)).returnToGlobalIfNeeded(context: context)
 	}
@@ -344,11 +344,11 @@ public class Signal<OutputValue>: SignalInterface {
 	///   - processor: processes inputs from either `self`, `second` or `third` as `EitherResult3<OutputValue, U, V>` (an enum which may contain either `.result1`, `.result2` or `.result3` corresponding to `self`, `second` or `third`) and sends results to an `SignalNext<W>`.
 	/// - Returns: an `Signal<W>` which is the result stream from the `SignalNext<W>` passed to the `handler`.
 	public final func combine<S, U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>) -> Signal<W>.Next) -> Signal<W> {
-		return Signal<EitherResult3<OutputValue, U.OutputValue, V.OutputValue>>(processor: self.attach(context: context) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
+		return Signal<EitherResult3<OutputValue, U.OutputValue, V.OutputValue>>(processor: self.attach(context: .direct) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
 			SignalCombiner(signal: s1, dw: &dw, context: .direct, processor: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>.result1)
-		}).addPreceeding(processor: second.signal.attach(context: context) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
+		}).addPreceeding(processor: second.signal.attach(context: .direct) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>.result2)
-		}).addPreceeding(processor: third.signal.attach(context: context) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
+		}).addPreceeding(processor: third.signal.attach(context: .direct) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult3<OutputValue, U.OutputValue, V.OutputValue>> in
 			SignalCombiner(signal: s3, dw: &dw, context: .direct, processor: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>.result3)
 		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor)).returnToGlobalIfNeeded(context: context)
 	}
@@ -364,13 +364,13 @@ public class Signal<OutputValue>: SignalInterface {
 	///   - processor: processes inputs from either `self`, `second`, `third` or `fourth` as `EitherResult4<OutputValue, U, V, W>` (an enum which may contain either `.result1`, `.result2`, `.result3` or `.result4` corresponding to `self`, `second`, `third` or `fourth`) and sends results to an `SignalNext<X>`.
 	/// - Returns: an `Signal<X>` which is the result stream from the `SignalNext<X>` passed to the `handler`.
 	public final func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>) -> Signal<X>.Next) -> Signal<X> {
-		return Signal<EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>>(processor: self.attach(context: context) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
+		return Signal<EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>>(processor: self.attach(context: .direct) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
 			SignalCombiner(signal: s1, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result1)
-		}).addPreceeding(processor: second.signal.attach(context: context) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
+		}).addPreceeding(processor: second.signal.attach(context: .direct) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result2)
-		}).addPreceeding(processor: third.signal.attach(context: context) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
+		}).addPreceeding(processor: third.signal.attach(context: .direct) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
 			SignalCombiner(signal: s3, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result3)
-		}).addPreceeding(processor: fourth.signal.attach(context: context) { (s4, dw) -> SignalCombiner<W.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
+		}).addPreceeding(processor: fourth.signal.attach(context: .direct) { (s4, dw) -> SignalCombiner<W.OutputValue, EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>> in
 			SignalCombiner(signal: s4, dw: &dw, context: .direct, processor: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>.result4)
 		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor)).returnToGlobalIfNeeded(context: context)
 	}
@@ -387,15 +387,15 @@ public class Signal<OutputValue>: SignalInterface {
 	///   - processor: processes inputs from either `self`, `second`, `third`, `fourth` or `fifth` as `EitherResult5<OutputValue, U, V, W, X>` (an enum which may contain either `.result1`, `.result2`, `.result3`, `.result4` or  `.result5` corresponding to `self`, `second`, `third`, `fourth` or `fifth`) and sends results to an `SignalNext<Y>`.
 	/// - Returns: an `Signal<Y>` which is the result stream from the `SignalNext<Y>` passed to the `handler`.
 	public final func combine<S, U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>) -> Signal<Y>.Next) -> Signal<Y> {
-		return Signal<EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>>(processor: self.attach(context: context) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
+		return Signal<EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>>(processor: self.attach(context: .direct) { (s1, dw) -> SignalCombiner<OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s1, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result1)
-		}).addPreceeding(processor: second.signal.attach(context: context) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
+		}).addPreceeding(processor: second.signal.attach(context: .direct) { (s2, dw) -> SignalCombiner<U.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s2, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result2)
-		}).addPreceeding(processor: third.signal.attach(context: context) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
+		}).addPreceeding(processor: third.signal.attach(context: .direct) { (s3, dw) -> SignalCombiner<V.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s3, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result3)
-		}).addPreceeding(processor: fourth.signal.attach(context: context) { (s4, dw) -> SignalCombiner<W.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
+		}).addPreceeding(processor: fourth.signal.attach(context: .direct) { (s4, dw) -> SignalCombiner<W.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s4, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result4)
-		}).addPreceeding(processor: fifth.signal.attach(context: context) { (s5, dw) -> SignalCombiner<X.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
+		}).addPreceeding(processor: fifth.signal.attach(context: .direct) { (s5, dw) -> SignalCombiner<X.OutputValue, EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>> in
 			SignalCombiner(signal: s5, dw: &dw, context: .direct, processor: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>.result5)
 		}).transform(initialState: initialState, context: context, Signal.successProcessorWithState(processor)).returnToGlobalIfNeeded(context: context)
 	}
@@ -664,10 +664,10 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Parameter context: <#context description#>
 	/// - Returns: <#return value description#>
 	fileprivate func returnToGlobalIfNeeded(context: Exec) -> Signal<OutputValue> {
-		if context.type.isReentrant {
+		if context.type.isImmediateAlways || context.type.isReentrant {
 			return self
 		} else {
-			return self.transform(context: .global, { .one($0) })
+			return self.transform(context: context.globalAsync, { .one($0) })
 		}
 	}
 	
@@ -834,7 +834,7 @@ public class Signal<OutputValue>: SignalInterface {
 			specializedSyncPop()
 			return nil
 		} else {
-			invokeHandler(result)
+			dispatch(result)
 			return nil
 		}
 	}
@@ -945,7 +945,7 @@ public class Signal<OutputValue>: SignalInterface {
 			itemProcessing = true
 			dw.append {
 				if let r = self.pop() {
-					self.invokeHandler(r)
+					self.dispatch(r)
 				}
 			}
 		}
@@ -1183,9 +1183,13 @@ public class Signal<OutputValue>: SignalInterface {
 		if case .direct = handlerContext.context {
 			invokeHandler(result)
 			specializedSyncPop()
-		} else if handlerContext.context.type.isImmediateInCurrentContext || handlerContext.synchronous {
+		} else if handlerContext.context.type.isImmediateInCurrentContext {
 			for r in sequence(first: result, next: { _ in self.pop() }) {
-				handlerContext.context.invokeSync { self.invokeHandler(r) }
+				invokeHandler(r)
+			}
+		} else if handlerContext.synchronous {
+			for r in sequence(first: result, next: { _ in self.pop() }) {
+				handlerContext.context.invokeSync{ invokeHandler(r) }
 			}
 		} else {
 			handlerContext.context.invoke {
@@ -1791,6 +1795,15 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	}
 }
 
+private extension Exec {
+	var isImmediateNonDirect: Bool {
+		if case .direct = self {
+			return false
+		}
+		return type.isImmediateAlways
+	}
+}
+
 // Implementation of a processor that can output to multiple `Signal`s. Used by `continuous(initial:)`, `continuous`, `continuousWhileActive`, `playback`, `multicast`, `customActivation` and `preclosed`.
 fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<OutputValue, OutputValue> {
 	typealias Updater = (_ activationValues: inout Array<OutputValue>, _ preclosed: inout SignalEnd?, _ result: Result<OutputValue, SignalEnd>) -> (Array<OutputValue>, SignalEnd?)
@@ -1812,7 +1825,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	//   - updater: when a new signal is received, updates the cached activation values and error
 	init(signal: Signal<OutputValue>, values: (Array<OutputValue>, SignalEnd?), userUpdated: Bool, activeWithoutOutputs: Bool, dw: inout DeferredWork, context: Exec, updater: Updater?) {
 		precondition((values.1 == nil && values.0.isEmpty) || updater != nil, "Non empty activation values requires always active.")
-		self.updater = updater
+		self.updater = (userUpdated && context.isImmediateNonDirect) ? updater.map { u in { a, b, c in context.invokeSync { u(&a, &b, c) } } } : updater
 		self.activationValues = values.0
 		self.preclosed = values.1
 		self.userUpdated = userUpdated
@@ -1937,14 +1950,14 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 	var end: SignalEnd?
 	
 	init(signal: Signal<OutputValue>, state: State, end: SignalEnd?, dw: inout DeferredWork, context: Exec, reducer: @escaping Reducer) {
-		self.reducer = reducer
+		self.reducer = context.isImmediateNonDirect ? { a, b in context.invokeSync { reducer(a, b) } } : reducer
 		self.end = end
 		self.stateOrInitializer = .state(state)
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 	
 	init(signal: Signal<OutputValue>, initializer: @escaping Initializer, end: SignalEnd?, dw: inout DeferredWork, context: Exec, reducer: @escaping Reducer) {
-		self.reducer = reducer
+		self.reducer = context.isImmediateNonDirect ? { a, b in context.invokeSync { reducer(a, b) } } : reducer
 		self.end = end
 		self.stateOrInitializer = .initializer(initializer)
 		super.init(signal: signal, dw: &dw, context: context)
@@ -2126,7 +2139,7 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 	//   - context: where the `handler` will be invoked
 	//   - processor: the user supplied processing function
 	init(signal: Signal<OutputValue>, dw: inout DeferredWork, context: Exec, _ processor: @escaping UserProcessorType) {
-		self.userProcessor = processor
+		self.userProcessor = context.isImmediateNonDirect ? { a in context.invokeSync { processor(a) } } : processor
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 
@@ -2172,7 +2185,7 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 	//   - context: where the `handler` will be invoked
 	//   - processor: the user supplied processing function
 	init(signal: Signal<OutputValue>, initialState: S, dw: inout DeferredWork, context: Exec, _ processor: @escaping (inout S, Result<OutputValue, SignalEnd>) -> Signal<U>.Next) {
-		self.userProcessor = processor
+		self.userProcessor = context.isImmediateNonDirect ? { a, b in context.invokeSync { processor(&a, b) } } : processor
 		self.initialState = initialState
 		super.init(signal: signal, dw: &dw, context: context)
 	}
@@ -2220,7 +2233,7 @@ fileprivate final class SignalCombiner<OutputValue, U>: SignalProcessor<OutputVa
 	//   - context: where the `handler` will be invoked
 	//   - processor: the user supplied processing function
 	init(signal: Signal<OutputValue>, dw: inout DeferredWork, context: Exec, processor: @escaping (Result<OutputValue, SignalEnd>) -> U) {
-		self.combineProcessor = processor
+		self.combineProcessor = context.isImmediateNonDirect ? { a in context.invokeSync { processor(a) } } : processor
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 	
@@ -2793,7 +2806,7 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 	// See the comments on the public override in `SignalMergedInput`
 	fileprivate func add<U: SignalInterface>(_ source: U, closePropagation: SignalEndPropagation, removeOnDeactivate: Bool = false) where U.OutputValue == InputValue {
 		guard let sig = signal else { return }
-		let processor = source.signal.attach { (s, dw) -> SignalMultiInputProcessor<InputValue> in
+		let processor = source.signal.attach(context: .direct) { (s, dw) -> SignalMultiInputProcessor<InputValue> in
 			SignalMultiInputProcessor<InputValue>(signal: s, multiInput: self, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate, dw: &dw)
 		}
 		var dw = DeferredWork()
@@ -2960,7 +2973,7 @@ public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Lifeti
 	///   - context: where `handler` will be run
 	///   - handler: invoked when a new signal is received
 	fileprivate init(signal: Signal<OutputValue>, dw: inout DeferredWork, context: Exec, handler: @escaping (Result<OutputValue, SignalEnd>) -> Void) {
-		self.userHandler = handler
+		self.userHandler = context.isImmediateNonDirect ? { a in context.invokeSync { handler(a) } } : handler
 		super.init(signal: signal, dw: &dw, context: context)
 	}
 	

@@ -1836,7 +1836,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.count == 1)
 		XCTAssert(results.at(0)?.value == 6)
 		
-		XCTAssert(coordinator.currentTime == 2)
+		XCTAssert(coordinator.currentTime == 1)
 		
 		withExtendedLifetime(input) { }
 		withExtendedLifetime(out) { }
@@ -1934,28 +1934,39 @@ class SignalTests: XCTestCase {
 		var result = [Int]()
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1).transform(context: context) { .one($0) }.subscribeValuesUntilEnd {
+		Signal.just(1).transform(context: context) { r -> Signal<Int>.Next in
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
+			return .one(r)
+		}.subscribeValuesUntilEnd {
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
 		}
 		XCTAssert(result.count == 1)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1).transform(initialState: 0, context: context) { s, r in .one(r) }.subscribeValuesUntilEnd {
+		Signal.just(1).transform(initialState: 0, context: context) { s, r -> Signal<Int>.Next in 
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
+			return .one(r)
+		}.subscribeValuesUntilEnd {
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
 		}
 		XCTAssert(result.count == 2)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1).reduce(initialState: 0, context: context) { s, r in return r }.subscribeValuesUntilEnd {
+		Signal.just(1).reduce(initialState: 0, context: context) { s, r -> Int in 
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
+			return r
+		}.subscribeValuesUntilEnd {
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
 		}
 		XCTAssert(result.count == 3)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1).customActivation(initialValues: [], context: context) { _, _, _ in }.subscribeValuesUntilEnd {
+		Signal.just(1).customActivation(initialValues: [], context: context) { _, _, _ in 
+			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
+		}.subscribeValuesUntilEnd {
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
 		}
@@ -1968,28 +1979,56 @@ class SignalTests: XCTestCase {
 		var result = [Int]()
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1, 2, 3).transform(context: context) { .one($0) }.subscribeValuesUntilEnd {
+		Signal.just(1, 2, 3).transform(context: context) { r -> Signal<Int>.Next in
+			XCTAssert(coordinator.currentThread.matches(context))
+			return .one(r)
+		}.subscribeValuesUntilEnd {
+			XCTAssert(!coordinator.currentThread.matches(context))
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
 		XCTAssert(result.count == 3)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(1, 2, 3).transform(initialState: 0, context: context) { s, r in .one(r) }.subscribeValuesUntilEnd {
+		Signal.just(1, 2, 3).transform(initialState: 0, context: context) { s, r -> Signal<Int>.Next in
+			XCTAssert(coordinator.currentThread.matches(context))
+			return .one(r)
+		}.subscribeValuesUntilEnd {
+			XCTAssert(!coordinator.currentThread.matches(context))
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
 		XCTAssert(result.count == 6)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(0, 2, 3).reduce(initialState: 1, context: context) { s, r in r }.subscribeValuesUntilEnd {
+		Signal.just(0, 2, 3).reduce(initialState: 1, context: context) { s, r -> Int in
+			XCTAssert(coordinator.currentThread.matches(context))
+			return r
+		}.subscribeValuesUntilEnd {
+			XCTAssert(!coordinator.currentThread.matches(context))
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
 		XCTAssert(result.count == 9)
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.just(0, 1, 2, 3).customActivation(initialValues: [], context: context) { _, _, _ in }.subscribeValuesUntilEnd {
+		Signal.just(0, 1, 2, 3).customActivation(initialValues: [], context: context) { _, _, _ in
+			XCTAssert(coordinator.currentThread.matches(context))
+			return
+		}.subscribeValuesUntilEnd {
+			XCTAssert(!coordinator.currentThread.matches(context))
+			result.append($0)
+		}
+		coordinator.runScheduledTasks()
+		XCTAssert(result.count == 12)
+
+		
+		// The previous stage's context must *not* be active on a subsequent stage
+		Signal.preclosed(0, 1, 2, 3).transform(context: context) { r -> Signal<Int>.Next in
+			XCTAssert(coordinator.currentThread.matches(context))
+			return .one(r)
+		}.subscribeValuesUntilEnd {
+			XCTAssert(!coordinator.currentThread.matches(context))
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
