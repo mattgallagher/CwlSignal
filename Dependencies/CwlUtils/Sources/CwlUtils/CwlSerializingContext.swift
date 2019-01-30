@@ -42,11 +42,11 @@ public struct SerializingContext: CustomExecutionContext {
 		_ = invokeSync(execute)
 	}
 	
-	public func invokeSync<Return>(_ execute: () -> Return) -> Return {
+	public func invokeSync<Return>(_ execute: () throws -> Return) rethrows -> Return {
 		if case .direct = underlying {
-			return mutex.sync(execute: execute)
+			return try mutex.sync(execute: execute)
 		} else {
-			return underlying.invokeSync { [mutex] in mutex.sync(execute: execute) }
+			return try underlying.invokeSync { [mutex] () throws -> Return in try mutex.sync(execute: execute) }
 		}
 	}
 	
