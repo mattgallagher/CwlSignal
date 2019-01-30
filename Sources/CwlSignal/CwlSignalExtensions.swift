@@ -120,6 +120,38 @@ extension Signal {
 		}
 	}
 	
+	/// Change the default execution to a DispatchQueue.global() concurrent queue.
+	///
+	/// This transformation exists as an optimization to multiple stages that must all run in the same queue (for thread-safety reasons) asynchronously (to avoid blocking main or calling queues).
+	///
+	/// e.g. `signal.map(context: myAsyncQueue) { v in work1(v) }.map(context: myAsyncQueue) { v in work2(v) }`
+	///
+	/// Values travelling through this pipeline:
+	/// 1. asynchronously transfer to `myAsyncQueue` and run work1
+	/// 2. asynchronously transfer to the dispatch global concurrent queue to leave `myAsyncQueue`
+	/// 3. asynchronously transfer to `myAsyncQueue` and run work2
+	/// 4. asynchronously transfer to the dispatch global concurrent queue to leave `myAsyncQueue`
+	///
+	/// This involves 4 asynchronous transfers, each of which has a latency of about 5 microseconds, leading to 20 microseconds minimum latency.
+	///
+	/// Instead consider the following:
+	///
+	/// e.g. `signal.scheduleGlobal().map(context: mySyncQueue) { v in work1(v) }.map(context: mySyncQueue) { v in work2(v) }`
+	///
+	/// Values travelling through this pipeline:
+	/// 1. asynchronously transfer to the dispatch global concurrent queue
+	/// 2. synchronously invoke on `mySyncQueue` and run work1
+	/// 3. synchronously invoke on `mySyncQueue` and run work2
+	///
+	/// This involves 1 asynchronous transfer and 2 synchronous invocations, leading to around 7 microseconds minimum latency.
+	///
+	/// For scenarios where `work1` and `work2` are trivial, this structure is around 3 times faster 
+	///
+	/// - Parameter qos: <#qos description#>
+	/// - Returns: <#return value description#>
+	public func scheduleGlobal(qos: DispatchQoS.QoSClass = .default) -> Signal<OutputValue> {
+		return transform(context: Exec.global(qos), Signal<OutputValue>.Next.single)
+	}
 }
 
 extension SignalInput {

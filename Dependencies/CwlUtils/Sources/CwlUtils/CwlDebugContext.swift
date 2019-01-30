@@ -334,26 +334,29 @@ public struct DebugContext: CustomExecutionContext {
 	///
 	/// - Parameter execute: the block to run
 	/// - Returns: the return value from running the block
-	public func invokeSync<Return>(_ execute: () -> Return) -> Return {
+	public func invokeSync<Return>(_ execute: () throws -> Return) rethrows -> Return {
 		guard let c = coordinator else {
-			return execute()
+			return try execute()
 		}
 		if type.isImmediateInCurrentContext {
 			let previousThread = c.currentThread
 			if !type.isConcurrent {
 				c.currentThread = thread
 			}
-			let r = execute()
+			let r = try execute()
 			if !type.isConcurrent {
 				c.currentThread = previousThread
 			}
 			return r
 		} else {
-			var result: Return? = nil
-			withoutActuallyEscaping(execute) { ex in
-				c.runScheduledTasks(stoppingAfter: c.schedule(block: { result = ex() }, thread: thread, timeInterval: 1, repeats: false))
+			let result = try withoutActuallyEscaping(execute) { ex throws -> Return? in
+				var rr: Result<Return, Error>? = nil
+				c.runScheduledTasks(stoppingAfter: c.schedule(block: {
+					rr = Result { try ex() }
+				}, thread: thread, timeInterval: 1, repeats: false))
+				return try rr?.get()
 			}
-			guard let r = result else { return execute() }
+			guard let r = result else { return try execute() }
 			return r
 		}
 	}
