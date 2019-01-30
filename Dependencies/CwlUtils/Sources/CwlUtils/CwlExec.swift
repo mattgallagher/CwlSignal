@@ -123,16 +123,16 @@ extension Exec: CustomExecutionContext {
 	}
 	
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
-	public func invokeSync<Result>(_ execute: () -> Result) -> Result {
+	public func invokeSync<Result>(_ execute: () throws -> Result) rethrows -> Result {
 		switch self {
-		case .direct: return execute()
-		case .main where Thread.isMainThread: return execute()
-		case .main: return DispatchQueue.main.sync(execute: execute)
-		case .queue(_, .thread(let test)) where test(): return execute()
-		case .queue(_, .threadAsync(let test)) where test(): return execute()
-		case .queue(_, .recursiveMutex(let test)) where test(): return execute()
-		case .queue(let q, _): return withoutActuallyEscaping(execute) { e in q.sync(execute: e) }
-		case .custom(let c): return c.invokeSync(execute)
+		case .direct: return try execute()
+		case .main where Thread.isMainThread: return try execute()
+		case .main: return try DispatchQueue.main.sync(execute: execute)
+		case .queue(_, .thread(let test)) where test(): return try execute()
+		case .queue(_, .threadAsync(let test)) where test(): return try execute()
+		case .queue(_, .recursiveMutex(let test)) where test(): return try execute()
+		case .queue(let q, _): return try withoutActuallyEscaping(execute) { e in try q.sync(execute: e) }
+		case .custom(let c): return try c.invokeSync(execute)
 		}
 	}
 	
