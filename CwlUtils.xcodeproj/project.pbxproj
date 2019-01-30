@@ -101,7 +101,7 @@
 		C95BDED51E4168B800AAA64B /* CwlWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* CwlWrapperTests.swift */; };
 		C973087F217C9840001EF603 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C61E4171FD00A7408F /* mt19937-64.c */; };
 		C9730880217C9841001EF603 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C61E4171FD00A7408F /* mt19937-64.c */; };
-		C98031632200014B0028A26B /* CwlZeroOneMany.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98031622200014B0028A26B /* CwlZeroOneMany.swift */; };
+		C98031632200014B0028A26B /* CwlFew.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98031622200014B0028A26B /* CwlFew.swift */; };
 		C98AE774216243CC004259B6 /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98AE773216243CC004259B6 /* CwlCatchException.framework */; };
 		C98AE77E21624464004259B6 /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98AE773216243CC004259B6 /* CwlCatchException.framework */; };
 		C98C44CC2160EEBA0028B2AC /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44BF2160EE670028B2AC /* CwlPreconditionTesting.framework */; };
@@ -241,7 +241,7 @@
 		C95BDE941E40B7D800AAA64B /* CwlRandomPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlRandomPerformanceTests.swift; sourceTree = "<group>"; };
 		C95BDEB61E41688B00AAA64B /* CwlUtils.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CwlUtils.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C95BDEDB1E4168B800AAA64B /* CwlUtils_iOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CwlUtils_iOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		C98031622200014B0028A26B /* CwlZeroOneMany.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlZeroOneMany.swift; sourceTree = "<group>"; };
+		C98031622200014B0028A26B /* CwlFew.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlFew.swift; sourceTree = "<group>"; };
 		C98AE773216243CC004259B6 /* CwlCatchException.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = CwlCatchException.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C98C44AE2160EE670028B2AC /* CwlPreconditionTesting.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CwlPreconditionTesting.xcodeproj; path = CwlPreconditionTesting/CwlPreconditionTesting.xcodeproj; sourceTree = "<group>"; };
 		C9D0DA232201A99C00CF8AD1 /* CwlExecutionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlExecutionType.swift; sourceTree = "<group>"; };
@@ -492,6 +492,7 @@
 				OBJ_21 /* CwlDispatch.swift */,
 				OBJ_22 /* CwlExec.swift */,
 				C9D0DA232201A99C00CF8AD1 /* CwlExecutionType.swift */,
+				C98031622200014B0028A26B /* CwlFew.swift */,
 				OBJ_23 /* CwlKeyValueObserver.swift */,
 				C95A622A1EA5D90C0059D152 /* CwlLifetime.swift */,
 				OBJ_24 /* CwlMutex.swift */,
@@ -506,7 +507,6 @@
 				OBJ_31 /* CwlUnanticipatedError.swift */,
 				C95BDE821E40B64700AAA64B /* CwlUtils.h */,
 				OBJ_32 /* CwlWrappers.swift */,
-				C98031622200014B0028A26B /* CwlZeroOneMany.swift */,
 				C9DD3D3B1E41A7D400E23B15 /* Info.plist */,
 			);
 			name = CwlUtils;
@@ -984,7 +984,7 @@
 				C95BDE9F1E41688B00AAA64B /* CwlDebugContext.swift in Sources */,
 				C95BDEA01E41688B00AAA64B /* CwlDeferredWork.swift in Sources */,
 				C9D0DA242201A99C00CF8AD1 /* CwlExecutionType.swift in Sources */,
-				C98031632200014B0028A26B /* CwlZeroOneMany.swift in Sources */,
+				C98031632200014B0028A26B /* CwlFew.swift in Sources */,
 				C910EFEB21F29DB30013639B /* CwlCustomExecutionContext.swift in Sources */,
 				C95BDEA21E41688B00AAA64B /* CwlDispatch.swift in Sources */,
 				C95BDEA31E41688B00AAA64B /* CwlExec.swift in Sources */,
