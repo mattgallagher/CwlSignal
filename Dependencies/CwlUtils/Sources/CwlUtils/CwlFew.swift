@@ -1,5 +1,5 @@
 //
-//  CwlZeroOneMany.swift
+//  CwlFew.swift
 //  CwlUtils
 //
 //  Created by Matt Gallagher on 29/1/19.
@@ -8,22 +8,22 @@
 
 import Foundation
 
-public enum ZeroOneMany<T> {
-	case zero
-	case one(T)
-	case many(Array<T>)
+public enum Few<T> {
+	case none
+	case single(T)
+	case array(Array<T>)
 }
 
-extension ZeroOneMany: Collection {
+extension Few: Collection {
 	public func index(after i: Int) -> Int {
 		return i + 1
 	}
 	
 	public var count: Int {
 		switch self {
-		case .zero: return 0
-		case .one: return 1
-		case .many(let a): return a.count
+		case .none: return 0
+		case .single: return 1
+		case .array(let a): return a.count
 		}
 	}
 	
@@ -33,17 +33,17 @@ extension ZeroOneMany: Collection {
 	
 	public var endIndex: Int {
 		switch self {
-		case .zero: return 0
-		case .one: return 1
-		case .many(let a): return a.endIndex
+		case .none: return 0
+		case .single: return 1
+		case .array(let a): return a.endIndex
 		}
 	}
 	
 	public subscript(key: Int) -> T {
 		switch self {
-		case .zero: fatalError()
-		case .one(let value): return value
-		case .many(let a): return a[key]
+		case .none: fatalError()
+		case .single(let value): return value
+		case .array(let a): return a[key]
 		}
 	}
 }

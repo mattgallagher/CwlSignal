@@ -31,7 +31,7 @@ import Foundation
 //  1. If the deferred work calls back into the mutex, it must be able to ensure that it is still relevant (hasn't been superceded by an action that may have occurred between the end of the mutex and the performing of the `DeferredWork`. This may involve a token (inside the mutex, only the most recent token is accepted) or the mutex queueing further requests until the most recent `DeferredWork` completes.
 //  2. The `runWork` must be manually invoked. Automtic invocation (e.g in the `deinit` of a lifetime managed `class` instance) would add heap allocation overhead and would also be easy to accidentally release at the wrong point (inside the mutex) causing erratic problems. Instead, the `runWork` is guarded with a `DEBUG`-only `OnDelete` check that ensures that the `runWork` has been correctly invoked by the time the `DeferredWork` falls out of scope.
 public struct DeferredWork {
-	typealias PossibleWork = ZeroOneMany<() -> Void>
+	typealias PossibleWork = Few<() -> Void>
 	
 	var work: PossibleWork
 
@@ -46,11 +46,11 @@ public struct DeferredWork {
 	#endif
 
 	public init() {
-		work = .zero
+		work = .none
 	}
 	
 	public init(initial: @escaping () -> Void) {
-		work = .one(initial)
+		work = .single(initial)
 	}
 	
 	public mutating func append(_ other: DeferredWork) {
@@ -60,19 +60,19 @@ public struct DeferredWork {
 		#endif
 		
 		switch other.work {
-		case .zero: break
-		case .one(let otherWork): self.append(otherWork)
-		case .many(let otherWork):
+		case .none: break
+		case .single(let otherWork): self.append(otherWork)
+		case .array(let otherWork):
 			switch work {
-			case .zero: work = .many(otherWork)
-			case .one(let existing):
+			case .none: work = .array(otherWork)
+			case .single(let existing):
 				var newWork: Array<() -> Void> = [existing]
 				newWork.append(contentsOf: otherWork)
-				work = .many(newWork)
-			case .many(var existing):
-				work = .zero
+				work = .array(newWork)
+			case .array(var existing):
+				work = .none
 				existing.append(contentsOf: otherWork)
-				work = .many(existing)
+				work = .array(existing)
 			}
 		}
 	}
@@ -83,12 +83,12 @@ public struct DeferredWork {
 		#endif
 		
 		switch work {
-		case .zero: work = .one(additionalWork)
-		case .one(let existing): work = .many([existing, additionalWork])
-		case .many(var existing):
-			work = .zero
+		case .none: work = .single(additionalWork)
+		case .single(let existing): work = .array([existing, additionalWork])
+		case .array(var existing):
+			work = .none
 			existing.append(additionalWork)
-			work = .many(existing)
+			work = .array(existing)
 		}
 	}
 	
@@ -99,13 +99,13 @@ public struct DeferredWork {
 		#endif
 		
 		switch work {
-		case .zero: break
-		case .one(let w): w()
-		case .many(let ws):
+		case .none: break
+		case .single(let w): w()
+		case .array(let ws):
 			for w in ws {
 				w()
 			}
 		}
-		work = .zero
+		work = .none
 	}
 }
