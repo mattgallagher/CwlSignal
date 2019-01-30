@@ -48,9 +48,9 @@ public protocol SignalInputInterface {
 public class Signal<OutputValue>: SignalInterface {
 	public typealias Result = CwlUtils.Result<OutputValue, SignalEnd>
 	public enum Next {
-		case zero
-		case one(Result)
-		case many(Array<Result>)
+		case none
+		case single(Result)
+		case array(Array<Result>)
 	}
 	
 	// # GOALS
@@ -667,7 +667,7 @@ public class Signal<OutputValue>: SignalInterface {
 		if context.type.isImmediateAlways || context.type.isReentrant {
 			return self
 		} else {
-			return self.transform(context: context.asyncRelativeContext, { .one($0) })
+			return self.transform(context: context.asyncRelativeContext, { .single($0) })
 		}
 	}
 	
@@ -1018,7 +1018,7 @@ public class Signal<OutputValue>: SignalInterface {
 		return { (r: Signal<U>.Result) in
 			switch r {
 			case .success(let v): return processor(v)
-			case .failure(let e): return .one(.failure(e))
+			case .failure(let e): return .single(.failure(e))
 			}
 		}
 	}
@@ -1030,7 +1030,7 @@ public class Signal<OutputValue>: SignalInterface {
 		return { (s: inout S, r: Signal<U>.Result) in
 			switch r {
 			case .success(let v): return processor(&s, v)
-			case .failure(let e): return .one(.failure(e))
+			case .failure(let e): return .single(.failure(e))
 			}
 		}
 	}
@@ -2157,12 +2157,12 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 			let transformedResult = userProcessor(r)
 
 			switch transformedResult {
-			case .zero: break
-			case .one(let r):
+			case .none: break
+			case .single(let r):
 				if let os = outputSignal {
 					os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 				}
-			case .many(let a):
+			case .array(let a):
 				if let os = outputSignal {
 					for r in a {
 						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
@@ -2208,12 +2208,12 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 			let transformedResult = userProcessor(&state, r)
 
 			switch transformedResult {
-			case .zero: break
-			case .one(let r):
+			case .none: break
+			case .single(let r):
 				if let os = outputSignal {
 					os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)
 				}
-			case .many(let a):
+			case .array(let a):
 				if let os = outputSignal {
 					for r in a {
 						os.send(result: r, predecessor: predecessor, activationCount: ac, activated: activated)

@@ -386,7 +386,7 @@ extension SignalInterface {
 				// Send the boundary signal
 				return .value(())
 			} else {
-				return .zero
+				return .none
 			}
 		}
 	}
@@ -400,7 +400,7 @@ extension SignalInterface {
 			switch cr {
 			case .result1(.success(let v)):
 				buffer.append(v)
-				return .zero
+				return .none
 			case .result1(.failure(let e)):
 				let b = buffer
 				buffer.removeAll()
@@ -428,20 +428,20 @@ extension SignalInterface {
 				for index in buffers.keys {
 					buffers[index]?.append(v)
 				}
-				return .zero
+				return .none
 			case .result1(.failure(let e)):
 				let values = buffers.map { $0.1 }
 				buffers.removeAll()
 				return .values(sequence: values, end: e)
 			case .result2(.success(let index, .some)):
 				buffers[index] = []
-				return .zero
+				return .none
 			case .result2(.success(let index, .none)):
 				if let b = buffers[index] {
 					buffers.removeValue(forKey: index)
 					return .value(b)
 				}
-				return .zero
+				return .none
 			case .result2(.failure(let e)):
 				let values = buffers.map { $0.1 }
 				buffers.removeAll()
@@ -523,7 +523,7 @@ extension SignalInterface {
 		return transform() { (r: Result<Optional<U>, SignalEnd>) -> Signal<U>.Next in
 			switch r {
 			case .success(.some(let v)): return .value(v)
-			case .success: return .zero
+			case .success: return .none
 			case .failure(let e): return .end(e)
 			}
 		}
@@ -543,7 +543,7 @@ extension SignalInterface {
 					if let u = try processor(v) {
 						return .value(u)
 					}
-					return .zero
+					return .none
 				} catch {
 					return .end(.other(error))
 				}
@@ -567,7 +567,7 @@ extension SignalInterface {
 					if let u = try processor(&s, v) {
 						return .value(u)
 					}
-					return .zero
+					return .none
 				} catch {
 					return .end(.other(error))
 				}
@@ -731,7 +731,7 @@ extension SignalInterface {
 					
 					// Buffer the result
 					state.buffers[index].append(Result<Interface.OutputValue, SignalEnd>.success(v))
-					return .zero
+					return .none
 				}
 			case .success(let index, .failure(let e)):
 				// If its an error, try to send some more buffers
@@ -750,11 +750,11 @@ extension SignalInterface {
 						}
 						state.completed += 1
 					}
-					return .many(results)
+					return .array(results)
 				} else {
 					// If we're not up to that buffer, just record the error
 					state.buffers[index].append(Result<Interface.OutputValue, SignalEnd>.failure(e))
-					return .zero
+					return .none
 				}
 			case .failure(let error): return .end(error)
 			}
@@ -774,7 +774,7 @@ extension SignalInterface {
 				let u = processor(v)
 				if let o = outputs[u] {
 					o.send(value: v)
-					return .zero
+					return .none
 				} else {
 					let (input, preCachedSignal) = Signal<OutputValue>.create()
 					let s = preCachedSignal.cacheUntilActive()
@@ -894,7 +894,7 @@ extension SignalInterface {
 			case .result1(.success(let v)):
 				if let c = current {
 					c.send(value: v)
-					return .zero
+					return .none
 				} else {
 					let (i, s) = Signal<OutputValue>.create()
 					current = i
@@ -905,7 +905,7 @@ extension SignalInterface {
 			case .result2(.success):
 				_ = current?.complete()
 				current = nil
-				return .zero
+				return .none
 			case .result2(.failure(let e)):
 				return .end(e)
 			}
@@ -927,7 +927,7 @@ extension SignalInterface {
 						c.send(value: v)
 					}
 				}
-				return .zero
+				return .none
 			case .result1(.failure(let e)):
 				return .end(e)
 			case .result2(.success(let index, .some)):
@@ -939,7 +939,7 @@ extension SignalInterface {
 					c.complete()
 					children.removeValue(forKey: index)
 				}
-				return .zero
+				return .none
 			case .result2(.failure(let e)):
 				return .end(e)
 			}
@@ -1030,7 +1030,7 @@ extension SignalInterface {
 				let newTimer = Signal<OutputValue>.timer(interval: interval, value: v, context: serialContext)
 				mergedInput.add(newTimer, closePropagation: .none, removeOnDeactivate: true)
 				timer = newTimer
-				return .zero
+				return .none
 			case .failure(let e):
 				return .end(e)
 			}
@@ -1063,7 +1063,7 @@ extension SignalInterface {
 					timer = nil
 				}
 				return .value(v)
-			case .success: return .zero
+			case .success: return .none
 			}
 		}
 	}
@@ -1081,7 +1081,7 @@ extension SignalInterface where OutputValue: Hashable {
 					previous.insert(v)
 					return .value(v)
 				}
-				return .zero
+				return .none
 			case .failure(let e):
 				return .end(e)
 			}
@@ -1101,7 +1101,7 @@ extension SignalInterface where OutputValue: Equatable {
 					previous = v
 					return .value(v)
 				}
-				return .zero
+				return .none
 			case .failure(let e):
 				return .end(e)
 			}
@@ -1122,7 +1122,7 @@ extension SignalInterface {
 			case .success(let v):
 				if let p = previous, compare(p, v) {
 					previous = v
-					return .zero
+					return .none
 				} else {
 					previous = v
 					return .value(v)
@@ -1144,7 +1144,7 @@ extension SignalInterface {
 				return .value(v, end: .complete)
 			case .success:
 				curr += 1
-				return .zero
+				return .none
 			case .failure(let e):
 				return .end(e)
 			}
@@ -1161,7 +1161,7 @@ extension SignalInterface {
 		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
 			switch r {
 			case .success(let v) where matching(v): return .value(v)
-			case .success: return .zero
+			case .success: return .none
 			case .failure(let e): return .end(e)
 			}
 		}
@@ -1176,7 +1176,7 @@ extension SignalInterface {
 		return self.transform(initialState: 0) { (curr: inout Int, r: Result<OutputValue, SignalEnd>) -> Signal<U>.Next in
 			switch r {
 			case .success(let v as U): return .value(v)
-			case .success: return .zero
+			case .success: return .none
 			case .failure(let e): return .end(e)
 			}
 		}
@@ -1192,7 +1192,7 @@ extension SignalInterface {
 		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
 			switch r {
 			case .success(let v) where matching(v): return .value(v, end: .complete)
-			case .success: return .zero
+			case .success: return .none
 			case .failure(let e): return .end(e)
 			}
 		}
@@ -1213,9 +1213,9 @@ extension SignalInterface {
 				} else {
 					state = (firstMatch: v, unique: true)
 				}
-				return .zero
+				return .none
 			case .success:
-				return .zero
+				return .none
 			case .failure(let e):
 				if let s = state, s.unique == true {
 					return .value(s.firstMatch, end: e)
@@ -1234,7 +1234,7 @@ extension SignalInterface {
 			if case .failure(let e) = r {
 				return .end(e)
 			} else {
-				return .zero
+				return .none
 			}
 		}
 	}
@@ -1250,9 +1250,9 @@ extension SignalInterface {
 			switch r {
 			case .success(let v) where matching(v):
 				last = v
-				return .zero
+				return .none
 			case .success:
-				return .zero
+				return .none
 			case .failure(let e):
 				if let l = last {
 					return .value(l, end: e)
@@ -1275,14 +1275,14 @@ extension SignalInterface {
 			switch (c, last) {
 			case (.result1(.success(let v)), _):
 				last = v
-				return .zero
+				return .none
 			case (.result1(.failure(let e)), _):
 				return .end(e)
 			case (.result2(.success), .some(let l)):
 				last = nil
 				return .value(l)
 			case (.result2(.success), _):
-				return .zero
+				return .none
 			case (.result2(.failure(let e)), _):
 				return .end(e)
 			}
@@ -1298,16 +1298,16 @@ extension SignalInterface {
 			switch (c, last) {
 			case (.result1(.success(let v)), nil):
 				last = v
-				return .zero
+				return .none
 			case (.result1(.success), _):
-				return .zero
+				return .none
 			case (.result1(.failure(let e)), _):
 				return .end(e)
 			case (.result2(.success), .some(let l)):
 				last = nil
 				return .value(l)
 			case (.result2(.success), _):
-				return .zero
+				return .none
 			case (.result2(.failure(let e)), _):
 				return .end(e)
 			}
@@ -1324,11 +1324,11 @@ extension SignalInterface {
 		return combine(sample, initialState: nil, context: .direct) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<Interface.OutputValue>.Next in
 			switch (c, last) {
 			case (.result1(.success), .some(let l)): return .value(l)
-			case (.result1(.success), _): return .zero
+			case (.result1(.success), _): return .none
 			case (.result1(.failure(let e)), _): return .end(e)
 			case (.result2(.success(let v)), _):
 				last = v
-				return .zero
+				return .none
 			case (.result2(.failure(let e)), _): return .end(e)
 			}
 		}
@@ -1345,11 +1345,11 @@ extension SignalInterface {
 		return combine(sample, initialState: nil, context: context) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<R>.Next in
 			switch (c, last) {
 			case (.result1(.success(let left)), .some(let right)): return .value(processor(left, right))
-			case (.result1(.success), _): return .zero
+			case (.result1(.success), _): return .none
 			case (.result1(.failure(let e)), _): return .end(e)
 			case (.result2(.success(let v)), _):
 				last = v
-				return .zero
+				return .none
 			case (.result2(.failure(let e)), _): return .end(e)
 			}
 		}
@@ -1365,7 +1365,7 @@ extension SignalInterface {
 			case .success(let v) where progressCount >= count: return .value(v)
 			case .success:
 				progressCount = progressCount + 1
-				return .zero
+				return .none
 			case .failure(let e): return .end(e)
 			}
 		}
@@ -1383,7 +1383,7 @@ extension SignalInterface {
 				if buffer.count > count {
 					return .value(buffer.removeFirst())
 				} else {
-					return .zero
+					return .none
 				}
 			case .failure(let e):
 				return .end(e)
@@ -1418,7 +1418,7 @@ extension SignalInterface {
 				if buffer.count > count {
 					buffer.removeFirst()
 				}
-				return .zero
+				return .none
 			case .failure(let e):
 				return .values(sequence: buffer, end: e)
 			}
@@ -1449,7 +1449,7 @@ extension SignalInterface {
 			if let v0 = state.0, let v1 = state.1 {
 				return .value(processor(v0, v1))
 			} else {
-				return .zero
+				return .none
 			}
 		}
 	}
@@ -1479,7 +1479,7 @@ extension SignalInterface {
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2 {
 				return .value(processor(v0, v1, v2))
 			} else {
-				return .zero
+				return .none
 			}
 		}
 	}
@@ -1515,7 +1515,7 @@ extension SignalInterface {
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2, let v3 = state.3 {
 				return .value(processor(v0, v1, v2, v3))
 			} else {
-				return .zero
+				return .none
 			}
 		}
 	}
@@ -1553,7 +1553,7 @@ extension SignalInterface {
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2, let v3 = state.3, let v4 = state.4 {
 				return .value(processor(v0, v1, v2, v3, v4))
 			} else {
-				return .zero
+				return .none
 			}
 		}
 	}
@@ -1578,16 +1578,16 @@ extension SignalInterface {
 			switch cr {
 			case .result1(.success(let leftIndex, .some(let leftValue))):
 				state.activeLeft[leftIndex] = leftValue
-				return .many(state.activeRight.sorted { $0.0 < $1.0 }.map { tuple in .success((leftValue, tuple.value)) })
+				return .array(state.activeRight.sorted { $0.0 < $1.0 }.map { tuple in .success((leftValue, tuple.value)) })
 			case .result2(.success(let rightIndex, .some(let rightValue))):
 				state.activeRight[rightIndex] = rightValue
-				return .many(state.activeLeft.sorted { $0.0 < $1.0 }.map { tuple in .success((tuple.value, rightValue)) })
+				return .array(state.activeLeft.sorted { $0.0 < $1.0 }.map { tuple in .success((tuple.value, rightValue)) })
 			case .result1(.success(let leftIndex, .none)):
 				state.activeLeft.removeValue(forKey: leftIndex)
-				return .zero
+				return .none
 			case .result2(.success(let rightIndex, .none)):
 				state.activeRight.removeValue(forKey: rightIndex)
-				return .zero
+				return .none
 			default:
 				return .complete()
 			}
@@ -1616,14 +1616,14 @@ extension SignalInterface {
 			case .result2(.success(let rightIndex, .some(let rightValue))):
 				state.activeRight[rightIndex] = rightValue
 				state.activeLeft.sorted { $0.0 < $1.0 }.forEach { tuple in tuple.value.send(value: rightValue) }
-				return .zero
+				return .none
 			case .result1(.success(let leftIndex, .none)):
 				_ = state.activeLeft[leftIndex]?.complete()
 				state.activeLeft.removeValue(forKey: leftIndex)
-				return .zero
+				return .none
 			case .result2(.success(let rightIndex, .none)):
 				state.activeRight.removeValue(forKey: rightIndex)
-				return .zero
+				return .none
 			default:
 				return .complete()
 			}
@@ -1698,11 +1698,11 @@ extension SignalInterface {
 				if !alreadySent {
 					return .value(v)
 				} else {
-					return .zero
+					return .none
 				}
 			case .result1(.failure):
 				alreadySent = true
-				return .zero
+				return .none
 			case .result2(.success(let v)):
 				if !alreadySent {
 					alreadySent = true
@@ -1801,14 +1801,14 @@ extension SignalInterface {
 				}
 			case (.result1(.success(let first)), _, _):
 				queues.first.append(first)
-				return .zero
+				return .none
 			case (.result1(.failure(let e)), _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) {
 					return .end(e)
 				} else {
 					queues.firstClosed = true
 				}
-				return .zero
+				return .none
 			case (.result2(.success(let second)), .some(let first), _):
 				queues.first.removeFirst()
 				if (queues.first.isEmpty && queues.firstClosed) {
@@ -1818,13 +1818,13 @@ extension SignalInterface {
 				}
 			case (.result2(.success(let second)), _, _):
 				queues.second.append(second)
-				return .zero
+				return .none
 			case (.result2(.failure(let e)), _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) {
 					return .end(e)
 				} else {
 					queues.secondClosed = true
-					return .zero
+					return .none
 				}
 			}
 		}
@@ -1865,13 +1865,13 @@ extension SignalInterface {
 				}
 			case (.result1(.success(let first)), _, _, _):
 				queues.first.append(first)
-				return .zero
+				return .none
 			case (.result1(.failure(let e)), _, _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
 					return .end(e)
 				} else {
 					queues.firstClosed = true
-					return .zero
+					return .none
 				}
 			case (.result2(.success(let second)), .some(let first), _, .some(let third)):
 				queues.first.removeFirst()
@@ -1883,13 +1883,13 @@ extension SignalInterface {
 				}
 			case (.result2(.success(let second)), _, _, _):
 				queues.second.append(second)
-				return .zero
+				return .none
 			case (.result2(.failure(let e)), _, _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) {
 					return .end(e)
 				} else {
 					queues.secondClosed = true
-					return .zero
+					return .none
 				}
 			case (.result3(.success(let third)), .some(let first), .some(let second), _):
 				queues.first.removeFirst()
@@ -1901,13 +1901,13 @@ extension SignalInterface {
 				}
 			case (.result3(.success(let third)), _, _, _):
 				queues.third.append(third)
-				return .zero
+				return .none
 			case (.result3(.failure(let e)), _, _, _):
 				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) {
 					return .end(e)
 				} else {
 					queues.thirdClosed = true
-					return .zero
+					return .none
 				}
 			}
 		}
@@ -1950,13 +1950,13 @@ extension SignalInterface {
 				}
 			case (.result1(.success(let first)), _, _, _, _):
 				queues.first.append(first)
-				return .zero
+				return .none
 			case (.result1(.failure(let e)), _, _, _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
 					return .end(e)
 				} else {
 					queues.firstClosed = true
-					return .zero
+					return .none
 				}
 			case (.result2(.success(let second)), .some(let first), _, .some(let third), .some(let fourth)):
 				queues.first.removeFirst()
@@ -1969,13 +1969,13 @@ extension SignalInterface {
 				}
 			case (.result2(.success(let second)), _, _, _, _):
 				queues.second.append(second)
-				return .zero
+				return .none
 			case (.result2(.failure(let e)), _, _, _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
 					return .end(e)
 				} else {
 					queues.secondClosed = true
-					return .zero
+					return .none
 				}
 				
 			case (.result3(.success(let third)), .some(let first), .some(let second), _, .some(let fourth)):
@@ -1989,13 +1989,13 @@ extension SignalInterface {
 				}
 			case (.result3(.success(let third)), _, _, _, _):
 				queues.third.append(third)
-				return .zero
+				return .none
 			case (.result3(.failure(let e)), _, _, _, _):
 				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
 					return .end(e)
 				} else {
 					queues.thirdClosed = true
-					return .zero
+					return .none
 				}
 			case (.result4(.success(let fourth)), .some(let first), .some(let second), .some(let third), _):
 				queues.first.removeFirst()
@@ -2008,13 +2008,13 @@ extension SignalInterface {
 				}
 			case (.result4(.success(let fourth)), _, _, _, _):
 				queues.fourth.append(fourth)
-				return .zero
+				return .none
 			case (.result4(.failure(let e)), _, _, _, _):
 				if queues.fourth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) {
 					return .end(e)
 				} else {
 					queues.fourthClosed = true
-					return .zero
+					return .none
 				}
 			}
 		}
@@ -2060,13 +2060,13 @@ extension SignalInterface {
 				}
 			case (.result1(.success(let first)), _, _, _, _, _):
 				queues.first.append(first)
-				return .zero
+				return .none
 			case (.result1(.failure(let e)), _, _, _, _, _):
 				if queues.first.isEmpty || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
 					return .end(e)
 				} else {
 					queues.firstClosed = true
-					return .zero
+					return .none
 				}
 			case (.result2(.success(let second)), .some(let first), _, .some(let third), .some(let fourth), .some(let fifth)):
 				queues.first.removeFirst()
@@ -2080,13 +2080,13 @@ extension SignalInterface {
 				}
 			case (.result2(.success(let second)), _, _, _, _, _):
 				queues.second.append(second)
-				return .zero
+				return .none
 			case (.result2(.failure(let e)), _, _, _, _, _):
 				if queues.second.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
 					return .end(e)
 				} else {
 					queues.secondClosed = true
-					return .zero
+					return .none
 				}
 			case (.result3(.success(let third)), .some(let first), .some(let second), _, .some(let fourth), .some(let fifth)):
 				queues.first.removeFirst()
@@ -2100,13 +2100,13 @@ extension SignalInterface {
 				}
 			case (.result3(.success(let third)), _, _, _, _, _):
 				queues.third.append(third)
-				return .zero
+				return .none
 			case (.result3(.failure(let e)), _, _, _, _, _):
 				if queues.third.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.fourth.isEmpty && queues.fourthClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
 					return .end(e)
 				} else {
 					queues.thirdClosed = true
-					return .zero
+					return .none
 				}
 			case (.result4(.success(let fourth)), .some(let first), .some(let second), .some(let third), _, .some(let fifth)):
 				queues.first.removeFirst()
@@ -2120,13 +2120,13 @@ extension SignalInterface {
 				}
 			case (.result4(.success(let fourth)), _, _, _, _, _):
 				queues.fourth.append(fourth)
-				return .zero
+				return .none
 			case (.result4(.failure(let e)), _, _, _, _, _):
 				if queues.fourth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fifth.isEmpty && queues.fifthClosed) {
 					return .end(e)
 				} else {
 					queues.fourthClosed = true
-					return .zero
+					return .none
 				}
 			case (.result5(.success(let fifth)), .some(let first), .some(let second), .some(let third), .some(let fourth), _):
 				queues.first.removeFirst()
@@ -2140,13 +2140,13 @@ extension SignalInterface {
 				}
 			case (.result5(.success(let fifth)), _, _, _, _, _):
 				queues.fifth.append(fifth)
-				return .zero
+				return .none
 			case (.result5(.failure(let e)), _, _, _, _, _):
 				if queues.fifth.isEmpty || (queues.first.isEmpty && queues.firstClosed) || (queues.second.isEmpty && queues.secondClosed) || (queues.third.isEmpty && queues.thirdClosed) || (queues.fourth.isEmpty && queues.fourthClosed) {
 					return .end(e)
 				} else {
 					queues.fifthClosed = true
-					return .zero
+					return .none
 				}
 			}
 		}
@@ -2306,9 +2306,9 @@ extension SignalInterface {
 			switch r {
 			case .success(let index, .some(let t)):
 				values[index] = t
-				return .zero
+				return .none
 			case .success(let index, .none):
-				return values[index].map { .value($0) } ?? .zero
+				return values[index].map { .value($0) } ?? .none
 			case .failure(let e):
 				return .end(e)
 			}
@@ -2362,7 +2362,7 @@ extension SignalInterface {
 	public func onResult(context: Exec = .direct, _ handler: @escaping (Result<OutputValue, SignalEnd>) -> ()) -> Signal<OutputValue> {
 		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
 			handler(r)
-			return .one(r)
+			return .single(r)
 		}
 	}
 	
@@ -2486,7 +2486,7 @@ extension SignalInterface {
 					return .value(currentTime.since(l).seconds)
 				} else {
 					lastTime = currentTime
-					return .zero
+					return .none
 				}
 			case .failure(let e):
 				return .end(e)
@@ -2513,7 +2513,7 @@ extension SignalInterface {
 				if resetOnValue {
 					junction.rebind()
 				}
-				return .one(r)
+				return .single(r)
 			case .result2:
 				return .end(.other(SignalReactiveError.timeout))
 			}
@@ -2551,7 +2551,7 @@ extension SignalInterface {
 			case .success(let v) where !test(v): return .value(false, end: .complete)
 			case .failure(.complete): return .value(true, end: .complete)
 			case .failure(let e): return .end(e)
-			case .success: return .zero
+			case .success: return .none
 			}
 		}
 	}
@@ -2573,13 +2573,13 @@ extension Signal {
 			switch r {
 			case .success(let index, let underlying) where first < 0:
 				first = index
-				return .one(underlying)
+				return .single(underlying)
 			case .success(let index, let underlying) where first < 0 || first == index:
-				return .one(underlying)
+				return .single(underlying)
 			case .failure(let e):
 				return .end(e)
 			case .success:
-				return .zero
+				return .none
 			}
 		}
 	}
@@ -2602,7 +2602,7 @@ extension SignalInterface {
 			case .success(let v) where test(v):
 				return .value(true, end: .complete)
 			case .success:
-				return .zero
+				return .none
 			case .failure(let e):
 				return .value(false, end: e)
 			}
@@ -2622,7 +2622,7 @@ extension SignalInterface {
 				return .value(index, end: .complete)
 			case .success:
 				index += 1
-				return .zero
+				return .none
 			case .failure(let e):
 				return .value(nil, end: e)
 			}
@@ -2697,19 +2697,19 @@ extension SignalInterface where OutputValue: Equatable {
 					return .value(false, end: .complete)
 				}
 				state.rq.removeFirst()
-				return .zero
+				return .none
 			case (.result1(.success(let left)), _, _):
 				state.lq.append(left)
-				return .zero
+				return .none
 			case (.result2(.success(let right)), .some(let left), _):
 				if left != right {
 					return .value(false, end: .complete)
 				}
 				state.lq.removeFirst()
-				return .zero
+				return .none
 			case (.result2(.success(let right)), _, _):
 				state.rq.append(right)
-				return .zero
+				return .none
 			case (.result1(.failure(let e)), _, _):
 				state.lc = true
 				if state.rc {
@@ -2719,7 +2719,7 @@ extension SignalInterface where OutputValue: Equatable {
 						return .value(false, end: e)
 					}
 				}
-				return .zero
+				return .none
 			case (.result2(.failure(let e)), _, _):
 				state.rc = true
 				if state.lc {
@@ -2729,7 +2729,7 @@ extension SignalInterface where OutputValue: Equatable {
 						return .value(false, end: e)
 					}
 				}
-				return .zero
+				return .none
 			}
 		}
 	}
@@ -2746,14 +2746,14 @@ extension SignalInterface {
 			case .result1(.success(let v)) where started:
 				return .value(v)
 			case .result1(.success):
-				return .zero
+				return .none
 			case .result1(.failure(let e)):
 				return .end(e)
 			case .result2(.success):
 				started = true
-				return .zero
+				return .none
 			case .result2(.failure):
-				return .zero
+				return .none
 			}
 		}
 	}
@@ -2768,7 +2768,7 @@ extension SignalInterface {
 		return transform(initialState: false, context: context) { (started: inout Bool, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
 			switch r {
 			case .success(let v) where !started && condition(v):
-				return .zero
+				return .none
 			case .success(let v):
 				started = true
 				return .value(v)
@@ -2789,7 +2789,7 @@ extension SignalInterface {
 		return transform(initialState: (initial, false), context: context) { (started: inout (U, Bool), r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
 			switch r {
 			case .success(let v) where !started.1 && condition(&started.0, v):
-				return .zero
+				return .none
 			case .success(let v):
 				started.1 = true
 				return .value(v)
@@ -2807,12 +2807,12 @@ extension SignalInterface {
 		return combine(other, initialState: false) { (started: inout Bool, cr: EitherResult2<OutputValue, U.OutputValue>) -> Signal<OutputValue>.Next in
 			switch cr {
 			case .result1(.success(let v)) where !started: return .value(v)
-			case .result1(.success): return .zero
+			case .result1(.success): return .none
 			case .result1(.failure(let e)): return .end(e)
 			case .result2(.success):
 				started = true
-				return .zero
-			case .result2(.failure): return .zero
+				return .none
+			case .result2(.failure): return .none
 			}
 		}
 	}
@@ -2863,7 +2863,7 @@ extension SignalInterface {
 			switch r {
 			case .success(let v):
 				state = fold(state, v)
-				return .zero
+				return .none
 			case .failure(let e):
 				if let v = finalize(state) {
 					return .value(v, end: e)
@@ -2908,12 +2908,12 @@ extension SignalInterface {
 				return .end(e1)
 			case (.result2(.success(let v)), .none):
 				state.secondValues.append(v)
-				return .zero
+				return .none
 			case (.result2(.success(let v)), .some):
 				return .value(v)
 			case (.result2(.failure(let e2)), .none):
 				state.secondError = e2
-				return .zero
+				return .none
 			case (.result2(.failure(let e2)), .some):
 				return .end(e2)
 			}

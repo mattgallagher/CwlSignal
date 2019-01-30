@@ -56,7 +56,7 @@ class SignalTests: XCTestCase {
 		XCTAssert(results.at(1)?.value == 3)
 		withExtendedLifetime(out) {}
 		
-		let (i2, ep2) = Signal<Int>.create { $0.transform { r in .one(r) }.subscribe { r in results.append(r) } }
+		let (i2, ep2) = Signal<Int>.create { $0.transform { r in .single(r) }.subscribe { r in results.append(r) } }
 		i2.send(result: .success(5))
 		i2.send(end: .other(TestError.zeroValue))
 		XCTAssert(i2.send(result: .success(0)) == SignalSendError.disconnected)
@@ -1100,10 +1100,10 @@ class SignalTests: XCTestCase {
 			
 			let combined = signal1.combine(signal3) { (cr: EitherResult2<Int, Int>) -> Signal<Int>.Next in
 				switch cr {
-				case .result1(let r): return .one(r)
-				case .result2(let r): return .one(r)
+				case .result1(let r): return .single(r)
+				case .result2(let r): return .single(r)
 				}
-			}.transform { r in .one(r) }.continuous()
+			}.transform { r in .single(r) }.continuous()
 			
 			let ex = catchBadInstruction {
 				combined.bind(to: input2)
@@ -1936,7 +1936,7 @@ class SignalTests: XCTestCase {
 		// The previous stage's context must *not* be active on a subsequent stage
 		Signal.just(1).transform(context: context) { r -> Signal<Int>.Next in
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
-			return .one(r)
+			return .single(r)
 		}.subscribeValuesUntilEnd {
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
@@ -1946,7 +1946,7 @@ class SignalTests: XCTestCase {
 		// The previous stage's context must *not* be active on a subsequent stage
 		Signal.just(1).transform(initialState: 0, context: context) { s, r -> Signal<Int>.Next in 
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) != nil)
-			return .one(r)
+			return .single(r)
 		}.subscribeValuesUntilEnd {
 			XCTAssert(DispatchQueue.getSpecific(key: specificKey) == nil)
 			result.append($0)
@@ -1981,7 +1981,7 @@ class SignalTests: XCTestCase {
 		// The previous stage's context must *not* be active on a subsequent stage
 		Signal.just(1, 2, 3).transform(context: context) { r -> Signal<Int>.Next in
 			XCTAssert(coordinator.currentThread.matches(context))
-			return .one(r)
+			return .single(r)
 		}.subscribeValuesUntilEnd {
 			XCTAssert(!coordinator.currentThread.matches(context))
 			result.append($0)
@@ -1992,7 +1992,7 @@ class SignalTests: XCTestCase {
 		// The previous stage's context must *not* be active on a subsequent stage
 		Signal.just(1, 2, 3).transform(initialState: 0, context: context) { s, r -> Signal<Int>.Next in
 			XCTAssert(coordinator.currentThread.matches(context))
-			return .one(r)
+			return .single(r)
 		}.subscribeValuesUntilEnd {
 			XCTAssert(!coordinator.currentThread.matches(context))
 			result.append($0)
@@ -2026,7 +2026,7 @@ class SignalTests: XCTestCase {
 		// The previous stage's context must *not* be active on a subsequent stage
 		Signal.preclosed(1, 2, 3).transform(context: context) { r -> Signal<Int>.Next in
 			XCTAssert(coordinator.currentThread.matches(context))
-			return .one(r)
+			return .single(r)
 		}.subscribeValuesUntilEnd {
 			XCTAssert(!coordinator.currentThread.matches(context))
 			result.append($0)
@@ -2217,7 +2217,7 @@ class SignalTimingTests: XCTestCase {
 			}
 			
 			for _ in 0..<depth {
-				signal = signal.transform { r in .one(r) }
+				signal = signal.transform { r in .single(r) }
 			}
 			_ = signal.subscribe { r in
 				switch r {
