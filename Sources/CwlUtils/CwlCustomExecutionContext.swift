@@ -34,7 +34,7 @@ public protocol CustomExecutionContext {
 	
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
 	/// NOTE: a default implementation of this is provided that, if `type.isImmediate` is true, simply calls `invoke`, otherwise it calls `invoke` and blocks waiting on a semaphore in the calling context until `invoke` completes. Creating a semphore for every call is inefficient so you should implement this a different way, if possible.
-	func invokeSync<Return>(_ execute: () -> Return) -> Return
+	func invokeSync<Return>(_ execute: () throws -> Return) rethrows -> Return
 	
 	/// A context that can be used to safely escape the current context.
 	/// NOTE: a default implementation of this function is provided that calls `DispatchQueue.global().async`. 
