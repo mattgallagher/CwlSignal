@@ -20,7 +20,12 @@
 
 import Foundation
 
-/// `Exec` is a transparent representation of come common execution contexts – allowing interrogation of whether the context is `sync` or `main`, so that the user of the `Exec` can perform appropriate optimizations, avoiding the need to actually invoke.
+/// `Exec` is a representation of an arbitrary execution context and offers the ability to interrogate properties of the execution context or to invoke blocks within the context in a number of different ways. The base enum implements the three most common types of execution context in Swift. Switching over these pre-defined cases enables the caller to perform appropriate optimizations (e.g. avoiding calling `invoke` on Exec.direct).
+///
+/// - direct: the context will directly call any supplied block with no other action taken
+/// - main: the context will invoke on the main thread, preferring synchronous invocation where possible.
+/// - queue: the context will invoke on a DispatchQueue with details descrbied in the `ExecutionType`
+/// - custom: a `CustomExecutionContext` handles all interrogation and invoking
 public enum Exec {
 	/// Invoked directly from the caller's context
 	case direct
@@ -32,7 +37,7 @@ public enum Exec {
 	case queue(DispatchQueue, ExecutionType)
 	
 	/// Invoked using the wrapped existential.
-	case custom(ExecutionContext)
+	case custom(CustomExecutionContext)
 }
 
 public extension Exec {
@@ -78,11 +83,11 @@ public extension Exec {
 	
 	/// Constructs an Exec.queue configured as an ExecutionType.recursiveAsync
 	static func asyncQueue(qos: DispatchQoS = .default) -> Exec {
-		return Exec.queue(DispatchQueue(label: ""), ExecutionType.mutexAsync)
+		return Exec.queue(DispatchQueue(label: ""), ExecutionType.serialAsync)
 	}
 }
 
-extension Exec: ExecutionContext {
+extension Exec: CustomExecutionContext {
 	/// A description about how functions will be invoked on an execution context.
 	public var type: ExecutionType {
 		switch self {
@@ -126,17 +131,16 @@ extension Exec: ExecutionContext {
 		case .queue(_, .thread(let test)) where test(): return execute()
 		case .queue(_, .threadAsync(let test)) where test(): return execute()
 		case .queue(_, .recursiveMutex(let test)) where test(): return execute()
-		case .queue(_, .recursiveAsync(let test)) where test(): return execute()
 		case .queue(let q, _): return withoutActuallyEscaping(execute) { e in q.sync(execute: e) }
 		case .custom(let c): return c.invokeSync(execute)
 		}
 	}
 	
 	/// Invokes in a global concurrent context
-	public func globalAsync(_ execute: @escaping () -> Void) {
+	public var asyncRelativeContext: Exec {
 		switch self {
-		case .custom(let c): c.globalAsync(execute)
-		default: DispatchQueue.global().async(execute: execute)
+		case .custom(let c): return c.asyncRelativeContext
+		default: return Exec.global
 		}
 	}
 	

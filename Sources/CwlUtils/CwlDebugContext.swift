@@ -111,7 +111,7 @@ public class DebugContextCoordinator {
 	/// Implementation mimicking Exec.asyncQueue but returning an Exec.custom(DebugContext)
 	public func asyncQueue() -> Exec {
 		let uuidString = CFUUIDCreateString(nil, CFUUIDCreate(nil)) as String? ?? ""
-		return .custom(DebugContext(type: .mutexAsync, thread: .custom(uuidString), coordinator: self))
+		return .custom(DebugContext(type: .serialAsync, thread: .custom(uuidString), coordinator: self))
 	}
 	
 	/// Performs all scheduled actions in a serial loop.
@@ -289,7 +289,7 @@ class DebugContextQueue {
 }
 
 /// An implementation of `ExecutionContext` that schedules its non-immediate actions on a `DebugContextCoordinator`. This type is constructed using the `Exec` mimicking properties and functions on `DebugContextCoordinator`.
-public struct DebugContext: ExecutionContext {
+public struct DebugContext: CustomExecutionContext {
 	public let type: ExecutionType
 	let thread: DebugContextThread
 	weak var coordinator: DebugContextCoordinator?
@@ -358,11 +358,11 @@ public struct DebugContext: ExecutionContext {
 		}
 	}
 	
-	public func globalAsync(_ execute: @escaping () -> Void) {
+	public var asyncRelativeContext: Exec {
 		guard let c = coordinator else {
-			return execute()
+			return Exec.direct
 		}
-		c.global.invokeAsync(execute)
+		return c.global
 	}
 	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
