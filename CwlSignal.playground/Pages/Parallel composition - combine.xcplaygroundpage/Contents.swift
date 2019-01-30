@@ -22,11 +22,11 @@ let doubleSignal = Signal<Double>.timer(interval: .interval(0.5), value: 0.1234)
 
 // The signals are combined – first to send a value wins
 // SOMETHING TO TRY: change the `fromSeconds` timing values, above, to let the `Int` signal arrive first.
-let output = intSignal.combine(doubleSignal) { either -> Signal<String>.TransformedResult in
+let output = intSignal.combine(doubleSignal) { either -> Signal<String>.Next in
    switch either {
    case .result1(.success(let intValue)): return .value("integer \(intValue)", end: .complete)
    case .result2(.success(let doubleValue)): return .value("double \(doubleValue)", end: .complete)
-	default: return .complete
+	default: return .complete()
    }
 	// NOTE: always completes after the first value
 }.subscribe { result in

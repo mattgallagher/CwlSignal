@@ -41,7 +41,7 @@ input.send(1)
 input.send(2)
 input.send(3)
 
-// This `close` function is the same as calling `input.send(error: SignalComplete.closed)`
+// This `complete` function is the same as calling `input.send(error: SignalComplete.closed)`
 input.complete()
 /*:
 ---

@@ -27,15 +27,15 @@ signal.combine(loopbackSignal, initialState: [Result<String, SignalEnd>](), cont
 	case .result1(let r) where queue.isEmpty:
 		print("Received input \(r). Sending immediately.")
 		queue.append(r)
-		return .single(r)
+		return .one(r)
 	case .result1(.success(let v)):
 		print("Received input \(v). This will be inserted at the start of the queue.")
 		queue.insert(.success(v), at: 1)
-		return .none
+		return .zero
 	case .result1(.failure(let e)):
 		print("Received \(e). This will be added to the end of the queue.")
 		queue.append(.failure(e))
-		return .none
+		return .zero
 	case .result2(.success):
 		print("Received completion notification for \(queue[0])")
 		queue.remove(at: 0)
@@ -43,7 +43,7 @@ signal.combine(loopbackSignal, initialState: [Result<String, SignalEnd>](), cont
 			print("Dequeuing \(queue[0])")
 			return .single(queue[0])
 		}
-		return .none
+		return .zero
 	case .result2(.failure(let e)):
 		return .end(e)
 	}

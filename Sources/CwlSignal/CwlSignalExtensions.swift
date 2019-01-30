@@ -174,7 +174,7 @@ extension SignalInput {
 		send(result: .failure(.complete))
 	}
 
-	@available(*, deprecated, message: "Use complete()")
+	@available(*, deprecated, message: "Renamed `complete`")
 	public func close() {
 		complete()
 	}

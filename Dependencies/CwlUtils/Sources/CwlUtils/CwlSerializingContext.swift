@@ -9,11 +9,11 @@
 import Foundation
 
 /// An `ExecutionContext` wraps a mutex around calls invoked by an underlying execution context. The effect is to serialize concurrent contexts (immediate or concurrent).
-public struct SerializingContext: ExecutionContext {
-	public let underlying: ExecutionContext
+public struct SerializingContext: CustomExecutionContext {
+	public let underlying: Exec
 	public let mutex = PThreadMutex(type: .recursive)
 	
-	public init(concurrentContext: ExecutionContext) {
+	public init(concurrentContext: Exec) {
 		underlying = concurrentContext
 	}
 	
@@ -21,12 +21,12 @@ public struct SerializingContext: ExecutionContext {
 		switch underlying.type {
 		case .immediate: return .mutex
 		case .concurrentAsync: return .serialAsync
-		case .mutex, .mutexAsync, .recursiveAsync, .recursiveMutex, .thread, .threadAsync, .serialAsync: return underlying.type
+		case .mutex, .recursiveMutex, .thread, .threadAsync, .serialAsync: return underlying.type
 		}
 	}
 	
 	public func invoke(_ execute: @escaping () -> Void) {
-		if case .some(.direct) = underlying as? Exec {
+		if case .direct = underlying {
 			mutex.sync(execute: execute)
 		} else {
 			underlying.invoke { [mutex] in mutex.sync(execute: execute) }
@@ -43,7 +43,7 @@ public struct SerializingContext: ExecutionContext {
 	}
 	
 	public func invokeSync<Return>(_ execute: () -> Return) -> Return {
-		if case .some(.direct) = underlying as? Exec {
+		if case .direct = underlying {
 			return mutex.sync(execute: execute)
 		} else {
 			return underlying.invokeSync { [mutex] in mutex.sync(execute: execute) }

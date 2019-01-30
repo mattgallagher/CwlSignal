@@ -2024,7 +2024,7 @@ class SignalTests: XCTestCase {
 
 		
 		// The previous stage's context must *not* be active on a subsequent stage
-		Signal.preclosed(0, 1, 2, 3).transform(context: context) { r -> Signal<Int>.Next in
+		Signal.preclosed(1, 2, 3).transform(context: context) { r -> Signal<Int>.Next in
 			XCTAssert(coordinator.currentThread.matches(context))
 			return .one(r)
 		}.subscribeValuesUntilEnd {
@@ -2032,7 +2032,9 @@ class SignalTests: XCTestCase {
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
-		XCTAssert(result.count == 12)
+		XCTAssert(result.count == 15)
+		
+		XCTAssert(result == [1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3])
 	}
 }
 
