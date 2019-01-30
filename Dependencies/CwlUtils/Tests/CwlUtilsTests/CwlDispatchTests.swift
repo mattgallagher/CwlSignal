@@ -44,7 +44,7 @@ class DispatchTests: XCTestCase {
 		queue.sync {
 			timer = DispatchSource.singleTimer(interval: .milliseconds(50), queue: queue) {
 				// Ensure test occurs on the appropriate queue
-				XCTAssert(DispatchQueue.getSpecific(key: self.key) == self.value)
+				XCTAssert(DispatchQueue.getSpecific(key: self.key) != nil)
 				ex.fulfill()
 			}
 		}

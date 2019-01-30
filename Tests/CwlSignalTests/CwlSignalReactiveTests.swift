@@ -254,7 +254,7 @@ class SignalReactiveTests: XCTestCase {
 			return Signal<Int>.generate(context: .direct) { input in
 				guard let i = input else { return }
 				for w in 0...v {
-					if let _ = i.sendAndQuery(result: .success(w)) {
+					if let _ = i.send(result: .success(w)) {
 						break
 					}
 				}
@@ -399,7 +399,7 @@ class SignalReactiveTests: XCTestCase {
 			return Signal<Int>.generate(context: .direct) { [state] input in
 				guard let i = input else { return }
 				for w in 0...v {
-					if let _ = i.sendAndQuery(result: .success(w + state - 1)) {
+					if let _ = i.send(result: .success(w + state - 1)) {
 						break
 					}
 				}
@@ -450,7 +450,7 @@ class SignalReactiveTests: XCTestCase {
 			return Signal<Int>.generate(context: .direct) { input in
 				guard let i = input else { return }
 				for w in v..<(v * 2) {
-					if let _ = i.sendAndQuery(result: .success(w)) {
+					if let _ = i.send(result: .success(w)) {
 						break
 					}
 				}
@@ -2016,10 +2016,14 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<Int, SignalEnd>]()
 		let coordinator = DebugContextCoordinator()
 		var times = [UInt64]()
-		let out = Signal.interval(.seconds(1), initial: .seconds(0), context: coordinator.global).timeout(interval: .seconds(5), resetOnValue: false, context: coordinator.global).delay(interval: .seconds(5), context: coordinator.global).subscribe { (r: Result<Int, SignalEnd>) in
-			results.append(r)
-			times.append(coordinator.currentTime)
-		}
+		let out = Signal
+			.interval(.seconds(1), initial: .seconds(0), context: coordinator.global)
+			.timeout(interval: .seconds(5), resetOnValue: false, context: coordinator.global)
+			.delay(interval: .seconds(5), context: coordinator.global)
+			.subscribe { (r: Result<Int, SignalEnd>) in
+				results.append(r)
+				times.append(coordinator.currentTime)
+			}
 		
 		coordinator.runScheduledTasks()
 		
@@ -2387,7 +2391,7 @@ class SignalReactiveTests: XCTestCase {
 
 		var results2 = [Result<Int, SignalEnd>]()
 		let alternate2 = Signal<Int>.from(11...13)
-		_ = Signal<Int>.from(0..<0).switchIfEmpty(alternate: alternate2).subscribe { results2.append($0) }
+		_ = Signal<Int>.empty().switchIfEmpty(alternate: alternate2).subscribe { results2.append($0) }
 		XCTAssert(results2.count == 4)
 		XCTAssert(results2.at(0)?.value == 11)
 		XCTAssert(results2.at(1)?.value == 12)

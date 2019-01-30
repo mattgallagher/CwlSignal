@@ -20,47 +20,8 @@
 
 import Foundation
 
-/// A description about how the default `invoke` function will behave for an execution context.
-/// Note that it is possible to call `invokeAsync` to force an asychronous invocation or `invokeSync` to block and wait for completion for any context.
-public enum ExecutionType {
-	/// Any function provided to `invoke` will be completed before the call to `invoke` returns. There is no inherent mutex – simultaneous invocations from multiple threads may run concurrently so therefore this case returns `true` from `isConcurrent`.
-	case immediate
-	
-	/// Any function provided to `invoke` will be completed before the call to `invoke` returns. Mutual exclusion is applied preventing invocations from multiple threads running concurrently.
-	case mutex
-	
-	/// Completion of the provided function is independent of the return from `invoke`. Subsequent functions provided to `invoke`, before completion if preceeding provided functions will be serialized and run after the preceeding calls have completed.
-	case serialAsync
-	
-	/// In this case, the execution context may be synchronous or asynchronous, depending on a test function that needs to be run in the current context.
-	/// This case is primarily intended to handle `Exec.main` which performs asynchronously on the main thread if the current context is a different thread but will invoke immediately if the current thread is already the main thread.
-	case conditionallyAsync(() -> Bool)
-	
-	/// Completion of the provided function is independent of the return from `invoke`. Subsequent functions provided to `invoke` will be run concurrently.
-	case concurrentAsync
-	
-	/// Returns true if an invoked function is guaranteed to complete before the `invoke` returns.
-	public var isImmediate: Bool {
-		switch self {
-		case .immediate: return true
-		case .mutex: return true
-		case .conditionallyAsync(let async): return !async()
-		default: return false
-		}
-	}
-	
-	/// Returns true if simultaneous uses of the context from separate threads will run concurrently.
-	public var isConcurrent: Bool {
-		switch self {
-		case .immediate: return true
-		case .concurrentAsync: return true
-		default: return false
-		}
-	}
-}
-
 /// An abstraction of common execution context concepts
-public protocol ExecutionContext {
+public protocol CustomExecutionContext {
 	/// A description about how functions will be invoked on an execution context.
 	var type: ExecutionType { get }
 	
@@ -74,6 +35,10 @@ public protocol ExecutionContext {
 	/// Run `execute` on the execution context but don't return from this function until the provided function is complete.
 	/// NOTE: a default implementation of this is provided that, if `type.isImmediate` is true, simply calls `invoke`, otherwise it calls `invoke` and blocks waiting on a semaphore in the calling context until `invoke` completes. Creating a semphore for every call is inefficient so you should implement this a different way, if possible.
 	func invokeSync<Return>(_ execute: () -> Return) -> Return
+	
+	/// A context that can be used to safely escape the current context.
+	/// NOTE: a default implementation of this function is provided that calls `DispatchQueue.global().async`. 
+	var asyncRelativeContext: Exec { get }
 	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
 	/// NOTE: a default implementation of this function is provided that runs the timer on the global dispatch queue and calls `invoke` when it fires. This implementation is likely sufficient for most cases but may not be appropriate if your context has strict timing or serialization requirements.
@@ -102,7 +67,7 @@ extension DispatchSource: Lifetime {
 }
 
 // Since it's not possible to have default parameters in protocols (yet) the "leeway" free functions are all default-implemented to call the "leeway" functions with a 0 second leeway.
-public extension ExecutionContext {
+public extension CustomExecutionContext {
 	func singleTimer(interval: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		return singleTimer(interval: interval, leeway: .seconds(0), handler: handler)
 	}
@@ -117,13 +82,23 @@ public extension ExecutionContext {
 	}
 }
 
-public extension ExecutionContext {
+public extension CustomExecutionContext {
+	var isImmediateInCurrentContext: Bool { return type.isImmediateInCurrentContext }
+	var isAsyncInCurrentContext: Bool { return type.isAsyncInCurrentContext }
+	var isImmediateAlways: Bool { return type.isImmediateAlways }
+	var isPotentiallyAsync: Bool { return type.isPotentiallyAsync }
+	var isReentrant: Bool { return type.isReentrant }
+	var isNonReentrant: Bool { return type.isNonReentrant }
+	var isConcurrent: Bool { return type.isConcurrent }
+	var isSerial: Bool { return type.isSerial }
+
+
 	func timestamp() -> DispatchTime {
 		return DispatchTime.now()
 	}
 	
 	func invokeAsync(_ execute: @escaping () -> Void) {
-		if type.isImmediate == false {
+		if type.isImmediateInCurrentContext == false {
 			invoke(execute)
 		} else {
 			DispatchQueue.global().async { self.invoke(execute) }
@@ -133,7 +108,7 @@ public extension ExecutionContext {
 	func invokeSync<Return>(_ execute: () -> Return) -> Return {
 		return withoutActuallyEscaping(execute) { ex in
 			var r: Return? = nil
-			if type.isImmediate == true {
+			if type.isImmediateInCurrentContext == true {
 				invoke {
 					r = ex()
 				}
@@ -148,7 +123,11 @@ public extension ExecutionContext {
 			return r!
 		}
 	}
-
+	
+	var asyncRelativeContext: Exec {
+		return Exec.global
+	}
+	
 	func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
 		return DispatchSource.singleTimer(interval: interval, leeway: leeway, queue: DispatchQueue.global(), handler: { self.invoke(handler) }) as! DispatchSource
 	}
@@ -165,3 +144,6 @@ public extension ExecutionContext {
 		return DispatchSource.repeatingTimer(parameter: parameter, interval: interval, leeway: leeway, queue: DispatchQueue.global(), handler: { p in self.invoke{ handler(p) } }) as! DispatchSource
 	}
 }
+
+@available(*, deprecated, message: "Use Exec for variables or CustomExecutionContext for conformances used in the `custom` case of Exec")
+public typealias ExecutionContext = CustomExecutionContext

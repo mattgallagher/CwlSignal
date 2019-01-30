@@ -31,11 +31,7 @@ import Foundation
 //  1. If the deferred work calls back into the mutex, it must be able to ensure that it is still relevant (hasn't been superceded by an action that may have occurred between the end of the mutex and the performing of the `DeferredWork`. This may involve a token (inside the mutex, only the most recent token is accepted) or the mutex queueing further requests until the most recent `DeferredWork` completes.
 //  2. The `runWork` must be manually invoked. Automtic invocation (e.g in the `deinit` of a lifetime managed `class` instance) would add heap allocation overhead and would also be easy to accidentally release at the wrong point (inside the mutex) causing erratic problems. Instead, the `runWork` is guarded with a `DEBUG`-only `OnDelete` check that ensures that the `runWork` has been correctly invoked by the time the `DeferredWork` falls out of scope.
 public struct DeferredWork {
-	enum PossibleWork {
-		case none
-		case single(() -> Void)
-		case multiple(Array<() -> Void>)
-	}
+	typealias PossibleWork = Few<() -> Void>
 	
 	var work: PossibleWork
 
@@ -66,17 +62,17 @@ public struct DeferredWork {
 		switch other.work {
 		case .none: break
 		case .single(let otherWork): self.append(otherWork)
-		case .multiple(let otherWork):
+		case .array(let otherWork):
 			switch work {
-			case .none: work = .multiple(otherWork)
+			case .none: work = .array(otherWork)
 			case .single(let existing):
 				var newWork: Array<() -> Void> = [existing]
 				newWork.append(contentsOf: otherWork)
-				work = .multiple(newWork)
-			case .multiple(var existing):
+				work = .array(newWork)
+			case .array(var existing):
 				work = .none
 				existing.append(contentsOf: otherWork)
-				work = .multiple(existing)
+				work = .array(existing)
 			}
 		}
 	}
@@ -88,11 +84,11 @@ public struct DeferredWork {
 		
 		switch work {
 		case .none: work = .single(additionalWork)
-		case .single(let existing): work = .multiple([existing, additionalWork])
-		case .multiple(var existing):
+		case .single(let existing): work = .array([existing, additionalWork])
+		case .array(var existing):
 			work = .none
 			existing.append(additionalWork)
-			work = .multiple(existing)
+			work = .array(existing)
 		}
 	}
 	
@@ -105,7 +101,7 @@ public struct DeferredWork {
 		switch work {
 		case .none: break
 		case .single(let w): w()
-		case .multiple(let ws):
+		case .array(let ws):
 			for w in ws {
 				w()
 			}
