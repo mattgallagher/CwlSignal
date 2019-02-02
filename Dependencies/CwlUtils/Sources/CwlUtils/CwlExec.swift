@@ -142,7 +142,7 @@ extension Exec: CustomExecutionContext {
 	}
 	
 	/// Invokes in a global concurrent context
-	public func relativeAsync(qos: DispatchQoS.QoSClass) -> Exec {
+	public func relativeAsync(qos: DispatchQoS.QoSClass = .default) -> Exec {
 		switch self {
 		case .custom(let c): return c.relativeAsync(qos: qos)
 		default: return Exec.global(qos: qos)
