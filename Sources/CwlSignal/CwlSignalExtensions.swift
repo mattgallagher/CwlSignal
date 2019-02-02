@@ -120,7 +120,7 @@ extension Signal {
 		}
 	}
 	
-	/// Change the default execution to a DispatchQueue.global() concurrent queue.
+	/// Change the default execution to an asynchronous context – typically the global concurrent queue.
 	///
 	/// This transformation exists as an optimization to multiple stages that must all run in the same queue (for thread-safety reasons) but also want to run asynchronously (to avoid blocking main or calling queues). e.g.:
 	/// ```
@@ -141,7 +141,7 @@ extension Signal {
 	/// Instead consider the following:
 	/// ```
 	/// signal
-	///    .scheduleGlobal()
+	///    .scheduleAsync()
 	///    .map(context: mySyncQueue) { v in work1(v) }
 	///    .map(context: mySyncQueue) { v in work2(v) }
 	/// ```
@@ -155,10 +155,10 @@ extension Signal {
 	///
 	/// NOTE: there is no equivalent `scheduleMain` for transferring back to the main thread because the `Exec.main` context is reentrant (checks the current thread and directly invokes if `Thread.isMainThread` returns `true`) so `Signal` does not need to exit the context at the end of each pipeline stage. This function primarily exists to optimize DispatchQueues (e.g. `Exec.asyncQueue`) which are not reentrant.
 	///
-	/// - Parameter relativeTo: the global scheduling will be achieved by calling `relativeAsync` on this context. In most cases, the default context (`Exec.direct`) is fine.
-	/// - Parameter qos: the DispatchQoS.QoSClass of the global concurrent queue. If `nil`, the QoS will be derived from the `relativeTo` context. Default: `nil`
-	/// - Returns: a signal which is transferred to the global concurrent queue.
-	public func scheduleGlobal(relativeTo: Exec = .direct, qos: DispatchQoS.QoSClass? = nil) -> Signal<OutputValue> {
+	/// - Parameter relativeTo: the global scheduling will be achieved by calling `relativeAsync` on this context.
+	/// - Parameter qos: used as a parameter to `relativeAsync` to override the `QoSClass`, if desired. Default: `nil`
+	/// - Returns: a signal which is transferred to an async context.
+	public func scheduleAsync(relativeTo: Exec = .direct, qos: DispatchQoS.QoSClass? = nil) -> Signal<OutputValue> {
 		return transform(context: relativeTo.relativeAsync(qos: qos), Signal<OutputValue>.Next.single)
 	}
 }
