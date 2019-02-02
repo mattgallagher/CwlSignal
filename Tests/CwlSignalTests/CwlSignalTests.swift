@@ -1976,6 +1976,7 @@ class SignalTests: XCTestCase {
 	func testAsyncMutexAssurances() {
 		let coordinator = DebugContextCoordinator()
 		let context = coordinator.asyncQueue()
+		let global = context.relativeAsync()
 		var result = [Int]()
 		
 		// The previous stage's context must *not* be active on a subsequent stage
@@ -1983,7 +1984,7 @@ class SignalTests: XCTestCase {
 			XCTAssert(coordinator.currentThread.matches(context))
 			return .single(r)
 		}.subscribeValuesUntilEnd {
-			XCTAssert(!coordinator.currentThread.matches(context))
+			XCTAssert(coordinator.currentThread.matches(global))
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
@@ -1994,7 +1995,7 @@ class SignalTests: XCTestCase {
 			XCTAssert(coordinator.currentThread.matches(context))
 			return .single(r)
 		}.subscribeValuesUntilEnd {
-			XCTAssert(!coordinator.currentThread.matches(context))
+			XCTAssert(coordinator.currentThread.matches(global))
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
@@ -2005,7 +2006,7 @@ class SignalTests: XCTestCase {
 			XCTAssert(coordinator.currentThread.matches(context))
 			return r
 		}.subscribeValuesUntilEnd {
-			XCTAssert(!coordinator.currentThread.matches(context))
+			XCTAssert(coordinator.currentThread.matches(global))
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
@@ -2016,7 +2017,7 @@ class SignalTests: XCTestCase {
 			XCTAssert(coordinator.currentThread.matches(context))
 			return
 		}.subscribeValuesUntilEnd {
-			XCTAssert(!coordinator.currentThread.matches(context))
+			XCTAssert(coordinator.currentThread.matches(global))
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()
@@ -2028,7 +2029,7 @@ class SignalTests: XCTestCase {
 			XCTAssert(coordinator.currentThread.matches(context))
 			return .single(r)
 		}.subscribeValuesUntilEnd {
-			XCTAssert(!coordinator.currentThread.matches(context))
+			XCTAssert(coordinator.currentThread.matches(global))
 			result.append($0)
 		}
 		coordinator.runScheduledTasks()

@@ -155,9 +155,10 @@ extension Signal {
 	///
 	/// NOTE: there is no equivalent `scheduleMain` for transferring back to the main thread because the `Exec.main` context is reentrant (checks the current thread and directly invokes if `Thread.isMainThread` returns `true`) so `Signal` does not need to exit the context at the end of each pipeline stage. This function primarily exists to optimize DispatchQueues (e.g. `Exec.asyncQueue`) which are not reentrant.
 	///
-	/// - Parameter qos: the DispatchQoS.QoSClass of the global concurrent queue. Default: `.default`
+	/// - Parameter relativeTo: the global scheduling will be achieved by calling `relativeAsync` on this context. In most cases, the default context (`Exec.direct`) is fine.
+	/// - Parameter qos: the DispatchQoS.QoSClass of the global concurrent queue. If `nil`, the QoS will be derived from the `relativeTo` context. Default: `nil`
 	/// - Returns: a signal which is transferred to the global concurrent queue.
-	public func scheduleGlobal(relativeTo: Exec = .direct, qos: DispatchQoS.QoSClass = .default) -> Signal<OutputValue> {
+	public func scheduleGlobal(relativeTo: Exec = .direct, qos: DispatchQoS.QoSClass? = nil) -> Signal<OutputValue> {
 		return transform(context: relativeTo.relativeAsync(qos: qos), Signal<OutputValue>.Next.single)
 	}
 }
