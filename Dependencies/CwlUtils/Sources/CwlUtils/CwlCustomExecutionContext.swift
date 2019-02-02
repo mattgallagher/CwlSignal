@@ -125,7 +125,7 @@ public extension CustomExecutionContext {
 		}
 	}
 	
-	func relativeAsync(qos: DispatchQoS.QoSClass? = nil) -> Exec {
+	func relativeAsync(qos: DispatchQoS.QoSClass?) -> Exec {
 		return Exec.global(qos: qos ?? .default)
 	}
 	
