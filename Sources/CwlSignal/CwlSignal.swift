@@ -667,7 +667,7 @@ public class Signal<OutputValue>: SignalInterface {
 		if context.type.isImmediateAlways || context.type.isReentrant {
 			return self
 		} else {
-			return self.transform(context: context.asyncRelativeContext, { .single($0) })
+			return self.transform(context: context.relativeAsync(), { .single($0) })
 		}
 	}
 	

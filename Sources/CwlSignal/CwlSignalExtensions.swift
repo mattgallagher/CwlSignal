@@ -158,7 +158,7 @@ extension Signal {
 	/// - Parameter qos: the DispatchQoS.QoSClass of the global concurrent queue. Default: `.default`
 	/// - Returns: a signal which is transferred to the global concurrent queue.
 	public func scheduleGlobal(relativeTo: Exec = .direct, qos: DispatchQoS.QoSClass = .default) -> Signal<OutputValue> {
-		return transform(context: relativeTo.asyncRelativeContext, Signal<OutputValue>.Next.single)
+		return transform(context: relativeTo.relativeAsync(qos: qos), Signal<OutputValue>.Next.single)
 	}
 }
 
