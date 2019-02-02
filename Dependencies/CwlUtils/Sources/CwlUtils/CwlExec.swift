@@ -56,6 +56,11 @@ public extension Exec {
 		return .queue(.global(), .concurrentAsync)
 	}
 	
+	/// Invoked asynchronously in the global queue with QOS_CLASS_DEFAULT priority
+	static func global(qos: DispatchQoS.QoSClass) -> Exec {
+		return .queue(.global(qos: qos), .concurrentAsync)
+	}
+	
 	/// Invoked asynchronously in the global queue with QOS_CLASS_USER_INTERACTIVE priority
 	static var interactive: Exec {
 		return .queue(.global(qos: .userInteractive), .concurrentAsync)
