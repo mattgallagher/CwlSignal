@@ -361,7 +361,7 @@ public struct DebugContext: CustomExecutionContext {
 		}
 	}
 	
-	public var asyncRelativeContext: Exec {
+	public func relativeAsync(qos: DispatchQoS.QoSClass) -> Exec {
 		guard let c = coordinator else {
 			return Exec.direct
 		}
