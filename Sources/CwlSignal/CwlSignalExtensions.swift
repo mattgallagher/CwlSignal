@@ -120,6 +120,47 @@ extension Signal {
 		}
 	}
 	
+	/// Change the default execution to a DispatchQueue.global() concurrent queue.
+	///
+	/// This transformation exists as an optimization to multiple stages that must all run in the same queue (for thread-safety reasons) but also want to run asynchronously (to avoid blocking main or calling queues). e.g.:
+	/// ```
+	/// signal
+	///    .map(context: myAsyncQueue) { v in work1(v) }
+	///    .map(context: myAsyncQueue) { v in work2(v) }
+	/// ```
+	///
+	/// The executation will not stay on `myAsyncQueue` between these stages... `Signal` must exit any non-reentrant context at the end of a processing stage as part of its thread safety rules. This means that execution through this pipeline takes the following path:
+	///
+	/// 1. asynchronously transfer to `myAsyncQueue` and run work1
+	/// 2. asynchronously transfer to the dispatch global concurrent queue to leave `myAsyncQueue`
+	/// 3. asynchronously transfer to `myAsyncQueue` and run work2
+	/// 4. asynchronously transfer to the dispatch global concurrent queue to leave `myAsyncQueue`
+	///
+	/// This involves 4 asynchronous transfers, each of which has a latency of about 5 microseconds, leading to 20 microseconds minimum latency and a maximum throughput of 50 000 per second, when `work1` and `work2` are trivial.
+	///
+	/// Instead consider the following:
+	/// ```
+	/// signal
+	///    .scheduleGlobal()
+	///    .map(context: mySyncQueue) { v in work1(v) }
+	///    .map(context: mySyncQueue) { v in work2(v) }
+	/// ```
+	///
+	/// Values travelling through this pipeline:
+	/// 1. asynchronously transfer to the dispatch global concurrent queue
+	/// 2. synchronously invoke on `mySyncQueue` and run work1
+	/// 3. synchronously invoke on `mySyncQueue` and run work2
+	///
+	/// This pipeline offers the same thread safety – `work1` and `work2` are still invoked on the same serial queue – and is still asynchronous. But this arrangement involves 1 asynchronous transfer and 2 synchronous queue invocations, leading to around 7 microseconds minimum latency and a maximum throughput of nearly 150 000 per second, when `work1` and `work2` are trivial –– around 3 times faster (an advantage that increases for pipelines with more stages).
+	///
+	/// NOTE: there is no equivalent `scheduleMain` for transferring back to the main thread because the `Exec.main` context is reentrant (checks the current thread and directly invokes if `Thread.isMainThread` returns `true`) so `Signal` does not need to exit the context at the end of each pipeline stage. This function primarily exists to optimize DispatchQueues (e.g. `Exec.asyncQueue`) which are not reentrant.
+	///
+	/// - Parameter relativeTo: the global scheduling will be achieved by calling `relativeAsync` on this context. In most cases, the default context (`Exec.direct`) is fine.
+	/// - Parameter qos: the DispatchQoS.QoSClass of the global concurrent queue. If `nil`, the QoS will be derived from the `relativeTo` context. Default: `nil`
+	/// - Returns: a signal which is transferred to the global concurrent queue.
+	public func scheduleGlobal(relativeTo: Exec = .direct, qos: DispatchQoS.QoSClass? = nil) -> Signal<OutputValue> {
+		return transform(context: relativeTo.relativeAsync(qos: qos), Signal<OutputValue>.Next.single)
+	}
 }
 
 extension SignalInput {

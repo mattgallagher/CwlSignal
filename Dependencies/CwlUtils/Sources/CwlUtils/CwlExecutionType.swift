@@ -43,7 +43,7 @@ public enum ExecutionType {
 	/// e.g. dispatchQueue.sync
 	case mutex
 	
-	/// This execution type models a scoped recursive mutex.
+	/// This execution type models a scoped recursive mutex. The associated test function returns `true` if the `invoke` or `invokeSync` function can be elided (replaced by direct invocation, since the current context is known to be inside the mutex).
 	///	* completes before `invoke` returns (immediate)
 	///   * applies a mutex but a nested `invoke` will safely re-enter the mutex (reentrant)
 	///   * will serialize parallel calls to run one at a time (serial)
@@ -51,7 +51,7 @@ public enum ExecutionType {
 	/// e.g. NSRecursiveLock.lock(before:)
 	case recursiveMutex(() -> Bool)
 	
-	/// This execution type models a thread.
+	/// This execution type models a thread. The associated test function returns `true` if the `invoke` or `invokeSync` function can be elided (replaced by direct invocation, since the current context is known to be inside the thread).
 	///	* if test function returns true, then `invoke` is immediate in the current context, otherwise asychronous (immediate/asynchronous)
 	///   * nested calls to `invoke` are permitted since they will simply be run immediately (reentrant)
 	///   * will serialize parallel calls to run one at a time (serial)
@@ -59,7 +59,7 @@ public enum ExecutionType {
 	/// e.g. `if Thread.isMainThread { /* do work */ } else { DispatchQueue.main.async { /* do work */ }`
 	case thread(() -> Bool)
 	
-	/// This execution type models a thread on which work is typically performed asynchronously.
+	/// This execution type models a thread on which work is typically performed asynchronously. The associated test function returns `true` if the `invoke` or `invokeSync` function can be elided (replaced by direct invocation, since the current context is known to be inside the thread).
 	///	* `invoke` is always asynchronous (asynchronous)
 	///   * detects when it is already on the current thread so nested calls to `invokeSync` will not deadlock (reentrant)
 	///   * will serialize parallel calls to run one at a time (serial)

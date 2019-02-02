@@ -291,7 +291,7 @@ class DebugContextQueue {
 /// An implementation of `ExecutionContext` that schedules its non-immediate actions on a `DebugContextCoordinator`. This type is constructed using the `Exec` mimicking properties and functions on `DebugContextCoordinator`.
 public struct DebugContext: CustomExecutionContext {
 	public let type: ExecutionType
-	let thread: DebugContextThread
+	public let thread: DebugContextThread
 	weak var coordinator: DebugContextCoordinator?
 	
 	init(type: ExecutionType, thread: DebugContextThread, coordinator: DebugContextCoordinator) {
@@ -361,7 +361,7 @@ public struct DebugContext: CustomExecutionContext {
 		}
 	}
 	
-	public var asyncRelativeContext: Exec {
+	public func relativeAsync(qos: DispatchQoS.QoSClass?) -> Exec {
 		guard let c = coordinator else {
 			return Exec.direct
 		}

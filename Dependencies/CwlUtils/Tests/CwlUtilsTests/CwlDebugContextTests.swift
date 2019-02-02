@@ -440,6 +440,18 @@ class DebugContextTests: XCTestCase {
 			XCTFail()
 		}
 	}
+	
+	func testRelativeAsync() {
+		let coordinator1 = DebugContextCoordinator()
+		let async = coordinator1.asyncQueue()
+		
+		let relativeAsync = async.relativeAsync()
+		if case .custom(let relative as DebugContext) = relativeAsync, case .custom(let global as DebugContext) = coordinator1.global {
+			return XCTAssert(relative.thread == global.thread)
+		} else {
+			return XCTFail()
+		}
+	}
 
 	#if false
 		func testTimeoutServiceSuccessHostTime() {

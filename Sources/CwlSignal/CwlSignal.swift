@@ -56,14 +56,14 @@ public class Signal<OutputValue>: SignalInterface {
 	// # GOALS
 	//
 	// The primary design goals for this implementation are:
-	//	1. All possible actions are threadsafe (no possible action results in undefined or corrupt memory behavior for internal data)
+	//	1. All possible actions on `Signal` itself are threadsafe (no possible action results in undefined or corrupt memory behavior for internal data)
 	// 2. Deadlocks on internally created mutexes will never occur.
 	//	3. Values will never be delivered out-of-order.
 	//	4. After a disconnection and reconnection, only values from the latest connection will be delivered.
 	//	5. Loopback (sending to an antecedent input from a subsequent signal handler) and attempts at re-entrancy to any closure in the graph are permitted. Attempted re-entrancy delivery is simply queued to be delivered after any in-flight behavior completes.
 	//
 	// That's quite a list of goals but it's largely covered by two ideas:
-	//	1. No user code ever invoked inside a mutex
+	//	1. No user code is ever invoked inside a `Signal` internal mutex
 	//	2. Delivery to a `Signal` includes the "predecessor" and the "activationCount". If either fail to match the internal state of the `Signal`, then the delivery is out-of-date and can be discarded.
 	//
 	// The first of these points is ensured through the use of `itemProcessing`, `holdCount` and `DeferredWork`. The `itemProcessing` and `holdCount` block a queue while out-of-mutex work is performed. The `DeferredWork` defers work to be performed later, once the stack has unwound and no mutexes are held.
@@ -667,7 +667,7 @@ public class Signal<OutputValue>: SignalInterface {
 		if context.type.isImmediateAlways || context.type.isReentrant {
 			return self
 		} else {
-			return self.transform(context: context.asyncRelativeContext, { .single($0) })
+			return self.transform(context: context.relativeAsync(), { .single($0) })
 		}
 	}
 	

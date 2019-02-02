@@ -56,6 +56,11 @@ public extension Exec {
 		return .queue(.global(), .concurrentAsync)
 	}
 	
+	/// Invoked asynchronously in the global queue with QOS_CLASS_DEFAULT priority
+	static func global(qos: DispatchQoS.QoSClass) -> Exec {
+		return .queue(.global(qos: qos), .concurrentAsync)
+	}
+	
 	/// Invoked asynchronously in the global queue with QOS_CLASS_USER_INTERACTIVE priority
 	static var interactive: Exec {
 		return .queue(.global(qos: .userInteractive), .concurrentAsync)
@@ -77,12 +82,12 @@ public extension Exec {
 	}
 	
 	/// Constructs an Exec.queue configured as an ExecutionType.recursiveMutex
-	static func syncQueue(qos: DispatchQoS = .default) -> Exec {
+	static func syncQueue(qos: DispatchQoS.QoSClass = .default) -> Exec {
 		return Exec.queue(DispatchQueue(label: ""), ExecutionType.mutex)
 	}
 	
 	/// Constructs an Exec.queue configured as an ExecutionType.recursiveAsync
-	static func asyncQueue(qos: DispatchQoS = .default) -> Exec {
+	static func asyncQueue(qos: DispatchQoS.QoSClass = .default) -> Exec {
 		return Exec.queue(DispatchQueue(label: ""), ExecutionType.serialAsync)
 	}
 }
@@ -136,11 +141,16 @@ extension Exec: CustomExecutionContext {
 		}
 	}
 	
-	/// Invokes in a global concurrent context
-	public var asyncRelativeContext: Exec {
+	/// Invokes in a global concurrent context. This context can be used to safely "escape" self.
+	///
+	/// - Parameter qos: the QoSClass for the new async context. If `nil`, the QoSClass will be derived from the properties of `self`
+	/// - Returns: a context that is asynchronous and can be used to escape self
+	public func relativeAsync(qos: DispatchQoS.QoSClass? = nil) -> Exec {
 		switch self {
-		case .custom(let c): return c.asyncRelativeContext
-		default: return Exec.global
+		case .custom(let c): return c.relativeAsync(qos: qos)
+		case .main: return Exec.global(qos: .userInteractive)
+		case .queue(let q, _): return Exec.global(qos: q.qos.qosClass)
+		case .direct: return Exec.global
 		}
 	}
 	

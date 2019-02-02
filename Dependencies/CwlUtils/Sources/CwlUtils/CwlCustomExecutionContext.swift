@@ -38,7 +38,8 @@ public protocol CustomExecutionContext {
 	
 	/// A context that can be used to safely escape the current context.
 	/// NOTE: a default implementation of this function is provided that calls `DispatchQueue.global().async`. 
-	var asyncRelativeContext: Exec { get }
+	/// - Parameter qos: The desired DispatchQoS.QoSClass for the new context. If `nil`, then inherit from `self` where possible
+	func relativeAsync(qos: DispatchQoS.QoSClass?) -> Exec
 	
 	/// Run `execute` on the execution context after `interval` (plus `leeway`) unless the returned `Lifetime` is cancelled or released before running occurs.
 	/// NOTE: a default implementation of this function is provided that runs the timer on the global dispatch queue and calls `invoke` when it fires. This implementation is likely sufficient for most cases but may not be appropriate if your context has strict timing or serialization requirements.
@@ -124,8 +125,8 @@ public extension CustomExecutionContext {
 		}
 	}
 	
-	var asyncRelativeContext: Exec {
-		return Exec.global
+	func relativeAsync(qos: DispatchQoS.QoSClass?) -> Exec {
+		return Exec.global(qos: qos ?? .default)
 	}
 	
 	func singleTimer(interval: DispatchTimeInterval, leeway: DispatchTimeInterval, handler: @escaping () -> Void) -> Lifetime {
