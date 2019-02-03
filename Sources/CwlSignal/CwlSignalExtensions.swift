@@ -805,6 +805,10 @@ public final class SignalLatest<OutputValue>: Lifetime {
 	}
 }
 
+/// A SignalCapture subscribes to a signal and records any synchronously emitted "activation" values.
+/// If there is no value to return or the value can't be emitted synchronously, this error may be returned.
+public struct SignalCaptureFailedToEmit: Error {}
+
 extension SignalInterface {
 	/// Appends a `SignalLatest` listener to the value emitted from this `Signal`. `SignalLatest` adds an output to the signal and remembers the latest result emitted. This latest result can be accessed in a thread-safe way, using `latestValue` or `latestResult`.
 	public func cacheLatest() -> SignalLatest<OutputValue> {
@@ -812,8 +816,14 @@ extension SignalInterface {
 	}
 	
 	/// Internally creates a `SignalCapture` which reads the latest activation value and is immediately discarded.
-	public func peek() -> OutputValue? {
-		return signal.capture().currentValue
+	///
+	/// NOTE: if you're not specifically interested in activation values or you're performing multiple times, the
+	/// performance of `cacheLatest` is better.
+	///
+	/// - Returns: the latest captured value, if any
+	/// - Throws: if no value is emitted but a `SignalEnd` is emitted, then the `SignalEnd` will be thrown. If no value or end is emitted, a `SignalCapture.FailedToEmit` error will be thrown.
+	public func peek() throws -> OutputValue {
+		return try signal.capture().latestValue()
 	}
 }
 
