@@ -97,7 +97,7 @@ class ViewController: NSViewController {
 				filesSelectedLabel.stringValue = s.map { "Selected file count: \($0.count)" } ?? "Selection empty"
 			}
 		lifetimes += Server.currentServer
-			.combineLatest(latestSelection) { server, selection in server != nil && selection?.isEmpty == false }
+			.combineLatestWith(latestSelection) { server, selection in server != nil && selection?.isEmpty == false }
 			.subscribeValues(context: .main) { [uploadButton] canUpload in uploadButton.isEnabled = canUpload }
 		
 		// Set the view

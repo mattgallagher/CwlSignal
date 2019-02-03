@@ -303,45 +303,6 @@ extension SignalInterface {
 		try! signal.capture().bind(to: pair.input, resend: true)
 		return pair.signal
 	}
-	
-	/// Same as `transform` with the same parameters, except errors are handled automatically and the handler is invoked only for *values*.
-	/// This function is similar to a `map` but with the differences:	
-	///	* You can send a different number of values to received
-	///   * You can send errors
-	///   * If the next stage in the signal pipeline is synchronous, it will be invoked during the call to `next.send` (i.e. while this handler closure is on the stack).
-	///
-	/// - Parameters:
-	///   - context: the `Exec` context used to invoke the `handler`
-	///   - processor: the function invoked for each received `Result.success`
-	/// - Returns: the created `Signal`
-	public func transformValues<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> Signal<U>.Next) -> Signal<U> {
-		return signal.transform(context: context) { (result: Result<OutputValue, SignalEnd>) in
-			switch result {
-			case .success(let v): return processor(v)
-			case .failure(let e): return .end(e)
-			}
-		}
-	}
-
-	/// Same as `transform` with the same parameters, except errors are handled automatically and the handler is invoked only for *values*.
-	/// This function is similar to a `map` but with the differences:	
-	///   - You can send a different number of values to received
-	///   - You can send errors
-	///   - If the next stage in the signal pipeline is synchronous, it will be invoked during the call to `next.send` (i.e. while this handler closure is on the stack).
-	///
-	/// - Parameters:
-	///   - initialState: the initial value for a state value associated with the handler. This value is retained and if the signal graph is deactivated, the state value is reset to this value.
-	///   - context: the `Exec` context used to invoke the `handler`
-	///   - processor: the function invoked for each received `Result.success`
-	/// - Returns: the created `Signal`
-	public func transformValues<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) -> Signal<U>.Next) -> Signal<U> {
-		return signal.transform(initialState: initialState, context: context) { (state: inout S, result: Result<OutputValue, SignalEnd>) in
-			switch result {
-			case .success(let v): return processor(&state, v)
-			case .failure(let e): return .end(e)
-			}
-		}
-	}
 
 	/// Maps values from self or second to EitherValue2 and merges into a single stream.
 	///
@@ -563,8 +524,8 @@ extension SignalInterface {
 	///   - context: the context where the processor will run
 	///   - processor: performs work with values from this `Signal` and the `SignalMergedInput` used for output
 	/// - Returns: output of the merge set
-	public func transformFlatten<U>(closePropagation: SignalEndPropagation = .none, context: Exec = .direct, _ processor: @escaping (OutputValue, SignalMergedInput<U>) -> ()) -> Signal<U> {
-		return transformFlatten(initialState: (), closePropagation: closePropagation, context: context, { (state: inout (), value: OutputValue, mergedInput: SignalMergedInput<U>) in processor(value, mergedInput) })
+	public func transformFlatten<U>(closePropagation: SignalEndPropagation = .none, context: Exec = .direct, _ processor: @escaping (OutputValue, SignalMergedInput<U>) throws -> ()) -> Signal<U> {
+		return transformFlatten(initialState: (), closePropagation: closePropagation, context: context, { (state: inout (), value: OutputValue, mergedInput: SignalMergedInput<U>) in try processor(value, mergedInput) })
 	}
 	
 	/// A signal transform function that, instead of creating plain values and emitting them to a `SignalNext`, creates entire signals and adds them to a `SignalMergedInput`. The output of the merge set (which contains the merged output from all of the created signals) forms the signal returned from this function.
@@ -577,14 +538,19 @@ extension SignalInterface {
 	///   - context: the context where the processor will run
 	///   - processor: performs work with values from this `Signal` and the `SignalMergedInput` used for output
 	/// - Returns: output of the merge set
-	public func transformFlatten<S, U>(initialState: S, closePropagation: SignalEndPropagation = .errors, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue, SignalMergedInput<U>) -> ()) -> Signal<U> {
+	public func transformFlatten<S, U>(initialState: S, closePropagation: SignalEndPropagation = .errors, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue, SignalMergedInput<U>) throws -> ()) -> Signal<U> {
 		let (mergedInput, result) = Signal<U>.createMergedInput()
 		var end: SignalEnd? = nil
 		let outerSignal = signal.transform(initialState: initialState, context: context) { (state: inout S, r: Result<OutputValue, SignalEnd>) -> Signal<U>.Next in
 			switch r {
 			case .success(let v):
-				processor(&state, v, mergedInput)
-				return .none
+				do {
+					try processor(&state, v, mergedInput)
+					return .none
+				} catch {
+					end = .other(error)
+					return .error(error)
+				}
 			case .failure(let e):
 				end = e
 				return .end(e)
@@ -675,7 +641,7 @@ extension SignalInterface {
 			}
 		}
 	}
-
+	
 	/// Joins this `Signal` to a destination `SignalInput`
 	///
 	/// WARNING: if you bind to a previously joined or otherwise inactive instance of the base `SignalInput` class, this function will have no effect. To get underlying errors, use `junction().bind(to: input)` instead.
@@ -732,6 +698,22 @@ extension SignalInterface {
 			guard let i = input, let s = sig else { return }
 			i.remove(s)
 		}
+	}
+
+	/// - Returns: a signal where value in the sequence is accompanied by its zero-indexed position in the sequence
+	public func enumerated() -> Signal<(offset: Int, element: OutputValue)> {
+		return transform(initialState: -1) { index, result in
+			index += 1
+			return .single(result.map { (offset: index, element: $0) })
+		}
+	}
+	
+	/// Given an array of source Signals, returns a single, merged Signal where each value is a tuple of the index in the array and the element from the corresponding source signal. 
+	///
+	/// - Parameter sequence: an sequence of SignalInterfaces
+	/// - Returns: a merged signal of (offset, element) tuples
+	public static func indexed<S: Sequence>(_ sequence: S) -> Signal<(offset: Int, element: OutputValue)> where S.Element: SignalInterface, OutputValue == S.Element.OutputValue {
+		return Signal<(offset: Int, element: OutputValue)>.merge(sequence: sequence.enumerated().map { offset, s in s.map { (offset: offset, element: $0) } })
 	}
 }
 
