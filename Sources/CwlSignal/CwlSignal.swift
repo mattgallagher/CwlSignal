@@ -2428,6 +2428,7 @@ private struct SignalCaptureParam<OutputValue> {
 /// A "capture" handler separates activation signals (those sent immediately on connection) from normal signals. This allows activation signals to be handled separately or removed from the stream entirely.
 /// NOTE: this handler *blocks* delivery between capture and connecting to the output. Signals sent in the meantime are queued.
 public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, OutputValue>, Lifetime {
+	public struct FailedToEmit: Error {}
 	public typealias Handler = (SignalCapture<OutputValue>, SignalEnd, SignalInput<OutputValue>) -> ()
 
 	private var sendAsNormal: Bool = false
@@ -2451,15 +2452,6 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 		return outputs.count > 0 ? false : true
 	}
 	
-	/// Shortcut for `error != nil ? values.last : nil`
-	///
-	/// - Returns: last captured value, if the captured error is nil, otherwise nil.
-	public var currentValue: OutputValue? {
-		return sync {
-			return capturedEnd == nil ? capturedValues.last : nil
-		}
-	}
-	
 	/// Accessor for any captured values. Activation signals captured can be accessed through this property between construction and activating an output (after that point, capture signals are cleared).
 	///
 	/// - Returns: and array of values (which may be empty) and an optional error, which are the signals received during activation.
@@ -2475,6 +2467,22 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 	public var end: SignalEnd? {
 		return sync {
 			return capturedEnd
+		}
+	}
+
+	/// Accessor for the last captured value, if any.
+	///
+	/// - Returns: the last captured value
+	/// - Throws: if no captured value but captured end, the `SignalEnd` is thrown. If neither value nor end, `SignalCapture.FailedToEmit` is thrown.
+	public func latestValue() throws -> OutputValue {
+		return try sync {
+			if let last = capturedValues.last {
+				return last
+			} else if let end = capturedEnd {
+				throw end
+			} else {
+				throw FailedToEmit()
+			}
 		}
 	}
 	
