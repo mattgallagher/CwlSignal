@@ -1340,7 +1340,7 @@ class SignalReactiveTests: XCTestCase {
 		var results = [Result<String, SignalEnd>]()
 		let (signal1Input, signal1) = Signal<Int>.create()
 		let (signal2Input, signal2) = Signal<Double>.create()
-		let combined = signal1.combineLatest(signal2) {
+		let combined = signal1.combineLatestWith(signal2) {
 			"\($0) \($1)"
 		}
 		let out = combined.subscribe { (r: Result<String, SignalEnd>) -> Void in
@@ -1373,7 +1373,7 @@ class SignalReactiveTests: XCTestCase {
 		let (signal1Input, signal1) = Signal<Int>.create()
 		let (signal2Input, signal2) = Signal<Double>.create()
 		let (signal3Input, signal3) = Signal<String>.create()
-		let combined = signal1.combineLatest(signal2, signal3) {
+		let combined = signal1.combineLatestWith(signal2, signal3) {
 			"\($0) \($1) \($2)"
 		}
 		let out = combined.subscribe { (r: Result<String, SignalEnd>) -> Void in
@@ -1409,7 +1409,7 @@ class SignalReactiveTests: XCTestCase {
 		let (signal2Input, signal2) = Signal<Double>.create()
 		let (signal3Input, signal3) = Signal<String>.create()
 		let (signal4Input, signal4) = Signal<Int>.create()
-		let combined = signal1.combineLatest(signal2, signal3, signal4) {
+		let combined = signal1.combineLatestWith(signal2, signal3, signal4) {
 			"\($0) \($1) \($2) \($3)"
 		}
 		let out = combined.subscribe { (r: Result<String, SignalEnd>) -> Void in
@@ -1448,7 +1448,7 @@ class SignalReactiveTests: XCTestCase {
 		let (signal3Input, signal3) = Signal<String>.create()
 		let (signal4Input, signal4) = Signal<Int>.create()
 		let (signal5Input, signal5) = Signal<Bool>.create()
-		let combined = signal1.combineLatest(signal2, signal3, signal4, signal5) {
+		let combined = signal1.combineLatestWith(signal2, signal3, signal4, signal5) {
 			"\($0) \($1) \($2) \($3) \($4)"
 		}
 		let out = combined.subscribe { (r: Result<String, SignalEnd>) -> Void in

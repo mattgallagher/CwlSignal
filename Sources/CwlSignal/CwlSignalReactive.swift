@@ -583,7 +583,7 @@ extension SignalInterface {
 	///   - context: the `Exec` where `activation` will be evaluated (default: .direct).
 	///   - activation: processing closure for activation values
 	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
-	public func compactMapActivation<U>(select: SignalActivationSelection, context: Exec = .direct, activation: @escaping (OutputValue) -> U?, remainder: @escaping (OutputValue) -> U?) -> Signal<U> {
+	public func compactMapActivation<U>(select: SignalActivationSelection, context: Exec = .direct, activation: @escaping (OutputValue) throws -> U?, remainder: @escaping (OutputValue) throws -> U?) -> Signal<U> {
 		var capture: SignalCapture<OutputValue>? = nil
 		return Signal<U>.generate { input in
 			guard let input = input else { return }
@@ -604,24 +604,33 @@ extension SignalInterface {
 			
 			let values = c.values
 			if !values.isEmpty {
-				// Process the captured values
-				let initial: [U]?
-				switch select {
-				case .all: initial = context.invokeSync { values.compactMap(activation) }
-				case .first:
-					initial = context.invokeSync {
-						var mapped = [U]()
-						mapped += values.first.flatMap(activation)
-						mapped.append(contentsOf: values.dropFirst().compactMap(remainder))
-						return mapped
+				var initial: [U]? = nil
+				do {
+					// Process the captured values
+					switch select {
+					case .all: initial = try context.invokeSync { try values.compactMap(activation) }
+					case .first:
+						initial = [U]()
+						try context.invokeSync {
+							if let v = values.first, let a = try activation(v) {
+								initial!.append(a)
+							}
+							for v in values.dropFirst() {
+								if let r = try remainder(v) {
+									initial!.append(r)
+								}
+							}
+						}
+					case .last:
+						initial = try values.last.flatMap { v in try context.invokeSync { try activation(v).map { [$0] } } }
 					}
-				case .last:
-					initial = values.last.flatMap { v in context.invokeSync { activation(v).map { [$0] } } }
-				}
-				
-				// If we have any initial values, precache them for immediate sending
-				if let i = initial, !i.isEmpty {
-					subsequent = subsequent.cacheUntilActive(precached: i)
+					
+					// If we have any initial values, precache them for immediate sending
+					if let i = initial, !i.isEmpty {
+						subsequent = subsequent.cacheUntilActive(precached: i)
+					}
+				} catch {
+					subsequent = Signal<U>.preclosed(sequence: initial ?? [], end: SignalEnd.other(error))
 				}
 			}
 			
@@ -647,9 +656,9 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func flatMap<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> Interface) -> Signal<Interface.OutputValue> {
+	public func flatMap<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> Interface) -> Signal<Interface.OutputValue> {
 		return transformFlatten(closePropagation: .errors, context: context) { (v: OutputValue, mergedInput: SignalMergedInput<Interface.OutputValue>) in
-			mergedInput.add(processor(v), closePropagation: .errors, removeOnDeactivate: true)
+			mergedInput.add(try processor(v), closePropagation: .errors, removeOnDeactivate: true)
 		}
 	}
 	
@@ -659,10 +668,10 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func flatMapFirst<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> Interface) -> Signal<Interface.OutputValue> {
+	public func flatMapFirst<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> Interface) -> Signal<Interface.OutputValue> {
 		return transformFlatten(initialState: false, closePropagation: .errors, context: context) { (s: inout Bool, v: OutputValue, mergedInput: SignalMergedInput<Interface.OutputValue>) in
 			if !s {
-				mergedInput.add(processor(v), closePropagation: .errors, removeOnDeactivate: true)
+				mergedInput.add(try processor(v), closePropagation: .errors, removeOnDeactivate: true)
 				s = true
 			}
 		}
@@ -670,18 +679,18 @@ extension SignalInterface {
 	
 	/// Implementation of [Reactive X operator "FlatMapLatest"](http://reactivex.io/documentation/operators/flatmap.html)
 	///
-	/// See also `switchLatestSignal`
+	/// See also `switchLatest`
 	///
 	/// - Parameters:
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func flatMapLatest<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> Interface) -> Signal<Interface.OutputValue> {
+	public func flatMapLatest<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> Interface) -> Signal<Interface.OutputValue> {
 		return transformFlatten(initialState: nil, closePropagation: .errors, context: context) { (s: inout Signal<Interface.OutputValue>?, v: OutputValue, mergedInput: SignalMergedInput<Interface.OutputValue>) in
 			if let existing = s {
 				mergedInput.remove(existing)
 			}
-			let next = processor(v).signal
+			let next = try processor(v).signal
 			mergedInput.add(next, closePropagation: .errors, removeOnDeactivate: true)
 			s = next
 		}
@@ -694,9 +703,9 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is merged into a single stream
-	public func flatMap<Interface: SignalInterface, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) -> Interface) -> Signal<Interface.OutputValue> {
+	public func flatMap<Interface: SignalInterface, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) throws -> Interface) -> Signal<Interface.OutputValue> {
 		return transformFlatten(initialState: initialState, closePropagation: .errors, context: context) { (s: inout V, v: OutputValue, mergedInput: SignalMergedInput<Interface.OutputValue>) in
-			mergedInput.add(processor(&s, v), closePropagation: .errors, removeOnDeactivate: true)
+			mergedInput.add(try processor(&s, v), closePropagation: .errors, removeOnDeactivate: true)
 		}
 	}
 	
@@ -706,9 +715,9 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a new `Signal`
 	/// - Returns: a signal where every value from every `Signal` output by `processor` is serially concatenated into a single stream
-	public func concatMap<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> Interface) -> Signal<Interface.OutputValue> {
+	public func concatMap<Interface: SignalInterface>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> Interface) -> Signal<Interface.OutputValue> {
 		return transformFlatten(initialState: 0, closePropagation: .errors, context: context) { (index: inout Int, v: OutputValue, mergedInput: SignalMergedInput<(Int, Result<Interface.OutputValue, SignalEnd>)>) in
-			mergedInput.add(processor(v).transform { (r: Result<Interface.OutputValue, SignalEnd>) -> Signal<Result<Interface.OutputValue, SignalEnd>>.Next in
+			mergedInput.add(try processor(v).transform { (r: Result<Interface.OutputValue, SignalEnd>) -> Signal<Result<Interface.OutputValue, SignalEnd>>.Next in
 				switch r {
 				case .success:
 					return .value(r)
@@ -767,20 +776,24 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs the "key" for the output `Signal`
 	/// - Returns: a parent `Signal` where values are tuples of a "key" and a child `Signal` that will contain all values from `self` associated with that "key".
-	public func groupBy<U: Hashable>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U) -> Signal<(U, Signal<OutputValue>)> {
+	public func groupBy<U: Hashable>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U) -> Signal<(U, Signal<OutputValue>)> {
 		return self.transform(initialState: Dictionary<U, SignalInput<OutputValue>>(), context: context) { (outputs: inout Dictionary<U, SignalInput<OutputValue>>, r: Result<OutputValue, SignalEnd>) -> Signal<(U, Signal<OutputValue>)>.Next in
 			switch r {
 			case .success(let v):
-				let u = processor(v)
-				if let o = outputs[u] {
-					o.send(value: v)
-					return .none
-				} else {
-					let (input, preCachedSignal) = Signal<OutputValue>.create()
-					let s = preCachedSignal.cacheUntilActive()
-					input.send(value: v)
-					outputs[u] = input
-					return .value((u, s))
+				do {
+					let u = try processor(v)
+					if let o = outputs[u] {
+						o.send(value: v)
+						return .none
+					} else {
+						let (input, preCachedSignal) = Signal<OutputValue>.create()
+						let s = preCachedSignal.cacheUntilActive()
+						input.send(value: v)
+						outputs[u] = input
+						return .value((u, s))
+					}
+				} catch {
+					return .error(error)
 				}
 			case .failure(let e):
 				outputs.forEach { tuple in tuple.value.send(end: e) }
@@ -809,10 +822,10 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a value for the output `Signal`
 	/// - Returns: a `Signal` where all the values have been transformed by the `processor`. Any error is emitted in the output without change.
-	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> U) -> Signal<U> {
+	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U) -> Signal<U> {
 		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<U>.Next in
 			switch r {
-			case .success(let v): return .value(processor(v))
+			case .success(let v): return .single(Result<U, Error> { try processor(v) }.mapFailure(SignalEnd.other))
 			case .failure(let e): return .end(e)
 			}
 		}
@@ -825,10 +838,10 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: for each value emitted by `self`, outputs a value for the output `Signal`
 	/// - Returns: a `Signal` where all the values have been transformed by the `processor`. Any error is emitted in the output without change.
-	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) -> U) -> Signal<U> {
+	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) throws -> U) -> Signal<U> {
 		return transform(initialState: initialState, context: context) { (s: inout V, r: Result<OutputValue, SignalEnd>) -> Signal<U>.Next in
 			switch r {
-			case .success(let v): return .value(processor(&s, v))
+			case .success(let v): return .single(Result<U, Error> { try processor(&s, v) }.mapFailure(SignalEnd.other))
 			case .failure(let e): return .end(e)
 			}
 		}
@@ -841,7 +854,7 @@ extension SignalInterface {
 	///   - activation: processing closure for activation values
 	///   - remainder: processing closure for all normal (non-activation) values
 	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
-	public func mapActivation<U>(select: SignalActivationSelection, context: Exec = .direct, activation: @escaping (OutputValue) -> U, remainder: @escaping (OutputValue) -> U) -> Signal<U> {
+	public func mapActivation<U>(select: SignalActivationSelection, context: Exec = .direct, activation: @escaping (OutputValue) throws -> U, remainder: @escaping (OutputValue) throws -> U) -> Signal<U> {
 		return compactMapActivation(select: select, context: context, activation: activation, remainder: remainder)
 	}
 	
@@ -870,12 +883,16 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: takes the most recently emitted value and the most recent value from `self` and returns the next emitted value
 	/// - Returns: a `Signal` where the result from each invocation of `processor` are emitted
-	public func scan<U>(initialState: U, context: Exec = .direct, _ processor: @escaping (U, OutputValue) -> U) -> Signal<U> {
+	public func scan<U>(initialState: U, context: Exec = .direct, _ processor: @escaping (U, OutputValue) throws -> U) -> Signal<U> {
 		return transform(initialState: initialState, context: context) { (accumulated: inout U, r: Result<OutputValue, SignalEnd>) -> Signal<U>.Next in
 			switch r {
 			case .success(let v):
-				accumulated = processor(accumulated, v)
-				return .value(accumulated)
+				do {
+					accumulated = try processor(accumulated, v)
+					return .value(accumulated)
+				} catch {
+					return .error(error)
+				}
 			case .failure(let e):
 				return .end(e)
 			}
@@ -1116,16 +1133,20 @@ extension SignalInterface {
 	///   - context: the `Exec` where `comparator` will be evaluated (default: .direct).
 	///   - comparator: a function taking two parameters (the previous and current value in the signal) which should return `false` to indicate the current value should be emitted.
 	/// - Returns: a signal that emits the first value but then emits subsequent values only if the function `comparator` returns `false` when passed the previous and current values.
-	public func distinctUntilChanged(context: Exec = .direct, compare: @escaping (OutputValue, OutputValue) -> Bool) -> Signal<OutputValue> {
+	public func distinctUntilChanged(context: Exec = .direct, compare: @escaping (OutputValue, OutputValue) throws -> Bool) -> Signal<OutputValue> {
 		return transform(initialState: nil) { (previous: inout OutputValue?, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
 			switch r {
 			case .success(let v):
-				if let p = previous, compare(p, v) {
-					previous = v
-					return .none
-				} else {
-					previous = v
-					return .value(v)
+				do {
+					if let p = previous, try compare(p, v) {
+						previous = v
+						return .none
+					} else {
+						previous = v
+						return .value(v)
+					}
+				} catch {
+					return .error(error)
 				}
 			case .failure(let e):
 				return .end(e)
@@ -1157,12 +1178,16 @@ extension SignalInterface {
 	///   - context: the `Exec` where `matching` will be evaluated (default: .direct).
 	///   - matching: a function which is passed the current value and should return `true` to indicate the value should be emitted.
 	/// - Returns: a signal that emits received values only if the function `matching` returns `true` when passed the value.
-	public func filter(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool) -> Signal<OutputValue> {
+	public func filter(context: Exec = .direct, matching: @escaping (OutputValue) throws -> Bool) -> Signal<OutputValue> {
 		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
-			switch r {
-			case .success(let v) where matching(v): return .value(v)
-			case .success: return .none
-			case .failure(let e): return .end(e)
+			do {
+				switch r {
+				case .success(let v) where try matching(v): return .value(v)
+				case .success: return .none
+				case .failure(let e): return .end(e)
+				}
+			} catch {
+				return .error(error)
 			}
 		}
 	}
@@ -1188,12 +1213,16 @@ extension SignalInterface {
 	///   - context: the `Exec` where `matching` will be evaluated (default: .direct).
 	///   - matching: run for each value until it returns `true`
 	/// - Returns: a signal that, when an error is received, emits the first value (if any) in the signal where `matching` returns `true` when invoked with the value, followed by the error.
-	public func first(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> Signal<OutputValue> {
+	public func first(context: Exec = .direct, matching: @escaping (OutputValue) throws -> Bool = { _ in true }) -> Signal<OutputValue> {
 		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
-			switch r {
-			case .success(let v) where matching(v): return .value(v, end: .complete)
-			case .success: return .none
-			case .failure(let e): return .end(e)
+			do {
+				switch r {
+				case .success(let v) where try matching(v): return .value(v, end: .complete)
+				case .success: return .none
+				case .failure(let e): return .end(e)
+				}
+			} catch {
+				return .error(error)
 			}
 		}
 	}
@@ -1204,24 +1233,28 @@ extension SignalInterface {
 	///   - context: the `Exec` where `matching` will be evaluated (default: .direct).
 	///   - matching: run for each value
 	/// - Returns: a signal that, if a single value in the sequence, when passed to `matching` returns `true`, then that value will be returned, followed by a SignalEnd.complete when the input signal closes (otherwise a SignalEnd.complete will be emitted without emitting any prior values).
-	public func single(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> Signal<OutputValue> {
+	public func single(context: Exec = .direct, matching: @escaping (OutputValue) throws -> Bool = { _ in true }) -> Signal<OutputValue> {
 		return transform(initialState: nil, context: context) { (state: inout (firstMatch: OutputValue, unique: Bool)?, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
-			switch r {
-			case .success(let v) where matching(v):
-				if let s = state {
-					state = (firstMatch: s.firstMatch, unique: false)
-				} else {
-					state = (firstMatch: v, unique: true)
+			do {
+				switch r {
+				case .success(let v) where try matching(v):
+					if let s = state {
+						state = (firstMatch: s.firstMatch, unique: false)
+					} else {
+						state = (firstMatch: v, unique: true)
+					}
+					return .none
+				case .success:
+					return .none
+				case .failure(let e):
+					if let s = state, s.unique == true {
+						return .value(s.firstMatch, end: e)
+					} else {
+						return .end(e)
+					}
 				}
-				return .none
-			case .success:
-				return .none
-			case .failure(let e):
-				if let s = state, s.unique == true {
-					return .value(s.firstMatch, end: e)
-				} else {
-					return .end(e)
-				}
+			} catch {
+				return .error(error)
 			}
 		}
 	}
@@ -1245,20 +1278,24 @@ extension SignalInterface {
 	///   - context: the `Exec` where `matching` will be evaluated (default: .direct).
 	///   - matching: run for each value
 	/// - Returns: a signal that, when an error is received, emits the last value (if any) in the signal where `matching` returns `true` when invoked with the value, followed by the error.
-	public func last(context: Exec = .direct, matching: @escaping (OutputValue) -> Bool = { _ in true }) -> Signal<OutputValue> {
+	public func last(context: Exec = .direct, matching: @escaping (OutputValue) throws -> Bool = { _ in true }) -> Signal<OutputValue> {
 		return transform(initialState: nil, context: context) { (last: inout OutputValue?, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
-			switch r {
-			case .success(let v) where matching(v):
-				last = v
-				return .none
-			case .success:
-				return .none
-			case .failure(let e):
-				if let l = last {
-					return .value(l, end: e)
-				} else {
-					return .end(e)
+			do {
+				switch r {
+				case .success(let v) where try matching(v):
+					last = v
+					return .none
+				case .success:
+					return .none
+				case .failure(let e):
+					if let l = last {
+						return .value(l, end: e)
+					} else {
+						return .end(e)
+					}
 				}
+			} catch {
+				return .error(error)
 			}
 		}
 	}
@@ -1310,47 +1347,6 @@ extension SignalInterface {
 				return .none
 			case (.result2(.failure(let e)), _):
 				return .end(e)
-			}
-		}
-	}
-	
-	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output is sent every time self emits, not just when sample has changed since self last emitted.
-	///
-	/// See also: `combineLatest`, `sample` and `throttleFirst` which have similar but slightly different emitting scenarios.
-	///
-	/// - Parameter sample: the latest value from this signal will be emitted whenever `self` emits
-	/// - Returns: a signal that emits the latest value from `sample` each time `self` emits
-	public func withLatestFrom<Interface: SignalInterface>(_ sample: Interface) -> Signal<Interface.OutputValue> {
-		return combine(sample, initialState: nil, context: .direct) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<Interface.OutputValue>.Next in
-			switch (c, last) {
-			case (.result1(.success), .some(let l)): return .value(l)
-			case (.result1(.success), _): return .none
-			case (.result1(.failure(let e)), _): return .end(e)
-			case (.result2(.success(let v)), _):
-				last = v
-				return .none
-			case (.result2(.failure(let e)), _): return .end(e)
-			}
-		}
-	}
-	
-	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that a function is run to generate the emitted value each time self emits. The function is passed the value emitted from `self` and the last emitted value from the `sample` signal parameter.
-	///
-	/// See also: `combineLatest`, `sample` and `throttleFirst` which have similar but slightly different emitting scenarios.
-	///
-	/// - Parameter sample: a signal whose latest value will be used each time `self` emits
-	/// - Parameter processor: produces the outputs values
-	/// - Returns: a signal that, when a value is received from `trigger`, emits the result or performing `processor`.
-	public func withLatestFrom<Interface: SignalInterface, R>(_ sample: Interface, context: Exec = .direct, _ processor: @escaping (OutputValue, Interface.OutputValue) -> R) -> Signal<R> {
-		return combine(sample, initialState: nil, context: context) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<R>.Next in
-			switch (c, last) {
-			case (.result1(.success(let left)), .some(let right)): return .value(processor(left, right))
-			case (.result1(.success), _): return .none
-			case (.result1(.failure(let e)), _): return .end(e)
-			case (.result2(.success(let v)), _):
-				last = v
-				return .none
-			case (.result2(.failure(let e)), _): return .end(e)
 			}
 		}
 	}
@@ -1431,6 +1427,52 @@ extension SignalInterface {
 }
 
 extension SignalInterface {
+	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that the output is sent every time self emits, not just when sample has changed since self last emitted.
+	///
+	/// See also: `combineLatest`, `sample` and `throttleFirst` which have similar but slightly different emitting scenarios.
+	///
+	/// - Parameter sample: the latest value from this signal will be emitted whenever `self` emits
+	/// - Returns: a signal that emits the latest value from `sample` each time `self` emits
+	public func withLatestFrom<Interface: SignalInterface>(_ sample: Interface) -> Signal<Interface.OutputValue> {
+		return combine(sample, initialState: nil, context: .direct) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<Interface.OutputValue>.Next in
+			switch (c, last) {
+			case (.result1(.success), .some(let l)): return .value(l)
+			case (.result1(.success), _): return .none
+			case (.result1(.failure(let e)), _): return .end(e)
+			case (.result2(.success(let v)), _):
+				last = v
+				return .none
+			case (.result2(.failure(let e)), _): return .end(e)
+			}
+		}
+	}
+	
+	/// Implementation similar to [Reactive X operator "sample"](http://reactivex.io/documentation/operators/sample.html) except that a function is run to generate the emitted value each time self emits. The function is passed the value emitted from `self` and the last emitted value from the `sample` signal parameter.
+	///
+	/// See also: `combineLatest`, `sample` and `throttleFirst` which have similar but slightly different emitting scenarios.
+	///
+	/// - Parameter sample: a signal whose latest value will be used each time `self` emits
+	/// - Parameter processor: produces the outputs values
+	/// - Returns: a signal that, when a value is received from `trigger`, emits the result or performing `processor`.
+	public func withLatestFrom<Interface: SignalInterface, R>(_ sample: Interface, context: Exec = .direct, _ processor: @escaping (OutputValue, Interface.OutputValue) throws -> R) -> Signal<R> {
+		return combine(sample, initialState: nil, context: context) { (last: inout Interface.OutputValue?, c: EitherResult2<OutputValue, Interface.OutputValue>) -> Signal<R>.Next in
+			switch (c, last) {
+			case (.result1(.success(let left)), .some(let right)):
+				do {
+					return .value(try processor(left, right))
+				} catch {
+					return .error(error)
+				}
+			case (.result1(.success), _): return .none
+			case (.result1(.failure(let e)), _): return .end(e)
+			case (.result2(.success(let v)), _):
+				last = v
+				return .none
+			case (.result2(.failure(let e)), _): return .end(e)
+			}
+		}
+	}
+
 	/// Implementation of [Reactive X operator "combineLatest"](http://reactivex.io/documentation/operators/combinelatest.html) for two observed signals.
 	///
 	/// - Parameters:
@@ -1438,7 +1480,7 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: invoked with the most recent values of the observed signals (or nil if a signal has not yet emitted a value) when any of the observed signals emits a value
 	/// - Returns: a signal that emits the values from the processor and closes when any of the observed signals closes
-	public func combineLatest<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue) -> V) -> Signal<V> {
+	public func combineLatestWith<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue) throws -> V) -> Signal<V> {
 		return combine(second, initialState: (nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?), r: EitherResult2<OutputValue, U.OutputValue>) -> Signal<V>.Next in
 			switch r {
 			case .result1(.success(let v)): state = (v, state.1)
@@ -1447,15 +1489,24 @@ extension SignalInterface {
 			case .result2(.failure(let e)): return .end(e)
 			}
 			if let v0 = state.0, let v1 = state.1 {
-				return .value(processor(v0, v1))
+				do {
+					return .value(try processor(v0, v1))
+				} catch {
+					return .error(error)
+				}
 			} else {
 				return .none
 			}
 		}
 	}
 
-	public static func combineLatest<U: SignalInterface, V>(_ first: Self, _ second: U, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue) -> V) -> Signal<V> {
-		return first.combineLatest(second, context: context, processor)
+	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	public func combineLatest<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue) throws -> V) -> Signal<V> {
+		return combineLatestWith(second, context: context, processor)
+	}
+	
+	public static func combineLatest<U: SignalInterface, V>(_ first: Self, _ second: U, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue) throws -> V) -> Signal<V> {
+		return first.combineLatestWith(second, context: context, processor)
 	}
 	
 	/// Implementation of [Reactive X operator "combineLatest"](http://reactivex.io/documentation/operators/combinelatest.html) for three observed signals.
@@ -1466,7 +1517,7 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: invoked with the most recent values of the observed signals (or nil if a signal has not yet emitted a value) when any of the observed signals emits a value
 	/// - Returns: a signal that emits the values from the processor and closes when any of the observed signals closes
-	public func combineLatest<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue) -> W) -> Signal<W> {
+	public func combineLatestWith<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue) throws -> W) -> Signal<W> {
 		return combine(second, third, initialState: (nil, nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?, V.OutputValue?), r: EitherResult3<OutputValue, U.OutputValue, V.OutputValue>) -> Signal<W>.Next in
 			switch r {
 			case .result1(.success(let v)): state = (v, state.1, state.2)
@@ -1477,16 +1528,24 @@ extension SignalInterface {
 			case .result3(.failure(let e)): return .end(e)
 			}
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2 {
-				return .value(processor(v0, v1, v2))
+				do {
+					return .value(try processor(v0, v1, v2))
+				} catch {
+					return .error(error)
+				}
 			} else {
 				return .none
 			}
 		}
 	}
 
-
-	public static func combineLatest<U: SignalInterface, V: SignalInterface, W>(_ first: Self, _ second: U, _ third: V, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue) -> W) -> Signal<W> {
-		return first.combineLatest(second, third, context: context, processor)
+	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	public func combineLatest<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue) throws -> W) -> Signal<W> {
+		return combineLatestWith(second, third, context: context, processor)
+	}
+	
+	public static func combineLatest<U: SignalInterface, V: SignalInterface, W>(_ first: Self, _ second: U, _ third: V, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue) throws -> W) -> Signal<W> {
+		return first.combineLatestWith(second, third, context: context, processor)
 	}
 	
 	/// Implementation of [Reactive X operator "combineLatest"](http://reactivex.io/documentation/operators/combinelatest.html) for four observed signals.
@@ -1500,7 +1559,7 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: invoked with the most recent values of the observed signals (or nil if a signal has not yet emitted a value) when any of the observed signals emits a value
 	/// - Returns: a signal that emits the values from the processor and closes when any of the observed signals closes
-	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue) -> X) -> Signal<X> {
+	public func combineLatestWith<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue) throws -> X) -> Signal<X> {
 		return combine(second, third, fourth, initialState: (nil, nil, nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?, V.OutputValue?, W.OutputValue?), r: EitherResult4<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue>) -> Signal<X>.Next in
 			switch r {
 			case .result1(.success(let v)): state = (v, state.1, state.2, state.3)
@@ -1513,15 +1572,24 @@ extension SignalInterface {
 			case .result4(.failure(let e)): return .end(e)
 			}
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2, let v3 = state.3 {
-				return .value(processor(v0, v1, v2, v3))
+				do {
+					return .value(try processor(v0, v1, v2, v3))
+				} catch {
+					return .error(error)
+				}
 			} else {
 				return .none
 			}
 		}
 	}
 
-	public static func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ first: Self, _ second: U, _ third: V, _ fourth: W, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue) -> X) -> Signal<X> {
-		return first.combineLatest(second, third, fourth, context: context, processor)
+	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue) throws -> X) -> Signal<X> {
+		return combineLatestWith(second, third, fourth, context: context, processor)
+	}
+
+	public static func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ first: Self, _ second: U, _ third: V, _ fourth: W, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue) throws -> X) -> Signal<X> {
+		return first.combineLatestWith(second, third, fourth, context: context, processor)
 	}
 	
 	/// Implementation of [Reactive X operator "combineLatest"](http://reactivex.io/documentation/operators/combinelatest.html) for five observed signals.
@@ -1536,7 +1604,7 @@ extension SignalInterface {
 	///   - context: the `Exec` where `processor` will be evaluated (default: .direct).
 	///   - processor: invoked with the most recent values of the observed signals (or nil if a signal has not yet emitted a value) when any of the observed signals emits a value
 	/// - Returns: a signal that emits the values from the processor and closes when any of the observed signals closes
-	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue) -> Y) -> Signal<Y> {
+	public func combineLatestWith<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue) throws -> Y) -> Signal<Y> {
 		return combine(second, third, fourth, fifth, initialState: (nil, nil, nil, nil, nil), context: context) { (state: inout (OutputValue?, U.OutputValue?, V.OutputValue?, W.OutputValue?, X.OutputValue?), r: EitherResult5<OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue>) -> Signal<Y>.Next in
 			switch r {
 			case .result1(.success(let v)): state = (v, state.1, state.2, state.3, state.4)
@@ -1551,15 +1619,44 @@ extension SignalInterface {
 			case .result5(.failure(let e)): return .end(e)
 			}
 			if let v0 = state.0, let v1 = state.1, let v2 = state.2, let v3 = state.3, let v4 = state.4 {
-				return .value(processor(v0, v1, v2, v3, v4))
+				do {
+					return .value(try processor(v0, v1, v2, v3, v4))
+				} catch {
+					return .error(error)
+				}
 			} else {
 				return .none
 			}
 		}
 	}
 
-	public static func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ first: Self, _ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue) -> Y) -> Signal<Y> {
-		return first.combineLatest(second, third, fourth, fifth, context: context, processor)
+	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue) throws -> Y) -> Signal<Y> {
+		return combineLatestWith(second, third, fourth, fifth, context: context, processor)
+	}
+
+	public static func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ first: Self, _ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue) throws -> Y) -> Signal<Y> {
+		return first.combineLatestWith(second, third, fourth, fifth, context: context, processor)
+	}
+	
+	public static func combineLatest<S: Sequence>(sequence: S) -> Signal<[OutputValue]> where S.Element: SignalInterface, OutputValue == S.Element.OutputValue {
+		let array = Array(sequence)
+		let count = array.count
+		let indexed = Signal<OutputValue>.indexed(array)
+		return indexed.transform(initialState: Array<OutputValue?>(repeating: nil, count: count)) { buffer, result in
+			switch result {
+			case .success((let offset, let element)):
+				buffer[offset] = element
+				let compacted = buffer.compactMap { $0 }
+				guard compacted.count == count else { return .none }
+				return .value(compacted)
+			case .failure(let e): return .end(e)
+			}
+		}
+	}
+
+	public static func combineLatest<S: SignalInterface>(_ signals: S...) -> Signal<[OutputValue]> where OutputValue == S.OutputValue {
+		return combineLatest(sequence: signals)
 	}
 	
 	/// Implementation of [Reactive X operator "join"](http://reactivex.io/documentation/operators/join.html)
@@ -1756,8 +1853,6 @@ extension SignalInterface {
 	/// Implementation of [Reactive X operator "switch"](http://reactivex.io/documentation/operators/switch.html)
 	///
 	/// See also: `flatMapLatest` (emits values from the latest `Signal` to start emitting)
-	///
-	/// NOTE: ideally, this would not be a static function but a OutputValue == Signal<U> conditional extension. Without higher-kinded types, this is difficult to express. In a future Swift release this will probably change.
 	///
 	/// - Parameter signal: each of the inner signals emitted by this outer signal is observed, with the most recent signal emitted from the result
 	/// - Returns: a signal that emits the values from the latest `Signal` emitted by `signal`
@@ -2764,16 +2859,20 @@ extension SignalInterface {
 	///   - context: execution context where `condition` will be run
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values until `condition` returns `true` for one of the values
-	public func skipWhile(context: Exec = .direct, condition: @escaping (OutputValue) -> Bool) -> Signal<OutputValue> {
+	public func skipWhile(context: Exec = .direct, condition: @escaping (OutputValue) throws -> Bool) -> Signal<OutputValue> {
 		return transform(initialState: false, context: context) { (started: inout Bool, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
-			switch r {
-			case .success(let v) where !started && condition(v):
-				return .none
-			case .success(let v):
-				started = true
-				return .value(v)
-			case .failure(let e):
-				return .end(e)
+			do {
+				switch r {
+				case .success(let v) where try !started && condition(v):
+					return .none
+				case .success(let v):
+					started = true
+					return .value(v)
+				case .failure(let e):
+					return .end(e)
+				}
+			} catch {
+				return .error(error)
 			}
 		}
 	}
@@ -2785,16 +2884,20 @@ extension SignalInterface {
 	///   - context: execution context where `condition` will be run
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values until `condition` returns `true` for one of the values
-	public func skipWhile<U>(initialState initial: U, context: Exec = .direct, condition: @escaping (inout U, OutputValue) -> Bool) -> Signal<OutputValue> {
+	public func skipWhile<U>(initialState initial: U, context: Exec = .direct, condition: @escaping (inout U, OutputValue) throws -> Bool) -> Signal<OutputValue> {
 		return transform(initialState: (initial, false), context: context) { (started: inout (U, Bool), r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
-			switch r {
-			case .success(let v) where !started.1 && condition(&started.0, v):
-				return .none
-			case .success(let v):
-				started.1 = true
-				return .value(v)
-			case .failure(let e):
-				return .end(e)
+			do {
+				switch r {
+				case .success(let v) where try !started.1 && condition(&started.0, v):
+					return .none
+				case .success(let v):
+					started.1 = true
+					return .value(v)
+				case .failure(let e):
+					return .end(e)
+				}
+			} catch {
+				return .error(error)
 			}
 		}
 	}
@@ -2823,12 +2926,16 @@ extension SignalInterface {
 	///   - context: execution context where `condition` will be run
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values after `condition` returns `true` for one of the values
-	public func takeWhile(context: Exec = .direct, condition: @escaping (OutputValue) -> Bool) -> Signal<OutputValue> {
+	public func takeWhile(context: Exec = .direct, condition: @escaping (OutputValue) throws -> Bool) -> Signal<OutputValue> {
 		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
-			switch r {
-			case .success(let v) where condition(v): return .value(v)
-			case .success: return .complete()
-			case .failure(let e): return .end(e)
+			do {
+				switch r {
+				case .success(let v) where try condition(v): return .value(v)
+				case .success: return .complete()
+				case .failure(let e): return .end(e)
+				}
+			} catch {
+				return .error(error)
 			}
 		}
 	}
@@ -2840,12 +2947,16 @@ extension SignalInterface {
 	///   - context: execution context where `condition` will be run
 	///   - condition: will be run for every value emitted from `self` until `condition` returns `true`
 	/// - Returns: a signal that mirrors `self` dropping values after `condition` returns `true` for one of the values
-	public func takeWhile<U>(initialState initial: U, context: Exec = .direct, condition: @escaping (inout U, OutputValue) -> Bool) -> Signal<OutputValue> {
+	public func takeWhile<U>(initialState initial: U, context: Exec = .direct, condition: @escaping (inout U, OutputValue) throws -> Bool) -> Signal<OutputValue> {
 		return transform(initialState: initial, context: context) { (i: inout U, r: Result<OutputValue, SignalEnd>) -> Signal<OutputValue>.Next in
-			switch r {
-			case .success(let v) where condition(&i, v): return .value(v)
-			case .success: return .complete()
-			case .failure(let e): return .end(e)
+			do {
+				switch r {
+				case .success(let v) where try condition(&i, v): return .value(v)
+				case .success: return .complete()
+				case .failure(let e): return .end(e)
+				}
+			} catch {
+				return .error(error)
 			}
 		}
 	}
@@ -2858,18 +2969,22 @@ extension SignalInterface {
 	///   - finalize: invoked when `self` closes, with the current fold state value
 	///   - fold: invoked for each value emitted by `self` along with the current fold state value
 	/// - Returns: a signal which emits the `finalize` result
-	public func foldAndFinalize<U, V>(_ initial: V, context: Exec = .direct, finalize: @escaping (V) -> U?, fold: @escaping (V, OutputValue) -> V) -> Signal<U> {
+	public func foldAndFinalize<U, V>(_ initial: V, context: Exec = .direct, finalize: @escaping (V) throws -> U?, fold: @escaping (V, OutputValue) throws -> V) -> Signal<U> {
 		return transform(initialState: initial, context: context) { (state: inout V, r: Result<OutputValue, SignalEnd>) -> Signal<U>.Next in
-			switch r {
-			case .success(let v):
-				state = fold(state, v)
-				return .none
-			case .failure(let e):
-				if let v = finalize(state) {
-					return .value(v, end: e)
-				} else {
-					return .end(e)
+			do {
+				switch r {
+				case .success(let v):
+					state = try fold(state, v)
+					return .none
+				case .failure(let e):
+					if let v = try finalize(state) {
+						return .value(v, end: e)
+					} else {
+						return .end(e)
+					}
 				}
+			} catch {
+				return .error(error)
 			}
 		}
 	}
