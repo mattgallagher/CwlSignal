@@ -603,38 +603,76 @@ extension SignalInterface {
 			var subsequent = c.resume().compactMap(context: context, remainder)
 			
 			let values = c.values
-			if !values.isEmpty {
-				var initial: [U]? = nil
-				do {
-					// Process the captured values
-					switch select {
-					case .all: initial = try context.invokeSync { try values.compactMap(activation) }
-					case .first:
-						initial = [U]()
-						try context.invokeSync {
-							if let v = values.first, let a = try activation(v) {
-								initial!.append(a)
-							}
-							for v in values.dropFirst() {
-								if let r = try remainder(v) {
-									initial!.append(r)
-								}
-							}
-						}
-					case .last:
-						initial = try values.last.flatMap { v in try context.invokeSync { try activation(v).map { [$0] } } }
-					}
-					
-					// If we have any initial values, precache them for immediate sending
-					if let i = initial, !i.isEmpty {
-						subsequent = subsequent.cacheUntilActive(precached: i)
-					}
-				} catch {
-					subsequent = Signal<U>.preclosed(sequence: initial ?? [], end: SignalEnd.other(error))
-				}
+			guard !values.isEmpty else {
+				subsequent.bind(to: input)
+				return
 			}
 			
+			var initial: [U]? = nil
+			do {
+				// Process the captured values
+				switch select {
+				case .all: initial = try context.invokeSync { try values.compactMap(activation) }
+				case .first:
+					initial = [U]()
+					try context.invokeSync {
+						if let v = values.first, let a = try activation(v) {
+							initial!.append(a)
+						}
+						for v in values.dropFirst() {
+							if let r = try remainder(v) {
+								initial!.append(r)
+							}
+						}
+					}
+				case .last:
+					initial = try values.last.flatMap { v in try context.invokeSync { try activation(v).map { [$0] } } }
+				}
+				
+				// If we have any initial values, precache them for immediate sending
+				if let i = initial, !i.isEmpty {
+					subsequent = subsequent.cacheUntilActive(precached: i)
+				}
+			} catch {
+				subsequent = Signal<U>.preclosed(sequence: initial ?? [], end: SignalEnd.other(error))
+			}
+		
 			subsequent.bind(to: input)
+		}		
+	}
+
+	public func compactMapLatestActivation(context: Exec = .direct, activation: @escaping (OutputValue) throws -> OutputValue?) -> Signal<OutputValue> {
+		var capture: SignalCapture<OutputValue>? = nil
+		return Signal<OutputValue>.generate { input in
+			guard let input = input else { return }
+			
+			let c: SignalCapture<OutputValue>
+			if let cap = capture {
+				// Subsequent runs, disconnect the old capture to restart it
+				_ = cap.disconnect()
+				c = cap
+			} else {
+				// First run, start the capture.
+				c = self.capture()
+				capture = c
+			}
+			
+			let values = c.values
+			guard !values.isEmpty else {
+				c.resume().bind(to: input)
+				return
+			}
+			
+			do {
+				let initial = try values.last.flatMap { v in try context.invokeSync { try activation(v).map { [$0] } } }
+				if let i = initial, !i.isEmpty {
+					return c.resume().cacheUntilActive(precached: i).bind(to: input)
+				} else {
+					return c.resume().bind(to: input)
+				}
+			} catch {
+				Signal<OutputValue>.preclosed(end: SignalEnd.other(error)).bind(to: input)
+			}
 		}		
 	}
 	
