@@ -313,6 +313,37 @@ extension SignalInterface {
 		try! signal.capture().bind(to: pair.input, resend: true)
 		return pair.signal
 	}
+	
+	/// Appends a handler function that transforms the value emitted from this `Signal` into a new `Signal`.
+	///
+	/// - Parameters:
+	///   - context: the `Exec` context used to invoke the `handler`
+	///   - processor: the function invoked for each received `Result`
+	/// - Returns: the created `Signal`
+	public func transformValues<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) -> Signal<U>.Next) -> Signal<U> {
+		return transform(context: context) { r in
+			switch r {
+			case .success(let v): return processor(v)
+			case .failure(let e): return .single(.failure(e))
+			}
+		}
+	}
+	
+	/// Appends a handler function that transforms the value emitted from this `Signal` into a new `Signal`.
+	///
+	/// - Parameters:
+	///   - initialState: the initial value for a state value associated with the handler. This value is retained and if the signal graph is deactivated, the state value is reset to this value.
+	///   - context: the `Exec` context used to invoke the `handler`
+	///   - processor: the function invoked for each received `Result`
+	/// - Returns: the transformed output `Signal`
+	public func transformValues<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, OutputValue) -> Signal<U>.Next) -> Signal<U> {
+		return transform(initialState: initialState, context: context) { s, r in
+			switch r {
+			case .success(let v): return processor(&s, v)
+			case .failure(let e): return .single(.failure(e))
+			}
+		}
+	}
 
 	/// Maps values from self or second to EitherValue2 and merges into a single stream.
 	///

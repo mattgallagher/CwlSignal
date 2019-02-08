@@ -1124,14 +1124,35 @@ class SignalTests: XCTestCase {
 			case .success(let v): return .value("\(v)")
 			case .failure(let e): return .end(e)
 			}
-		}.subscribe { (r: Result<String, SignalEnd>) in
-			results.append(r)
+			}.subscribe { (r: Result<String, SignalEnd>) in
+				results.append(r)
 		}
 		
 		input.send(value: 0)
 		input.send(value: 1)
 		input.send(value: 2)
 		input.complete()
+		
+		XCTAssert(results.count == 4)
+		XCTAssert(results.at(0)?.value == "0")
+		XCTAssert(results.at(1)?.value == "1")
+		XCTAssert(results.at(2)?.value == "2")
+		XCTAssert(results.at(3)?.error?.isComplete == true)
+		
+		results.removeAll()
+		
+		// Same again but with transform values
+		let (input3, signal3) = Signal<Int>.create()
+		let ep3 = signal3.transformValues { v -> Signal<String>.Next in
+			return .value("\(v)")
+		}.subscribe { (r: Result<String, SignalEnd>) in
+				results.append(r)
+		}
+		
+		input3.send(value: 0)
+		input3.send(value: 1)
+		input3.send(value: 2)
+		input3.complete()
 		
 		XCTAssert(results.count == 4)
 		XCTAssert(results.at(0)?.value == "0")
@@ -1167,6 +1188,7 @@ class SignalTests: XCTestCase {
 		
 		withExtendedLifetime(ep1) {}
 		withExtendedLifetime(ep2) {}
+		withExtendedLifetime(ep3) {}
 	}
 	
 	func testTransformWithState() {
