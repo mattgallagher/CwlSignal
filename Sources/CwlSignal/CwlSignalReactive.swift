@@ -863,7 +863,7 @@ extension SignalInterface {
 	public func map<U>(context: Exec = .direct, _ processor: @escaping (OutputValue) throws -> U) -> Signal<U> {
 		return transform(context: context) { (r: Result<OutputValue, SignalEnd>) -> Signal<U>.Next in
 			switch r {
-			case .success(let v): return .single(Result<U, Error> { try processor(v) }.mapFailure(SignalEnd.other))
+			case .success(let v): return .single(Result<U, Error> { try processor(v) }.mapError(SignalEnd.other))
 			case .failure(let e): return .end(e)
 			}
 		}
@@ -879,7 +879,7 @@ extension SignalInterface {
 	public func map<U, V>(initialState: V, context: Exec = .direct, _ processor: @escaping (inout V, OutputValue) throws -> U) -> Signal<U> {
 		return transform(initialState: initialState, context: context) { (s: inout V, r: Result<OutputValue, SignalEnd>) -> Signal<U>.Next in
 			switch r {
-			case .success(let v): return .single(Result<U, Error> { try processor(&s, v) }.mapFailure(SignalEnd.other))
+			case .success(let v): return .single(Result<U, Error> { try processor(&s, v) }.mapError(SignalEnd.other))
 			case .failure(let e): return .end(e)
 			}
 		}

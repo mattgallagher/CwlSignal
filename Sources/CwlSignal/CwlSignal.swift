@@ -46,7 +46,7 @@ public protocol SignalInputInterface {
 ///	- signal graph: one or more `Signal` instances, connected together, from `SignalInput` to `SignalOutput`
 ///	- signal: the sequence of `Result` instances, from activation to close, that pass through a signal graph
 public class Signal<OutputValue>: SignalInterface {
-	public typealias Result = CwlUtils.Result<OutputValue, SignalEnd>
+	public typealias Result = Swift.Result<OutputValue, SignalEnd>
 	public enum Next {
 		case none
 		case single(Result)
@@ -519,7 +519,7 @@ public class Signal<OutputValue>: SignalInterface {
 		return SignalMulti<State>(processor: attach { (s, dw) in
 			return SignalReducer<OutputValue, State>(signal: s, state: initialState, end: nil, dw: &dw, context: context) { (state: State, message: Signal<OutputValue>.Result) -> Signal<State>.Result in
 				switch message {
-				case .success(let m): return CwlUtils.Result { try reducer(state, m) }.mapFailure(SignalEnd.other)
+				case .success(let m): return Swift.Result { try reducer(state, m) }.mapError(SignalEnd.other)
 				case .failure(let e): return .failure(e)
 				}
 			}
@@ -541,13 +541,13 @@ public class Signal<OutputValue>: SignalInterface {
 		return SignalMulti<State>(processor: attach { (s, dw) in
 			let ini: SignalReducer<OutputValue, State>.Initializer = { message in
 				switch message {
-				case .success(let m): return CwlUtils.Result { try initializer(m) }.mapFailure(SignalEnd.other)
+				case .success(let m): return Swift.Result { try initializer(m) }.mapError(SignalEnd.other)
 				case .failure(let e): return .failure(e)
 				}
 			}
 			return SignalReducer<OutputValue, State>(signal: s, initializer: ini, end: nil, dw: &dw, context: context) { (state: State, message: Signal<OutputValue>.Result) -> Signal<State>.Result in
 				switch message {
-				case .success(let m): return CwlUtils.Result { try reducer(state, m) }.mapFailure(SignalEnd.other)
+				case .success(let m): return Swift.Result { try reducer(state, m) }.mapError(SignalEnd.other)
 				case .failure(let e): return .failure(e)
 				}
 			}
