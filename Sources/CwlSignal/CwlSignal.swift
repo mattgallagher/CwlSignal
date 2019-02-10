@@ -1473,7 +1473,10 @@ fileprivate struct OrderedSignalPredecessor: Hashable {
 		self.order = order
 	}
 	
-	var hashValue: Int { return Int(bitPattern: Unmanaged<AnyObject>.passUnretained(base).toOpaque()) }
+	func hash(into hasher: inout Hasher) {
+		hasher.combine(Int(bitPattern: Unmanaged<AnyObject>.passUnretained(base).toOpaque()))
+	}
+	
 	static func ==(lhs: OrderedSignalPredecessor, rhs: OrderedSignalPredecessor) -> Bool {
 		return lhs.base === rhs.base
 	}
