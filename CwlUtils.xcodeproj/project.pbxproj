@@ -39,7 +39,6 @@
 		C94D2B8821919BEA00B6D53B /* CwlOnDeleteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* CwlOnDeleteTests.swift */; };
 		C94D2B8921919BEA00B6D53B /* CwlRandomTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* CwlRandomTests.swift */; };
 		C94D2B8A21919BEA00B6D53B /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C61E4171FD00A7408F /* mt19937-64.c */; };
-		C94D2B8B21919BEA00B6D53B /* CwlResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* CwlResultTests.swift */; };
 		C94D2B8C21919BEA00B6D53B /* xoshiro256starstar.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C71E4171FD00A7408F /* xoshiro256starstar.c */; };
 		C94D2B8D21919BEA00B6D53B /* CwlScalarScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_52 /* CwlScalarScannerTests.swift */; };
 		C94D2B8E21919BEA00B6D53B /* CwlStackFrameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_53 /* CwlStackFrameTests.swift */; };
@@ -92,7 +91,6 @@
 		C95BDEC81E4168B800AAA64B /* CwlMutexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_48 /* CwlMutexTests.swift */; };
 		C95BDECA1E4168B800AAA64B /* CwlOnDeleteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* CwlOnDeleteTests.swift */; };
 		C95BDECB1E4168B800AAA64B /* CwlRandomTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* CwlRandomTests.swift */; };
-		C95BDECC1E4168B800AAA64B /* CwlResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* CwlResultTests.swift */; };
 		C95BDECE1E4168B800AAA64B /* CwlScalarScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_52 /* CwlScalarScannerTests.swift */; };
 		C95BDECF1E4168B800AAA64B /* CwlStackFrameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_53 /* CwlStackFrameTests.swift */; };
 		C95BDED11E4168B800AAA64B /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_54 /* CwlSysctlTests.swift */; };
@@ -120,7 +118,6 @@
 		OBJ_211 /* CwlMutexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_48 /* CwlMutexTests.swift */; };
 		OBJ_212 /* CwlOnDeleteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_49 /* CwlOnDeleteTests.swift */; };
 		OBJ_213 /* CwlRandomTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_50 /* CwlRandomTests.swift */; };
-		OBJ_214 /* CwlResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_51 /* CwlResultTests.swift */; };
 		OBJ_215 /* CwlScalarScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_52 /* CwlScalarScannerTests.swift */; };
 		OBJ_216 /* CwlStackFrameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_53 /* CwlStackFrameTests.swift */; };
 		OBJ_217 /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_54 /* CwlSysctlTests.swift */; };
@@ -280,7 +277,6 @@
 		OBJ_48 /* CwlMutexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlMutexTests.swift; sourceTree = "<group>"; };
 		OBJ_49 /* CwlOnDeleteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlOnDeleteTests.swift; sourceTree = "<group>"; };
 		OBJ_50 /* CwlRandomTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlRandomTests.swift; sourceTree = "<group>"; };
-		OBJ_51 /* CwlResultTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlResultTests.swift; sourceTree = "<group>"; };
 		OBJ_52 /* CwlScalarScannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlScalarScannerTests.swift; sourceTree = "<group>"; };
 		OBJ_53 /* CwlStackFrameTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlStackFrameTests.swift; sourceTree = "<group>"; };
 		OBJ_54 /* CwlSysctlTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CwlSysctlTests.swift; sourceTree = "<group>"; };
@@ -555,7 +551,6 @@
 				OBJ_48 /* CwlMutexTests.swift */,
 				OBJ_49 /* CwlOnDeleteTests.swift */,
 				OBJ_50 /* CwlRandomTests.swift */,
-				OBJ_51 /* CwlResultTests.swift */,
 				OBJ_52 /* CwlScalarScannerTests.swift */,
 				OBJ_53 /* CwlStackFrameTests.swift */,
 				OBJ_54 /* CwlSysctlTests.swift */,
@@ -933,7 +928,6 @@
 				C94D2B8821919BEA00B6D53B /* CwlOnDeleteTests.swift in Sources */,
 				C94D2B8921919BEA00B6D53B /* CwlRandomTests.swift in Sources */,
 				C94D2B8A21919BEA00B6D53B /* mt19937-64.c in Sources */,
-				C94D2B8B21919BEA00B6D53B /* CwlResultTests.swift in Sources */,
 				C94D2B8C21919BEA00B6D53B /* xoshiro256starstar.c in Sources */,
 				C94D2B8D21919BEA00B6D53B /* CwlScalarScannerTests.swift in Sources */,
 				C94D2B8E21919BEA00B6D53B /* CwlStackFrameTests.swift in Sources */,
@@ -1023,7 +1017,6 @@
 				C95BDECA1E4168B800AAA64B /* CwlOnDeleteTests.swift in Sources */,
 				C95BDECB1E4168B800AAA64B /* CwlRandomTests.swift in Sources */,
 				C973087F217C9840001EF603 /* mt19937-64.c in Sources */,
-				C95BDECC1E4168B800AAA64B /* CwlResultTests.swift in Sources */,
 				C9EE87CB1E4171FD00A7408F /* xoshiro256starstar.c in Sources */,
 				C95BDECE1E4168B800AAA64B /* CwlScalarScannerTests.swift in Sources */,
 				C95BDECF1E4168B800AAA64B /* CwlStackFrameTests.swift in Sources */,
@@ -1048,7 +1041,6 @@
 				OBJ_211 /* CwlMutexTests.swift in Sources */,
 				OBJ_212 /* CwlOnDeleteTests.swift in Sources */,
 				OBJ_213 /* CwlRandomTests.swift in Sources */,
-				OBJ_214 /* CwlResultTests.swift in Sources */,
 				C9EE87CA1E4171FD00A7408F /* xoshiro256starstar.c in Sources */,
 				OBJ_215 /* CwlScalarScannerTests.swift in Sources */,
 				OBJ_216 /* CwlStackFrameTests.swift in Sources */,
