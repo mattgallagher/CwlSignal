@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name          = "CwlPreconditionTesting"
-  s.version       = "1.1.0"
+  s.version       = "1.1.1"
   
   s.summary       = "A small Swift framework for catching Mach BAD_INSTRUCTION exceptions."
   s.description   = <<-DESC
@@ -18,8 +18,10 @@ Pod::Spec.new do |s|
     "Sources/CwlPreconditionTesting/CwlBadInstructionException.swift",
     "Sources/CwlPreconditionTesting/CwlCatchBadInstruction.swift",
     "Sources/CwlPreconditionTesting/CwlDarwinDefinitions.swift",
-    "Sources/CwlPreconditionTesting/Mach/*.h",
+    "Sources/CwlPreconditionTesting/include/CwlPreconditionTesting.h",
     "Sources/CwlMachBadInstructionHandler/CwlMachBadInstructionHandler.m",
+    "Sources/CwlMachBadInstructionHandler/mach_excServer.c",
+    "Sources/CwlMachBadInstructionHandler/mach_excServer.h",
     "Sources/CwlMachBadInstructionHandler/include/CwlMachBadInstructionHandler.h"
-  s.ios.source_files = "Sources/CwlMachBadInstructionHandler/mach_excServer.{c,h}"
+  s.dependency 'CwlCatchException'
 end
