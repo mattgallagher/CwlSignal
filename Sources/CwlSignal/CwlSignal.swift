@@ -135,7 +135,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Returns: a `SignalMulti`
 	public static func preclosed<S: Sequence>(sequence: S, end: SignalEnd = .complete) -> SignalMulti<OutputValue> where S.Iterator.Element == OutputValue {
 		return SignalMulti<OutputValue>(processor: Signal<OutputValue>().attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: (Array(sequence), end), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
+			SignalMultiProcessor(signal: s, values: (Array(sequence), end), userUpdated: false, activeWithoutOutputs: .always, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
 		})
 	}
 	
@@ -155,7 +155,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Returns: a `SignalMulti`
 	public static func preclosed(end: SignalEnd = .complete) -> SignalMulti<OutputValue> {
 		return SignalMulti<OutputValue>(processor: Signal<OutputValue>().attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: ([], end), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
+			SignalMultiProcessor(signal: s, values: ([], end), userUpdated: false, activeWithoutOutputs: .always, dw: &dw, context: .direct, updater: { a, p, r in ([], nil) })
 		})
 	}
 	
@@ -402,12 +402,13 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` immediately activates its antecedents and is "continuous" (multiple listeners can be attached to the `SignalMulti` and each new listener immediately receives the most recently sent value on "activation").
 	///
-	/// - parameter initialValues: the immediate value sent to any listeners that connect *before* the first value is sent through this `Signal`
+	/// NOTE: this is the canonical "shared value" signal
 	///
+	/// - parameter initialValues: the immediate value sent to any listeners that connect *before* the first value is sent through this `Signal`
 	/// - returns: a continuous `SignalMulti`
 	public final func continuous(initialValue: OutputValue) -> SignalMulti<OutputValue> {
 		return SignalMulti<OutputValue>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: ([initialValue], nil), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r -> (Array<OutputValue>, SignalEnd?) in
+			SignalMultiProcessor(signal: s, values: ([initialValue], nil), userUpdated: false, activeWithoutOutputs: .always, dw: &dw, context: .direct, updater: { a, p, r -> (Array<OutputValue>, SignalEnd?) in
 				let previous: (Array<OutputValue>, SignalEnd?) = (a, p)
 				switch r {
 				case .success(let v): a = [v]
@@ -420,10 +421,12 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` immediately activates its antecedents and is "continuous" (multiple listeners can be attached to the `SignalMulti` and each new listener immediately receives the most recently sent value on "activation"). Any listeners that connect before the first signal is received will receive no value on "activation".
 	///
+	/// NOTE: this is the canonical "shared results" signal
+	///
 	/// - returns: a continuous `SignalMulti`
 	public final func continuous() -> SignalMulti<OutputValue> {
 		return SignalMulti<OutputValue>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: ([], nil), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r -> (Array<OutputValue>, SignalEnd?) in
+			SignalMultiProcessor(signal: s, values: ([], nil), userUpdated: false, activeWithoutOutputs: .always, dw: &dw, context: .direct, updater: { a, p, r -> (Array<OutputValue>, SignalEnd?) in
 				let previous: (Array<OutputValue>, SignalEnd?) = (a, p)
 				switch r {
 				case .success(let v): a = [v]; p = nil
@@ -434,12 +437,14 @@ public class Signal<OutputValue>: SignalInterface {
 		})
 	}
 	
-	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` does not immediately activate (it waits until an output activates it normally). The first activator receives no cached values but subsequent activators will receive the most recent value. Upon deactivation, the cached value is discarded and deactivation is propagated normally to antecedents.
+	/// Appends a new `SignalMulti` to this `Signal`. The new `SignalMulti` does not immediately activate (it waits until an output activates it normally). The first activator receives no cached values but does start the signal. If a value is received, subsequent activators will receive the most recent value. Depending on the `discardOnDeactivate` behavior, the cached value may be discarded (resetting the entire signal to its deactivated state) or the cached value might be retained for delivery to any future listeners.
+	///
+	/// NOTE: this signal is intended for lazily loaded, shared resources.
 	///
 	/// - returns: a continuous `SignalMulti`
-	public final func continuousWhileActive() -> SignalMulti<OutputValue> {
+	public final func continuousWhileActive(discardOnDeactivate: Bool = true) -> SignalMulti<OutputValue> {
 		return SignalMulti<OutputValue>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: ([], nil), userUpdated: false, activeWithoutOutputs: false, dw: &dw, context: .direct, updater: { a, p, r -> (Array<OutputValue>, SignalEnd?) in
+			SignalMultiProcessor(signal: s, values: ([], nil), userUpdated: false, activeWithoutOutputs: discardOnDeactivate ? .never : .ifNonEmpty, dw: &dw, context: .direct, updater: { a, p, r -> (Array<OutputValue>, SignalEnd?) in
 				let previous: (Array<OutputValue>, SignalEnd?) = (a, p)
 				switch r {
 				case .success(let v): a = [v]; p = nil
@@ -455,7 +460,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - returns: a playback `SignalMulti`
 	public final func playback() -> SignalMulti<OutputValue> {
 		return SignalMulti<OutputValue>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: ([], nil), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: { a, p, r -> (Array<OutputValue>, SignalEnd?) in
+			SignalMultiProcessor(signal: s, values: ([], nil), userUpdated: false, activeWithoutOutputs: .always, dw: &dw, context: .direct, updater: { a, p, r -> (Array<OutputValue>, SignalEnd?) in
 				switch r {
 				case .success(let v): a.append(v)
 				case .failure(let e): p = e
@@ -467,9 +472,10 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	/// Appends a new `Signal` to this `Signal`. The new `Signal` immediately activates its antecedents and caches any values it receives until this the new `Signal` itself is activated – at which point it sends all prior values upon "activation" and subsequently reverts to passthough.
 	///
-	/// - Parameters:
-	///   - precached: start the cache with some initial values to which subsequent values will be added (default: nil)
-	/// - returns: a "cache until active" `Signal`.
+	/// NOTE: this is intended for greedily started signals that might start emitting before the listeners connect.
+	///
+	/// - Parameter precached: start the cache with some initial values to which subsequent values will be added (default: nil)
+	/// - Returns: a "cache until active" `Signal`.
 	public final func cacheUntilActive(precached: [OutputValue]? = nil) -> Signal<OutputValue> {
 		return Signal<OutputValue>(processor: attach { (s, dw) in
 			SignalCacheUntilActive(signal: s, precached: precached, dw: &dw)
@@ -478,10 +484,12 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	/// Appends a new `SignalMulti` to this `Signal`. While multiple listeners are permitted, there is no caching, activation signal or other changes inherent in this new `Signal` – newly connected listeners will receive only those values sent after they connect.
 	///
+	/// NOTE: this is intended for shared signals where new values are important but previous values are not
+	///
 	/// - returns: a "multicast" `SignalMulti`.
 	public final func multicast() -> SignalMulti<OutputValue> {
 		return SignalMulti<OutputValue>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: ([], nil), userUpdated: false, activeWithoutOutputs: true, dw: &dw, context: .direct, updater: nil)
+			SignalMultiProcessor(signal: s, values: ([], nil), userUpdated: false, activeWithoutOutputs: .never, dw: &dw, context: .direct, updater: nil)
 		})
 	}
 	
@@ -495,7 +503,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Returns: a `SignalMulti` with custom activation
 	public final func customActivation(initialValues: Array<OutputValue> = [], context: Exec = .direct, _ updater: @escaping (_ cachedValues: inout Array<OutputValue>, _ cachedError: inout SignalEnd?, _ incoming: Result) -> Void) -> SignalMulti<OutputValue> {
 		return SignalMulti<OutputValue>(processor: attach { (s, dw) in
-			SignalMultiProcessor(signal: s, values: (initialValues, nil), userUpdated: true, activeWithoutOutputs: true, dw: &dw, context: context) { (bufferedValues: inout Array<OutputValue>, bufferedError: inout SignalEnd?, incoming: Result) -> (Array<OutputValue>, SignalEnd?) in
+			SignalMultiProcessor(signal: s, values: (initialValues, nil), userUpdated: true, activeWithoutOutputs: .always, dw: &dw, context: context) { (bufferedValues: inout Array<OutputValue>, bufferedError: inout SignalEnd?, incoming: Result) -> (Array<OutputValue>, SignalEnd?) in
 				let oldActivationValues = bufferedValues
 				let oldError = bufferedError
 				updater(&bufferedValues, &bufferedError, incoming)
@@ -1810,6 +1818,21 @@ private extension Exec {
 	}
 }
 
+private enum ActiveWithoutOutputs {
+	case always
+	case never
+	case ifNonEmpty
+	
+	func active(valuesIsEmpty: Bool) -> Bool {
+		switch self {
+		case .always: return true
+		case .never: return false
+		case .ifNonEmpty where valuesIsEmpty: return false
+		case .ifNonEmpty: return true
+		}
+	}
+}
+
 // Implementation of a processor that can output to multiple `Signal`s. Used by `continuous(initial:)`, `continuous`, `continuousWhileActive`, `playback`, `multicast`, `customActivation` and `preclosed`.
 fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<OutputValue, OutputValue> {
 	typealias Updater = (_ activationValues: inout Array<OutputValue>, _ preclosed: inout SignalEnd?, _ result: Result<OutputValue, SignalEnd>) -> (Array<OutputValue>, SignalEnd?)
@@ -1817,7 +1840,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	var activationValues: Array<OutputValue>
 	var preclosed: SignalEnd?
 	let userUpdated: Bool
-	let activeWithoutOutputs: Bool
+	let activeWithoutOutputs: ActiveWithoutOutputs
 	
 	// Rather than using different subclasses for each of the "multi" `Signal`s, this one subclass is used for all. However, that requires a few different parameters to enable different behaviors.
 	//
@@ -1829,7 +1852,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	//   - dw: required
 	//   - context: where the `updater` will be run
 	//   - updater: when a new signal is received, updates the cached activation values and error
-	init(signal: Signal<OutputValue>, values: (Array<OutputValue>, SignalEnd?), userUpdated: Bool, activeWithoutOutputs: Bool, dw: inout DeferredWork, context: Exec, updater: Updater?) {
+	init(signal: Signal<OutputValue>, values: (Array<OutputValue>, SignalEnd?), userUpdated: Bool, activeWithoutOutputs: ActiveWithoutOutputs, dw: inout DeferredWork, context: Exec, updater: Updater?) {
 		precondition((values.1 == nil && values.0.isEmpty) || updater != nil, "Non empty activation values requires always active.")
 		self.updater = (userUpdated && context.isImmediateNonDirect) ? updater.map { u in { a, b, c in context.invokeSync { u(&a, &b, c) } } } : updater
 		self.activationValues = values.0
@@ -1842,7 +1865,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	// Multicast and continuousWhileActive are not preactivated but all others are not.
 	fileprivate override var activeWithoutOutputsInternal: Bool {
 		assert(signal.mutex.unbalancedTryLock() == false)
-		return activeWithoutOutputs && preclosed == nil
+		return activeWithoutOutputs.active(valuesIsEmpty: activationValues.isEmpty) && preclosed == nil
 	}
 	
 	// Multiprocessor can handle multiple outputs
