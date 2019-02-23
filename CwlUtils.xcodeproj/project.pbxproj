@@ -1251,7 +1251,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.cocoawithlove.CwlUtils;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -1266,7 +1265,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.cocoawithlove.CwlUtils;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -1283,7 +1281,6 @@
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SWIFT_OBJC_BRIDGING_HEADER = "Tests/CwlUtilsTests/CwlUtilsTests-BridgingHeader.h";
-				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -1299,7 +1296,6 @@
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				SWIFT_OBJC_BRIDGING_HEADER = "Tests/CwlUtilsTests/CwlUtilsTests-BridgingHeader.h";
-				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -1328,7 +1324,6 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_OBJC_BRIDGING_HEADER = "Tests/CwlUtilsTests/CwlUtilsTests-BridgingHeader.h";
-				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -1342,7 +1337,6 @@
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OBJC_BRIDGING_HEADER = "Tests/CwlUtilsTests/CwlUtilsTests-BridgingHeader.h";
-				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};

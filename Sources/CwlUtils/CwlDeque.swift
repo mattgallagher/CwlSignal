@@ -21,7 +21,7 @@
 import Foundation
 
 /// This is a basic "circular-buffer" style Double-Ended Queue.
-public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, ExpressibleByArrayLiteral, CustomDebugStringConvertible {
+public struct Deque<T>: RandomAccessCollection, MutableCollection, RangeReplaceableCollection, ExpressibleByArrayLiteral, CustomDebugStringConvertible {
 	public typealias Index = Int
 	public typealias Indices = CountableRange<Int>
 	public typealias Element = T
@@ -78,12 +78,22 @@ public struct Deque<T>: RandomAccessCollection, RangeReplaceableCollection, Expr
 	public subscript(_ at: Index) -> T {
 		get {
 			return buffer!.withUnsafeMutablePointers { headerPtr, bodyPtr -> T in
-				precondition(at < headerPtr.pointee.count)
+				precondition(at >= 0 && at < headerPtr.pointee.count)
 				var offset = headerPtr.pointee.offset + at
 				if offset >= headerPtr.pointee.capacity {
 					offset -= headerPtr.pointee.capacity
 				}
 				return bodyPtr[offset]
+			}
+		}
+		set {
+			buffer!.withUnsafeMutablePointers { headerPtr, bodyPtr in
+				precondition(at >= 0 && at < headerPtr.pointee.count)
+				var offset = headerPtr.pointee.offset + at
+				if offset >= headerPtr.pointee.capacity {
+					offset -= headerPtr.pointee.capacity
+				}
+				bodyPtr[offset] = newValue
 			}
 		}
 	}
