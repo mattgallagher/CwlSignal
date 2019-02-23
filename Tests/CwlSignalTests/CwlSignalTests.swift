@@ -216,8 +216,8 @@ class SignalTests: XCTestCase {
 		let (input, s) = Signal<Int>.create()
 		let signal = s.multicast()
 		
-		// We should already be active, even without listeners.
-		XCTAssert(input.send(result: .success(321)) == nil)
+		// We should not be active, yet.
+		XCTAssert(input.send(result: .success(321)) != nil)
 		
 		// Subscribe send and close
 		var results1 = [Result<Int, SignalEnd>]()
