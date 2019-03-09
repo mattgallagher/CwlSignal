@@ -23,20 +23,21 @@ public protocol CaseNameDecoder: Codable, CodingKey, RawRepresentable where RawV
 }
 
 public extension CaseNameCodable {
-	var caseName: CaseName {
-		let mirror = Mirror(reflecting: self)
-		guard let child = mirror.children.first, let label = child.label, let key = CaseName(rawValue: label) else {
-			fatalError("Unable to find a CaseName matching \(mirror.children.first?.label ?? "(empty)")")
-		}
-		return key
-	}
-	
-	func encode(to encoder: Encoder) throws {
-		let mirror = Mirror(reflecting: self)
+	private func caseName(from mirror: Mirror) -> CaseName {
 		let label = mirror.children.first?.label ?? String(describing: self)
 		guard let key = CaseName(rawValue: label) else {
 			fatalError("Unable to find a CaseName for \(self) matching \(label)")
 		}
+		return key
+	}
+	
+	var caseName: CaseName {
+		return caseName(from: Mirror(reflecting: self))
+	}
+	
+	func encode(to encoder: Encoder) throws {
+		let mirror = Mirror(reflecting: self)
+		let key = caseName(from: mirror)
 		var container = encoder.container(keyedBy: CaseName.self)
 		if let value = mirror.children.first?.value as? Encodable {
 			try container.encode(EncodableWrapper(value: value), forKey: key)
