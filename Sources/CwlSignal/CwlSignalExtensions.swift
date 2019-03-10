@@ -683,6 +683,15 @@ extension SignalInterface {
 		}
 	}
 	
+	/// A convenience transform to turn a signal of optional values into an signal of array values with one or zero elements.
+	///
+	/// - Returns: an array signal
+	public func optional() -> Signal<OutputValue?> {
+		return signal.transform { (optional: Result<OutputValue, SignalEnd>) -> Signal<OutputValue?>.Next in
+			return .single(optional.map { $0 as OutputValue? })
+		}
+	}
+	
 	/// Joins this `Signal` to a destination `SignalInput`
 	///
 	/// WARNING: if you bind to a previously joined or otherwise inactive instance of the base `SignalInput` class, this function will have no effect. To get underlying errors, use `junction().bind(to: input)` instead.

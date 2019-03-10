@@ -263,6 +263,10 @@ extension SignalChannel {
 		return next { $0.toggle(initialState: initialState) }
 	}
 	
+	public func optional() -> SignalChannel<InputInterface, Signal<Interface.OutputValue?>> {
+		return next { $0.optional() }
+	}
+	
 	public func optionalToArray<U>() -> SignalChannel<InputInterface, Signal<[U]>> where Interface.OutputValue == Optional<U> {
 		return next { $0.optionalToArray() }
 	}
@@ -600,6 +604,10 @@ extension SignalChannel {
 	
 	public func onError(context: Exec = .direct, _ handler: @escaping (SignalEnd) -> ()) -> SignalChannel<InputInterface, Signal<Interface.OutputValue>> {
 		return next { $0.onError(context: context, handler) }
+	}
+
+	public func debug(logPrefix: String = "", file: String = #file, line: Int = #line) -> SignalChannel<InputInterface, Signal<Interface.OutputValue>> {
+		return next { $0.debug(logPrefix: logPrefix, file: file, line: line) }
 	}
 	
 	public func materialize() -> SignalChannel<InputInterface, Signal<Result<Interface.OutputValue, SignalEnd>>> {
