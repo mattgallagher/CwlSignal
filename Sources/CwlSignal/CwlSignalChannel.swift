@@ -71,6 +71,10 @@ public typealias Input<Value> = SignalChannel<SignalInput<Value>, Signal<Value>>
 public typealias MultiInput<Value> = SignalChannel<SignalMultiInput<Value>, Signal<Value>>
 public typealias MergedInput<Value> = SignalChannel<SignalMergedInput<Value>, Signal<Value>>
 
+public typealias MultiOutput<Value> = SignalChannel<SignalInput<Value>, SignalMulti<Value>>
+public typealias MultiInputMultiOutput<Value> = SignalChannel<SignalMultiInput<Value>, SignalMulti<Value>>
+public typealias MergedInputMultiOutput<Value> = SignalChannel<SignalMergedInput<Value>, SignalMulti<Value>>
+
 extension SignalChannel { 
 	public init<Value>() where SignalInput<Value> == InputInterface, Signal<Value> == Interface {
 		self = Signal<Value>.channel()

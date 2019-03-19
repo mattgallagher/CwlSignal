@@ -34,9 +34,9 @@ private enum TestError: Error {
 }
 
 extension Exec {
-	static func syncQueueWithSpecificKey() -> (Exec, DispatchSpecificKey<()>) {
+	static func syncQueueWithSpecificKey() -> (Exec, DispatchSpecificKey<Void>) {
 		let q = DispatchQueue(label: "")
-		let k = DispatchSpecificKey<()>()
+		let k = DispatchSpecificKey<Void>()
 		q.setSpecific(key: k, value: ())
 		return (Exec.queue(q, .mutex), k)
 	}
