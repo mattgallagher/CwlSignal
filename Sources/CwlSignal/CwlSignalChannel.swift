@@ -247,6 +247,14 @@ extension SignalChannel {
 		return next { $0.stride(count: count, initialSkip: initialSkip) }
 	}
 	
+	public func transformValues<U>(context: Exec = .direct, _ processor: @escaping (Interface.OutputValue) -> Signal<U>.Next) -> SignalChannel<InputInterface, Signal<U>> {
+		return next { $0.transformValues(context: context, processor) }
+	}
+
+	public func transformValues<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, Interface.OutputValue) -> Signal<U>.Next) -> SignalChannel<InputInterface, Signal<U>> {
+		return next { $0.transformValues(initialState: initialState, context: context, processor) }
+	}
+	
 	public func transformFlatten<U>(closePropagation: SignalEndPropagation = .none, context: Exec = .direct, _ processor: @escaping (Interface.OutputValue, SignalMergedInput<U>) -> ()) -> SignalChannel<InputInterface, Signal<U>> {
 		return next { $0.transformFlatten(closePropagation: closePropagation, context: context, processor) }
 	}
