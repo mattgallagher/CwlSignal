@@ -283,6 +283,11 @@ extension SignalChannel {
 		signal.signal.bind(to: to, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
 		return input
 	}
+
+	public func flatMapBind<Output: SignalInterface, Input: SignalInputInterface>(to interface: Output, _ transform: @escaping (Output.OutputValue) -> Input) -> InputInterface where Input.InputValue == Interface.OutputValue {
+		return final { $0.flatMapBind(to: interface, transform) }.input
+	}
+	
 	
 	public func cacheLatest() -> (input: InputInterface, output: SignalLatest<Interface.OutputValue>) {
 		let tuple = final { SignalLatest(signal: $0) }

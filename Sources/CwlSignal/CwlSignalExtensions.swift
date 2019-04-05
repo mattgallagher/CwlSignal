@@ -697,7 +697,7 @@ extension SignalInterface {
 	/// WARNING: if you bind to a previously joined or otherwise inactive instance of the base `SignalInput` class, this function will have no effect. To get underlying errors, use `junction().bind(to: input)` instead.
 	///
 	/// - Parameters:
-	///   - to: target `SignalMultiInput` to which this signal will be added
+	///   - to: target `SignalInput` to which this signal will be added
 	public func bind<InputInterface>(to interface: InputInterface) where InputInterface: SignalInputInterface, InputInterface.InputValue == OutputValue {
 		let input = interface.input
 		if let multiInput = input as? SignalMultiInput<OutputValue> {
@@ -713,6 +713,16 @@ extension SignalInterface {
 	///   - to: target `SignalMultiInput` to which this signal will be added
 	public func bind(to input: SignalMergedInput<OutputValue>, closePropagation: SignalEndPropagation, removeOnDeactivate: Bool = true) {
 		input.add(signal, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate)
+	}
+
+	public func flatMapBind<Interface: SignalInterface, InputInterface: SignalInputInterface>(to interface: Interface, _ transform: @escaping (Interface.OutputValue) -> InputInterface) where InputInterface.InputValue == OutputValue {
+		let j = junction()
+		interface.subscribeUntilEnd { result in
+			switch result {
+			case .success(let v): _ = try? j.bind(to: transform(v))
+			case .failure: _ = j.disconnect()
+			}
+		}
 	}
 	
 	/// Joins this `Signal` to a destination `SignalMultiInput` and returns a `Lifetime` that, when cancelled, will remove the `Signal` from the `SignalMultiInput` again.
