@@ -1538,7 +1538,7 @@ extension SignalInterface {
 		}
 	}
 
-	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	@available(*, deprecated, message:"Renamed to combineLatestWith. Alternately, use static combineLatest function.")
 	public func combineLatest<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue) throws -> V) -> Signal<V> {
 		return combineLatestWith(second, context: context, processor)
 	}
@@ -1577,7 +1577,7 @@ extension SignalInterface {
 		}
 	}
 
-	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	@available(*, deprecated, message:"Renamed to combineLatestWith. Alternately, use static combineLatest function.")
 	public func combineLatest<U: SignalInterface, V: SignalInterface, W>(_ second: U, _ third: V, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue) throws -> W) -> Signal<W> {
 		return combineLatestWith(second, third, context: context, processor)
 	}
@@ -1621,7 +1621,7 @@ extension SignalInterface {
 		}
 	}
 
-	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	@available(*, deprecated, message:"Renamed to combineLatestWith. Alternately, use static combineLatest function.")
 	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X>(_ second: U, _ third: V, _ fourth: W, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue) throws -> X) -> Signal<X> {
 		return combineLatestWith(second, third, fourth, context: context, processor)
 	}
@@ -1668,7 +1668,7 @@ extension SignalInterface {
 		}
 	}
 
-	@available(*, deprecated, message:"Renamed to zipWith. Alternately, use static zip function.")
+	@available(*, deprecated, message:"Renamed to combineLatestWith. Alternately, use static combineLatest function.")
 	public func combineLatest<U: SignalInterface, V: SignalInterface, W: SignalInterface, X: SignalInterface, Y>(_ second: U, _ third: V, _ fourth: W, _ fifth: X, context: Exec = .direct, _ processor: @escaping (OutputValue, U.OutputValue, V.OutputValue, W.OutputValue, X.OutputValue) throws -> Y) -> Signal<Y> {
 		return combineLatestWith(second, third, fourth, fifth, context: context, processor)
 	}
