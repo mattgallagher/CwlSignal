@@ -494,7 +494,7 @@ extension SignalChannel {
 		return next { $0.takeLast(count) }
 	}
 	
-	public func combineLatestWtith<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (Interface.OutputValue, U.OutputValue) throws -> V) -> SignalChannel<InputInterface, Signal<V>> {
+	public func combineLatestWith<U: SignalInterface, V>(_ second: U, context: Exec = .direct, _ processor: @escaping (Interface.OutputValue, U.OutputValue) throws -> V) -> SignalChannel<InputInterface, Signal<V>> {
 		return next { $0.combineLatestWith(second, context: context, processor) }
 	}
 	
