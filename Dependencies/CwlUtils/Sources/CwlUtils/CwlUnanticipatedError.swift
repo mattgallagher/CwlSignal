@@ -40,6 +40,7 @@ public extension Error {
 		let directory = ((file as NSString).deletingLastPathComponent as NSString).lastPathComponent
 		let filename = (file as NSString).lastPathComponent
 		let suggestion = String(format: NSLocalizedString("The error occurred at line %ld of the %@/%@ file in the program's code.",  comment: ""), line, directory, filename)
+		userInfo[NSLocalizedDescriptionKey] = self.localizedDescription
 		userInfo[NSLocalizedRecoverySuggestionErrorKey] = suggestion
 		userInfo[NSLocalizedRecoveryOptionsErrorKey] = UnanticipatedErrorRecoveryAttempter.localizedRecoveryOptions()
 		userInfo[NSRecoveryAttempterErrorKey] = UnanticipatedErrorRecoveryAttempter()
@@ -53,7 +54,9 @@ public extension Error {
 
 // A function that returns an `Error` of a non-public type, that already has `withUnanticipatedErrorRecoveryAttempter`
 public func undeclaredError(file: String = #file, line: Int = #line) -> Error {
-	struct UndeclaredError: Error {}
+	struct UndeclaredError: LocalizedError {
+		var errorDescription: String? { return NSLocalizedString("An unspecified error occurred.", comment: "") }
+	}
 	return UndeclaredError().withUnanticipatedErrorRecoveryAttempter(file: file, line: line )
 }
 
