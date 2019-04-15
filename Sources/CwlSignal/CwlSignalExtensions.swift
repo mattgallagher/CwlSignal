@@ -882,8 +882,8 @@ extension SignalInterface {
 	///
 	/// - Returns: the latest captured value, if any
 	/// - Throws: if no value is emitted but a `SignalEnd` is emitted, then the `SignalEnd` will be thrown. If no value or end is emitted, a `SignalCapture.FailedToEmit` error will be thrown.
-	public func peek() throws -> OutputValue {
-		return try signal.capture().latestValue()
+	public func peek() -> OutputValue? {
+		return signal.capture().peek()
 	}
 }
 
