@@ -134,7 +134,7 @@ struct Concat {
 		
 		output.write(message)
 		output.write("""
-			//  Copyright © 2015-2018 Matt Gallagher ( https://www.cocoawithlove.com ). All rights reserved.
+			//  Copyright © 2015-2019 Matt Gallagher ( https://www.cocoawithlove.com ). All rights reserved.
 			//
 			//  Permission to use, copy, modify, and/or distribute this software for any
 			//  purpose with or without fee is hereby granted, provided that the above
