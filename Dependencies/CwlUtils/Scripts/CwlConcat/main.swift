@@ -170,7 +170,7 @@ struct Concat {
 	static func processAllFromCommandLine() throws {
 		guard let buildDir = env("BUILT_PRODUCTS_DIR") else { throw ProcessingError.missingEnvironment("BUILT_PRODUCTS_DIR") }
 		guard let srcDir = env("SRCROOT") else { throw ProcessingError.missingEnvironment("SRCROOT") }
-		guard let startIndex = ProcessInfo.processInfo.arguments.index(where: { $0 == "-f" }),
+		guard let startIndex = ProcessInfo.processInfo.arguments.firstIndex(where: { $0 == "-f" }),
 			ProcessInfo.processInfo.arguments.count >= startIndex + 6 else {
 				throw ProcessingError.mustStartWithName
 		}
