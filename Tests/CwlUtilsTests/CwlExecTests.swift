@@ -151,7 +151,7 @@ class ExecTests: XCTestCase {
 		guard case .queue(let q1, _) = ec1 else {
 			fatalError()
 		}
-		let sk1 = DispatchSpecificKey<()>()
+		let sk1 = DispatchSpecificKey<Void>()
 		q1.setSpecific(key: sk1, value: ())
 		
 		XCTAssert(ec1.type.isConcurrent == false)
@@ -161,7 +161,7 @@ class ExecTests: XCTestCase {
 		guard case .queue(let q2, _) = ec2 else {
 			fatalError()
 		}
-		let sk2 = DispatchSpecificKey<()>()
+		let sk2 = DispatchSpecificKey<Void>()
 		q2.setSpecific(key: sk2, value: ())
 		XCTAssert(ec2.type.isConcurrent == false)
 		XCTAssert(ec2.type.isImmediateInCurrentContext == false)
