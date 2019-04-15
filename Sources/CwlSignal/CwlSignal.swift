@@ -2500,7 +2500,7 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 	///
 	/// - Returns: the last captured value
 	/// - Throws: if no captured value but captured end, the `SignalEnd` is thrown. If neither value nor end, `SignalCapture.FailedToEmit` is thrown.
-	public func latestValue() throws -> OutputValue {
+	public func get() throws -> OutputValue {
 		return try sync {
 			if let last = capturedValues.last {
 				return last
@@ -2510,6 +2510,14 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 				throw FailedToEmit()
 			}
 		}
+	}
+
+	/// Accessor for the last captured value, if any.
+	///
+	/// - Returns: the last captured value
+	/// - Throws: if no captured value but captured end, the `SignalEnd` is thrown. If neither value nor end, `SignalCapture.FailedToEmit` is thrown.
+	public func peek() -> OutputValue? {
+		return sync { capturedValues.last }
 	}
 	
 	// Since this node operates as a junction, it cannot share mutex
