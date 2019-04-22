@@ -170,7 +170,7 @@ struct Concat {
 	static func processAllFromCommandLine() throws {
 		guard let buildDir = env("BUILT_PRODUCTS_DIR") else { throw ProcessingError.missingEnvironment("BUILT_PRODUCTS_DIR") }
 		guard let srcDir = env("SRCROOT") else { throw ProcessingError.missingEnvironment("SRCROOT") }
-		guard let startIndex = ProcessInfo.processInfo.arguments.index(where: { $0 == "-f" }),
+		guard let startIndex = ProcessInfo.processInfo.arguments.firstIndex(where: { $0 == "-f" }),
 			ProcessInfo.processInfo.arguments.count >= startIndex + 6 else {
 				throw ProcessingError.mustStartWithName
 		}
@@ -202,6 +202,7 @@ struct Concat {
 					guard let enumerator = FileManager.default.enumerator(at: URL(fileURLWithPath: value), includingPropertiesForKeys: nil) else {
 						throw ProcessingError.fileNotFound(value)
 					}
+					var filePaths = [String]()
 					for file in enumerator {
 						let fileUrl = file as! URL
 						if outputs[outputs.count - 1].excludes.contains(fileUrl.path) {
@@ -211,7 +212,10 @@ struct Concat {
 							continue
 						}
 						if fileUrl.pathExtension != "swift" { continue }
-						outputs[outputs.count - 1].includes.append(.file(fileUrl.path))
+						filePaths.append(fileUrl.path)
+					}
+					for filePath in filePaths.sorted() {
+						outputs[outputs.count - 1].includes.append(.file(filePath))
 					}
 				} else {
 					outputs[outputs.count - 1].includes.append(.file(value))

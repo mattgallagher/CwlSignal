@@ -802,7 +802,7 @@
 			};
 			buildConfigurationList = OBJ_2 /* Build configuration list for PBXProject "CwlUtils" */;
 			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
