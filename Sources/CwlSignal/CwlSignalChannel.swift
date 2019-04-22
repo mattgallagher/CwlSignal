@@ -127,6 +127,10 @@ extension SignalChannel {
 		return next { $0.transform(context: context, processor) }
 	}
 	
+	public func transformActivation<U>(context: Exec = .direct, activation: @escaping (Result<Interface.OutputValue, SignalEnd>) -> Signal<U>.Next, _ processor: @escaping (Result<Interface.OutputValue, SignalEnd>) -> Signal<U>.Next) -> SignalChannel<InputInterface, Signal<U>> {
+		return next { $0.transformActivation(context: context, activation: activation, processor) }
+	}
+	
 	public func transform<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, Result<Interface.OutputValue, SignalEnd>) -> Signal<U>.Next) -> SignalChannel<InputInterface, Signal<U>> {
 		return next { $0.transform(initialState: initialState, context: context, processor) }
 	}

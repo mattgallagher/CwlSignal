@@ -699,29 +699,27 @@ class SignalReactiveTests: XCTestCase {
 		let capture = signal
 			.cacheUntilActive(precached: [1, 2])
 			.compactMapActivation(
-				select: .all,
+				select: .last,
 				activation: { v in v * 10 },
 				remainder: { v in v * 2 }
 			)
 			.capture()
 		let captureValues = capture.values
 		
-		let lifetime = capture.resume(resend: true)
+		let lifetime = capture.resume(resend: .deferred)
 			.subscribe { r in results.append(r) }
 		input.send(7, 8, 9)
 		input.complete()
-	
-		XCTAssert(captureValues.count == 2)
-		XCTAssert(captureValues.at(0) == 10)
-		XCTAssert(captureValues.at(1) == 20)
 		
-		XCTAssert(results.count == 6)
-		XCTAssert(results.at(0)?.value == 10)
-		XCTAssert(results.at(1)?.value == 20)
-		XCTAssert(results.at(2)?.value == 14)
-		XCTAssert(results.at(3)?.value == 16)
-		XCTAssert(results.at(4)?.value == 18)
-		XCTAssert(results.at(5)?.error?.isComplete == true)
+		XCTAssert(captureValues.count == 1)
+		XCTAssert(captureValues.at(0) == 20)
+		
+		XCTAssert(results.count == 5)
+		XCTAssert(results.at(0)?.value == 20)
+		XCTAssert(results.at(1)?.value == 14)
+		XCTAssert(results.at(2)?.value == 16)
+		XCTAssert(results.at(3)?.value == 18)
+		XCTAssert(results.at(4)?.error?.isComplete == true)
 		withExtendedLifetime(lifetime) {}
 	}
 	
@@ -734,7 +732,7 @@ class SignalReactiveTests: XCTestCase {
 			.capture()
 		let captureValues = capture.values
 		
-		let lifetime = capture.resume(resend: true)
+		let lifetime = capture.resume(resend: .deferred)
 			.subscribe { r in results.append(r) }
 		input.send(7, 8, 9)
 		input.complete()

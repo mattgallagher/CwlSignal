@@ -867,7 +867,7 @@ class SignalTests: XCTestCase {
 		}
 		
 		do {
-			try capture2.bind(to: subsequentInput2, resend: true) { (c, e, i) in
+			try capture2.bind(to: subsequentInput2, resend: .deferred) { (c, e, i) in
 				XCTAssert(c === capture2)
 				XCTAssert(e.otherError as? TestError == .oneValue)
 				i.send(error: TestError.zeroValue)

@@ -36,17 +36,6 @@ public enum SignalReactiveError: Error {
 	case timeout
 }
 
-/// For `mapActivation`, in the event of multiple activation values, you must device which of the activation values to process using the activation closure.
-///
-/// - all: process all activation values using the `activation` closure and all remaining values using the `remainder` closure (default)
-/// - first: process the first activation value using the `activation` closure and process any remaining activation values using the `remainder` closure 
-/// - last: process the last activation value using the `activation` closure, *discarding* all preceeding activation values, then process all subsequent values using the `remainder` closure
-public enum SignalActivationSelection {
-	case all
-	case first
-	case last
-}
-
 extension SignalInterface {
 	/// - Note: the [Reactive X operator "Create"](http://reactivex.io/documentation/operators/create.html) is considered unnecessary, given the `CwlSignal.Signal.generate` and `CwlSignal.Signal.create` methods.
 	
@@ -585,61 +574,44 @@ extension SignalInterface {
 	///   - remainder: processing closure for all `normal` values (and activation values after the first, if `.first` is passed as the `select` argument)
 	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
 	public func compactMapActivation<U>(select: SignalActivationSelection = .all, context: Exec = .direct, activation: @escaping (OutputValue) throws -> U?, remainder: @escaping (OutputValue) throws -> U?) -> Signal<U> {
-		var capture: SignalCapture<OutputValue>? = nil
-		return Signal<U>.generate { input in
-			guard let input = input else { return }
-			
-			let c: SignalCapture<OutputValue>
-			if let cap = capture {
-				// Subsequent runs, disconnect the old capture to restart it
-				_ = cap.disconnect()
-				c = cap
-			} else {
-				// First run, start the capture.
-				c = self.capture()
-				capture = c
-			}
-			
-			// Subsequent values will be compactMapped normally
-			var subsequent = c.resume().compactMap(context: context, remainder)
-			
-			let values = c.values
-			guard !values.isEmpty else {
-				subsequent.bind(to: input)
-				return
-			}
-			
-			var initial: [U]? = nil
-			do {
-				// Process the captured values
-				switch select {
-				case .all: initial = try context.invokeSync { try values.compactMap(activation) }
-				case .first:
-					initial = [U]()
-					try context.invokeSync {
-						if let v = values.first, let a = try activation(v) {
-							initial!.append(a)
-						}
-						for v in values.dropFirst() {
-							if let r = try remainder(v) {
-								initial!.append(r)
-							}
-						}
-					}
-				case .last:
-					initial = try values.last.flatMap { v in try context.invokeSync { try activation(v).map { [$0] } } }
-				}
-				
-				// If we have any initial values, precache them for immediate sending
-				if let i = initial, !i.isEmpty {
-					subsequent = subsequent.cacheUntilActive(precached: i)
-				}
-			} catch {
-				subsequent = Signal<U>.preclosed(sequence: initial ?? [], end: SignalEnd.other(error))
-			}
 		
-			subsequent.bind(to: input)
-		}		
+		let preceeding: Signal<OutputValue>
+		if case .all = select {
+			preceeding = self.signal
+		} else {
+			preceeding = self.capture().resume(resend: select)
+		}
+		
+		return preceeding.transformActivation(
+			context: context,
+			activation: { result in
+				switch result {
+				case .success(let v):
+					do {
+						if let u = try activation(v) {
+							return .value(u)
+						}
+						return .none
+					} catch {
+						return .end(.other(error))
+					}
+				case .failure(let e): return .end(e)
+				}
+			}
+		) { result in
+			switch result {
+			case .success(let v):
+				do {
+					if let u = try remainder(v) {
+						return .value(u)
+					}
+					return .none
+				} catch {
+					return .end(.other(error))
+				}
+			case .failure(let e): return .end(e)
+			}
+		}
 	}
 
 	/// A specialized implementation of `compactMapActivation` that processes only activation values (remaining values are simply passed through). A consequence is that input and output values must have the same type (unlike the unspecialized version which can map onto a different type).

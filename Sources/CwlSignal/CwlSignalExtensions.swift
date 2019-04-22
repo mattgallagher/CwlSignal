@@ -38,6 +38,9 @@ extension SignalInterface {
 	public func transform<U>(context: Exec = .direct, _ processor: @escaping (Result<OutputValue, SignalEnd>) -> Signal<U>.Next) -> Signal<U> {
 		return signal.transform(context: context, processor)
 	}
+	public func transformActivation<U>(context: Exec = .direct, activation: @escaping (Result<OutputValue, SignalEnd>) -> Signal<U>.Next, _ processor: @escaping (Result<OutputValue, SignalEnd>) -> Signal<U>.Next) -> Signal<U> {
+		return signal.transformActivation(context: context, activation: activation, processor)
+	}
 	public func transform<S, U>(initialState: S, context: Exec = .direct, _ processor: @escaping (inout S, Result<OutputValue, SignalEnd>) -> Signal<U>.Next) -> Signal<U> {
 		return signal.transform(initialState: initialState, context: context, processor)
 	}
@@ -310,7 +313,7 @@ extension SignalInterface {
 	/// Causes any activation to be deferred past activation time to the "normal" phase. This avoids the synchronous send rules normally used for activation signals an allows this initial signal to be asynchronously delivered.
 	public func deferActivation() -> Signal<OutputValue> {
 		let pair = Signal<OutputValue>.create()
-		try! signal.capture().bind(to: pair.input, resend: true)
+		try! signal.capture().bind(to: pair.input, resend: .deferred)
 		return pair.signal
 	}
 	
