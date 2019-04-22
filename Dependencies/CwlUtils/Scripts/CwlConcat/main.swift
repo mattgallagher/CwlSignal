@@ -202,6 +202,7 @@ struct Concat {
 					guard let enumerator = FileManager.default.enumerator(at: URL(fileURLWithPath: value), includingPropertiesForKeys: nil) else {
 						throw ProcessingError.fileNotFound(value)
 					}
+					var filePaths = [String]()
 					for file in enumerator {
 						let fileUrl = file as! URL
 						if outputs[outputs.count - 1].excludes.contains(fileUrl.path) {
@@ -211,7 +212,10 @@ struct Concat {
 							continue
 						}
 						if fileUrl.pathExtension != "swift" { continue }
-						outputs[outputs.count - 1].includes.append(.file(fileUrl.path))
+						filePaths.append(fileUrl.path)
+					}
+					for filePath in filePaths.sorted() {
+						outputs[outputs.count - 1].includes.append(.file(filePath))
 					}
 				} else {
 					outputs[outputs.count - 1].includes.append(.file(value))
