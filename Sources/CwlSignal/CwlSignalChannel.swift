@@ -345,8 +345,8 @@ extension SignalChannel {
 		return next { $0.compactMapActivation(select: select, context: context, activation: activation, remainder: remainder) }
 	}
 	
-	public func compactMapLatestActivation(select: SignalActivationSelection, context: Exec = .direct, activation: @escaping (Interface.OutputValue) throws -> Interface.OutputValue?) -> SignalChannel<InputInterface, Signal<Interface.OutputValue>> {
-		return next { $0.compactMapLatestActivation(context: context, activation: activation) }
+	public func compactMapActivation(select: SignalActivationSelection, context: Exec = .direct, activation: @escaping (Interface.OutputValue) throws -> Interface.OutputValue?) -> SignalChannel<InputInterface, Signal<Interface.OutputValue>> {
+		return next { $0.compactMapActivation(select: select, context: context, activation: activation) }
 	}
 	
 	public func flatten<V>() -> SignalChannel<InputInterface, Signal<V>> where Interface.OutputValue: SignalInterface, Interface.OutputValue.OutputValue == V {
