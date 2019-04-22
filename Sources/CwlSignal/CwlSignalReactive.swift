@@ -576,14 +576,15 @@ extension SignalInterface {
 		}
 	}
 	
-	/// Equivalent to a compactMap over the activation values in the sequence but passthrough for the other values.
+	/// An implementation of compactMap that allows the "activation" values of the sequence to be mapped using a different function.
 	///
 	/// - Parameters:
-	///   - select: chooses which end (first or last) 
+	///   - select: chooses which parts of the activation sequence (first value, last value or all values) should be passed through the `activation` function (NOTE: if `.last` is used, all but the most recent value is discarded). Default: `.all`
 	///   - context: the `Exec` where `activation` will be evaluated (default: .direct).
 	///   - activation: processing closure for activation values
+	///   - remainder: processing closure for all `normal` values (and activation values after the first, if `.first` is passed as the `select` argument)
 	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
-	public func compactMapActivation<U>(select: SignalActivationSelection, context: Exec = .direct, activation: @escaping (OutputValue) throws -> U?, remainder: @escaping (OutputValue) throws -> U?) -> Signal<U> {
+	public func compactMapActivation<U>(select: SignalActivationSelection = .all, context: Exec = .direct, activation: @escaping (OutputValue) throws -> U?, remainder: @escaping (OutputValue) throws -> U?) -> Signal<U> {
 		var capture: SignalCapture<OutputValue>? = nil
 		return Signal<U>.generate { input in
 			guard let input = input else { return }
@@ -641,39 +642,15 @@ extension SignalInterface {
 		}		
 	}
 
-	public func compactMapLatestActivation(context: Exec = .direct, activation: @escaping (OutputValue) throws -> OutputValue?) -> Signal<OutputValue> {
-		var capture: SignalCapture<OutputValue>? = nil
-		return Signal<OutputValue>.generate { input in
-			guard let input = input else { return }
-			
-			let c: SignalCapture<OutputValue>
-			if let cap = capture {
-				// Subsequent runs, disconnect the old capture to restart it
-				_ = cap.disconnect()
-				c = cap
-			} else {
-				// First run, start the capture.
-				c = self.capture()
-				capture = c
-			}
-			
-			let values = c.values
-			guard !values.isEmpty else {
-				c.resume().bind(to: input)
-				return
-			}
-			
-			do {
-				let initial = try values.last.flatMap { v in try context.invokeSync { try activation(v).map { [$0] } } }
-				if let i = initial, !i.isEmpty {
-					return c.resume().cacheUntilActive(precached: i).bind(to: input)
-				} else {
-					return c.resume().bind(to: input)
-				}
-			} catch {
-				Signal<OutputValue>.preclosed(end: SignalEnd.other(error)).bind(to: input)
-			}
-		}		
+	/// A specialized implementation of `compactMapActivation` that processes only activation values (remaining values are simply passed through). A consequence is that input and output values must have the same type (unlike the unspecialized version which can map onto a different type).
+	///
+	/// - Parameters:
+	///   - select: chooses which parts of the activation sequence (first value, last value or all values) should be passed through the `activation` function (NOTE: if `.last` is used, all but the most recent value is discarded). Default: `.all`.
+	///   - context: the `Exec` where `activation` will be evaluated (default: .direct).
+	///   - activation: processing closure for activation values
+	/// - Returns: a `Signal` where all the activation values have been transformed by `activation` and all other values have been transformed by `remained`. Any error is emitted in the output without change.
+	public func compactMapActivation(select: SignalActivationSelection = .all, context: Exec = .direct, activation: @escaping (OutputValue) throws -> OutputValue?) -> Signal<OutputValue> {
+		return compactMapActivation(select: select, context: context, activation: activation, remainder: { value in value })		
 	}
 	
 	/// Implementation of [Reactive X operator "FlatMap"](http://reactivex.io/documentation/operators/flatmap.html)
