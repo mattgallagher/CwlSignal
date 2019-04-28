@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C90E372F22758C6B00C9EE79 /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9F904812160E13500C8731F /* CwlCatchException.framework */; };
 		C92169C82190560700396AB0 /* mach_excServer.c in Sources */ = {isa = PBXBuildFile; fileRef = C958F0FD1E3F698C008BE8E0 /* mach_excServer.c */; };
 		C92169CF2190656E00396AB0 /* CwlCatchBadInstructionPosix.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9BF46761E4575E80040A183 /* CwlCatchBadInstructionPosix.swift */; };
 		C92169D121906A5C00396AB0 /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98707761C3F886F009B413A /* CwlPreconditionTesting.framework */; };
@@ -21,7 +22,6 @@
 		C978CA2F211EEB64005F8866 /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98707761C3F886F009B413A /* CwlPreconditionTesting.framework */; };
 		C986B09E1E724C250032C9FA /* CwlPreconditionTesting.h in Headers */ = {isa = PBXBuildFile; fileRef = C986B09B1E724C250032C9FA /* CwlPreconditionTesting.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C9A8AF9720E87B480068E99B /* CwlCatchBadInstructionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C958F0F11E3F6977008BE8E0 /* CwlCatchBadInstructionTests.swift */; };
-		C9F904892160E15E00C8731F /* CwlCatchException.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9F904812160E13500C8731F /* CwlCatchException.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -107,7 +107,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C9F904892160E15E00C8731F /* CwlCatchException.framework in Frameworks */,
+				C90E372F22758C6B00C9EE79 /* CwlCatchException.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -130,6 +130,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C90E372E22758C6B00C9EE79 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		C92169CC2190605100396AB0 /* include */ = {
 			isa = PBXGroup;
 			children = (
@@ -203,6 +210,7 @@
 				C98707771C3F886F009B413A /* Products */,
 				C958F0F61E3F698C008BE8E0 /* Sources */,
 				C958F0EF1E3F6977008BE8E0 /* Tests */,
+				C90E372E22758C6B00C9EE79 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
