@@ -15,7 +15,7 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = "8.0"
   s.osx.deployment_target = "10.10"
   
-  s.dependency 'CwlUtils'
+  s.dependency 'CwlUtils', '~> 2.2.0'
   
   s.source        = { :git => "https://github.com/mattgallagher/CwlSignal.git", :tag => "2.2.0" }
   s.source_files  = "Sources/**/*.{swift,h}"
