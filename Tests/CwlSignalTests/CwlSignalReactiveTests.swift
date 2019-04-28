@@ -1374,6 +1374,32 @@ class SignalReactiveTests: XCTestCase {
 		XCTAssert(results.at(3)?.error?.isComplete == true)
 	}
 	
+	func testWithLatestFrom() {
+		let (input1, signal1) = Signal<Int>.create()
+		let (input2, signal2) = Signal<Int>.create()
+		var results = [Signal<Int>.Result]()
+		let output = signal1.withLatestFrom(signal2) { $0 + $1 }.subscribe { result in
+			results.append(result)
+		}
+		input1.send(value: 1)
+		input1.send(value: 2)
+		input1.send(value: 3)
+		input2.send(value: 1)
+		input2.send(value: 2)
+		input1.send(value: 4)
+		input1.send(value: 5)
+		input2.send(value: 10)
+		input1.send(value: 6)
+		input1.complete()
+		XCTAssertEqual(results.count, 4)
+		XCTAssertEqual(results.at(0)?.value, 6)
+		XCTAssertEqual(results.at(1)?.value, 7)
+		XCTAssertEqual(results.at(2)?.value, 16)
+		XCTAssertEqual(results.at(3)?.error?.isComplete, true)
+		withExtendedLifetime(input2) {}
+		withExtendedLifetime(output) {}
+	}
+	
 	func testCombineLatest2() {
 		var results = [Result<String, SignalEnd>]()
 		let (signal1Input, signal1) = Signal<Int>.create()

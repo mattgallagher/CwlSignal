@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name          = "CwlSignal"
-  s.version       = "2.1.0"
+  s.version       = "2.2.0"
   
   s.summary       = "A Swift framework for reactive programming."
   s.description   = <<-DESC
@@ -17,6 +17,6 @@ Pod::Spec.new do |s|
   
   s.dependency 'CwlUtils'
   
-  s.source        = { :git => "https://github.com/mattgallagher/CwlSignal.git", :tag => "2.1.0" }
+  s.source        = { :git => "https://github.com/mattgallagher/CwlSignal.git", :tag => "2.2.0" }
   s.source_files  = "Sources/**/*.{swift,h}"
 end

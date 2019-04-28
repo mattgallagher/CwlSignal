@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name          = "CwlUtils"
-  s.version       = "2.1.0"
+  s.version       = "2.2.0"
   
   s.summary       = "A collection of Swift utilities as documented on cocoawithlove.com"
   s.description   = <<-DESC
@@ -15,6 +15,6 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = "8.0"
   s.osx.deployment_target = "10.10"
   
-  s.source        = { :git => "https://github.com/mattgallagher/CwlUtils.git", :tag => "2.1.0" }
+  s.source        = { :git => "https://github.com/mattgallagher/CwlUtils.git", :tag => "2.2.0" }
   s.source_files  = "Sources/CwlUtils/*.{swift,h}", "Sources/CwlFrameAddress/**/*.{c,h}"
 end
