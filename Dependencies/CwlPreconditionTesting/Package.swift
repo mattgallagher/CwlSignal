@@ -7,7 +7,7 @@ let package = Package(
 		.library(name: "CwlPreconditionTesting", type: .dynamic, targets: ["CwlPreconditionTesting", "CwlMachBadInstructionHandler"])
 	],
 	dependencies: [
-		.package(url: "https://github.com/mattgallagher/CwlCatchException.git", from: "1.1.0")
+		.package(url: "https://github.com/mattgallagher/CwlCatchException.git", from: "1.2.0")
 	],
 	targets: [
 		.target(

@@ -105,7 +105,7 @@ public func callStackReturnAddresses(skip: UInt = 0, maximumAddresses: Int = Int
 	let ISALIGNED_MASK: UInt = 0xf
 	let ISALIGNED_RESULT: UInt = 8
 	let FP_LINK_OFFSET = 1
-#elseif arch(arm) || arch(arm64)
+#else
 	let ISALIGNED_MASK: UInt = 0x1
 	let ISALIGNED_RESULT: UInt = 0
 	let FP_LINK_OFFSET = 1
