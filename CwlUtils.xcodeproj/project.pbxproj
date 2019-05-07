@@ -23,8 +23,6 @@
 /* Begin PBXBuildFile section */
 		C9075587219128D100C34A11 /* CwlUtils.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C95BDEB61E41688B00AAA64B /* CwlUtils.framework */; };
 		C9075588219128DA00C34A11 /* CwlPreconditionTesting.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C98C44BF2160EE670028B2AC /* CwlPreconditionTesting.framework */; };
-		C9075589219128EF00C34A11 /* CwlUtils.framework in Resources */ = {isa = PBXBuildFile; fileRef = C95BDEB61E41688B00AAA64B /* CwlUtils.framework */; };
-		C907558A219128FC00C34A11 /* CwlUtils.framework in Resources */ = {isa = PBXBuildFile; fileRef = C95BDEB61E41688B00AAA64B /* CwlUtils.framework */; };
 		C910EFEB21F29DB30013639B /* CwlCustomExecutionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C910EFEA21F29DB30013639B /* CwlCustomExecutionContext.swift */; };
 		C910EFF121F29E540013639B /* CwlSerializingContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = C910EFF021F29E540013639B /* CwlSerializingContext.swift */; };
 		C94D2B7F21919BEA00B6D53B /* CwlAddressInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_40 /* CwlAddressInfoTests.swift */; };
@@ -60,7 +58,7 @@
 		C95A77521E4187FB00659DBD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C95A77511E4187FB00659DBD /* Assets.xcassets */; };
 		C95A77551E4187FB00659DBD /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C95A77531E4187FB00659DBD /* LaunchScreen.storyboard */; };
 		C95A77601E4187FB00659DBD /* CwlUtils_iOSTestAppUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C95A775F1E4187FB00659DBD /* CwlUtils_iOSTestAppUITests.swift */; };
-		C95A77721E418F4C00659DBD /* CwlUtils.framework in Copy CwlUtils to the test app Frameworks folder */ = {isa = PBXBuildFile; fileRef = C95BDEB61E41688B00AAA64B /* CwlUtils.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C95A77721E418F4C00659DBD /* CwlUtils.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = C95BDEB61E41688B00AAA64B /* CwlUtils.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C95BDE9D1E41688B00AAA64B /* CwlAddressInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_16 /* CwlAddressInfo.swift */; };
 		C95BDE9E1E41688B00AAA64B /* CwlCollection.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_17 /* CwlCollection.swift */; };
 		C95BDE9F1E41688B00AAA64B /* CwlDebugContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_18 /* CwlDebugContext.swift */; };
@@ -96,6 +94,7 @@
 		C95BDED11E4168B800AAA64B /* CwlSysctlTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_54 /* CwlSysctlTests.swift */; };
 		C95BDED41E4168B800AAA64B /* CwlUnanticipatedErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_55 /* CwlUnanticipatedErrorTests.swift */; };
 		C95BDED51E4168B800AAA64B /* CwlWrapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_56 /* CwlWrapperTests.swift */; };
+		C961E8D92281057F005268CF /* CwlUtils.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = C95BDEB61E41688B00AAA64B /* CwlUtils.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C973087F217C9840001EF603 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C61E4171FD00A7408F /* mt19937-64.c */; };
 		C9730880217C9841001EF603 /* mt19937-64.c in Sources */ = {isa = PBXBuildFile; fileRef = C9EE87C61E4171FD00A7408F /* mt19937-64.c */; };
 		C98031632200014B0028A26B /* CwlFew.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98031622200014B0028A26B /* CwlFew.swift */; };
@@ -188,25 +187,26 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		C95A776E1E418EB600659DBD /* Copy CwlUtils to the test app Frameworks folder */ = {
+		C95A776E1E418EB600659DBD /* Copy Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				C961E8D92281057F005268CF /* CwlUtils.framework in Copy Frameworks */,
 			);
-			name = "Copy CwlUtils to the test app Frameworks folder";
+			name = "Copy Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C95A77711E418F4300659DBD /* Copy CwlUtils to the test app Frameworks folder */ = {
+		C95A77711E418F4300659DBD /* Copy Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				C95A77721E418F4C00659DBD /* CwlUtils.framework in Copy CwlUtils to the test app Frameworks folder */,
+				C95A77721E418F4C00659DBD /* CwlUtils.framework in Copy Frameworks */,
 			);
-			name = "Copy CwlUtils to the test app Frameworks folder";
+			name = "Copy Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -645,7 +645,7 @@
 				C95A77231E4187E600659DBD /* Sources */,
 				C95A77241E4187E600659DBD /* Frameworks */,
 				C95A77251E4187E600659DBD /* Resources */,
-				C95A776E1E418EB600659DBD /* Copy CwlUtils to the test app Frameworks folder */,
+				C95A776E1E418EB600659DBD /* Copy Frameworks */,
 			);
 			buildRules = (
 			);
@@ -681,7 +681,7 @@
 				C95A77441E4187FB00659DBD /* Sources */,
 				C95A77451E4187FB00659DBD /* Frameworks */,
 				C95A77461E4187FB00659DBD /* Resources */,
-				C95A77711E418F4300659DBD /* Copy CwlUtils to the test app Frameworks folder */,
+				C95A77711E418F4300659DBD /* Copy Frameworks */,
 			);
 			buildRules = (
 			);
@@ -868,7 +868,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C907558A219128FC00C34A11 /* CwlUtils.framework in Resources */,
 				C95A772E1E4187E600659DBD /* Assets.xcassets in Resources */,
 				C95A77311E4187E600659DBD /* Main.storyboard in Resources */,
 			);
@@ -885,7 +884,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C9075589219128EF00C34A11 /* CwlUtils.framework in Resources */,
 				C95A77551E4187FB00659DBD /* LaunchScreen.storyboard in Resources */,
 				C95A77521E4187FB00659DBD /* Assets.xcassets in Resources */,
 				C95A77501E4187FB00659DBD /* Main.storyboard in Resources */,
@@ -1358,6 +1356,7 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_TESTABILITY = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -1383,6 +1382,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
