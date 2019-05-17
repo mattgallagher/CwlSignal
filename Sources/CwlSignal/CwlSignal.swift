@@ -1221,7 +1221,17 @@ public class Signal<OutputValue>: SignalInterface {
 				handlerContext.context.invokeSync{ invokeHandler(r) }
 			}
 		} else {
+			// Perform asynchronous transition to the appropriate context
+			let ac = activationCount
 			handlerContext.context.invoke {
+				// Ensure that the signal hasn't been cancelled while we were transitioning to this context
+				self.mutex.unbalancedLock()
+				guard ac == self.activationCount else {
+					self.clearItemContextInternalToExternal(itemOnly: false)
+					return
+				}
+				self.mutex.unbalancedUnlock()
+				
 				for r in sequence(first: result, next: { _ in self.pop() }) {
 					self.invokeHandler(r)
 				}
