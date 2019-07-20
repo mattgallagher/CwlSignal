@@ -4,11 +4,11 @@ import PackageDescription
 let package = Package(
    name: "CwlSignal",
    products: [
-   	.library(name: "CwlSignal", type: .dynamic, targets: ["CwlSignal"])
+   	.library(name: "CwlSignal", targets: ["CwlSignal"])
 	],
 	dependencies: [
-		.package(url: "https://github.com/mattgallagher/CwlUtils.git", from: "2.2.1"),
-		.package(url: "https://github.com/mattgallagher/CwlPreconditionTesting.git", from: "1.1.0"),
+		.package(url: "file:///Users/matt/Projects/CwlUtils", .branch("master")),
+		.package(url: "file:///Users/matt/Projects/CwlPreconditionTesting", .branch("master"))
 	],
 	targets: [
 		.target(
