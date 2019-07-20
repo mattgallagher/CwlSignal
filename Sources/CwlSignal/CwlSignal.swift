@@ -99,7 +99,7 @@ public class Signal<OutputValue>: SignalInterface {
 	public static func createMultiInput() -> (input: SignalMultiInput<OutputValue>, signal: Signal<OutputValue>) {
 		let s = Signal<OutputValue>()
 		var dw = DeferredWork()
-		s.mutex.sync { s.updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw) }
+		s.sync { s.updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw) }
 		dw.runWork()
 		return (SignalMultiInput(signal: s), s)
 	}
@@ -110,7 +110,7 @@ public class Signal<OutputValue>: SignalInterface {
 	public static func createMergedInput(onLastInputClosed: SignalEnd? = nil, onDeinit: SignalEnd = .cancelled) -> (input: SignalMergedInput<OutputValue>, signal: Signal<OutputValue>) {
 		let s = Signal<OutputValue>()
 		var dw = DeferredWork()
-		s.mutex.sync { s.updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw) }
+		s.sync { s.updateActivationInternal(andInvalidateAllPrevious: true, dw: &dw) }
 		dw.runWork()
 		return (SignalMergedInput(signal: s, onLastInputClosed: onLastInputClosed, onDeinit: onDeinit), s)
 	}
@@ -581,9 +581,10 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	// MARK: - Signal private properties
 	
-	// A struct that stores data associated with the current handler. Under the `Signal` mutex, if the `itemProcessing` flag is acquired, the fields of this struct are filled in using `Signal` and `SignalHandler` data and the contents of the struct can be used by the current thread *outside* the mutex.
+	// A struct that stores data associated with the current handler. Under the `Signal` mutex, if the `itemProcessing` flag is acquired, the fields of this struct are filled in using `Signal` and `SignalHandler` data and the contents of the struct can be used by the current thread *outside* the 
 	private struct ItemContext<OutputValue> {
 		let context: Exec
+		let direct: Bool
 		let synchronous: Bool
 		let handler: (Result) -> Void
 		let activationCount: Int
@@ -591,6 +592,11 @@ public class Signal<OutputValue>: SignalInterface {
 		init(context: Exec, synchronous: Bool, handler: @escaping (Result) -> Void, activationCount: Int) {
 			self.activationCount = activationCount
 			self.context = context
+			if case .direct = context {
+				self.direct = true
+			} else {
+				self.direct = false
+			}
 			self.synchronous = synchronous
 			self.handler = handler
 		}
@@ -606,7 +612,25 @@ public class Signal<OutputValue>: SignalInterface {
 	// Protection for all mutable members on this class and any attached `signalHandler`.
 	// NOTE 1: This mutex may be shared between synchronous serially connected `Signal`s (for memory and performance efficiency).
 	// NOTE 2: It is noted that a `DispatchQueue` mutex would be preferrable since it respects libdispatch's QoS, however, it is not possible (as of Swift 4) to use `DispatchQueue` as a mutex without incurring a heap allocated closure capture so `PThreadMutex` is used instead to avoid a factor of 10 performance loss.
-	fileprivate final var mutex: PThreadMutex
+	private final var mutex = os_unfair_lock()
+	
+	fileprivate final func unbalancedLock() {
+		os_unfair_lock_lock(&mutex)
+	}
+	
+	fileprivate final func unbalancedTryLock() -> Bool {
+		return os_unfair_lock_trylock(&mutex)
+	}
+	
+	fileprivate final func unbalancedUnlock() {
+		os_unfair_lock_unlock(&mutex)
+	}
+
+	fileprivate func sync<R>(execute work: () throws -> R) rethrows -> R {
+		unbalancedLock()
+		defer { unbalancedUnlock() }
+		return try work()
+	}
 	
 	// The graph can be disconnected and reconnected and various actions may occur outside locks, it's helpful to determine which actions are no longer relevant. The `Signal` controls this through `delivery` and `activationCount`. The `delivery` controls the basic lifecycle of a simple connected graph through 4 phases: `.disabled` (pre-connection) -> `.sychronous` (connecting) -> `.normal` (connected) -> `.disabled` (disconnected).
 	fileprivate final var delivery = SignalDelivery.disabled { didSet { handlerContextNeedsRefresh = true } }
@@ -657,7 +681,7 @@ public class Signal<OutputValue>: SignalInterface {
 	// - Returns: if the predecessor matched, then a new `SignalInput<OutputValue>` for this `Signal`, otherwise `nil`.
 	fileprivate final func newInput(forDisconnector: SignalProcessor<OutputValue, OutputValue>) -> SignalInput<OutputValue>? {
 		var dw = DeferredWork()
-		let result = mutex.sync { () -> SignalInput<OutputValue>? in
+		let result = sync { () -> SignalInput<OutputValue>? in
 			if preceeding.count == 1, let p = preceeding.first?.base, p === forDisconnector {
 				removeAllPreceedingInternal(dw: &dw)
 				return SignalInput(signal: self, activationCount: activationCount)
@@ -680,7 +704,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Returns: the result from the constructor (typically an SignalHandler)
 	fileprivate func attach<R>(constructor: (Signal<OutputValue>, inout DeferredWork) -> R) -> R where R: SignalHandler<OutputValue> {
 		var dw = DeferredWork()
-		let result: R? = mutex.sync {
+		let result: R? = sync {
 			self.signalHandler == nil ? constructor(self, &dw) : nil
 		}
 		dw.runWork()
@@ -710,19 +734,13 @@ public class Signal<OutputValue>: SignalInterface {
 		preceedingCount += 1
 		preceeding = [processor.wrappedWithOrder(preceedingCount)]
 		
-		if processor.successorsShareMutex {
-			mutex = processor.source.mutex
-		} else {
-			mutex = PThreadMutex()
-		}
-		
 		#if DEBUG_LOGGING
 			print("\(type(of: self)): \(self.count) created")
 		#endif
 		
 		if !(self is SignalMulti<OutputValue>) {
 			var dw = DeferredWork()
-			mutex.sync {
+			sync {
 				// Since this function must be used only in cases where the processor is *also* new, this can't be `duplicate` or `loop`
 				try! processor.outputAddedSuccessorInternal(self, param: nil, activationCount: nil, dw: &dw)
 			}
@@ -750,7 +768,7 @@ public class Signal<OutputValue>: SignalInterface {
 					let ac = activationCount
 					dw.append {
 						var dw = DeferredWork()
-						self.mutex.sync {
+						self.sync {
 							if ac == self.activationCount {
 								newPreceeding.outputCompletedActivationSuccessorInternal(self, dw: &dw)
 							}
@@ -803,11 +821,12 @@ public class Signal<OutputValue>: SignalInterface {
 	//   - activationCount: the activation count from the predecessor to match against internal value
 	//   - activated: whether the predecessor is already in `normal` delivery mode
 	// - Returns: `nil` on success. Non-`nil` values include `SignalSendError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalSendError.inactive` if the current `delivery` state is `.disabled`.
-	@discardableResult fileprivate final func send(result: Result, predecessor: Unmanaged<AnyObject>?, activationCount: Int, activated: Bool) -> SignalSendError? {
-		mutex.unbalancedLock()
+	@discardableResult @usableFromInline
+	final func send(result: Result, predecessor: Unmanaged<AnyObject>?, activationCount: Int, activated: Bool) -> SignalSendError? {
+		unbalancedLock()
 		
 		guard isCurrent(predecessor, activationCount) else {
-			mutex.unbalancedUnlock()
+			unbalancedUnlock()
 			
 			// Retain the result past the end of the lock
 			withExtendedLifetime(result) {}
@@ -821,24 +840,24 @@ public class Signal<OutputValue>: SignalInterface {
 				break
 			} else {
 				queue.append(result)
-				mutex.unbalancedUnlock()
+				unbalancedUnlock()
 				return nil
 			}
 		case .synchronous(let count):
 			if activated {
 				queue.append(result)
-				mutex.unbalancedUnlock()
+				unbalancedUnlock()
 				return nil
 			} else if count == 0, holdCount == 0, itemProcessing == false {
 				break
 			} else {
 				queue.insert(result, at: count)
 				delivery = .synchronous(count + 1)
-				mutex.unbalancedUnlock()
+				unbalancedUnlock()
 				return nil
 			}
 		case .disabled:
-			mutex.unbalancedUnlock()
+			unbalancedUnlock()
 			
 			// Retain the result past the end of the lock
 			withExtendedLifetime(result) {}
@@ -853,7 +872,7 @@ public class Signal<OutputValue>: SignalInterface {
 			if hasHandler {
 				itemProcessing = true
 			}
-			mutex.unbalancedUnlock()
+			unbalancedUnlock()
 			
 			// We need to be extremely careful that any previous handlers, replaced in the `refreshItemContextInternal` function are released *here* if we're going to re-enter the lock and that we've *already* acquired the `itemProcessing` Bool. There's a little bit of dancing around in this `if handlerContextNeedsRefresh` block to ensure these two things are true.
 			dw.runWork()
@@ -863,10 +882,26 @@ public class Signal<OutputValue>: SignalInterface {
 			}
 		} else {
 			itemProcessing = true
-			mutex.unbalancedUnlock()
+			unbalancedUnlock()
 		}
 		
-		dispatch(result)
+		#if DEBUG_LOGGING
+			print("\(type(of: self)): \(self.count) emitted \(result))")
+		#endif
+
+		if handlerContext.direct, case .success = result {
+			handlerContext.handler(result)
+			unbalancedLock()
+			if handlerContextNeedsRefresh || !queue.isEmpty {
+				unbalancedUnlock()
+				specializedSyncPop()
+			} else {
+				itemProcessing = false
+				unbalancedUnlock()
+			}
+		} else {
+			dispatch(result)
+		}
 		return nil
 	}
 	
@@ -878,7 +913,7 @@ public class Signal<OutputValue>: SignalInterface {
 	//   - activationCount: activationCount of the sender (must match the internal value)
 	//   - dw: used to dispatch the signal safely outside the parent's mutex
 	fileprivate final func push(values: Array<OutputValue>, end: SignalEnd?, activationCount: Int, activated: Bool, dw: inout DeferredWork) {
-		mutex.sync {
+		sync {
 			guard self.activationCount == activationCount else { return }
 			pushInternal(values: values, end: end, activated: activated, dw: &dw)
 		}
@@ -891,7 +926,7 @@ public class Signal<OutputValue>: SignalInterface {
 	//   - end: pushed onto this `Signal`'s queue
 	//   - dw: used to dispatch the signal safely outside the parent's mutex
 	fileprivate final func pushInternal(values: Array<OutputValue>, end: SignalEnd?, activated: Bool, dw: inout DeferredWork) {
-		assert(mutex.unbalancedTryLock() == false)
+		assert(unbalancedTryLock() == false)
 		
 		guard values.count > 0 || end != nil else {
 			dw.append {
@@ -937,7 +972,7 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	// Increment the `holdCount`
 	fileprivate final func blockInternal() {
-		assert(mutex.unbalancedTryLock() == false)
+		assert(unbalancedTryLock() == false)
 		assert(holdCount <= 1)
 		holdCount += 1
 	}
@@ -949,7 +984,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Parameter activationCountAtBlock: must match the internal value or the block request will be ignored
 	fileprivate final func unblockInternal(activationCountAtBlock: Int) {
 		guard self.activationCount == activationCountAtBlock else { return }
-		assert(mutex.unbalancedTryLock() == false)
+		assert(unbalancedTryLock() == false)
 		assert(holdCount >= 1 && holdCount <= 2)
 		holdCount -= 1
 	}
@@ -977,7 +1012,7 @@ public class Signal<OutputValue>: SignalInterface {
 	/// - Parameter activationCount: must match the internal value or the block request will be ignored
 	fileprivate final func unblock(activationCountAtBlock: Int) {
 		var dw = DeferredWork()
-		mutex.sync {
+		sync {
 			unblockInternal(activationCountAtBlock: activationCountAtBlock)
 			resumeIfPossibleInternal(dw: &dw)
 		}
@@ -990,7 +1025,7 @@ public class Signal<OutputValue>: SignalInterface {
 	///   - newDelivery: new value for `self.delivery`
 	///   - dw: required
 	fileprivate final func changeDeliveryInternal(newDelivery: SignalDelivery, dw: inout DeferredWork) {
-		assert(mutex.unbalancedTryLock() == false)
+		assert(unbalancedTryLock() == false)
 		assert(newDelivery.isDisabled != delivery.isDisabled || newDelivery.isSynchronous != delivery.isSynchronous)
 		
 		#if DEBUG_LOGGING
@@ -1021,7 +1056,6 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	/// Constructor for signal graph head. Called from `create`.
 	private init() {
-		mutex = PThreadMutex()
 		preceeding = []
 		
 		#if DEBUG_LOGGING
@@ -1034,7 +1068,7 @@ public class Signal<OutputValue>: SignalInterface {
 		newInputSignal?.0.send(result: .failure(.cancelled), predecessor: nil, activationCount: 0, activated: true)
 		
 		var dw = DeferredWork()
-		mutex.sync {
+		sync {
 			removeAllPreceedingInternal(dw: &dw)
 		}
 		dw.runWork()
@@ -1071,13 +1105,13 @@ public class Signal<OutputValue>: SignalInterface {
 		})
 	}
 	
-	// A wrapper around addPreceedingInternal for use outside the mutex. Only used by the `combine` functions (which is why it returns `self` – it's a syntactic convenience in those methods).
+	// A wrapper around addPreceedingInternal for use outside the  Only used by the `combine` functions (which is why it returns `self` – it's a syntactic convenience in those methods).
 	//
 	// - Parameter processor: the preceeding SignalPredecessor to add
 	// - Returns: self (for syntactic convenience in the `combine` methods)
 	private final func addPreceeding(processor: SignalPredecessor) -> Signal<OutputValue> {
 		var dw = DeferredWork()
-		mutex.sync {
+		sync {
 			// Since this is for use only by the `combine` functions, it cann't be `duplicate` or `loop`
 			try! addPreceedingInternal(processor, param: nil, dw: &dw)
 		}
@@ -1091,7 +1125,7 @@ public class Signal<OutputValue>: SignalInterface {
 	//   - andInvalidateAllPrevious: if true, removes all items from the queue (should be false only when transitioning from synchronous to normal).
 	//   - dw: required
 	private final func updateActivationInternal(andInvalidateAllPrevious: Bool, dw: inout DeferredWork) {
-		assert(mutex.unbalancedTryLock() == false)
+		assert(unbalancedTryLock() == false)
 		
 		activationCount = activationCount &+ 1
 		
@@ -1145,12 +1179,12 @@ public class Signal<OutputValue>: SignalInterface {
 		return preceeding.contains(p.wrappedWithOrder(0))
 	}
 	
-	// The `handlerContext` holds information uniquely used by the currently processing item so it can be read outside the mutex. This may only be called immediately before calling `blockInternal` to start a processing item (e.g. from `send` or `resume`.
+	// The `handlerContext` holds information uniquely used by the currently processing item so it can be read outside the  This may only be called immediately before calling `blockInternal` to start a processing item (e.g. from `send` or `resume`.
 	//
 	// - Parameter dw: required
 	// - Returns: false if the `signalHandler` was `nil`, true otherwise.
 	private final func refreshItemContextInternal(_ dw: inout DeferredWork) -> Bool {
-		assert(mutex.unbalancedTryLock() == false)
+		assert(unbalancedTryLock() == false)
 		assert(holdCount == 0 && itemProcessing == false)
 		if handlerContextNeedsRefresh {
 			if let h = signalHandler {
@@ -1169,17 +1203,17 @@ public class Signal<OutputValue>: SignalInterface {
 	///
 	/// - Returns: an empty/idle `ItemContext`
 	private final func clearItemContextInternalToExternal(itemOnly: Bool) {
-		assert(mutex.unbalancedTryLock() == false)
+		assert(unbalancedTryLock() == false)
 		itemProcessing = false
 		
 		if itemOnly {
-			mutex.unbalancedUnlock()
+			unbalancedUnlock()
 		} else {
 			var dw = DeferredWork()
 			let oldContext = handlerContext
 			handlerContext = ItemContext<OutputValue>(context: .direct, synchronous: false, handler: { _ in }, activationCount: 0)
 			resumeIfPossibleInternal(dw: &dw)
-			mutex.unbalancedUnlock()
+			unbalancedUnlock()
 			withExtendedLifetime(oldContext) {}
 			dw.runWork()
 		}
@@ -1192,7 +1226,7 @@ public class Signal<OutputValue>: SignalInterface {
 		handlerContext.handler(result)
 		if case .failure = result {
 			var dw = DeferredWork()
-			mutex.sync {
+			sync {
 				if handlerContext.activationCount == activationCount, !delivery.isDisabled {
 					signalHandler?.deactivateInternal(dueToLackOfOutputs: false, dw: &dw)
 				}
@@ -1205,10 +1239,6 @@ public class Signal<OutputValue>: SignalInterface {
 	//
 	// - Parameter result: for sending to the handler
 	private final func dispatch(_ result: Result) {
-		#if DEBUG_LOGGING
-			print("\(type(of: self)): \(self.count) emitted \(result))")
-		#endif
-
 		if case .direct = handlerContext.context {
 			invokeHandler(result)
 			specializedSyncPop()
@@ -1225,12 +1255,12 @@ public class Signal<OutputValue>: SignalInterface {
 			let ac = activationCount
 			handlerContext.context.invoke {
 				// Ensure that the signal hasn't been cancelled while we were transitioning to this context
-				self.mutex.unbalancedLock()
+				self.unbalancedLock()
 				guard ac == self.activationCount else {
 					self.clearItemContextInternalToExternal(itemOnly: false)
 					return
 				}
-				self.mutex.unbalancedUnlock()
+				self.unbalancedUnlock()
 				
 				for r in sequence(first: result, next: { _ in self.pop() }) {
 					self.invokeHandler(r)
@@ -1243,7 +1273,7 @@ public class Signal<OutputValue>: SignalInterface {
 	///
 	/// - Returns: the next result for processing, if any
 	private final func pop() -> Result? {
-		mutex.unbalancedLock()
+		unbalancedLock()
 		assert(itemProcessing == true)
 		
 		guard !handlerContextNeedsRefresh else {
@@ -1259,7 +1289,7 @@ public class Signal<OutputValue>: SignalInterface {
 				fallthrough
 			default:
 				let result = queue.removeFirst()
-				mutex.unbalancedUnlock()
+				unbalancedUnlock()
 				return result
 			}
 		}
@@ -1270,19 +1300,19 @@ public class Signal<OutputValue>: SignalInterface {
 	
 	/// An optimized version of `pop(_:)` used when context is .direct. The semantics are slightly different: this doesn't pop a result off the queue... rather, it looks to see if there's anything in the queue and handles it internally if there is. This allows optimization for the expected case where there's nothing in the queue.
 	private final func specializedSyncPop() {
-		mutex.unbalancedLock()
+		unbalancedLock()
 		assert(itemProcessing == true)
 		
 		if handlerContextNeedsRefresh {
 			clearItemContextInternalToExternal(itemOnly: false)
 		} else if !queue.isEmpty {
-			mutex.unbalancedUnlock()
+			unbalancedUnlock()
 			while let r = pop() {
 				invokeHandler(r)
 			}
 		} else {
 			itemProcessing = false
-			mutex.unbalancedUnlock()
+			unbalancedUnlock()
 		}
 	}
 }
@@ -1308,8 +1338,8 @@ public final class SignalMulti<OutputValue>: Signal<OutputValue> {
 
 /// An `SignalInput` is used to send values to the "head" `Signal`s in a signal graph. It is created using the `Signal<T>.create()` function.
 public class SignalInput<InputValue>: Lifetime, SignalInputInterface {
-	fileprivate final weak var signal: Signal<InputValue>?
-	fileprivate final let activationCount: Int
+	@usableFromInline final var signal: Signal<InputValue>?
+	@usableFromInline final let activationCount: Int
 	
 	public var input: SignalInput<InputValue> { return self }
 	
@@ -1327,7 +1357,7 @@ public class SignalInput<InputValue>: Lifetime, SignalInputInterface {
 	///
 	/// - Parameter result: the value or error to send, composed as a `Result`
 	/// - Returns: `nil` on success. Non-`nil` values include `SignalSendError.disconnected` if the `predecessor` or `activationCount` fail to match, `SignalSendError.inactive` if the current `delivery` state is `.disabled`.
-	@discardableResult
+	@discardableResult @inlinable
 	public func send(result: Result<InputValue, SignalEnd>) -> SignalSendError? {
 		guard let s = signal else { return SignalSendError.disconnected }
 		return s.send(result: result, predecessor: nil, activationCount: activationCount, activated: true)
@@ -1369,7 +1399,7 @@ public class SignalHandler<OutputValue> {
 	//   - context: where the `handler` function should be invoked
 	fileprivate init(source: Signal<OutputValue>, dw: inout DeferredWork, context: Exec) {
 		// Must be passed a `Signal` that does not already have a `signalHandler`
-		assert(source.signalHandler == nil && source.mutex.unbalancedTryLock() == false)
+		assert(source.signalHandler == nil && source.unbalancedTryLock() == false)
 		
 		self.source = source
 		self.context = context
@@ -1396,7 +1426,7 @@ public class SignalHandler<OutputValue> {
 	
 	// Default behavior does nothing prior to activation
 	fileprivate func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		return { _ in }
 	}
 	
@@ -1406,14 +1436,14 @@ public class SignalHandler<OutputValue> {
 	// - Returns: the result from the `execute closure
 	// - Throws: basic rethrow from the `execute` closure
 	fileprivate final func sync<OutputValue>(execute: () throws -> OutputValue) rethrows -> OutputValue {
-		source.mutex.unbalancedLock()
-		defer { source.mutex.unbalancedUnlock() }
+		source.unbalancedLock()
+		defer { source.unbalancedUnlock() }
 		return try execute()
 	}
 	
 	// True if this node activates predecessors even when it has no active successors
 	fileprivate var activeWithoutOutputsInternal: Bool {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		return false
 	}
 	
@@ -1428,23 +1458,13 @@ public class SignalHandler<OutputValue> {
 		dw.runWork()
 	}
 	
-	// As an optimization, successive `Signal`s are placed under the *same* mutex as any preceeding `.sync` `SignalHandler`s
-	// `SignalJunction`, `SignalCombiner`, `SignalCapture` and `SignalMultiInputProcessor` all returns `false` since they involve either changing connectivity or multiple connectivity.
-	fileprivate var successorsShareMutex: Bool {
-		if case .direct = context {
-			return true
-		} else {
-			return false
-		}
-	}
-	
 	// Activation changes the delivery, based on whether there are preceeding `Signal`s.
 	// If delivery is changed to synchronous, `endActivation` must be called in the deferred work.
 	///
 	/// - Parameter dw: required
 	/// - Returns: true if a transition to `.synchronous` occurred
 	fileprivate final func activateInternal(dw: inout DeferredWork) -> Bool {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		if source.delivery.isDisabled {
 			source.changeDeliveryInternal(newDelivery: .synchronous(0), dw: &dw)
 			return true
@@ -1487,7 +1507,7 @@ public class SignalHandler<OutputValue> {
 	// Changes delivery to disabled *and* resets the handler to the initial handler.
 	// - Parameter dw: required
 	fileprivate final func deactivateInternal(dueToLackOfOutputs: Bool, dw: inout DeferredWork) {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		if !activeWithoutOutputsInternal || !dueToLackOfOutputs {
 			source.changeDeliveryInternal(newDelivery: .disabled, dw: &dw)
 			dw.append { [handler] in
@@ -1559,7 +1579,7 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	//   - transform: the transformation applied from input to output
 	// - Returns: a function usable as the return value to `nextHandlerInternal`
 	fileprivate static func simpleNext(processor: SignalProcessor<OutputValue, U>, transform: @escaping (Result<OutputValue, SignalEnd>) -> Result<U, SignalEnd>) -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(processor.source.mutex.unbalancedTryLock() == false)
+		assert(processor.source.unbalancedTryLock() == false)
 		guard let output = processor.outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return processor.initialHandlerInternal() }
 		let activated = processor.source.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(processor)
@@ -1573,7 +1593,7 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	// - Parameter signal: possible output
 	// - Returns: true if `signal` is contained in the outputs
 	fileprivate final func isOutputInternal(_ signal: Signal<U>) -> Int? {
-		assert(signal.mutex.unbalancedTryLock() == false)
+		assert(signal.unbalancedTryLock() == false)
 		for (i, o) in outputs.enumerated() {
 			if let d = o.destination.value, d === signal {
 				return i
@@ -1583,7 +1603,7 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	}
 	
 	/// Identity used for checking loops (needs to be the mutex since the mutex is shared vertically through the graph, any traversal looking for potential loops could deadlock before noticing a loop with any other value)
-	fileprivate final var loopCheckValue: AnyObject { return source.mutex }
+	fileprivate final var loopCheckValue: AnyObject { return source }
 	
 	// Performs a depth-first graph traversal looking for the specified `SignalPredecessor`
 	//
@@ -1591,7 +1611,7 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	// - Returns: true if `contains` was found, false otherwise
 	func predecessorsSuccessorInternal(loopCheck: AnyObject) -> Bool {
 		// Only check the value when successors don't share the mutex (i.e. when we have a boundary of some kind).
-		if !successorsShareMutex && loopCheck === self.loopCheckValue {
+		if loopCheck === self.loopCheckValue {
 			return true
 		}
 		var result = false
@@ -1634,7 +1654,7 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	//   - dw: required
 	// - Returns: any response from `activateInternal` (true if started activating)
 	fileprivate final func updateOutputInternal(index: Int, activationCount: Int?, dw: inout DeferredWork) -> Bool {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		assert(outputs[index].activationCount != activationCount)
 		
 		let previous = anyActiveOutputsInternal
@@ -1672,16 +1692,12 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 	//
 	// - parameter action: function to be run inside the mutex
 	private final func runSuccesorAction(action: () -> Void) {
-		if successorsShareMutex {
-			action()
-		} else {
-			sync { action() }
-		}
+		sync { action() }
 	}
 	
 	/// Helper function used before and after activation to determine if this handler should activate or deactivated.
 	private final var anyActiveOutputsInternal: Bool {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		for o in outputs {
 			if o.destination.value != nil && o.activationCount != nil {
 				return true
@@ -1751,7 +1767,7 @@ public class SignalProcessor<OutputValue, U>: SignalHandler<OutputValue>, Signal
 		}
 	}
 	
-	// Overrideable function to receive additional information when a successor attaches. Used by SignalJunction and SignalCapture to pass "onEnd" closures via the successor into the mutex. It shouldn't be possible to pass a parameter unless one is expected, so the default implementation is a `fatalError`.
+	// Overrideable function to receive additional information when a successor attaches. Used by SignalJunction and SignalCapture to pass "onEnd" closures via the successor into the  It shouldn't be possible to pass a parameter unless one is expected, so the default implementation is a `fatalError`.
 	//
 	// - parameter param: usually a closure.
 	fileprivate func handleParamFromSuccessor(param: Any) {
@@ -1908,7 +1924,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	
 	// Multicast and continuousWhileActive are not preactivated but all others are not.
 	fileprivate override var activeWithoutOutputsInternal: Bool {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		return activeWithoutOutputs.active(valuesIsEmpty: activationValues.isEmpty) && preclosed == nil
 	}
 	
@@ -1932,7 +1948,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	// Multiprocessors are (usually – not multicast) preactivated and may cache the values or errors
 	// - Returns: a function to use as the handler prior to activation
 	fileprivate override func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		return { [weak self] r in
 			guard let self = self else { return }
 			_ = self.updater?(&self.activationValues, &self.preclosed, r)
@@ -1942,7 +1958,7 @@ fileprivate final class SignalMultiProcessor<OutputValue>: SignalProcessor<Outpu
 	// On result, update any activation values.
 	// - Returns: a function to use as the handler after activation
 	fileprivate override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		
 		// There's a tricky point here: for multicast, we only want to send to outputs that were connected *before* we started sending this value; otherwise values could be sent to the wrong outputs following asychronous graph manipulations.
 		// HOWEVER, when activation values exist, we must ensure that any output that was sent the *old* activation values will receive this new value *regardless* of when it connects.
@@ -2037,7 +2053,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 	}
 	
 	fileprivate override var activeWithoutOutputsInternal: Bool {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		return end == nil
 	}
 	
@@ -2055,7 +2071,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 	// Multiprocessors are (usually – not multicast) preactivated and may cache the values or errors
 	// - Returns: a function to use as the handler prior to activation
 	override func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		return { [weak self] r in
 			guard let self = self else { return }
 			
@@ -2089,7 +2105,7 @@ fileprivate final class SignalReducer<OutputValue, State>: SignalProcessor<Outpu
 	// On result, update any activation values.
 	// - Returns: a function to use as the handler after activation
 	fileprivate override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		
 		let activated = source.delivery.isNormal
 		return { [weak self] r in
@@ -2154,7 +2170,7 @@ fileprivate final class SignalCacheUntilActive<OutputValue>: SignalProcessor<Out
 	
 	// Is always active
 	fileprivate override var activeWithoutOutputsInternal: Bool {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		return true
 	}
 	
@@ -2173,7 +2189,7 @@ fileprivate final class SignalCacheUntilActive<OutputValue>: SignalProcessor<Out
 	/// Caches values prior to an output connecting
 	// - Returns: a function to use as the handler prior to activation
 	override func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		return { [weak self] r in
 			switch r {
 			case .success(let v): self?.cachedValues.append(v)
@@ -2219,7 +2235,7 @@ fileprivate final class SignalTransformer<OutputValue, U>: SignalProcessor<Outpu
 	/// Invoke the user handler and block if the `next` gains an additional reference count in the process.
 	// - Returns: a function to use as the handler after activation
 	override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		let activated = source.delivery.isNormal
@@ -2276,7 +2292,7 @@ fileprivate final class SignalActivationTransformer<OutputValue, U>: SignalProce
 	/// Invoke the user handler and block if the `next` gains an additional reference count in the process.
 	// - Returns: a function to use as the handler after activation
 	override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
 		return { [useActivation, userProcessor, activationProcessor, weak outputSignal] r in
@@ -2327,7 +2343,7 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 	// Invoke the user handler and block if the `next` gains an additional reference count in the process.
 	// - Returns: a function to use as the handler after activation
 	override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
 		let activated = source.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
@@ -2355,7 +2371,7 @@ fileprivate final class SignalTransformerWithState<OutputValue, U, S>: SignalPro
 	}
 }
 
-/// A processor used by `combine(...)` to transform incoming `Signal`s into the "combine" type. The handler function is typically just a wrap of the preceeding `Result` in a `EitherResultX.resultY`. Other than that, it's a basic passthrough transformer that returns `false` to `successorsShareMutex`.
+/// A processor used by `combine(...)` to transform incoming `Signal`s into the "combine" type. The handler function is typically just a wrap of the preceeding `Result` in a `EitherResultX.resultY`. Other than that, it's a basic passthrough transformer
 fileprivate final class SignalCombiner<OutputValue, U>: SignalProcessor<OutputValue, U> {
 	let combineProcessor: (Result<OutputValue, SignalEnd>) -> U
 	
@@ -2369,11 +2385,6 @@ fileprivate final class SignalCombiner<OutputValue, U>: SignalProcessor<OutputVa
 	init(source: Signal<OutputValue>, dw: inout DeferredWork, context: Exec, processor: @escaping (Result<OutputValue, SignalEnd>) -> U) {
 		self.combineProcessor = context.isImmediateNonDirect ? { a in context.invokeSync { processor(a) } } : processor
 		super.init(source: source, dw: &dw, context: context)
-	}
-	
-	/// Only one predecessor in a multi-predecessor scenario can share its mutex.
-	fileprivate override var successorsShareMutex: Bool {
-		return false
 	}
 	
 	/// Simple application of the handler
@@ -2396,7 +2407,7 @@ fileprivate func bindFunction<OutputValue>(processor: SignalProcessor<OutputValu
 	defer { dw.runWork() }
 	assert(!(input is SignalMultiInput<OutputValue>))
 	if let nextSignal = input.signal {
-		try nextSignal.mutex.sync { () throws -> () in
+		try nextSignal.sync { () throws -> () in
 			guard input.activationCount == nextSignal.activationCount else {
 				throw SignalBindError<OutputValue>.cancelled
 			}
@@ -2430,11 +2441,6 @@ public class SignalJunction<OutputValue>: SignalProcessor<OutputValue, OutputVal
 		super.init(source: source, dw: &dw, context: .direct)
 	}
 	
-	// Can't share mutex since successor may swap between different graphs
-	fileprivate override var successorsShareMutex: Bool {
-		return false
-	}
-	
 	// Typical processors *don't* need to check their predecessors for a loop (only junctions do)
 	fileprivate override var needsPredecessorCheck: Bool {
 		return true
@@ -2443,7 +2449,7 @@ public class SignalJunction<OutputValue>: SignalProcessor<OutputValue, OutputVal
 	// If a `disconnectOnEnd` handler is configured, then `failure` signals are not sent through the junction. Instead, the junction is disconnected and the `disconnectOnEnd` function is given an opportunity to handle the `SignalJunction` (`self`) and `SignalInput` (from the `disconnect`).
 	// - Returns: a function to use as the handler after activation
 	fileprivate override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
 		let activated = source.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
@@ -2579,7 +2585,7 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 	
 	// Once an output is connected, `SignalCapture` becomes a no-special-behaviors passthrough handler.
 	fileprivate override var activeWithoutOutputsInternal: Bool {
-		assert(super.source.mutex.unbalancedTryLock() == false)
+		assert(super.source.unbalancedTryLock() == false)
 		return outputs.count > 0 ? false : true
 	}
 	
@@ -2625,11 +2631,6 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 		return sync { capturedValues.last }
 	}
 	
-	// Since this node operates as a junction, it cannot share mutex
-	fileprivate override var successorsShareMutex: Bool {
-		return false
-	}
-	
 	// Typical processors *don't* need to check their predecessors for a loop (only junctions do)
 	fileprivate override var needsPredecessorCheck: Bool {
 		return true
@@ -2640,7 +2641,7 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 	fileprivate override func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
 		guard outputs.isEmpty else { return { r in } }
 		
-		assert(super.source.mutex.unbalancedTryLock() == false)
+		assert(super.source.unbalancedTryLock() == false)
 		capturedEnd = nil
 		capturedValues = []
 		return { [weak self] r in
@@ -2744,7 +2745,7 @@ public final class SignalCapture<OutputValue>: SignalProcessor<OutputValue, Outp
 	// Like a `SignalJunction`, a capture can respond to an error by disconnecting instead of delivering.
 	// - Returns: a function to use as the handler after activation
 	fileprivate override func nextHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(super.source.mutex.unbalancedTryLock() == false)
+		assert(super.source.unbalancedTryLock() == false)
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
 		let activated = super.source.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
@@ -2909,18 +2910,13 @@ fileprivate class SignalMultiInputProcessor<InputValue>: SignalProcessor<InputVa
 		super.init(source: source, dw: &dw, context: .direct)
 	}
 	
-	// Can't share mutex since predecessor may swap between different graphs
-	fileprivate override var successorsShareMutex: Bool {
-		return false
-	}
-	
 	// If `removeOnDeactivate` is true, then deactivating this `Signal` removes it from the set
 	//
 	// - parameter dw: required
 	fileprivate override func lastOutputDeactivatedInternal(dw: inout DeferredWork) {
 		if removeOnDeactivate {
 			guard let output = outputs.first, let os = output.destination.value, let ac = output.activationCount else { return }
-			os.mutex.sync {
+			os.sync {
 				guard os.activationCount == ac else { return }
 				_ = os.removePreceedingWithoutInterruptionInternal(self, dw: &dw)
 			}
@@ -2930,7 +2926,7 @@ fileprivate class SignalMultiInputProcessor<InputValue>: SignalProcessor<InputVa
 	// The handler is largely a passthrough but allso applies `sourceClosesOutput` logic – removing error sending signals that don't close the output.
 	// - Returns: a function to use as the handler after activation
 	fileprivate override func nextHandlerInternal() -> (Result<InputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		guard let output = outputs.first, let outputSignal = output.destination.value, let ac = output.activationCount else { return initialHandlerInternal() }
 		let activated = source.delivery.isNormal
 		let predecessor: Unmanaged<AnyObject>? = Unmanaged.passUnretained(self)
@@ -2938,7 +2934,7 @@ fileprivate class SignalMultiInputProcessor<InputValue>: SignalProcessor<InputVa
 		return { [weak outputSignal, weak self] r in
 			if case .failure(let e) = r, !propagation.shouldPropagateEnd(e), let os = outputSignal, let s = self {
 				var dw = DeferredWork()
-				os.mutex.sync {
+				os.sync {
 					guard os.activationCount == ac else { return }
 					_ = os.removePreceedingWithoutInterruptionInternal(s, dw: &dw)
 					s.multiInput.checkForLastInputRemovedInternal(signal: os, dw: &dw)
@@ -2982,7 +2978,7 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 			SignalMultiInputProcessor<InputValue>(source: s, multiInput: self, closePropagation: closePropagation, removeOnDeactivate: removeOnDeactivate, dw: &dw)
 		}
 		var dw = DeferredWork()
-		sig.mutex.sync {
+		sig.sync {
 			// This can't be `duplicate` since this a a new processor but `loop` is a precondition failure
 			try! sig.addPreceedingInternal(processor, param: nil, dw: &dw)
 		}
@@ -2991,7 +2987,7 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 	
 	private func remove(mp: SignalMultiInputProcessor<InputValue>, from sig: Signal<InputValue>) -> Bool {
 		var dw = DeferredWork()
-		let result = sig.mutex.sync { () -> Bool in
+		let result = sig.sync { () -> Bool in
 			let r = sig.removePreceedingWithoutInterruptionInternal(mp, dw: &dw)
 			checkForLastInputRemovedInternal(signal: sig, dw: &dw)
 			return r
@@ -3012,7 +3008,7 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 		if let multi = sourceSignal as? SignalMulti<InputValue> {
 			let signals = multi.preceeding.first!.base.outputSignals(ofType: InputValue.self)
 			let mergeProcessors = signals.compactMap { s in
-				s.mutex.sync { s.signalHandler as? SignalMultiInputProcessor<InputValue> }
+				s.sync { s.signalHandler as? SignalMultiInputProcessor<InputValue> }
 			}
 			for mp in mergeProcessors {
 				if remove(mp: mp, from: targetSignal) {
@@ -3020,7 +3016,7 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 				}
 			}
 		} else {
-			if let mp = sourceSignal.mutex.sync(execute: { sourceSignal.signalHandler as? SignalMultiInputProcessor<InputValue> }) {
+			if let mp = sourceSignal.sync(execute: { sourceSignal.signalHandler as? SignalMultiInputProcessor<InputValue> }) {
 				_ = remove(mp: mp, from: targetSignal)
 			}
 		}
@@ -3051,7 +3047,7 @@ public class SignalMultiInput<InputValue>: SignalInput<InputValue> {
 	public final override func cancel() {
 		guard let sig = signal else { return }
 		var dw = DeferredWork()
-		sig.mutex.sync {
+		sig.sync {
 			sig.removeAllPreceedingInternal(dw: &dw)
 			sig.pushInternal(values: [], end: SignalEnd.cancelled, activated: true, dw: &dw)
 		}
@@ -3123,7 +3119,7 @@ public class SignalMergedInput<InputValue>: SignalMultiInput<InputValue> {
 	fileprivate override func cancelOnDeinit() {
 		guard let sig = signal else { return }
 		var dw = DeferredWork()
-		sig.mutex.sync {
+		sig.sync {
 			sig.pushInternal(values: [], end: onDeinit, activated: true, dw: &dw)
 		}
 		dw.runWork()
@@ -3152,7 +3148,7 @@ public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Lifeti
 	// Can't have an `output` so this intial handler is the *only* handler
 	// - Returns: a function to use as the handler prior to activation
 	fileprivate override func initialHandlerInternal() -> (Result<OutputValue, SignalEnd>) -> Void {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		return { [userHandler] r in
 			userHandler(r)
 		}
@@ -3160,7 +3156,7 @@ public final class SignalOutput<OutputValue>: SignalHandler<OutputValue>, Lifeti
 	
 	// A `SignalOutput` is active until closed (receives a `failure` signal)
 	fileprivate override var activeWithoutOutputsInternal: Bool {
-		assert(source.mutex.unbalancedTryLock() == false)
+		assert(source.unbalancedTryLock() == false)
 		return true
 	}
 	
@@ -3307,4 +3303,3 @@ public enum EitherResult5<U, V, W, X, Y> {
 	case result4(Signal<X>.Result)
 	case result5(Signal<Y>.Result)
 }
-

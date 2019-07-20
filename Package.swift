@@ -3,6 +3,10 @@ import PackageDescription
 
 let package = Package(
    name: "CwlSignal",
+	platforms: [
+		.iOS(.v11),
+		.macOS(.v10_12)
+	],
    products: [
    	.library(name: "CwlSignal", targets: ["CwlSignal"])
 	],
