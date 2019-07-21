@@ -4,15 +4,15 @@ import PackageDescription
 let package = Package(
    name: "CwlSignal",
 	platforms: [
-		.iOS(.v11),
+		.iOS(.v10),
 		.macOS(.v10_12)
 	],
    products: [
-   	.library(name: "CwlSignal", targets: ["CwlSignal"])
+   	.library(name: "CwlSignal", type: .dynamic, targets: ["CwlSignal"])
 	],
 	dependencies: [
-		.package(url: "file:///Users/matt/Projects/CwlUtils", .branch("master")),
-		.package(url: "file:///Users/matt/Projects/CwlPreconditionTesting", .branch("master"))
+		.package(url: "https://github.com/mattgallagher/CwlUtils.git", from: Version(3, 0, 0, prereleaseIdentifiers: ["-beta.1"])),
+		.package(url: "https://github.com/mattgallagher/CwlPreconditionTesting.git", from: Version(2, 0, 0, prereleaseIdentifiers: ["-beta.1"]))
 	],
 	targets: [
 		.target(
