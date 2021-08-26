@@ -2,17 +2,17 @@
 import PackageDescription
 
 let package = Package(
-   name: "CwlSignal",
+	name: "CwlSignal",
 	platforms: [
-		.iOS(.v11),
+		.iOS(.v10),
 		.macOS(.v10_12)
 	],
-   products: [
-   	.library(name: "CwlSignal", targets: ["CwlSignal"])
+	products: [
+		.library(name: "CwlSignal", targets: ["CwlSignal"])
 	],
 	dependencies: [
-		.package(url: "https://github.com/mattgallagher/CwlUtils.git", .branch("master")),
-		.package(url: "https://github.com/mattgallagher/CwlPreconditionTesting.git", from: "2.0.0")
+		.package(url: "https://github.com/mattgallagher/CwlUtils.git", from: Version(3, 0, 0)),
+		.package(url: "https://github.com/mattgallagher/CwlPreconditionTesting.git", from: Version(2, 0, 0))
 	],
 	targets: [
 		.target(
