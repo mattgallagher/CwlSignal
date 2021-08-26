@@ -422,10 +422,10 @@ extension SignalInterface {
 				let values = buffers.map { $0.1 }
 				buffers.removeAll()
 				return .values(sequence: values, end: e)
-			case .result2(.success(let index, .some)):
+			case .result2(.success((let index, .some))):
 				buffers[index] = []
 				return .none
-			case .result2(.success(let index, .none)):
+			case .result2(.success((let index, .none))):
 				if let b = buffers[index] {
 					buffers.removeValue(forKey: index)
 					return .value(b)
@@ -715,7 +715,7 @@ extension SignalInterface {
 			index += 1
 		}.transform(initialState: (0, Array<Array<Result<Interface.OutputValue, SignalEnd>>>())) { (state: inout (completed: Int, buffers: Array<Array<Result<Interface.OutputValue, SignalEnd>>>), result: Result<(Int, Result<Interface.OutputValue, SignalEnd>), SignalEnd>) -> Signal<Interface.OutputValue>.Next in
 			switch result {
-			case .success(let index, .success(let v)):
+			case .success((let index, .success(let v))):
 				// We can send results for the first incomplete signal without buffering
 				if index == state.completed {
 					return .value(v)
@@ -729,7 +729,7 @@ extension SignalInterface {
 					state.buffers[index].append(Result<Interface.OutputValue, SignalEnd>.success(v))
 					return .none
 				}
-			case .success(let index, .failure(let e)):
+			case .success((let index, .failure(let e))):
 				// If its an error, try to send some more buffers
 				if index == state.completed {
 					state.completed += 1
@@ -934,11 +934,11 @@ extension SignalInterface {
 				return .none
 			case .result1(.failure(let e)):
 				return .end(e)
-			case .result2(.success(let index, .some)):
+			case .result2(.success((let index, .some))):
 				let (i, s) = Signal<OutputValue>.create()
 				children[index] = i
 				return .value(s)
-			case .result2(.success(let index, .none)):
+			case .result2(.success((let index, .none))):
 				if let c = children[index] {
 					c.complete()
 					children.removeValue(forKey: index)
@@ -1660,16 +1660,16 @@ extension SignalInterface {
 		let rightDurations = withRight.valueDurations({ u in rightEnd(u).takeWhile { _ in false } })
 		let a = leftDurations.combine(rightDurations, initialState: ([Int: OutputValue](), [Int: U.OutputValue]())) { (state: inout (activeLeft: [Int: OutputValue], activeRight: [Int: U.OutputValue]), cr: EitherResult2<(Int, OutputValue?), (Int, U.OutputValue?)>) -> Signal<(OutputValue, U.OutputValue)>.Next in
 			switch cr {
-			case .result1(.success(let leftIndex, .some(let leftValue))):
+			case .result1(.success((let leftIndex, .some(let leftValue)))):
 				state.activeLeft[leftIndex] = leftValue
 				return .array(state.activeRight.sorted { $0.0 < $1.0 }.map { tuple in .success((leftValue, tuple.value)) })
-			case .result2(.success(let rightIndex, .some(let rightValue))):
+			case .result2(.success((let rightIndex, .some(let rightValue)))):
 				state.activeRight[rightIndex] = rightValue
 				return .array(state.activeLeft.sorted { $0.0 < $1.0 }.map { tuple in .success((tuple.value, rightValue)) })
-			case .result1(.success(let leftIndex, .none)):
+			case .result1(.success((let leftIndex, .none))):
 				state.activeLeft.removeValue(forKey: leftIndex)
 				return .none
-			case .result2(.success(let rightIndex, .none)):
+			case .result2(.success((let rightIndex, .none))):
 				state.activeRight.removeValue(forKey: rightIndex)
 				return .none
 			default:
@@ -1693,19 +1693,19 @@ extension SignalInterface {
 		let rightDurations = withRight.valueDurations({ u in rightEnd(u).takeWhile { _ in false } })
 		return leftDurations.combine(rightDurations, initialState: ([Int: SignalInput<U.OutputValue>](), [Int: U.OutputValue]())) { (state: inout (activeLeft: [Int: SignalInput<U.OutputValue>], activeRight: [Int: U.OutputValue]), cr: EitherResult2<(Int, OutputValue?), (Int, U.OutputValue?)>) -> Signal<(OutputValue, Signal<U.OutputValue>)>.Next in
 			switch cr {
-			case .result1(.success(let leftIndex, .some(let leftValue))):
+			case .result1(.success((let leftIndex, .some(let leftValue)))):
 				let (li, ls) = Signal<U.OutputValue>.create()
 				state.activeLeft[leftIndex] = li
 				return .value((leftValue, ls.cacheUntilActive(precached: state.activeRight.sorted { $0.0 < $1.0 }.map { $0.value })))
-			case .result2(.success(let rightIndex, .some(let rightValue))):
+			case .result2(.success((let rightIndex, .some(let rightValue)))):
 				state.activeRight[rightIndex] = rightValue
 				state.activeLeft.sorted { $0.0 < $1.0 }.forEach { tuple in tuple.value.send(value: rightValue) }
 				return .none
-			case .result1(.success(let leftIndex, .none)):
+			case .result1(.success((let leftIndex, .none))):
 				_ = state.activeLeft[leftIndex]?.complete()
 				state.activeLeft.removeValue(forKey: leftIndex)
 				return .none
-			case .result2(.success(let rightIndex, .none)):
+			case .result2(.success((let rightIndex, .none))):
 				state.activeRight.removeValue(forKey: rightIndex)
 				return .none
 			default:
@@ -2386,10 +2386,10 @@ extension SignalInterface {
 	public func delay<U, V>(initialState: V, closePropagation: SignalEndPropagation = .none, context: Exec = .direct, offset: @escaping (inout V, OutputValue) -> Signal<U>) -> Signal<OutputValue> {
 		return valueDurations(initialState: initialState, closePropagation: closePropagation, context: context, offset).transform(initialState: [Int: OutputValue]()) { (values: inout [Int: OutputValue], r: Result<(Int, OutputValue?), SignalEnd>) -> Signal<OutputValue>.Next in
 			switch r {
-			case .success(let index, .some(let t)):
+			case .success((let index, .some(let t))):
 				values[index] = t
 				return .none
-			case .success(let index, .none):
+			case .success((let index, .none)):
 				return values[index].map { .value($0) } ?? .none
 			case .failure(let e):
 				return .end(e)
@@ -2653,10 +2653,10 @@ extension Signal {
 		}
 		return sig.transform(initialState: -1) { (first: inout Int, r: Signal<(Int, Result)>.Result) -> Signal<OutputValue>.Next in
 			switch r {
-			case .success(let index, let underlying) where first < 0:
+			case .success((let index, let underlying)) where first < 0:
 				first = index
 				return .single(underlying)
-			case .success(let index, let underlying) where first < 0 || first == index:
+			case .success((let index, let underlying)) where first < 0 || first == index:
 				return .single(underlying)
 			case .failure(let e):
 				return .end(e)

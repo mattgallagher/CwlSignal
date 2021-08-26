@@ -1547,7 +1547,7 @@ fileprivate struct OrderedSignalPredecessor: Hashable {
 
 // A protocol used for communicating from successor `Signal`s to predecessor `SignalProcessor`s in the signal graph.
 // Used for connectivity and activation.
-fileprivate protocol SignalPredecessor: class {
+fileprivate protocol SignalPredecessor: AnyObject {
 	func outputActivatedSuccessorInternal(_ successor: AnyObject, activationCount: Int, dw: inout DeferredWork)
 	func outputCompletedActivationSuccessorInternal(_ successor: AnyObject, dw: inout DeferredWork)
 	func outputDeactivatedSuccessorInternal(_ successor: AnyObject, dw: inout DeferredWork)

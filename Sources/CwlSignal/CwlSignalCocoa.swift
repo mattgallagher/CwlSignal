@@ -101,11 +101,14 @@ public enum SignalObservingError: Error {
 extension Signal {
 	public static func keyValueObserving<Source: NSObject>(_ source: Source, keyPath: KeyPath<Source, OutputValue>, initial: Bool = true) -> Signal<OutputValue> {
 		var observer: NSObjectProtocol?
+		let holdInput = MutableBox<SignalInput<OutputValue>?>(nil)
 		return Signal<OutputValue>.generate { [weak source] (input: SignalInput<OutputValue>?) -> Void in
 			guard let i = input, let s = source else {
 				observer = nil
+				holdInput.value = nil
 				return
 			}
+			holdInput.value = i
 			let options = NSKeyValueObservingOptions.new.union(initial ? NSKeyValueObservingOptions.initial : NSKeyValueObservingOptions())
 			observer = s.observe(keyPath, options: options) { (object, value) in
 				if let nv = value.newValue {

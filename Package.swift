@@ -11,8 +11,8 @@ let package = Package(
    	.library(name: "CwlSignal", targets: ["CwlSignal"])
 	],
 	dependencies: [
-		.package(url: "file:///Users/matt/Projects/CwlUtils", .branch("master")),
-		.package(url: "file:///Users/matt/Projects/CwlPreconditionTesting", .branch("master"))
+		.package(url: "https://github.com/mattgallagher/CwlUtils.git", .branch("master")),
+		.package(url: "https://github.com/mattgallagher/CwlPreconditionTesting.git", from: "2.0.0")
 	],
 	targets: [
 		.target(
