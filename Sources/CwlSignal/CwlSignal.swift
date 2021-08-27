@@ -17,11 +17,8 @@
 //  OF THIS SOFTWARE.
 //
 
+import CwlUtils
 import Foundation
-
-#if SWIFT_PACKAGE
-	import CwlUtils
-#endif
 
 /// This protocol allows transformations that apply to `Signal` types to be applied to a type that exposes a signal.
 public protocol SignalInterface {

@@ -18,13 +18,10 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
-import Foundation
 import CwlSignal
-import XCTest
-
-#if SWIFT_PACKAGE
 import CwlUtils
-#endif
+import Foundation
+import XCTest
 
 class Target: NSObject {
 	@objc dynamic var property = NSObject()

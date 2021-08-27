@@ -17,11 +17,8 @@
 //  OF THIS SOFTWARE.
 //
 
+import CwlUtils
 import Foundation
-
-#if SWIFT_PACKAGE
-	import CwlUtils
-#endif
 
 /// A `SignalChannel` forms a basic wrapper around a `SignalInput`/`Signal` pair and exists for syntactic convenience when building a series of pipeline stages and returning the head and tail of the pipeline.
 ///

@@ -18,14 +18,11 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
+import CwlPreconditionTesting
+import CwlSignal
+import CwlUtils
 import Foundation
 import XCTest
-import CwlSignal
-import CwlPreconditionTesting
-
-#if SWIFT_PACKAGE
-	import CwlUtils
-#endif
 
 private enum TestError: Error {
 	case zeroValue

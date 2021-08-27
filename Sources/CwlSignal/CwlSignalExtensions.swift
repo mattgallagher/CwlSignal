@@ -18,11 +18,8 @@
 //  IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 
+import CwlUtils
 import Foundation
-
-#if SWIFT_PACKAGE
-	import CwlUtils
-#endif
 
 // All transformations on a Signal are built on top of the following functions, implemented in CwlSignal.swift
 extension SignalInterface {
